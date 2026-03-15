@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+out/
+*.js.map
+
+# Java / Gradle
+backend/weekly-service/.gradle/
+backend/weekly-service/build/
+backend/weekly-service/bin/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Test / Coverage
+coverage/
+*.lcov
+.nyc_output/
+e2e/playwright-report/
+e2e/test-results/
+
+# Docker
+docker-compose.override.yml
+
+# Misc
+*.log
+tmp/
+.pi/
+*.tsbuildinfo
+
+# Dev script state
+.dev-pids

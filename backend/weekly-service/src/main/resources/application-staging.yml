@@ -1,0 +1,16 @@
+# ---------------------------------------------------------------------------
+# Staging environment profile
+# Mirrors production behavior at reduced scale.
+# Secrets/connections: injected by ECS task definition + Secrets Manager.
+# This file only overrides BEHAVIOR.
+# ---------------------------------------------------------------------------
+
+ai:
+  features:
+    suggest-rcdo-enabled: true
+    draft-reconciliation-enabled: true
+    manager-insights-enabled: true
+
+logging:
+  level:
+    com.weekly: INFO

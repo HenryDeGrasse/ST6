@@ -1,0 +1,23 @@
+# ---------------------------------------------------------------------------
+# Local development profile
+# Secrets/connections: inherited from base (read from env vars / .env)
+# This file only overrides BEHAVIOR: log levels, feature flags.
+# ---------------------------------------------------------------------------
+
+# All AI features enabled locally for dev/testing
+ai:
+  features:
+    suggest-rcdo-enabled: true
+    draft-reconciliation-enabled: true
+    manager-insights-enabled: true
+
+weekly:
+  outbox:
+    retention:
+      enabled: true
+    retention-days: 30
+
+logging:
+  level:
+    com.weekly: DEBUG
+    org.hibernate.SQL: DEBUG

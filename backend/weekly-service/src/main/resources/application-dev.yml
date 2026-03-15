@@ -1,0 +1,21 @@
+# ---------------------------------------------------------------------------
+# Dev environment profile (deployed, not local)
+# Secrets/connections: injected by ECS task definition + Secrets Manager.
+# This file only overrides BEHAVIOR.
+# ---------------------------------------------------------------------------
+
+ai:
+  features:
+    suggest-rcdo-enabled: true
+    draft-reconciliation-enabled: true
+    manager-insights-enabled: true
+
+weekly:
+  outbox:
+    retention:
+      enabled: true
+    retention-days: 30
+
+logging:
+  level:
+    com.weekly: DEBUG

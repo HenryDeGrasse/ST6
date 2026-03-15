@@ -1,0 +1,17 @@
+# ---------------------------------------------------------------------------
+# Production environment profile
+# Secrets/connections: injected by ECS task definition + Secrets Manager.
+# This file only overrides BEHAVIOR. No secrets here — ever.
+# ---------------------------------------------------------------------------
+
+# Beta AI features gated in prod until validated in staging
+ai:
+  features:
+    suggest-rcdo-enabled: true
+    draft-reconciliation-enabled: false
+    manager-insights-enabled: false
+
+logging:
+  level:
+    com.weekly: INFO
+    org.hibernate.SQL: WARN

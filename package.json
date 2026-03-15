@@ -1,0 +1,35 @@
+{
+  "name": "weekly-commitments",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Weekly Commitments module – micro-frontend + modular-monolith backend",
+  "workspaces": [
+    "contracts",
+    "frontend",
+    "pa-host-stub"
+  ],
+  "scripts": {
+    "lint": "npm run lint --workspaces --if-present && npm run lint:backend",
+    "lint:backend": "cd backend/weekly-service && ./gradlew checkstyleMain checkstyleTest --no-daemon -q",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run unit",
+    "unit": "npm run test --workspaces --if-present && npm run unit:backend",
+    "unit:backend": "cd backend/weekly-service && ./gradlew test --no-daemon",
+    "build": "npm run build --workspaces --if-present && npm run build:backend",
+    "build:backend": "cd backend/weekly-service && ./gradlew build --no-daemon -x test",
+    "migration:check": "cd backend/weekly-service && ./gradlew test --no-daemon --tests com.weekly.PostgresSchemaCompatibilityTest",
+    "audit": "npm audit --audit-level=high",
+    "audit:e2e": "cd e2e && npm audit --audit-level=high",
+    "e2e:smoke": "cd e2e && npm run test:smoke",
+    "e2e:full": "cd e2e && npm run test:full",
+    "dev": "./scripts/dev.sh --seed",
+    "dev:up": "./scripts/dev.sh",
+    "dev:stop": "./scripts/dev.sh --stop",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:host": "npm run dev --workspace=pa-host-stub",
+    "clean": "npm run clean --workspaces --if-present && cd backend/weekly-service && ./gradlew clean --no-daemon"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

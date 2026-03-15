@@ -1,0 +1,103 @@
+# ---------------------------------------------------------------------------
+# Weekly Commitments — Base configuration (shared across all profiles)
+#
+# Secrets and connection strings come from env vars (never hardcoded).
+# Behavior defaults (log levels, feature flags, AI models) are set per
+# profile in application-{local,dev,staging,prod}.yml.
+# ---------------------------------------------------------------------------
+spring:
+  application:
+    name: weekly-service
+  profiles:
+    active: ${APP_ENV:local}
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:weekly}
+    username: ${POSTGRES_USER:weekly}
+    password: ${POSTGRES_PASSWORD:weekly}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: weekly-service
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests: 100ms,250ms,500ms,1000ms,5000ms
+
+# AI defaults (profiles override provider + flags)
+ai:
+  provider: ${AI_PROVIDER:stub}
+  openrouter:
+    api-key: ${OPENROUTER_API_KEY:}
+    model: ${OPENROUTER_MODEL:anthropic/claude-sonnet-4}
+    base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api/v1}
+  features:
+    suggest-rcdo-enabled: true
+    draft-reconciliation-enabled: false
+    manager-insights-enabled: false
+
+notification:
+  materializer:
+    enabled: false
+
+tenant:
+  rls:
+    enabled: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: worker
+
+notification:
+  materializer:
+    enabled: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: false
+
+ai:
+  provider: stub
+
+notification:
+  materializer:
+    enabled: false
+
+tenant:
+  rls:
+    enabled: false
