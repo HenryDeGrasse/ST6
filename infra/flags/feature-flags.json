@@ -1,0 +1,99 @@
+{
+  "$schema": "Feature flag inventory per PRD §13.7",
+  "flags": [
+    {
+      "key": "wc.module.enabled",
+      "type": "boolean",
+      "scope": "org/team",
+      "default": false,
+      "description": "Whether the WC module is visible in the PA host navigation",
+      "lifecycle": "permanent"
+    },
+    {
+      "key": "wc.chess.strict",
+      "type": "boolean",
+      "scope": "org",
+      "default": true,
+      "description": "Whether chess rules (1 KING, 2 QUEEN max) are enforced at lock time",
+      "lifecycle": "permanent"
+    },
+    {
+      "key": "wc.lock.auto",
+      "type": "boolean",
+      "scope": "org",
+      "default": false,
+      "description": "Whether plans auto-transition to RECONCILING at the configured time",
+      "lifecycle": "permanent"
+    },
+    {
+      "key": "wc.ai.suggest",
+      "type": "boolean",
+      "scope": "org",
+      "default": true,
+      "description": "Whether the AI RCDO suggestion feature is available",
+      "lifecycle": "permanent"
+    },
+    {
+      "key": "wc.ai.reconciliation",
+      "type": "boolean",
+      "scope": "org",
+      "default": false,
+      "description": "Whether the AI reconciliation draft feature is available (beta)",
+      "lifecycle": "temporary"
+    },
+    {
+      "key": "wc.ai.manager-insights",
+      "type": "boolean",
+      "scope": "org",
+      "default": false,
+      "description": "Whether the AI manager insight summaries are shown on the dashboard",
+      "lifecycle": "temporary"
+    },
+    {
+      "key": "wc.notifications.email",
+      "type": "boolean",
+      "scope": "org",
+      "default": false,
+      "description": "Whether email notifications are sent (post-MVP)",
+      "lifecycle": "permanent"
+    },
+    {
+      "key": "wc.notifications.slack",
+      "type": "boolean",
+      "scope": "org",
+      "default": false,
+      "description": "Whether Slack notifications are sent (post-MVP)",
+      "lifecycle": "permanent"
+    }
+  ],
+  "rolloutPhases": {
+    "phase0": {
+      "description": "Internal dogfood – 1 team (2 managers, 10 ICs)",
+      "enabledOrgs": ["ST6_ORG_ID"],
+      "flags": {
+        "wc.module.enabled": true,
+        "wc.ai.suggest": true,
+        "wc.ai.reconciliation": true,
+        "wc.ai.manager-insights": true
+      }
+    },
+    "phase1": {
+      "description": "Early adopters – 3-5 volunteer teams",
+      "enabledOrgs": [],
+      "flags": {
+        "wc.module.enabled": true,
+        "wc.ai.suggest": true,
+        "wc.ai.reconciliation": false,
+        "wc.ai.manager-insights": false
+      }
+    },
+    "phase2": {
+      "description": "Broad rollout – 25% → 50% → 100% of teams",
+      "enabledOrgs": ["*"],
+      "flags": {
+        "wc.module.enabled": true,
+        "wc.ai.suggest": true
+      }
+    }
+  }
+}

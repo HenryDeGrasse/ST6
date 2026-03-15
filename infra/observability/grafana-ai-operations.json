@@ -1,0 +1,123 @@
+{
+  "dashboard": {
+    "title": "WC AI Operations",
+    "description": "Weekly Commitments – AI/LLM operational dashboard (PRD §14.3)",
+    "tags": ["weekly-commitments", "ai-operations"],
+    "timezone": "utc",
+    "refresh": "1m",
+    "panels": [
+      {
+        "title": "LLM Request Rate",
+        "type": "timeseries",
+        "gridPos": { "x": 0, "y": 0, "w": 8, "h": 5 },
+        "targets": [
+          {
+            "expr": "sum(rate(ai_llm_request_seconds_count{application=\"weekly-service\"}[5m]))",
+            "legendFormat": "requests/s"
+          }
+        ]
+      },
+      {
+        "title": "LLM Latency (p50 / p95)",
+        "type": "timeseries",
+        "gridPos": { "x": 8, "y": 0, "w": 8, "h": 5 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(ai_llm_request_seconds_bucket{application=\"weekly-service\"}[5m])) by (le))",
+            "legendFormat": "p50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(ai_llm_request_seconds_bucket{application=\"weekly-service\"}[5m])) by (le))",
+            "legendFormat": "p95"
+          }
+        ]
+      },
+      {
+        "title": "Cache Hit Ratio",
+        "type": "gauge",
+        "gridPos": { "x": 16, "y": 0, "w": 4, "h": 5 },
+        "targets": [
+          {
+            "expr": "sum(rate(ai_suggestion_outcome_total{outcome=\"cache_hit\",application=\"weekly-service\"}[1h])) / sum(rate(ai_suggestion_outcome_total{application=\"weekly-service\"}[1h]))",
+            "legendFormat": "cache_hit_ratio"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "steps": [
+                { "color": "red", "value": 0 },
+                { "color": "yellow", "value": 0.3 },
+                { "color": "green", "value": 0.5 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Token Usage (Daily)",
+        "type": "timeseries",
+        "gridPos": { "x": 0, "y": 5, "w": 10, "h": 5 },
+        "targets": [
+          {
+            "expr": "sum(increase(ai_llm_tokens_total{direction=\"input\",application=\"weekly-service\"}[1d]))",
+            "legendFormat": "input_tokens"
+          },
+          {
+            "expr": "sum(increase(ai_llm_tokens_total{direction=\"output\",application=\"weekly-service\"}[1d]))",
+            "legendFormat": "output_tokens"
+          }
+        ]
+      },
+      {
+        "title": "Timeout Rate",
+        "type": "stat",
+        "gridPos": { "x": 10, "y": 5, "w": 5, "h": 5 },
+        "targets": [
+          {
+            "expr": "sum(rate(ai_suggestion_outcome_total{outcome=\"timeout\",application=\"weekly-service\"}[15m])) / sum(rate(ai_suggestion_outcome_total{application=\"weekly-service\"}[15m]))",
+            "legendFormat": "timeout_rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": 0 },
+                { "color": "yellow", "value": 0.1 },
+                { "color": "red", "value": 0.2 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Suggestion Acceptance Rate",
+        "type": "gauge",
+        "gridPos": { "x": 15, "y": 5, "w": 5, "h": 5 },
+        "targets": [
+          {
+            "expr": "sum(rate(ai_suggestion_outcome_total{outcome=\"accepted\",application=\"weekly-service\"}[7d])) / (sum(rate(ai_suggestion_outcome_total{outcome=\"accepted\",application=\"weekly-service\"}[7d])) + sum(rate(ai_suggestion_outcome_total{outcome=\"rejected\",application=\"weekly-service\"}[7d])))",
+            "legendFormat": "acceptance_rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "steps": [
+                { "color": "red", "value": 0 },
+                { "color": "yellow", "value": 0.5 },
+                { "color": "green", "value": 0.6 }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  }
+}

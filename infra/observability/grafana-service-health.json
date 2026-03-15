@@ -1,0 +1,132 @@
+{
+  "dashboard": {
+    "title": "WC Service Health",
+    "description": "Weekly Commitments – Service health dashboard (PRD §14.3)",
+    "tags": ["weekly-commitments", "service-health"],
+    "timezone": "utc",
+    "refresh": "30s",
+    "panels": [
+      {
+        "title": "API Availability (SLO: 99.9%)",
+        "type": "gauge",
+        "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "1 - (sum(rate(http_server_requests_seconds_count{status=~\"5..\",application=\"weekly-service\"}[30d])) / sum(rate(http_server_requests_seconds_count{application=\"weekly-service\"}[30d])))",
+            "legendFormat": "availability"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0.99,
+            "max": 1,
+            "thresholds": {
+              "steps": [
+                { "color": "red", "value": 0 },
+                { "color": "yellow", "value": 0.999 },
+                { "color": "green", "value": 0.9995 }
+              ]
+            },
+            "unit": "percentunit"
+          }
+        }
+      },
+      {
+        "title": "Error Rate (5xx)",
+        "type": "timeseries",
+        "gridPos": { "x": 6, "y": 0, "w": 9, "h": 4 },
+        "targets": [
+          {
+            "expr": "sum(rate(http_server_requests_seconds_count{status=~\"5..\",application=\"weekly-service\"}[5m]))",
+            "legendFormat": "5xx/s"
+          }
+        ]
+      },
+      {
+        "title": "API Latency (p50 / p95 / p99)",
+        "type": "timeseries",
+        "gridPos": { "x": 0, "y": 4, "w": 12, "h": 5 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{application=\"weekly-service\",uri=~\"/api/v1/.*\"}[5m])) by (le))",
+            "legendFormat": "p50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"weekly-service\",uri=~\"/api/v1/.*\"}[5m])) by (le))",
+            "legendFormat": "p95"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application=\"weekly-service\",uri=~\"/api/v1/.*\"}[5m])) by (le))",
+            "legendFormat": "p99"
+          }
+        ]
+      },
+      {
+        "title": "Outbox – Unpublished Events",
+        "type": "stat",
+        "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "outbox_unpublished_count{application=\"weekly-service\"}",
+            "legendFormat": "unpublished"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": 0 },
+                { "color": "yellow", "value": 50 },
+                { "color": "red", "value": 100 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "HikariCP Connection Pool",
+        "type": "timeseries",
+        "gridPos": { "x": 12, "y": 4, "w": 6, "h": 5 },
+        "targets": [
+          {
+            "expr": "hikaricp_connections_active{application=\"weekly-service\"}",
+            "legendFormat": "active"
+          },
+          {
+            "expr": "hikaricp_connections{application=\"weekly-service\"}",
+            "legendFormat": "total"
+          }
+        ]
+      },
+      {
+        "title": "JVM Heap Usage",
+        "type": "timeseries",
+        "gridPos": { "x": 0, "y": 9, "w": 9, "h": 5 },
+        "targets": [
+          {
+            "expr": "jvm_memory_used_bytes{area=\"heap\",application=\"weekly-service\"}",
+            "legendFormat": "used"
+          },
+          {
+            "expr": "jvm_memory_max_bytes{area=\"heap\",application=\"weekly-service\"}",
+            "legendFormat": "max"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "bytes" }
+        }
+      },
+      {
+        "title": "Plan Transitions",
+        "type": "timeseries",
+        "gridPos": { "x": 9, "y": 9, "w": 9, "h": 5 },
+        "targets": [
+          {
+            "expr": "sum by (to) (rate(plan_transitions_total{application=\"weekly-service\"}[5m]))",
+            "legendFormat": "{{ to }}"
+          }
+        ]
+      }
+    ]
+  }
+}

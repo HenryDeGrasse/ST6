@@ -1,0 +1,160 @@
+# ---------------------------------------------------------------------------
+# Weekly Commitments – Prometheus Alert Rules (PRD §14.2)
+# ---------------------------------------------------------------------------
+groups:
+  - name: weekly-commitments-slo
+    rules:
+      # ── API Availability – Fast Burn (P1) ────────────────────────────
+      - alert: WC_API_ErrorRate_FastBurn
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{status=~"5..",application="weekly-service"}[1h]))
+            /
+            sum(rate(http_server_requests_seconds_count{application="weekly-service"}[1h]))
+          ) > 0.001 * 14.4
+        for: 5m
+        labels:
+          severity: P1
+          service: weekly-service
+        annotations:
+          summary: "API error rate consuming SLO budget at >14.4x rate"
+          runbook: "docs/runbooks/R1-api-error-rate.md"
+
+      # ── API Availability – Slow Burn (P2) ────────────────────────────
+      - alert: WC_API_ErrorRate_SlowBurn
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{status=~"5..",application="weekly-service"}[6h]))
+            /
+            sum(rate(http_server_requests_seconds_count{application="weekly-service"}[6h]))
+          ) > 0.001 * 3
+        for: 15m
+        labels:
+          severity: P2
+          service: weekly-service
+        annotations:
+          summary: "API error rate consuming SLO budget at >3x rate"
+          runbook: "docs/runbooks/R1-api-error-rate.md"
+
+      # ── CRUD Latency (P2) ────────────────────────────────────────────
+      - alert: WC_API_Latency_CRUD
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_server_requests_seconds_bucket{
+              application="weekly-service",
+              uri=~"/api/v1/(plans|commits).*"
+            }[5m])) by (le)
+          ) > 0.25
+        for: 10m
+        labels:
+          severity: P2
+          service: weekly-service
+        annotations:
+          summary: "CRUD API p95 latency exceeds 250ms SLO"
+          runbook: "docs/runbooks/R2-api-latency.md"
+
+      # ── Dashboard Latency (P2) ───────────────────────────────────────
+      - alert: WC_API_Latency_Dashboard
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_server_requests_seconds_bucket{
+              application="weekly-service",
+              uri=~"/api/v1/weeks/.*/team/summary"
+            }[5m])) by (le)
+          ) > 0.5
+        for: 10m
+        labels:
+          severity: P2
+          service: weekly-service
+        annotations:
+          summary: "Dashboard API p95 latency exceeds 500ms SLO"
+          runbook: "docs/runbooks/R2-api-latency.md"
+
+  - name: weekly-commitments-outbox
+    rules:
+      # ── Outbox Lag (P2) ──────────────────────────────────────────────
+      - alert: WC_Outbox_Lag
+        expr: outbox_unpublished_count{application="weekly-service"} > 100
+        for: 5m
+        labels:
+          severity: P2
+          service: weekly-service
+        annotations:
+          summary: "Outbox has >100 unpublished events for >5 minutes"
+          runbook: "docs/runbooks/R3-outbox-lag.md"
+
+      # ── Outbox Stall (P1) ───────────────────────────────────────────
+      - alert: WC_Outbox_Stall
+        expr: |
+          rate(outbox_published_total{application="weekly-service"}[10m]) == 0
+          and
+          outbox_unpublished_count{application="weekly-service"} > 0
+        for: 10m
+        labels:
+          severity: P1
+          service: weekly-service
+        annotations:
+          summary: "Outbox poller appears stuck – no events published in 10 min"
+          runbook: "docs/runbooks/R3-outbox-lag.md"
+
+  - name: weekly-commitments-infra
+    rules:
+      # ── DB Connection Pool (P2) ──────────────────────────────────────
+      - alert: WC_DB_ConnectionPool_High
+        expr: |
+          hikaricp_connections_active{application="weekly-service"}
+          /
+          hikaricp_connections{application="weekly-service"}
+          > 0.8
+        for: 5m
+        labels:
+          severity: P2
+          service: weekly-service
+        annotations:
+          summary: "HikariCP connection pool utilization >80%"
+          runbook: "docs/runbooks/R5-database-health.md"
+
+      # ── Redis Unavailable (P2) ───────────────────────────────────────
+      - alert: WC_Redis_Unavailable
+        expr: rate(redis_connection_errors_total{application="weekly-service"}[3m]) > 0
+        for: 3m
+        labels:
+          severity: P2
+          service: weekly-service
+        annotations:
+          summary: "Redis connection errors detected for >3 minutes"
+          runbook: "docs/runbooks/R6-redis-unavailable.md"
+
+  - name: weekly-commitments-ai
+    rules:
+      # ── LLM Timeout Rate (P3) ───────────────────────────────────────
+      - alert: WC_AI_TimeoutRate
+        expr: |
+          sum(rate(ai_suggestion_outcome_total{outcome="timeout",application="weekly-service"}[15m]))
+          /
+          sum(rate(ai_suggestion_outcome_total{application="weekly-service"}[15m]))
+          > 0.2
+        for: 15m
+        labels:
+          severity: P3
+          service: weekly-service
+        annotations:
+          summary: "LLM timeout rate exceeds 20%"
+          runbook: "docs/runbooks/R7-llm-timeout.md"
+
+  - name: weekly-commitments-security
+    rules:
+      # ── Auth Failure Spike (P2) ──────────────────────────────────────
+      - alert: WC_Auth_FailureSpike
+        expr: |
+          sum(rate(http_server_requests_seconds_count{
+            status="403",
+            application="weekly-service"
+          }[5m])) > 10
+        for: 5m
+        labels:
+          severity: P2
+          service: weekly-service
+        annotations:
+          summary: "High rate of 403 auth failures detected"
+          runbook: "docs/runbooks/R10-security-event.md"
