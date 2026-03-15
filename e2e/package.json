@@ -1,0 +1,15 @@
+{
+  "name": "@weekly-commitments/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "description": "E2E acceptance tests for Weekly Commitments (Playwright)",
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test --grep SMOKE",
+    "test:full": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

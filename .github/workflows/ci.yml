@@ -1,0 +1,191 @@
+# ---------------------------------------------------------------------------
+# Weekly Commitments – CI Pipeline
+# PRD §13.2: contract, migration, security, and E2E gates enforced on every PR
+# ---------------------------------------------------------------------------
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '20'
+
+jobs:
+  static-analysis:
+    name: 'Gate 1 – Static Analysis'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Typecheck (frontend + contracts + pa-host-stub)
+        run: npm run typecheck
+
+      - name: Lint (frontend + contracts + pa-host-stub)
+        run: npm run lint --workspaces --if-present
+
+      - name: Lint (backend)
+        run: npm run lint:backend
+
+  unit-tests:
+    name: 'Gate 2 – Unit Tests'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Unit tests (frontend workspaces)
+        run: npm run test --workspaces --if-present
+
+      - name: Unit tests (backend)
+        run: npm run unit:backend
+
+  migration-checks:
+    name: 'Gate 3 – Migration Compatibility'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Validate Flyway schema against Postgres
+        run: |
+          cd backend/weekly-service
+          ./gradlew test --no-daemon --tests com.weekly.PostgresSchemaCompatibilityTest
+
+  contract-checks:
+    name: 'Gate 4 – Contract Checks'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Validate OpenAPI contract
+        run: |
+          cd contracts
+          npm run generate:client
+          git diff --exit-code src/generated/ || (echo 'Generated types are stale. Regenerate and commit.' && exit 1)
+
+  security-checks:
+    name: 'Gate 5 – Security'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Audit workspace dependencies
+        run: npm run audit
+
+      - name: Install E2E dependencies
+        run: cd e2e && npm ci
+
+      - name: Audit E2E dependencies
+        run: npm run audit:e2e
+
+  build:
+    name: 'Gate 6 – Build'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [static-analysis, unit-tests, migration-checks, contract-checks, security-checks]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build all
+        run: npm run build
+
+      - name: Build Docker image
+        run: |
+          cd backend/weekly-service
+          docker build -t weekly-service:ci-${{ github.sha }} .
+
+  e2e-smoke:
+    name: 'Gate 7 – E2E Smoke'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install E2E dependencies
+        run: cd e2e && npm ci
+
+      - name: Install Playwright browser
+        run: cd e2e && npx playwright install --with-deps chromium
+
+      - name: Run smoke tests
+        run: npm run e2e:smoke

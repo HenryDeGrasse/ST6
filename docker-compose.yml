@@ -1,0 +1,84 @@
+# ---------------------------------------------------------------------------
+# Weekly Commitments – Local development environment
+# PRD §12.9: docker compose up starts all dependencies
+# All values come from .env (copy .env.example → .env to get started)
+# ---------------------------------------------------------------------------
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: wc-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-weekly}
+      POSTGRES_USER: ${POSTGRES_USER:-weekly}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-weekly}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-weekly}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: wc-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: ["redis-server", "--maxmemory", "50mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  localstack:
+    image: localstack/localstack:3
+    container_name: wc-localstack
+    ports:
+      - "${LOCALSTACK_PORT:-4566}:4566"
+    environment:
+      SERVICES: sqs
+      DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+    volumes:
+      - "./infra/localstack/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  weekly-service:
+    build:
+      context: ./backend/weekly-service
+      dockerfile: Dockerfile
+    container_name: wc-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${APP_ENV:-local}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-weekly}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-weekly}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-weekly}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      AI_PROVIDER: ${AI_PROVIDER:-stub}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-anthropic/claude-sonnet-4}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health/liveness"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
+volumes:
+  pgdata:
