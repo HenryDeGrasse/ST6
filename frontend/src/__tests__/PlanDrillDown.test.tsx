@@ -58,7 +58,7 @@ describe("PlanDrillDown", () => {
     loading: false,
     error: null,
     displayName: null as string | null,
-    onSubmitReview: vi.fn().mockResolvedValue(undefined),
+    onSubmitReview: vi.fn().mockResolvedValue(true),
     onBack: vi.fn(),
   };
 

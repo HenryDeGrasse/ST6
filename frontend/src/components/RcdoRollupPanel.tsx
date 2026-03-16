@@ -38,6 +38,7 @@ export const RcdoRollupPanel: React.FC<RcdoRollupPanelProps> = ({
       )}
 
       {rollup.items.length > 0 && (
+        <div className={styles.tableWrap}>
         <table data-testid="rollup-table" className={styles.table}>
           <thead className={styles.thead}>
             <tr>
@@ -110,6 +111,7 @@ export const RcdoRollupPanel: React.FC<RcdoRollupPanelProps> = ({
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );

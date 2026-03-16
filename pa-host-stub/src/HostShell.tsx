@@ -1,5 +1,29 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { App as WeeklyCommitmentsApp } from "@weekly-commitments/frontend";
+
+// ─── Test feature-flag injection ─────────────────────────────────────────────
+//
+// The pa-host-stub is a development/test harness. Playwright E2E tests can
+// enable beta feature flags by appending `?flags=<comma-separated-names>` to
+// the URL, e.g.: `/?flags=draftReconciliation,managerInsights`
+//
+// This is NOT present in production — the real PA host passes flags via its
+// own configuration mechanism.
+
+function readUrlFeatureFlags(): {
+  suggestRcdo?: boolean;
+  draftReconciliation?: boolean;
+  managerInsights?: boolean;
+} {
+  const flags = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("flags") ?? ""
+    : "";
+  return {
+    ...(flags.includes("suggestRcdo") ? { suggestRcdo: true } : {}),
+    ...(flags.includes("draftReconciliation") ? { draftReconciliation: true } : {}),
+    ...(flags.includes("managerInsights") ? { managerInsights: true } : {}),
+  };
+}
 
 // ─── Persona definitions ──────────────────────────────────────────────────────
 
@@ -69,6 +93,9 @@ export const HostShell: React.FC = () => {
   const [resetting, setResetting] = useState(false);
   // Bump this key to force-remount the micro-frontend on persona switch
   const [mountKey, setMountKey] = useState(0);
+
+  // Read feature flags from URL once on mount (for E2E tests).
+  const testFeatureFlags = useMemo(() => readUrlFeatureFlags(), []);
 
   const persona = PERSONAS.find((p) => p.key === personaKey) ?? PERSONAS[0];
   const isManager = persona.user.roles.includes("MANAGER");
@@ -311,6 +338,7 @@ export const HostShell: React.FC = () => {
                 token={persona.token}
                 apiBaseUrl="/api/v1"
                 initialRoute="weekly"
+                featureFlags={testFeatureFlags}
               />
             </section>
           </div>
@@ -332,6 +360,7 @@ export const HostShell: React.FC = () => {
                 token={persona.token}
                 apiBaseUrl="/api/v1"
                 initialRoute="weekly/team"
+                featureFlags={testFeatureFlags}
               />
             </section>
           </div>

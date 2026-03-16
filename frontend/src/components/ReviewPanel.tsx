@@ -5,7 +5,7 @@ import styles from "./ReviewPanel.module.css";
 
 export interface ReviewPanelProps {
   plan: WeeklyPlan;
-  onSubmitReview: (decision: ReviewDecision, comments: string) => Promise<void>;
+  onSubmitReview: (decision: ReviewDecision, comments: string) => Promise<boolean>;
   loading: boolean;
 }
 
@@ -31,10 +31,20 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
     if (!hasComments) {
       return;
     }
-    await onSubmitReview(decision, comments);
-    setSubmitted(true);
-    setComments("");
+    const submittedSuccessfully = await onSubmitReview(decision, comments);
+    if (submittedSuccessfully) {
+      setSubmitted(true);
+      setComments("");
+    }
   };
+
+  if (submitted) {
+    return (
+      <div data-testid="review-submitted" className={styles.submitted}>
+        Review submitted successfully.
+      </div>
+    );
+  }
 
   if (!canReview) {
     return (
@@ -42,14 +52,6 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
         <p className={styles.statusText}>
           Review status: <strong>{plan.reviewStatus}</strong>
         </p>
-      </div>
-    );
-  }
-
-  if (submitted) {
-    return (
-      <div data-testid="review-submitted" className={styles.submitted}>
-        Review submitted successfully.
       </div>
     );
   }

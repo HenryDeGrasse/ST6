@@ -23,7 +23,11 @@ describe("ReviewPanel", () => {
 
   it("renders review form for REVIEW_PENDING plan", async () => {
     render(
-      <ReviewPanel plan={basePlan} onSubmitReview={vi.fn()} loading={false} />,
+      <ReviewPanel
+        plan={basePlan}
+        onSubmitReview={vi.fn().mockResolvedValue(true)}
+        loading={false}
+      />,
     );
     expect(screen.getByTestId("review-panel")).toBeInTheDocument();
     expect(screen.getByTestId("approve-btn")).toBeInTheDocument();
@@ -42,14 +46,14 @@ describe("ReviewPanel", () => {
       carryForwardExecutedAt: "2026-03-14T09:00:00Z",
     };
     render(
-      <ReviewPanel plan={cfPlan} onSubmitReview={vi.fn()} loading={false} />,
+      <ReviewPanel plan={cfPlan} onSubmitReview={vi.fn().mockResolvedValue(true)} loading={false} />,
     );
     expect(screen.getByTestId("request-changes-btn")).toBeDisabled();
     expect(screen.getByTestId("carry-forward-warning")).toBeInTheDocument();
   });
 
   it("calls onSubmitReview with APPROVED when approved", async () => {
-    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const onSubmit = vi.fn().mockResolvedValue(true);
     render(
       <ReviewPanel plan={basePlan} onSubmitReview={onSubmit} loading={false} />,
     );
@@ -58,6 +62,21 @@ describe("ReviewPanel", () => {
     await userEvent.click(screen.getByTestId("approve-btn"));
 
     expect(onSubmit).toHaveBeenCalledWith("APPROVED", "Looks good");
+    expect(screen.getByTestId("review-submitted")).toBeInTheDocument();
+  });
+
+  it("keeps the review form visible when submission fails", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(false);
+    render(
+      <ReviewPanel plan={basePlan} onSubmitReview={onSubmit} loading={false} />,
+    );
+
+    await userEvent.type(screen.getByTestId("review-comments"), "Needs more detail");
+    await userEvent.click(screen.getByTestId("request-changes-btn"));
+
+    expect(onSubmit).toHaveBeenCalledWith("CHANGES_REQUESTED", "Needs more detail");
+    expect(screen.getByTestId("review-panel")).toBeInTheDocument();
+    expect(screen.queryByTestId("review-submitted")).not.toBeInTheDocument();
   });
 
   it("does not render form for APPROVED plan", () => {
@@ -66,7 +85,11 @@ describe("ReviewPanel", () => {
       reviewStatus: ReviewStatus.APPROVED,
     };
     render(
-      <ReviewPanel plan={approvedPlan} onSubmitReview={vi.fn()} loading={false} />,
+      <ReviewPanel
+        plan={approvedPlan}
+        onSubmitReview={vi.fn().mockResolvedValue(true)}
+        loading={false}
+      />,
     );
     expect(screen.queryByTestId("approve-btn")).not.toBeInTheDocument();
     expect(screen.getByText(/APPROVED/)).toBeInTheDocument();

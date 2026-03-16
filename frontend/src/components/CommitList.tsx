@@ -206,8 +206,8 @@ export const CommitList: React.FC<CommitListProps> = ({
                 // Use snapshot names if available (post-lock), otherwise look up from tree
                 const resolved = commit.snapshotOutcomeName
                   ? {
-                      rallyCryName: commit.snapshotRallyCryName!,
-                      objectiveName: commit.snapshotObjectiveName!,
+                      rallyCryName: commit.snapshotRallyCryName ?? '',
+                      objectiveName: commit.snapshotObjectiveName ?? '',
                       outcomeName: commit.snapshotOutcomeName,
                     }
                   : resolveOutcomeFromTree(commit.outcomeId, rcdoTree);

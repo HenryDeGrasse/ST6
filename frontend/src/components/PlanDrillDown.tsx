@@ -25,7 +25,7 @@ export interface PlanDrillDownProps {
   loading: boolean;
   error: string | null;
   displayName?: string | null;
-  onSubmitReview: (decision: ReviewDecision, comments: string) => Promise<void>;
+  onSubmitReview: (decision: ReviewDecision, comments: string) => Promise<boolean>;
   onBack: () => void;
 }
 
@@ -107,6 +107,7 @@ export const PlanDrillDown: React.FC<PlanDrillDownProps> = ({
       {commits.length === 0 ? (
         <p className={styles.noCommits}>No commits in this plan.</p>
       ) : (
+        <div className={styles.tableWrap}>
         <table data-testid="drilldown-commits" className={styles.table}>
           <thead className={styles.thead}>
             <tr>
@@ -169,6 +170,7 @@ export const PlanDrillDown: React.FC<PlanDrillDownProps> = ({
             })}
           </tbody>
         </table>
+        </div>
       )}
 
       {canReview && (

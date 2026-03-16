@@ -25,6 +25,7 @@ export const TeamSummaryGrid: React.FC<TeamSummaryGridProps> = ({
   }
 
   return (
+    <div className={styles.tableWrap}>
     <table data-testid="team-summary-grid" className={styles.table}>
       <thead className={styles.thead}>
         <tr>
@@ -128,6 +129,7 @@ export const TeamSummaryGrid: React.FC<TeamSummaryGridProps> = ({
         ))}
       </tbody>
     </table>
+    </div>
   );
 };
 

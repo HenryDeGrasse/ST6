@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { ReviewStatus } from "@weekly-commitments/contracts";
 import type {
   WeeklyPlan,
   WeeklyCommit,
@@ -153,16 +154,24 @@ export const TeamDashboardPage: React.FC = () => {
   }, []);
 
   const handleSubmitReview = useCallback(
-    async (decision: ReviewDecision, comments: string) => {
-      if (!drillDownPlan || !drillDownUserId) return;
-      const result = await submitReview(drillDownPlan.id, decision, comments);
-      if (result) {
-        // Refresh drill-down and summary
-        await handleDrillDown(drillDownUserId, drillDownPlan.id);
-        void fetchSummary(selectedWeek, page, pageSize, filters);
+    async (decision: ReviewDecision, comments: string): Promise<boolean> => {
+      if (!drillDownPlan || !drillDownUserId) {
+        return false;
       }
+      const result = await submitReview(drillDownPlan.id, decision, comments);
+      if (!result) {
+        return false;
+      }
+
+      const nextReviewStatus =
+        decision === "APPROVED" ? ReviewStatus.APPROVED : ReviewStatus.CHANGES_REQUESTED;
+      setDrillDownPlan((current) => (
+        current ? { ...current, reviewStatus: nextReviewStatus } : current
+      ));
+      void fetchSummary(selectedWeek, page, pageSize, filters);
+      return true;
     },
-    [drillDownPlan, drillDownUserId, submitReview, handleDrillDown, fetchSummary, selectedWeek, page, filters],
+    [drillDownPlan, drillDownUserId, submitReview, fetchSummary, selectedWeek, page, filters],
   );
 
   const error = dashError ?? reviewError ?? notificationError;
