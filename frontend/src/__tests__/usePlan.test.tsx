@@ -105,6 +105,38 @@ describe("usePlan", () => {
     expect(mockClient.POST).toHaveBeenCalledTimes(1);
   });
 
+  it("auto-retries startReconciliation with server's currentVersion on 409 and succeeds", async () => {
+    const reconcilingPlan = { id: "plan-1", version: 4, state: "RECONCILING" };
+    mockClient.POST
+      .mockResolvedValueOnce({
+        data: undefined,
+        error: { error: { code: "CONFLICT", message: "modified", details: [{ currentVersion: 4 }] } },
+        response: { status: 409 },
+      })
+      .mockResolvedValueOnce({
+        data: reconcilingPlan,
+        response: { status: 200 },
+      });
+
+    const { result } = renderHook(() => usePlan());
+
+    let returned: unknown;
+    await act(async () => {
+      returned = await result.current.startReconciliation("plan-1", 3);
+    });
+
+    expect(returned).toEqual(reconcilingPlan);
+    expect(result.current.plan).toEqual(reconcilingPlan);
+    expect(result.current.error).toBeNull();
+    expect(mockClient.POST).toHaveBeenCalledTimes(2);
+    expect(mockClient.POST).toHaveBeenNthCalledWith(2, "/plans/{planId}/start-reconciliation", {
+      params: {
+        path: { planId: "plan-1" },
+        header: expect.objectContaining({ "If-Match": 4 }),
+      },
+    });
+  });
+
   it("sends If-Match for startReconciliation", async () => {
     mockClient.POST.mockResolvedValue({
       data: { id: "plan-1", version: 2, state: "RECONCILING" },

@@ -43,6 +43,47 @@ export function usePlan(): UsePlanResult {
     [],
   );
 
+  const postPlanLifecycleWithRetry = useCallback(
+    async (path: "/plans/{planId}/lock" | "/plans/{planId}/start-reconciliation" | "/plans/{planId}/submit-reconciliation" | "/plans/{planId}/carry-forward", planId: string, version: number, body?: { commitIds: string[] }) => {
+      const firstResp = await client.POST(path, {
+        params: {
+          path: { planId },
+          header: {
+            "Idempotency-Key": crypto.randomUUID(),
+            "If-Match": version,
+          },
+        },
+        ...(body ? { body } : {}),
+      });
+
+      if (firstResp.data) {
+        return { resp: firstResp, retried: false };
+      }
+
+      if (firstResp.response.status === 409) {
+        const err = firstResp.error as ApiErrorResponse | undefined;
+        const currentVersion = err?.error?.details?.[0]?.currentVersion;
+        if (typeof currentVersion === "number") {
+          setConflictVersion(currentVersion);
+          const retryResp = await client.POST(path, {
+            params: {
+              path: { planId },
+              header: {
+                "Idempotency-Key": crypto.randomUUID(),
+                "If-Match": currentVersion,
+              },
+            },
+            ...(body ? { body } : {}),
+          });
+          return { resp: retryResp, retried: true };
+        }
+      }
+
+      return { resp: firstResp, retried: false };
+    },
+    [client],
+  );
+
   const fetchPlan = useCallback(
     async (weekStart: string) => {
       setLoading(true);
@@ -98,47 +139,13 @@ export function usePlan(): UsePlanResult {
       setError(null);
       setConflictVersion(null);
       try {
-        const resp = await client.POST("/plans/{planId}/lock", {
-          params: {
-            path: { planId },
-            header: {
-              "Idempotency-Key": crypto.randomUUID(),
-              "If-Match": version,
-            },
-          },
-        });
+        const { resp } = await postPlanLifecycleWithRetry("/plans/{planId}/lock", planId, version);
         if (resp.data) {
           const locked = resp.data as WeeklyPlan;
           setPlan(locked);
           return locked;
         }
         if (resp.response.status === 409) {
-          const body = resp.error as ApiErrorResponse | undefined;
-          const cv = body?.error?.details?.[0]?.currentVersion;
-          if (typeof cv === "number") {
-            // Server sent back the real current version — auto-retry with it
-            // so the user doesn't have to manually refresh.
-            const retryResp = await client.POST("/plans/{planId}/lock", {
-              params: {
-                path: { planId },
-                header: {
-                  "Idempotency-Key": crypto.randomUUID(),
-                  "If-Match": cv,
-                },
-              },
-            });
-            if (retryResp.data) {
-              const locked = retryResp.data as WeeklyPlan;
-              setPlan(locked);
-              return locked;
-            }
-            if (retryResp.response.status === 409) {
-              setError("Conflict: the plan was modified. Please try again.");
-              return null;
-            }
-            setError(extractError(retryResp));
-            return null;
-          }
           setError("Conflict: the plan was modified. Please try again.");
           return null;
         }
@@ -151,27 +158,28 @@ export function usePlan(): UsePlanResult {
         setLoading(false);
       }
     },
-    [client, extractError],
+    [extractError, postPlanLifecycleWithRetry],
   );
 
   const startReconciliation = useCallback(
     async (planId: string, version: number): Promise<WeeklyPlan | null> => {
       setLoading(true);
       setError(null);
+      setConflictVersion(null);
       try {
-        const resp = await client.POST("/plans/{planId}/start-reconciliation", {
-          params: {
-            path: { planId },
-            header: {
-              "Idempotency-Key": crypto.randomUUID(),
-              "If-Match": version,
-            },
-          },
-        });
+        const { resp } = await postPlanLifecycleWithRetry(
+          "/plans/{planId}/start-reconciliation",
+          planId,
+          version,
+        );
         if (resp.data) {
           const updated = resp.data as WeeklyPlan;
           setPlan(updated);
           return updated;
+        }
+        if (resp.response.status === 409) {
+          setError("Conflict: the plan was modified. Please try again.");
+          return null;
         }
         setError(extractError(resp));
         return null;
@@ -182,27 +190,28 @@ export function usePlan(): UsePlanResult {
         setLoading(false);
       }
     },
-    [client, extractError],
+    [extractError, postPlanLifecycleWithRetry],
   );
 
   const submitReconciliation = useCallback(
     async (planId: string, version: number): Promise<WeeklyPlan | null> => {
       setLoading(true);
       setError(null);
+      setConflictVersion(null);
       try {
-        const resp = await client.POST("/plans/{planId}/submit-reconciliation", {
-          params: {
-            path: { planId },
-            header: {
-              "Idempotency-Key": crypto.randomUUID(),
-              "If-Match": version,
-            },
-          },
-        });
+        const { resp } = await postPlanLifecycleWithRetry(
+          "/plans/{planId}/submit-reconciliation",
+          planId,
+          version,
+        );
         if (resp.data) {
           const updated = resp.data as WeeklyPlan;
           setPlan(updated);
           return updated;
+        }
+        if (resp.response.status === 409) {
+          setError("Conflict: the plan was modified. Please try again.");
+          return null;
         }
         setError(extractError(resp));
         return null;
@@ -213,28 +222,29 @@ export function usePlan(): UsePlanResult {
         setLoading(false);
       }
     },
-    [client, extractError],
+    [extractError, postPlanLifecycleWithRetry],
   );
 
   const carryForward = useCallback(
     async (planId: string, version: number, commitIds: string[]): Promise<WeeklyPlan | null> => {
       setLoading(true);
       setError(null);
+      setConflictVersion(null);
       try {
-        const resp = await client.POST("/plans/{planId}/carry-forward", {
-          params: {
-            path: { planId },
-            header: {
-              "Idempotency-Key": crypto.randomUUID(),
-              "If-Match": version,
-            },
-          },
-          body: { commitIds },
-        });
+        const { resp } = await postPlanLifecycleWithRetry(
+          "/plans/{planId}/carry-forward",
+          planId,
+          version,
+          { commitIds },
+        );
         if (resp.data) {
           const updated = resp.data as WeeklyPlan;
           setPlan(updated);
           return updated;
+        }
+        if (resp.response.status === 409) {
+          setError("Conflict: the plan was modified. Please try again.");
+          return null;
         }
         setError(extractError(resp));
         return null;
@@ -245,7 +255,7 @@ export function usePlan(): UsePlanResult {
         setLoading(false);
       }
     },
-    [client, extractError],
+    [extractError, postPlanLifecycleWithRetry],
   );
 
   return {
