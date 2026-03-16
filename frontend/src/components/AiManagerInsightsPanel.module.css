@@ -1,0 +1,74 @@
+/**
+ * AiManagerInsightsPanel – CSS Module (Academia / Classical)
+ * Lavender-accented AI panel for team-level manager insights.
+ */
+
+.panel {
+  padding:          var(--wc-space-sm) var(--wc-space-md);
+  border:           1.5px dashed var(--wc-ai-insight-border);
+  border-radius:    var(--wc-radius-md);
+  background-color: var(--wc-ai-insight-bg);
+  margin-bottom:    var(--wc-space-md);
+}
+
+.header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: var(--wc-space-sm); gap: var(--wc-space-sm); flex-wrap: wrap;
+}
+
+.headerLeft { display: flex; align-items: center; gap: var(--wc-space-xs); flex-wrap: wrap; }
+
+.robotIcon { color: var(--wc-ai-insight-text); flex-shrink: 0; }
+
+.title {
+  font-family: var(--wc-font-display); font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.15em;
+  color: var(--wc-ai-insight-text); white-space: nowrap;
+}
+
+.betaBadge {
+  display: inline-flex; align-items: center; padding: 0.1rem 0.4rem;
+  border-radius: var(--wc-radius-sm);
+  background-color: var(--wc-ai-insight-bg); border: 1px solid var(--wc-ai-insight-border);
+  font-family: var(--wc-font-display); font-size: 0.5625rem; font-weight: 600;
+  color: var(--wc-ai-insight-text); letter-spacing: 0.1em; text-transform: uppercase;
+}
+
+.betaHint { font-size: 0.75rem; color: var(--wc-color-text-muted); font-style: italic; }
+
+.refreshButton {
+  display: inline-flex; align-items: center; gap: var(--wc-space-xs);
+  padding: 0.3rem 0.75rem; border-radius: var(--wc-radius-sm);
+  border: 1px solid var(--wc-ai-insight-border);
+  background-color: var(--wc-color-bg-secondary);
+  color: var(--wc-ai-insight-text); font-family: var(--wc-font-body);
+  font-size: 0.875rem; font-weight: 500; cursor: pointer;
+  transition: background-color var(--wc-transition-fast), border-color var(--wc-transition-fast);
+}
+
+.refreshButton:hover { background-color: var(--wc-ai-insight-bg); border-color: var(--wc-color-accent); }
+.refreshButton:focus-visible { outline: 2px solid var(--wc-color-accent); outline-offset: 2px; }
+
+.loading { font-size: 0.875rem; color: var(--wc-color-text-muted); font-style: italic; }
+.rateLimited { font-size: 0.875rem; color: var(--wc-color-error); }
+.unavailable { font-size: 0.875rem; color: var(--wc-color-text-muted); }
+
+.content { margin-top: var(--wc-space-xs); }
+
+.headline {
+  margin: 0 0 var(--wc-space-xs); font-family: var(--wc-font-body);
+  font-size: 0.9375rem; font-weight: 500; color: var(--wc-color-text-primary); line-height: 1.625;
+}
+
+.insightList {
+  margin: var(--wc-space-xs) 0 0; padding-left: 1.2rem;
+  display: flex; flex-direction: column; gap: 0.3rem;
+}
+
+.insightItem { font-size: 0.9375rem; line-height: 1.625; color: var(--wc-color-text-primary); }
+
+.insightTitleInfo     { font-weight: 600; color: #8BAAB0; }
+.insightTitleWarning  { font-weight: 600; color: var(--wc-color-warning); }
+.insightTitlePositive { font-weight: 600; color: var(--wc-color-success); }
+
+.insightDetail { color: var(--wc-color-text-secondary); }

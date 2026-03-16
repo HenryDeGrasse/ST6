@@ -1,0 +1,42 @@
+/**
+ * ChessPicker – CSS Module (Academia / Classical)
+ *
+ * Select dropdown with a prominent chess piece icon that appears
+ * once a priority is chosen.
+ */
+
+.wrapper {
+  display:     inline-flex;
+  align-items: center;
+  gap:         var(--wc-space-sm);
+  position:    relative;
+}
+
+.select {
+  width:         auto;
+  min-width:     11rem;
+  padding-right: calc(var(--wc-space-lg) + var(--wc-space-sm));
+  cursor:        pointer;
+}
+
+.select:disabled {
+  opacity: 0.5;
+  cursor:  not-allowed;
+}
+
+/* When a priority is selected, subtly accent the border */
+.selectActive {
+  border-color: var(--wc-color-accent);
+}
+
+/* Chess piece icon — prominent, to the right of the select */
+.pieceIcon {
+  display:     inline-flex;
+  align-items: center;
+  justify-content: center;
+  width:       2rem;
+  height:      2rem;
+  flex-shrink: 0;
+  color:       var(--wc-color-accent);
+  opacity:     0.85;
+}

@@ -1,0 +1,130 @@
+/**
+ * Weekly Commitments – Design Token CSS
+ * ═══════════════════════════════════════
+ * Academia / Classical theme.
+ *
+ * Single-theme design system inspired by centuries-old university libraries:
+ * aged parchment, dark mahogany, polished brass, leather bindings.
+ *
+ * All custom properties are scoped to .wc-theme to avoid polluting
+ * the PA host's global stylesheet.
+ */
+
+.wc-theme {
+  /* ─── Typography ──────────────────────────────────────────────────────── */
+  --wc-font-heading: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --wc-font-body:    'Crimson Pro', Georgia, 'Times New Roman', serif;
+  --wc-font-display: 'Cinzel', Georgia, 'Times New Roman', serif;
+
+  /* ─── Spacing scale (8px base grid) ───────────────────────────────────── */
+  --wc-space-xs:  0.25rem;   /*  4px */
+  --wc-space-sm:  0.5rem;    /*  8px */
+  --wc-space-md:  1rem;      /* 16px */
+  --wc-space-lg:  1.5rem;    /* 24px */
+  --wc-space-xl:  2rem;      /* 32px */
+  --wc-space-2xl: 3rem;      /* 48px */
+  --wc-space-3xl: 4rem;      /* 64px */
+
+  /* ─── Border-radius (subtle, traditional) ─────────────────────────────── */
+  --wc-radius-sm:   4px;
+  --wc-radius-md:   4px;
+  --wc-radius-lg:   6px;
+  --wc-radius-xl:   8px;
+  --wc-radius-full: 9999px;
+  --wc-radius-arch: 40% 40% 0 0 / 20% 20% 0 0;
+
+  /* ─── Transitions (dignified, deliberate) ─────────────────────────────── */
+  --wc-transition-fast:     150ms ease-out;
+  --wc-transition-base:     300ms ease-out;
+  --wc-transition-slow:     500ms ease-out;
+  --wc-transition-dramatic: 700ms ease-out;
+
+  /* ─── Foundation Colors (Library at Night) ────────────────────────────── */
+  --wc-color-bg:           #1C1714;  /* Deep Mahogany — darkest layer       */
+  --wc-color-bg-secondary: #251E19;  /* Aged Oak — card / panel surfaces    */
+  --wc-color-bg-tertiary:  #3D332B;  /* Worn Leather — hover / inset fills  */
+
+  /* ─── Accent Colors ───────────────────────────────────────────────────── */
+  --wc-color-accent:            #C9A962;  /* Polished Brass                 */
+  --wc-color-accent-hover:      #D4B872;  /* Bright Brass                   */
+  --wc-color-accent-muted:      rgba(201, 169, 98, 0.15);
+  --wc-color-accent-secondary:  #8B2635;  /* Library Crimson                */
+  --wc-color-accent-foreground: #1C1714;  /* Dark text on brass backgrounds */
+
+  /* ─── Text ────────────────────────────────────────────────────────────── */
+  --wc-color-text-primary:   #E8DFD4;  /* Antique Parchment  */
+  --wc-color-text-secondary: #9C8B7A;  /* Faded Ink          */
+  --wc-color-text-muted:     #7A6E62;  /* Distant Ink        */
+
+  /* ─── Borders ─────────────────────────────────────────────────────────── */
+  --wc-color-border:       #4A3F35;            /* Wood Grain  */
+  --wc-color-border-muted: rgba(74, 63, 53, 0.5);
+
+  /* ─── Panel / Glass (backward compat — now opaque wood panels) ────────── */
+  --wc-glass-bg:     rgba(37, 30, 25, 0.92);
+  --wc-glass-border: rgba(74, 63, 53, 0.6);
+  --wc-glass-blur:   0px;  /* No blur — solid wood panels */
+
+  /* ─── Box Shadows (warm, library-lit) ─────────────────────────────────── */
+  --wc-shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.3);
+  --wc-shadow-md:   0 4px 12px rgba(0, 0, 0, 0.4);
+  --wc-shadow-lg:   0 8px 24px rgba(0, 0, 0, 0.5);
+  --wc-shadow-glow: 0 4px 12px rgba(201, 169, 98, 0.3);
+
+  /* ─── Brass Effects ───────────────────────────────────────────────────── */
+  --wc-brass-gradient: linear-gradient(180deg, #D4B872 0%, #C9A962 50%, #B8953F 100%);
+  --wc-text-engraved:  1px 1px 1px rgba(0,0,0,0.4), -1px -1px 1px rgba(255,255,255,0.1);
+
+  /* ─── Chess Piece Colors (warmed) ─────────────────────────────────────── */
+  --wc-chess-king:   #D4B872;
+  --wc-chess-queen:  #C9A962;
+  --wc-chess-rook:   #8BAAB0;
+  --wc-chess-bishop: #B09AC0;
+  --wc-chess-knight: #8AAF7A;
+  --wc-chess-pawn:   #9C8B7A;
+
+  /* ─── State Badges (warmed, leather-bound) ────────────────────────────── */
+  /* Draft — brass / gold */
+  --wc-state-draft-bg:      rgba(201, 169, 98, 0.15);
+  --wc-state-draft-text:    #C9A962;
+  --wc-state-draft-border:  rgba(201, 169, 98, 0.30);
+
+  /* Locked — crimson */
+  --wc-state-locked-bg:     rgba(139, 38, 53, 0.18);
+  --wc-state-locked-text:   #C47A84;
+  --wc-state-locked-border: rgba(139, 38, 53, 0.30);
+
+  /* Reconciling — warm amber */
+  --wc-state-reconciling-bg:     rgba(180, 140, 60, 0.18);
+  --wc-state-reconciling-text:   #D4B872;
+  --wc-state-reconciling-border: rgba(180, 140, 60, 0.30);
+
+  /* Reconciled — muted sage */
+  --wc-state-reconciled-bg:     rgba(90, 130, 80, 0.18);
+  --wc-state-reconciled-text:   #7AAF7A;
+  --wc-state-reconciled-border: rgba(90, 130, 80, 0.30);
+
+  /* ─── AI Panel Accents (warmed) ───────────────────────────────────────── */
+  --wc-ai-suggestion-border: rgba(201, 169, 98, 0.45);
+  --wc-ai-suggestion-bg:     rgba(201, 169, 98, 0.06);
+  --wc-ai-suggestion-text:   #C9A962;
+
+  --wc-ai-draft-border: rgba(122, 175, 122, 0.45);
+  --wc-ai-draft-bg:     rgba(122, 175, 122, 0.06);
+  --wc-ai-draft-text:   #7AAF7A;
+
+  --wc-ai-insight-border: rgba(176, 154, 192, 0.45);
+  --wc-ai-insight-bg:     rgba(176, 154, 192, 0.06);
+  --wc-ai-insight-text:   #B09AC0;
+
+  /* ─── Functional Colors (errors, warnings — warmed) ───────────────────── */
+  --wc-color-error:         #C47A7A;
+  --wc-color-error-bg:      rgba(196, 122, 122, 0.12);
+  --wc-color-error-border:  rgba(196, 122, 122, 0.30);
+  --wc-color-warning:       #D4B872;
+  --wc-color-warning-bg:    rgba(212, 184, 114, 0.12);
+  --wc-color-warning-border: rgba(212, 184, 114, 0.30);
+  --wc-color-success:       #7AAF7A;
+  --wc-color-success-bg:    rgba(122, 175, 122, 0.12);
+  --wc-color-success-border: rgba(122, 175, 122, 0.30);
+}

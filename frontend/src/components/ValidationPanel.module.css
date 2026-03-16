@@ -1,0 +1,87 @@
+/**
+ * ValidationPanel – CSS Module (Academia / Classical)
+ */
+
+.panel {
+  padding:       var(--wc-space-sm) var(--wc-space-md);
+  border-radius: var(--wc-radius-md);
+  border:        1px solid var(--wc-color-border);
+  font-size:     0.9375rem;
+  line-height:   1.625;
+  font-family:   var(--wc-font-body);
+}
+
+.panelSuccess {
+  background-color: var(--wc-color-success-bg);
+  border-color:     var(--wc-color-success-border);
+  color:            var(--wc-color-text-primary);
+}
+
+.panelIssues {
+  background-color: var(--wc-color-warning-bg);
+  border-color:     var(--wc-color-warning-border);
+  color:            var(--wc-color-text-primary);
+}
+
+.successMessage {
+  display:     flex;
+  align-items: center;
+  gap:         var(--wc-space-sm);
+  color:       var(--wc-color-success);
+  font-weight: 500;
+}
+
+.heading {
+  margin:      0 0 var(--wc-space-xs);
+  font-family: var(--wc-font-heading);
+  font-size:   1rem;
+  font-weight: 500;
+  color:       var(--wc-color-text-primary);
+}
+
+.issueList {
+  margin:          var(--wc-space-xs) 0 0;
+  padding-left:    0;
+  list-style:      none;
+  display:         flex;
+  flex-direction:  column;
+  gap:             0.2rem;
+}
+
+.issueItem {
+  display:     flex;
+  align-items: center;
+  gap:         var(--wc-space-xs);
+  font-size:   0.9375rem;
+  line-height: 1.5;
+}
+
+.issueError   { color: var(--wc-color-error); }
+.issueWarning { color: var(--wc-color-warning); }
+
+.perCommitErrors {
+  margin-top: var(--wc-space-sm);
+  font-size:  0.875rem;
+}
+
+.perCommitHeading {
+  font-weight:    600;
+  color:          var(--wc-color-text-primary);
+  display:        block;
+  margin-bottom:  0.2rem;
+}
+
+.commitErrorGroup {
+  margin-left: var(--wc-space-sm);
+  margin-top:  0.15rem;
+}
+
+.commitErrorTitle {
+  color:      var(--wc-color-text-secondary);
+  font-style: italic;
+}
+
+.commitErrorMessage {
+  color:       var(--wc-color-error);
+  margin-left: var(--wc-space-xs);
+}

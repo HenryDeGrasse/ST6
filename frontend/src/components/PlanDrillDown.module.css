@@ -1,0 +1,115 @@
+/**
+ * PlanDrillDown – CSS Module (Academia / Classical)
+ */
+
+.container { padding: var(--wc-space-sm); }
+
+.backBtn {
+  display: inline-flex; align-items: center; gap: var(--wc-space-xs);
+  padding: 0.3rem 0.75rem; border-radius: var(--wc-radius-sm);
+  border: 1px solid var(--wc-color-border); background-color: var(--wc-color-bg-tertiary);
+  color: var(--wc-color-text-primary); font-family: var(--wc-font-body);
+  font-size: 0.875rem; font-weight: 500; cursor: pointer; margin-bottom: var(--wc-space-md);
+  transition: background-color var(--wc-transition-fast), border-color var(--wc-transition-fast);
+}
+.backBtn:hover { background-color: var(--wc-color-accent-muted); border-color: var(--wc-color-accent); }
+.backBtn:focus-visible { outline: 2px solid var(--wc-color-accent); outline-offset: 2px; }
+
+.planHeader { margin-bottom: var(--wc-space-md); }
+.planHeading { margin: 0 0 var(--wc-space-xs); font-family: var(--wc-font-heading); font-size: 1.25rem; font-weight: 500; color: var(--wc-color-text-primary); }
+.planMeta { margin: 0; color: var(--wc-color-text-secondary); font-size: 0.875rem; }
+
+.sectionTitle { margin: 0 0 var(--wc-space-sm); font-family: var(--wc-font-heading); font-size: 1.125rem; font-weight: 500; color: var(--wc-color-text-primary); }
+
+.noCommits { color: var(--wc-color-text-muted); font-size: 0.875rem; margin: 0; font-style: italic; }
+
+/* Scrollable wrapper */
+.tableWrap { overflow-x: auto; margin: 0 calc(-1 * var(--wc-space-sm)); padding: 0 var(--wc-space-sm); }
+
+.table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; font-family: var(--wc-font-body); min-width: 600px; }
+
+.thead { background-color: var(--wc-color-bg-tertiary); }
+
+.th {
+  padding: var(--wc-space-xs) var(--wc-space-sm); text-align: left;
+  font-family: var(--wc-font-display); font-size: 0.5rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--wc-color-text-secondary); border-bottom: 2px solid var(--wc-color-border); white-space: nowrap;
+}
+
+.tr { border-bottom: 1px solid var(--wc-color-border-muted); transition: background-color var(--wc-transition-fast); }
+.tr:hover { background-color: var(--wc-color-bg-tertiary); }
+
+.rowDone      { background-color: rgba(122,175,122,0.08); }
+.rowDone:hover { background-color: rgba(122,175,122,0.14); }
+.rowPartially      { background-color: rgba(212,184,114,0.08); }
+.rowPartially:hover { background-color: rgba(212,184,114,0.14); }
+.rowNotDone      { background-color: rgba(196,122,122,0.08); }
+.rowNotDone:hover { background-color: rgba(196,122,122,0.14); }
+.rowDropped      { background-color: rgba(196,122,122,0.06); }
+.rowDropped:hover { background-color: rgba(196,122,122,0.12); }
+
+.td { padding: var(--wc-space-xs) var(--wc-space-sm); color: var(--wc-color-text-primary); vertical-align: top; }
+
+.carriedBadge {
+  display: inline-block; margin-left: var(--wc-space-sm); padding: 0.05rem 0.35rem;
+  border-radius: var(--wc-radius-sm); background-color: var(--wc-state-draft-bg);
+  border: 1px solid var(--wc-state-draft-border); color: var(--wc-state-draft-text);
+  font-family: var(--wc-font-display); font-size: 0.5625rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+
+.nonStrategicText { display: block; color: var(--wc-color-text-muted); font-style: italic; font-size: 0.8125rem; }
+
+/* Skeleton */
+.skeletonWrapper {
+  position: relative; padding: var(--wc-space-md); border-radius: var(--wc-radius-md);
+  min-height: 18rem; overflow: hidden; background-color: var(--wc-color-bg-secondary);
+  border: 1px solid var(--wc-color-border);
+}
+
+.skeletonOverlay { position: absolute; inset: 0; background: rgba(28, 23, 20, 0.75); }
+
+.skeletonContent { position: relative; display: grid; gap: var(--wc-space-sm); }
+
+.skeletonBar { border-radius: var(--wc-radius-sm); background-color: var(--wc-color-bg-tertiary); animation: skeletonPulse 1.4s ease-in-out infinite; }
+.skeletonBarSm { width: 10rem; height: 1rem; }
+.skeletonBarMd { width: 16rem; height: 1.5rem; }
+
+.skeletonBlock { width: 100%; height: 7rem; border-radius: var(--wc-radius-md); background-color: var(--wc-color-bg-tertiary); animation: skeletonPulse 1.4s ease-in-out infinite; }
+.skeletonBlock:nth-child(4) { animation-delay: 0.2s; }
+
+@keyframes skeletonPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.skeletonLoadingText { text-align: center; color: var(--wc-color-text-muted); font-weight: 500; font-style: italic; }
+
+/* Error */
+.errorWrapper {
+  display: flex; align-items: baseline; gap: var(--wc-space-md); padding: var(--wc-space-md);
+  border-radius: var(--wc-radius-md); background-color: var(--wc-color-error-bg); border: 1px solid var(--wc-color-error-border);
+}
+
+.errorText { color: var(--wc-color-error); font-size: 0.9rem; margin: 0; }
+
+.errorBackBtn {
+  flex-shrink: 0; display: inline-flex; align-items: center;
+  padding: 0.25rem 0.625rem; border-radius: var(--wc-radius-sm);
+  border: 1px solid var(--wc-color-border); background-color: var(--wc-color-bg-tertiary);
+  color: var(--wc-color-text-primary); font-size: 0.8125rem; cursor: pointer;
+  transition: background-color var(--wc-transition-fast), border-color var(--wc-transition-fast);
+}
+.errorBackBtn:hover { background-color: var(--wc-color-accent-muted); border-color: var(--wc-color-accent); }
+
+/* No-plan */
+.noPlanWrapper { padding: var(--wc-space-md); border-radius: var(--wc-radius-md); background-color: var(--wc-color-bg-secondary); border: 1px solid var(--wc-color-border); }
+.noPlanText { margin: 0 0 var(--wc-space-sm); color: var(--wc-color-text-secondary); font-size: 0.9375rem; }
+
+.noPlanBackBtn {
+  display: inline-flex; align-items: center; gap: var(--wc-space-xs);
+  padding: 0.3rem 0.75rem; border-radius: var(--wc-radius-sm);
+  border: 1px solid var(--wc-color-border); background-color: var(--wc-color-bg-tertiary);
+  color: var(--wc-color-text-primary); font-size: 0.875rem; font-weight: 500; cursor: pointer;
+  transition: background-color var(--wc-transition-fast), border-color var(--wc-transition-fast);
+}
+.noPlanBackBtn:hover { background-color: var(--wc-color-accent-muted); border-color: var(--wc-color-accent); }
+.noPlanBackBtn:focus-visible { outline: 2px solid var(--wc-color-accent); outline-offset: 2px; }

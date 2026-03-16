@@ -1,0 +1,162 @@
+/**
+ * PlanHeader – CSS Module (Academia / Classical)
+ */
+
+/* ─── Root card ──────────────────────────────────────────────────────────── */
+.header {
+  display:          flex;
+  justify-content:  space-between;
+  align-items:      center;
+  flex-wrap:        wrap;
+  gap:              var(--wc-space-sm);
+  padding:          var(--wc-space-md) var(--wc-space-lg);
+  border-radius:    var(--wc-radius-md);
+  border:           1px solid var(--wc-color-border);
+  background-color: var(--wc-color-bg-secondary);
+  box-shadow:       var(--wc-shadow-sm);
+  margin-bottom:    var(--wc-space-md);
+}
+
+/* ─── Left info cluster ──────────────────────────────────────────────────── */
+.info {
+  display:     flex;
+  align-items: center;
+  flex-wrap:   wrap;
+  gap:         var(--wc-space-sm);
+}
+
+/* ─── State badge pill ───────────────────────────────────────────────────── */
+.stateBadge {
+  display:        inline-flex;
+  align-items:    center;
+  gap:            var(--wc-space-xs);
+  padding:        0.25rem 0.75rem;
+  border-radius:  var(--wc-radius-sm);
+  font-family:    var(--wc-font-display);
+  font-weight:    600;
+  font-size:      0.6875rem;
+  line-height:    1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border:         1px solid transparent;
+  white-space:    nowrap;
+}
+
+.stateDraft {
+  background-color: var(--wc-state-draft-bg);
+  color:            var(--wc-state-draft-text);
+  border-color:     var(--wc-state-draft-border);
+}
+
+.stateLocked {
+  background-color: var(--wc-state-locked-bg);
+  color:            var(--wc-state-locked-text);
+  border-color:     var(--wc-state-locked-border);
+}
+
+.stateReconciling {
+  background-color: var(--wc-state-reconciling-bg);
+  color:            var(--wc-state-reconciling-text);
+  border-color:     var(--wc-state-reconciling-border);
+}
+
+.stateReconciled {
+  background-color: var(--wc-state-reconciled-bg);
+  color:            var(--wc-state-reconciled-text);
+  border-color:     var(--wc-state-reconciled-border);
+}
+
+.stateCarryForward {
+  background-color: var(--wc-state-draft-bg);
+  color:            var(--wc-state-draft-text);
+  border-color:     var(--wc-state-draft-border);
+}
+
+/* ─── Review status label ────────────────────────────────────────────────── */
+.reviewStatus {
+  display:     inline-flex;
+  align-items: center;
+  gap:         var(--wc-space-xs);
+  font-size:   0.875rem;
+  font-family: var(--wc-font-body);
+  color:       var(--wc-color-text-secondary);
+  font-style:  italic;
+}
+
+.loadingIcon {
+  animation: spin 900ms linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadingIcon {
+    animation: none;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Late-lock indicator ────────────────────────────────────────────────── */
+.lateLock {
+  font-size:   0.8125rem;
+  color:       var(--wc-color-accent-secondary);
+  font-style:  italic;
+  font-family: var(--wc-font-body);
+}
+
+/* ─── Button group ───────────────────────────────────────────────────────── */
+.actions {
+  display:     flex;
+  align-items: center;
+  gap:         var(--wc-space-sm);
+  flex-shrink: 0;
+}
+
+/* ─── CTA button (brass gradient) ────────────────────────────────────────── */
+.ctaButton {
+  display:         inline-flex;
+  align-items:     center;
+  gap:             var(--wc-space-xs);
+  padding:         0.5rem 1rem;
+  border-radius:   var(--wc-radius-sm);
+  border:          none;
+  background:      var(--wc-brass-gradient);
+  color:           var(--wc-color-accent-foreground);
+  font-family:     var(--wc-font-display);
+  font-size:       0.6875rem;
+  font-weight:     600;
+  text-transform:  uppercase;
+  letter-spacing:  0.12em;
+  text-shadow:     var(--wc-text-engraved);
+  cursor:          pointer;
+  white-space:     nowrap;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.2),
+    inset 0 -1px 0 rgba(0,0,0,0.2),
+    0 2px 8px rgba(0,0,0,0.3);
+  transition:
+    filter     var(--wc-transition-fast),
+    box-shadow var(--wc-transition-fast);
+}
+
+.ctaButton:hover:not(:disabled) {
+  filter:     brightness(1.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.2),
+    inset 0 -1px 0 rgba(0,0,0,0.2),
+    var(--wc-shadow-glow);
+  color:        var(--wc-color-accent-foreground);
+  border-color: transparent;
+}
+
+.ctaButton:focus-visible {
+  outline:        2px solid var(--wc-color-accent);
+  outline-offset: 2px;
+}
+
+.ctaButton:disabled {
+  opacity: 0.5;
+  cursor:  not-allowed;
+  filter:  saturate(0.5);
+}

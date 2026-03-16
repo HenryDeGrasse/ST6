@@ -1,0 +1,78 @@
+/**
+ * TeamDashboardPage – CSS Module (Academia / Classical)
+ */
+
+/* ─── Page wrapper ───────────────────────────────────────────────────────── */
+.page {
+  position:   relative;
+  max-width:  960px;
+  margin:     0 auto;
+  padding:    var(--wc-space-lg) var(--wc-space-md);
+}
+
+/* ─── Main content panel ─────────────────────────────────────────────────── */
+.contentPanel {
+  padding: var(--wc-space-lg) var(--wc-space-xl);
+}
+
+/* ─── Header row (title + notification bell) ─────────────────────────────── */
+.header {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  flex-wrap:       wrap;
+  gap:             var(--wc-space-sm);
+  margin-bottom:   var(--wc-space-md);
+}
+
+.heading {
+  margin:         0;
+  font-family:    var(--wc-font-heading);
+  font-size:      2rem;
+  font-weight:    500;
+  color:          var(--wc-color-text-primary);
+  letter-spacing: -0.02em;
+  line-height:    1.1;
+}
+
+/* ─── Loading indicator ──────────────────────────────────────────────────── */
+.loading {
+  padding:     var(--wc-space-2xl);
+  text-align:  center;
+  color:       var(--wc-color-text-muted);
+  font-size:   1rem;
+  font-style:  italic;
+}
+
+/* ─── Review status summary strip ───────────────────────────────────────── */
+.reviewStatusCounts {
+  display:       flex;
+  gap:           var(--wc-space-lg);
+  margin-bottom: var(--wc-space-md);
+  flex-wrap:     wrap;
+  font-family:   var(--wc-font-body);
+  font-size:     0.9375rem;
+  color:         var(--wc-color-text-secondary);
+}
+
+.reviewStatusCounts strong {
+  color:       var(--wc-color-text-primary);
+  font-weight: 600;
+}
+
+/* ─── Pagination controls ────────────────────────────────────────────────── */
+.pagination {
+  display:         flex;
+  gap:             var(--wc-space-sm);
+  justify-content: center;
+  align-items:     center;
+  margin-top:      var(--wc-space-lg);
+}
+
+.paginationLabel {
+  color:       var(--wc-color-text-secondary);
+  font-size:   0.875rem;
+  font-family: var(--wc-font-display);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}

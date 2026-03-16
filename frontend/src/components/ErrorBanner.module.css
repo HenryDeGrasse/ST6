@@ -1,0 +1,46 @@
+/**
+ * ErrorBanner – CSS Module (Academia / Classical)
+ */
+
+.banner {
+  display:          flex;
+  justify-content:  space-between;
+  align-items:      center;
+  gap:              var(--wc-space-sm);
+  padding:          0.75rem var(--wc-space-md);
+  margin-bottom:    0.75rem;
+  border-radius:    var(--wc-radius-sm);
+  background-color: var(--wc-color-error-bg);
+  border:           1px solid var(--wc-color-error-border);
+  color:            var(--wc-color-error);
+}
+
+.message {
+  flex:        1;
+  font-family: var(--wc-font-body);
+  font-size:   0.9375rem;
+  line-height: 1.5;
+}
+
+.dismissBtn {
+  flex-shrink:      0;
+  display:          inline-flex;
+  align-items:      center;
+  justify-content:  center;
+  width:            24px;
+  height:           24px;
+  background-color: transparent;
+  border:           none;
+  cursor:           pointer;
+  border-radius:    var(--wc-radius-sm);
+  color:            inherit;
+  opacity:          0.75;
+  transition:       opacity var(--wc-transition-fast);
+}
+
+.dismissBtn:hover { opacity: 1; }
+
+.dismissBtn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

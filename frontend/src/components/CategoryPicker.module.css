@@ -1,0 +1,57 @@
+/**
+ * CategoryPicker – CSS Module (Academia / Classical)
+ *
+ * Select dropdown with a colour-coded dot that appears
+ * once a category is chosen.
+ */
+
+.wrapper {
+  display:     inline-flex;
+  align-items: center;
+  gap:         var(--wc-space-sm);
+  position:    relative;
+}
+
+.select {
+  width:         auto;
+  min-width:     11rem;
+  padding-right: calc(var(--wc-space-lg) + var(--wc-space-sm));
+  cursor:        pointer;
+}
+
+.select:disabled {
+  opacity: 0.5;
+  cursor:  not-allowed;
+}
+
+/* When a category is selected, subtly accent the border */
+.selectActive {
+  border-color: var(--wc-color-accent);
+}
+
+/* Dot wrapper */
+.dotWrapper {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           1.25rem;
+  height:          1.25rem;
+  flex-shrink:     0;
+}
+
+/* Category dot */
+.dot {
+  width:         10px;
+  height:        10px;
+  border-radius: 50%;
+  flex-shrink:   0;
+}
+
+/* Per-category dot colours */
+.dotDelivery   { background-color: var(--wc-chess-king); }
+.dotOperations { background-color: var(--wc-chess-rook); }
+.dotCustomer   { background-color: var(--wc-chess-queen); }
+.dotGtm        { background-color: var(--wc-chess-bishop); }
+.dotPeople     { background-color: var(--wc-chess-knight); }
+.dotLearning   { background-color: var(--wc-chess-pawn); }
+.dotTechDebt   { background-color: var(--wc-color-text-muted); }

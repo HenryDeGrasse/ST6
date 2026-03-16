@@ -1,0 +1,45 @@
+/**
+ * RcdoRollupPanel – CSS Module (Academia / Classical)
+ */
+
+.panel { margin-top: var(--wc-space-xl); }
+
+.heading { margin: 0 0 var(--wc-space-sm); font-family: var(--wc-font-heading); font-size: 1.25rem; font-weight: 500; color: var(--wc-color-text-primary); }
+
+.nonStrategicCard {
+  display: flex; align-items: center; gap: var(--wc-space-sm);
+  padding: var(--wc-space-sm) var(--wc-space-md); border-radius: var(--wc-radius-md);
+  background-color: var(--wc-state-reconciling-bg); border: 1px solid var(--wc-state-reconciling-border);
+  color: var(--wc-state-reconciling-text); font-size: 0.9375rem; font-weight: 500; margin-bottom: var(--wc-space-sm);
+}
+
+.empty { color: var(--wc-color-text-muted); font-size: 0.9375rem; font-style: italic; }
+
+/* Scrollable wrapper */
+.tableWrap { overflow-x: auto; margin: 0 calc(-1 * var(--wc-space-sm)); padding: 0 var(--wc-space-sm); }
+
+.table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; font-family: var(--wc-font-body); min-width: 600px; }
+
+.thead { background-color: var(--wc-color-bg-tertiary); }
+
+.th {
+  padding: var(--wc-space-xs) var(--wc-space-sm); text-align: left;
+  font-family: var(--wc-font-display); font-size: 0.5rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--wc-color-text-secondary); border-bottom: 2px solid var(--wc-color-border); white-space: nowrap;
+}
+
+.thPiece { text-align: center; padding: var(--wc-space-sm) var(--wc-space-xs); }
+
+.tr { border-bottom: 1px solid var(--wc-color-border-muted); transition: background-color var(--wc-transition-fast); }
+.tr:hover { background-color: var(--wc-color-bg-tertiary); }
+.tr:nth-child(even) { background-color: rgba(74, 63, 53, 0.08); }
+.tr:nth-child(even):hover { background-color: var(--wc-color-bg-tertiary); }
+
+.td { padding: var(--wc-space-xs) var(--wc-space-sm); color: var(--wc-color-text-primary); vertical-align: middle; }
+.tdCenter { text-align: center; padding: var(--wc-space-sm) var(--wc-space-xs); }
+
+.pieceCount {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.875rem; font-weight: 500; color: var(--wc-color-text-secondary);
+}

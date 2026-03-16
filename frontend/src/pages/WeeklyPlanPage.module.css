@@ -1,0 +1,61 @@
+/**
+ * WeeklyPlanPage – CSS Module (Academia / Classical)
+ */
+
+/* ─── Page wrapper ───────────────────────────────────────────────────────── */
+.page {
+  position:   relative;
+  max-width:  960px;
+  margin:     0 auto;
+  padding:    var(--wc-space-lg) var(--wc-space-md);
+}
+
+/* ─── Page heading ───────────────────────────────────────────────────────── */
+.heading {
+  font-family:    var(--wc-font-heading);
+  font-size:      2rem;
+  font-weight:    500;
+  color:          var(--wc-color-text-primary);
+  margin:         0 0 var(--wc-space-xs);
+  letter-spacing: -0.02em;
+  line-height:    1.1;
+}
+
+/* ─── Main content panel ─────────────────────────────────────────────────── */
+.contentPanel {
+  padding: var(--wc-space-lg) var(--wc-space-xl);
+}
+
+/* ─── Loading indicator ──────────────────────────────────────────────────── */
+.loading {
+  padding:     var(--wc-space-2xl);
+  text-align:  center;
+  color:       var(--wc-color-text-muted);
+  font-size:   1rem;
+  font-style:  italic;
+  font-family: var(--wc-font-body);
+}
+
+/* ─── No-plan empty state ────────────────────────────────────────────────── */
+.noPlan {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            var(--wc-space-md);
+  padding:        var(--wc-space-2xl);
+  text-align:     center;
+}
+
+.noPlan p {
+  margin:      0;
+  font-family: var(--wc-font-body);
+  font-size:   1.0625rem;
+  line-height: 1.625;
+}
+
+.noPlanMuted {
+  margin:      0;
+  color:       var(--wc-color-text-muted);
+  font-size:   1rem;
+  font-style:  italic;
+}
