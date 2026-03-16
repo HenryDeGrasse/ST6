@@ -5,8 +5,19 @@
  * PRD §13.2 Gate 7: E2E smoke tests (< 5 min, PR subset only)
  *
  * Projects:
- *   - "chromium" — browser-based tests (golden-path.spec.ts) using mocked APIs
- *   - "api"      — API-level integration tests (full-week-lifecycle.spec.ts)
+ *   - "chromium" — browser-based tests
+ *                  (golden-path.spec.ts, ic-lifecycle-browser.spec.ts,
+ *                   manager-dashboard-browser.spec.ts,
+ *                   ai-features-browser.spec.ts,
+ *                   error-handling-browser.spec.ts)
+ *                  using mocked APIs
+ *   - "api"      — API-level integration tests
+ *                   (full-week-lifecycle.spec.ts, lock-validation.spec.ts,
+ *                   locked-plan-immutability.spec.ts,
+ *                   reconciliation-validation.spec.ts,
+ *                   manager-dashboard-api.spec.ts,
+ *                   late-lock-edge-cases.spec.ts,
+ *                   ai-features-api.spec.ts)
  *                   against a running backend (requires `./scripts/dev.sh --seed`)
  */
 import { defineConfig, devices } from '@playwright/test';
@@ -30,12 +41,12 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testMatch: /golden-path\.spec\.ts$/,
+      testMatch: /(golden-path|ic-lifecycle-browser|manager-dashboard-browser|ai-features-browser|error-handling-browser)\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'api',
-      testMatch: /full-week-lifecycle\.spec\.ts$/,
+      testMatch: /(full-week-lifecycle|lock-validation|locked-plan-immutability|reconciliation-validation|manager-dashboard-api|late-lock-edge-cases|ai-features-api)\.spec\.ts$/,
       use: {
         // No browser needed — these are pure API tests
         browserName: undefined as unknown as 'chromium',
