@@ -427,6 +427,39 @@ class AcceptanceCriteriaTest {
         }
 
         @Test
+        @DisplayName("Submit without actuals → 422 MISSING_COMPLETION_STATUS")
+        void rejectsMissingCompletionStatus() {
+            UUID planId = UUID.randomUUID();
+            UUID commitId = UUID.randomUUID();
+            WeeklyPlanEntity plan = new WeeklyPlanEntity(
+                    planId, ORG_ID, USER_ID, currentMonday()
+            );
+            plan.lock(LockType.ON_TIME);
+            plan.startReconciliation();
+
+            WeeklyCommitEntity commit = new WeeklyCommitEntity(
+                    commitId, ORG_ID, planId, "Test"
+            );
+
+            when(planRepository.findByOrgIdAndId(ORG_ID, planId)).thenReturn(Optional.of(plan));
+            when(commitRepository.findByOrgIdAndWeeklyPlanId(ORG_ID, planId))
+                    .thenReturn(List.of(commit));
+            when(actualRepository.findByOrgIdAndCommitIdIn(eq(ORG_ID), any()))
+                    .thenReturn(List.of());
+
+            PlanValidationException ex = assertThrows(
+                    PlanValidationException.class,
+                    () -> planService.submitReconciliation(
+                            ORG_ID, planId, plan.getVersion(), USER_ID
+                    )
+            );
+            assertEquals(ErrorCode.MISSING_COMPLETION_STATUS, ex.getErrorCode());
+            assertTrue(ex.getDetails().stream()
+                    .anyMatch(d -> commitId.toString().equals(d.get("commitId"))
+                            && "MISSING_COMPLETION_STATUS".equals(d.get("code"))));
+        }
+
+        @Test
         @DisplayName("Submit with DROPPED commit missing deltaReason → 422")
         void rejectsMissingDeltaReason() {
             UUID planId = UUID.randomUUID();

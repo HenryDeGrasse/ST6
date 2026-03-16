@@ -322,34 +322,41 @@ public class PlanService {
         }
 
         // Validate reconciliation completeness
-        List<Map<String, Object>> errors = new ArrayList<>();
+        List<Map<String, Object>> missingCompletionErrors = new ArrayList<>();
+        List<Map<String, Object>> missingDeltaReasonErrors = new ArrayList<>();
         for (WeeklyCommitEntity commit : commits) {
             WeeklyCommitActualEntity actual = actualsMap.get(commit.getId());
-            if (actual == null) {
-                WeeklyCommitActualEntity defaultDoneActual = new WeeklyCommitActualEntity(commit.getId(), orgId);
-                defaultDoneActual.setCompletionStatus(CompletionStatus.DONE);
-                defaultDoneActual.setActualResult("");
-                defaultDoneActual.setDeltaReason(null);
-                actualRepository.save(defaultDoneActual);
-                actualsMap.put(commit.getId(), defaultDoneActual);
+            if (actual == null || actual.getCompletionStatus() == null) {
+                missingCompletionErrors.add(Map.of(
+                        "commitId", commit.getId().toString(),
+                        "code", ErrorCode.MISSING_COMPLETION_STATUS.name(),
+                        "message", "Completion status is required for reconciliation"
+                ));
                 continue;
             }
-            if (actual.getCompletionStatus() != CompletionStatus.DONE) {
-                if (actual.getDeltaReason() == null || actual.getDeltaReason().isBlank()) {
-                    errors.add(Map.of(
-                            "commitId", commit.getId().toString(),
-                            "code", ErrorCode.MISSING_DELTA_REASON.name(),
-                            "message", "Delta reason is required for non-DONE commits"
-                    ));
-                }
+            if (actual.getCompletionStatus() != CompletionStatus.DONE
+                    && (actual.getDeltaReason() == null || actual.getDeltaReason().isBlank())) {
+                missingDeltaReasonErrors.add(Map.of(
+                        "commitId", commit.getId().toString(),
+                        "code", ErrorCode.MISSING_DELTA_REASON.name(),
+                        "message", "Delta reason is required for non-DONE commits"
+                ));
             }
         }
 
-        if (!errors.isEmpty()) {
+        if (!missingCompletionErrors.isEmpty()) {
+            throw new PlanValidationException(
+                    ErrorCode.MISSING_COMPLETION_STATUS,
+                    "Reconciliation incomplete: some commits are missing a completion status",
+                    missingCompletionErrors
+            );
+        }
+
+        if (!missingDeltaReasonErrors.isEmpty()) {
             throw new PlanValidationException(
                     ErrorCode.MISSING_DELTA_REASON,
                     "Reconciliation incomplete: some commits need a delta reason",
-                    errors
+                    missingDeltaReasonErrors
             );
         }
 
