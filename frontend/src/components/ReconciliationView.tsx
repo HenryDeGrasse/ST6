@@ -56,7 +56,7 @@ function buildActualEntry(commit: WeeklyCommit): ActualEntry {
   return {
     commitId: commit.id,
     actualResult: commit.actual?.actualResult ?? "",
-    completionStatus: commit.actual?.completionStatus ?? null,
+    completionStatus: commit.actual?.completionStatus ?? CompletionStatus.DONE,
     deltaReason: commit.actual?.deltaReason ?? "",
   };
 }
@@ -65,7 +65,7 @@ function buildActualSignature(commit: WeeklyCommit): string {
   return JSON.stringify({
     version: commit.version,
     actualResult: commit.actual?.actualResult ?? "",
-    completionStatus: commit.actual?.completionStatus ?? null,
+    completionStatus: commit.actual?.completionStatus ?? CompletionStatus.DONE,
     deltaReason: commit.actual?.deltaReason ?? "",
   });
 }
@@ -123,7 +123,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
       [commitId]: {
         commitId,
         actualResult: prev[commitId]?.actualResult ?? "",
-        completionStatus: prev[commitId]?.completionStatus ?? null,
+        completionStatus: prev[commitId]?.completionStatus ?? CompletionStatus.DONE,
         deltaReason: prev[commitId]?.deltaReason ?? "",
         [field]: value,
       },
@@ -153,7 +153,6 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
   // Validate all commits have status (and delta reason if non-DONE) for submit
   const allComplete = commits.every((commit) => {
     const entry = actuals[commit.id] ?? buildActualEntry(commit);
-    if (!entry.completionStatus) return false;
     if (entry.completionStatus !== CompletionStatus.DONE && !entry.deltaReason.trim()) return false;
     return true;
   });
@@ -264,7 +263,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
             <button
               data-testid={`reconcile-save-${commit.id}`}
               onClick={() => { void handleSaveActual(commit); }}
-              disabled={!entry.completionStatus || savingCommits[commit.id]}
+              disabled={savingCommits[commit.id]}
               className={styles.saveButton}
             >
               {savingCommits[commit.id] ? (

@@ -326,11 +326,12 @@ public class PlanService {
         for (WeeklyCommitEntity commit : commits) {
             WeeklyCommitActualEntity actual = actualsMap.get(commit.getId());
             if (actual == null) {
-                errors.add(Map.of(
-                        "commitId", commit.getId().toString(),
-                        "code", ErrorCode.MISSING_COMPLETION_STATUS.name(),
-                        "message", "Commit is missing reconciliation data"
-                ));
+                WeeklyCommitActualEntity defaultDoneActual = new WeeklyCommitActualEntity(commit.getId(), orgId);
+                defaultDoneActual.setCompletionStatus(CompletionStatus.DONE);
+                defaultDoneActual.setActualResult("");
+                defaultDoneActual.setDeltaReason(null);
+                actualRepository.save(defaultDoneActual);
+                actualsMap.put(commit.getId(), defaultDoneActual);
                 continue;
             }
             if (actual.getCompletionStatus() != CompletionStatus.DONE) {
@@ -345,15 +346,9 @@ public class PlanService {
         }
 
         if (!errors.isEmpty()) {
-            boolean hasMissingCompletionStatus = errors.stream()
-                    .anyMatch(error -> ErrorCode.MISSING_COMPLETION_STATUS.name().equals(error.get("code")));
-            ErrorCode errorCode = hasMissingCompletionStatus
-                    ? ErrorCode.MISSING_COMPLETION_STATUS
-                    : ErrorCode.MISSING_DELTA_REASON;
-
             throw new PlanValidationException(
-                    errorCode,
-                    "Reconciliation incomplete: not all commits have actuals",
+                    ErrorCode.MISSING_DELTA_REASON,
+                    "Reconciliation incomplete: some commits need a delta reason",
                     errors
             );
         }

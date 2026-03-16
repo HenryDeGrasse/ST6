@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -623,18 +624,22 @@ class PlanServiceTest {
         }
 
         @Test
-        void rejectsWhenCommitMissingActual() {
+        void defaultsMissingActualToDoneOnSubmit() {
             WeeklyCommitEntity commit = createCommit(planId, "Task", ChessPriority.KING, null, "Non-strategic");
             when(commitRepository.findByOrgIdAndWeeklyPlanId(ORG_ID, planId))
                     .thenReturn(List.of(commit));
             when(actualRepository.findByOrgIdAndCommitIdIn(eq(ORG_ID), anyList()))
                     .thenReturn(List.of());
 
-            PlanValidationException ex = assertThrows(
-                    PlanValidationException.class,
-                    () -> planService.submitReconciliation(ORG_ID, planId, plan.getVersion(), USER_ID)
-            );
-            assertEquals(ErrorCode.MISSING_COMPLETION_STATUS, ex.getErrorCode());
+            WeeklyPlanResponse result = planService.submitReconciliation(ORG_ID, planId, plan.getVersion(), USER_ID);
+
+            assertEquals("RECONCILED", result.state());
+            verify(actualRepository).save(argThat(actual ->
+                    actual.getCommitId().equals(commit.getId())
+                            && actual.getCompletionStatus() == CompletionStatus.DONE
+                            && "".equals(actual.getActualResult())
+                            && actual.getDeltaReason() == null
+            ));
         }
 
         @Test

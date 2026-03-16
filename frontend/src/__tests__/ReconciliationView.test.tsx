@@ -60,7 +60,7 @@ describe("ReconciliationView", () => {
     expect(screen.getByTestId("reconcile-commit-commit-1")).toBeInTheDocument();
   });
 
-  it("disables submit when not all commits have status", () => {
+  it("defaults untouched commits to DONE so submit is enabled", () => {
     render(
       <ReconciliationView
         commits={[makeCommit()]}
@@ -69,7 +69,8 @@ describe("ReconciliationView", () => {
         onSubmit={vi.fn()}
       />,
     );
-    expect(screen.getByTestId("reconcile-submit")).toBeDisabled();
+    expect(screen.getByTestId("reconcile-status-commit-1")).toHaveValue(CompletionStatus.DONE);
+    expect(screen.getByTestId("reconcile-submit")).toBeEnabled();
   });
 
   it("shows delta reason field and status icon when status is not DONE", () => {
