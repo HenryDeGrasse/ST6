@@ -18,190 +18,32 @@
  *   cd e2e && npx playwright test tests/full-week-lifecycle.spec.ts --project=api
  */
 import { expect, test } from '@playwright/test';
+import {
+  ORG_ID,
+  SEED_USER_ID,
+  OUTCOME_ENTERPRISE_DEALS,
+  OUTCOME_API_UPTIME,
+  freshUserId,
+  tokenFor,
+  mondayOf,
+  api,
+  getPlan,
+  getCommits,
+  createPlan,
+  createCommit,
+  deleteCommit,
+  lockPlan,
+  startReconciliation,
+  submitReconciliation,
+  updateActual,
+  carryForward,
+  refreshRcdo,
+} from './helpers';
 
-// ── Constants ──────────────────────────────────────────────────────────────
-const API_BASE = process.env.API_BASE_URL || 'http://localhost:8080';
-const ORG_ID = 'a0000000-0000-0000-0000-000000000001';
-
-// The seed user — registered in the dev org graph as both IC and their own
-// manager. Only used for the manager-review test where org graph matters.
-const SEED_USER_ID = 'c0000000-0000-0000-0000-000000000001';
-
-// RCDO outcome IDs from RcdoDevDataInitializer
-const OUTCOME_ENTERPRISE_DEALS = 'e0000000-0000-0000-0000-000000000001';
-const OUTCOME_API_UPTIME = 'e0000000-0000-0000-0000-000000000002';
-
-// ── Per-run unique user IDs ────────────────────────────────────────────────
-// Each test group gets a fresh user so it always starts with a clean slate.
-// The DevRequestAuthenticator accepts any UUID as a valid user.
-function freshUserId(): string {
-  return crypto.randomUUID();
-}
-
-function tokenFor(userId: string, roles = 'IC'): string {
-  return `Bearer dev:${userId}:${ORG_ID}:${roles}`;
-}
-
-function mondayOf(weeksFromCurrent = 0): string {
-  const today = new Date();
-  const day = today.getUTCDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const monday = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
-  monday.setUTCDate(monday.getUTCDate() + diffToMonday + weeksFromCurrent * 7);
-  return monday.toISOString().slice(0, 10);
-}
-
+// ── Week constants ─────────────────────────────────────────────────────────
 // The backend allows creating plans for current week (0) and next week (+1).
 const CURRENT_WEEK = mondayOf(0);
 const NEXT_WEEK = mondayOf(1);
-
-// ── API helpers ────────────────────────────────────────────────────────────
-
-interface ApiResponse {
-  status: number;
-  body: Record<string, unknown>;
-}
-
-async function api(
-  method: string,
-  path: string,
-  options: {
-    token?: string;
-    body?: unknown;
-    ifMatch?: number;
-    idempotencyKey?: string;
-  } = {},
-): Promise<ApiResponse> {
-  const headers: Record<string, string> = {
-    Authorization: options.token ?? tokenFor(SEED_USER_ID),
-    'Content-Type': 'application/json',
-  };
-  if (options.ifMatch !== undefined) {
-    headers['If-Match'] = String(options.ifMatch);
-  }
-  if (options.idempotencyKey) {
-    headers['Idempotency-Key'] = options.idempotencyKey;
-  }
-
-  const res = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
-
-  let body: Record<string, unknown> = {};
-  const text = await res.text();
-  if (text) {
-    try {
-      body = JSON.parse(text);
-    } catch {
-      body = { _raw: text } as Record<string, unknown>;
-    }
-  }
-  return { status: res.status, body };
-}
-
-async function getPlan(planId: string, token: string): Promise<ApiResponse> {
-  return api('GET', `/api/v1/plans/${planId}`, { token });
-}
-
-async function getCommits(planId: string, token: string): Promise<{ status: number; body: Array<Record<string, unknown>> }> {
-  const res = await api('GET', `/api/v1/plans/${planId}/commits`, { token });
-  const body = Array.isArray(res.body) ? res.body : [];
-  return { status: res.status, body };
-}
-
-async function createPlan(weekStart: string, token: string): Promise<ApiResponse> {
-  return api('POST', `/api/v1/weeks/${weekStart}/plans`, { token });
-}
-
-async function createCommit(
-  planId: string,
-  commit: {
-    title: string;
-    chessPriority: string;
-    category: string;
-    outcomeId?: string;
-    nonStrategicReason?: string;
-    description?: string;
-    expectedResult?: string;
-    confidence?: number;
-    tags?: string[];
-  },
-  token: string,
-): Promise<ApiResponse> {
-  return api('POST', `/api/v1/plans/${planId}/commits`, { body: commit, token });
-}
-
-async function deleteCommit(commitId: string, token: string): Promise<ApiResponse> {
-  return api('DELETE', `/api/v1/commits/${commitId}`, { token });
-}
-
-async function lockPlan(planId: string, version: number, token: string): Promise<ApiResponse> {
-  return api('POST', `/api/v1/plans/${planId}/lock`, {
-    ifMatch: version,
-    idempotencyKey: crypto.randomUUID(),
-    token,
-  });
-}
-
-async function startReconciliation(planId: string, version: number, token: string): Promise<ApiResponse> {
-  return api('POST', `/api/v1/plans/${planId}/start-reconciliation`, {
-    ifMatch: version,
-    idempotencyKey: crypto.randomUUID(),
-    token,
-  });
-}
-
-async function submitReconciliation(planId: string, version: number, token: string): Promise<ApiResponse> {
-  return api('POST', `/api/v1/plans/${planId}/submit-reconciliation`, {
-    ifMatch: version,
-    idempotencyKey: crypto.randomUUID(),
-    token,
-  });
-}
-
-async function updateActual(
-  commitId: string,
-  commitVersion: number,
-  actual: {
-    actualResult: string;
-    completionStatus: string;
-    deltaReason?: string;
-    timeSpent?: number;
-  },
-  token: string,
-): Promise<ApiResponse> {
-  return api('PATCH', `/api/v1/commits/${commitId}/actual`, {
-    ifMatch: commitVersion,
-    body: actual,
-    token,
-  });
-}
-
-async function carryForward(
-  planId: string,
-  version: number,
-  commitIds: string[],
-  token: string,
-): Promise<ApiResponse> {
-  return api('POST', `/api/v1/plans/${planId}/carry-forward`, {
-    ifMatch: version,
-    idempotencyKey: crypto.randomUUID(),
-    body: { commitIds },
-    token,
-  });
-}
-
-/**
- * Refreshes the in-memory RCDO cache so the staleness clock resets.
- * Required because the InMemoryRcdoClient marks data as stale after
- * 60 min (the dev data initializer sets it once at startup).
- */
-async function refreshRcdo(token: string): Promise<void> {
-  const res = await api('POST', '/api/v1/rcdo/refresh', { token });
-  expect(res.status).toBe(200);
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Test: Full golden-path lifecycle
