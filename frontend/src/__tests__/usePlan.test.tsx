@@ -36,6 +36,75 @@ describe("usePlan", () => {
     expect(result.current.error).toBeNull();
   });
 
+  it("auto-retries lockPlan with server's currentVersion on 409 and succeeds", async () => {
+    const lockedPlan = { id: "plan-1", version: 3, state: "LOCKED" };
+    mockClient.POST
+      .mockResolvedValueOnce({
+        data: undefined,
+        error: { error: { code: "CONFLICT", message: "modified", details: [{ currentVersion: 3 }] } },
+        response: { status: 409 },
+      })
+      .mockResolvedValueOnce({
+        data: lockedPlan,
+        response: { status: 200 },
+      });
+
+    const { result } = renderHook(() => usePlan());
+
+    let returned: unknown;
+    await act(async () => {
+      returned = await result.current.lockPlan("plan-1", 2);
+    });
+
+    expect(returned).toEqual(lockedPlan);
+    expect(result.current.plan).toEqual(lockedPlan);
+    expect(result.current.error).toBeNull();
+    // Retry call must use the server's currentVersion (3)
+    expect(mockClient.POST).toHaveBeenCalledTimes(2);
+    expect(mockClient.POST).toHaveBeenNthCalledWith(2, "/plans/{planId}/lock", {
+      params: {
+        path: { planId: "plan-1" },
+        header: expect.objectContaining({ "If-Match": 3 }),
+      },
+    });
+  });
+
+  it("shows error when lockPlan auto-retry also gets 409", async () => {
+    const conflict409 = {
+      data: undefined,
+      error: { error: { code: "CONFLICT", message: "modified", details: [{ currentVersion: 3 }] } },
+      response: { status: 409 },
+    };
+    mockClient.POST.mockResolvedValue(conflict409);
+
+    const { result } = renderHook(() => usePlan());
+
+    await act(async () => {
+      await result.current.lockPlan("plan-1", 2);
+    });
+
+    expect(result.current.error).toBe("Conflict: the plan was modified. Please try again.");
+    expect(mockClient.POST).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows error when 409 has no currentVersion in details", async () => {
+    mockClient.POST.mockResolvedValue({
+      data: undefined,
+      error: { error: { code: "CONFLICT", message: "modified" } },
+      response: { status: 409 },
+    });
+
+    const { result } = renderHook(() => usePlan());
+
+    await act(async () => {
+      await result.current.lockPlan("plan-1", 2);
+    });
+
+    expect(result.current.error).toBe("Conflict: the plan was modified. Please try again.");
+    // No retry when currentVersion is missing
+    expect(mockClient.POST).toHaveBeenCalledTimes(1);
+  });
+
   it("sends If-Match for startReconciliation", async () => {
     mockClient.POST.mockResolvedValue({
       data: { id: "plan-1", version: 2, state: "RECONCILING" },

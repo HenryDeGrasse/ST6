@@ -116,9 +116,30 @@ export function usePlan(): UsePlanResult {
           const body = resp.error as ApiErrorResponse | undefined;
           const cv = body?.error?.details?.[0]?.currentVersion;
           if (typeof cv === "number") {
-            setConflictVersion(cv);
+            // Server sent back the real current version — auto-retry with it
+            // so the user doesn't have to manually refresh.
+            const retryResp = await client.POST("/plans/{planId}/lock", {
+              params: {
+                path: { planId },
+                header: {
+                  "Idempotency-Key": crypto.randomUUID(),
+                  "If-Match": cv,
+                },
+              },
+            });
+            if (retryResp.data) {
+              const locked = retryResp.data as WeeklyPlan;
+              setPlan(locked);
+              return locked;
+            }
+            if (retryResp.response.status === 409) {
+              setError("Conflict: the plan was modified. Please try again.");
+              return null;
+            }
+            setError(extractError(retryResp));
+            return null;
           }
-          setError("Conflict: the plan was modified. Please refresh and try again.");
+          setError("Conflict: the plan was modified. Please try again.");
           return null;
         }
         setError(extractError(resp));
