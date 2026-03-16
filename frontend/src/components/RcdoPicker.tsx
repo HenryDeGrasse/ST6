@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import type { RcdoCry, RcdoSearchResult } from "@weekly-commitments/contracts";
+import styles from "./RcdoPicker.module.css";
 
 export interface RcdoSelection {
   outcomeId: string;
@@ -94,61 +95,82 @@ export const RcdoPicker: React.FC<RcdoPickerProps> = ({
   };
 
   return (
-    <div data-testid="rcdo-picker">
+    <div data-testid="rcdo-picker" className={styles.container}>
+      {/* ── Current selection chip ── */}
       {value && (
-        <div data-testid="rcdo-current" style={{ marginBottom: "0.5rem", fontSize: "0.85rem", color: "#555" }}>
-          Linked: {findOutcomeLabel()}
+        <div data-testid="rcdo-current" className={styles.currentChip}>
+          <span className={styles.currentLabel}>Linked: {findOutcomeLabel()}</span>
           {!disabled && (
             <button
+              type="button"
               onClick={() => onChange(null)}
-              style={{ marginLeft: "0.5rem", fontSize: "0.8rem" }}
+              className={styles.clearButton}
               data-testid="rcdo-clear"
+              aria-label="Clear RCDO selection"
             >
               ✕
             </button>
           )}
         </div>
       )}
+
+      {/* ── Mode toggle + picker UI (hidden when disabled) ── */}
       {!disabled && (
         <>
-          <div style={{ marginBottom: "0.5rem" }}>
+          {/* ── Mode toggle bar ── */}
+          <div className={styles.modeBar}>
             <button
+              type="button"
               data-testid="rcdo-mode-search"
               onClick={() => setMode("search")}
-              style={{ fontWeight: mode === "search" ? 700 : 400, marginRight: "0.5rem" }}
+              aria-pressed={mode === "search"}
+              className={[
+                styles.modeButton,
+                mode === "search" ? styles.modeButtonActive : "",
+              ].join(" ").trim()}
             >
               Search
             </button>
             <button
+              type="button"
               data-testid="rcdo-mode-browse"
               onClick={() => setMode("browse")}
-              style={{ fontWeight: mode === "browse" ? 700 : 400 }}
+              aria-pressed={mode === "browse"}
+              className={[
+                styles.modeButton,
+                mode === "browse" ? styles.modeButtonActive : "",
+              ].join(" ").trim()}
             >
               Browse
             </button>
           </div>
+
+          {/* ── Search panel ── */}
           {mode === "search" && (
-            <div>
+            <div className={styles.searchPanel}>
               <input
                 data-testid="rcdo-search-input"
                 type="text"
                 placeholder="Search outcomes…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                style={{ width: "100%", padding: "0.25rem" }}
+                className={styles.searchInput}
               />
               {searchResults.length > 0 && (
-                <ul data-testid="rcdo-search-results" style={{ listStyle: "none", padding: 0, margin: "0.25rem 0" }}>
+                <ul
+                  data-testid="rcdo-search-results"
+                  className={styles.resultsList}
+                >
                   {searchResults.map((r) => (
-                    <li key={r.id} style={{ padding: "0.25rem 0", cursor: "pointer" }}>
+                    <li key={r.id} className={styles.resultsItem}>
                       <button
+                        type="button"
                         onClick={() => handleSearchSelect(r)}
-                        style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", width: "100%" }}
+                        className={styles.resultButton}
                         data-testid={`rcdo-result-${r.id}`}
                       >
-                        <strong>{r.name}</strong>
-                        <br />
-                        <span style={{ fontSize: "0.8rem", color: "#666" }}>
+                        <strong className={styles.resultName}>{r.name}</strong>
+                        <span className={styles.resultMeta}>
                           {r.rallyCryName} → {r.objectiveName}
                         </span>
                       </button>
@@ -158,24 +180,43 @@ export const RcdoPicker: React.FC<RcdoPickerProps> = ({
               )}
             </div>
           )}
+
+          {/* ── Browse panel ── */}
           {mode === "browse" && (
-            <div data-testid="rcdo-tree-browser" style={{ fontSize: "0.9rem" }}>
+            <div data-testid="rcdo-tree-browser" className={styles.browsePanel}>
               {tree.map((cry) => (
-                <div key={cry.id} style={{ marginBottom: "0.25rem" }}>
-                  <button onClick={() => toggleCry(cry.id)} style={{ fontWeight: 600, cursor: "pointer", background: "none", border: "none" }}>
-                    {expandedCries.has(cry.id) ? "▾" : "▸"} {cry.name}
+                <div key={cry.id} className={styles.cryNode}>
+                  <button
+                    type="button"
+                    onClick={() => toggleCry(cry.id)}
+                    aria-expanded={expandedCries.has(cry.id)}
+                    className={styles.cryToggle}
+                  >
+                    <span className={styles.chevron}>
+                      {expandedCries.has(cry.id) ? "▾" : "▸"}
+                    </span>
+                    {cry.name}
                   </button>
                   {expandedCries.has(cry.id) && (
-                    <div style={{ marginLeft: "1rem" }}>
+                    <div className={styles.objectiveList}>
                       {cry.objectives.map((obj) => (
-                        <div key={obj.id}>
-                          <button onClick={() => toggleObjective(obj.id)} style={{ cursor: "pointer", background: "none", border: "none" }}>
-                            {expandedObjectives.has(obj.id) ? "▾" : "▸"} {obj.name}
+                        <div key={obj.id} className={styles.objectiveNode}>
+                          <button
+                            type="button"
+                            onClick={() => toggleObjective(obj.id)}
+                            aria-expanded={expandedObjectives.has(obj.id)}
+                            className={styles.objectiveToggle}
+                          >
+                            <span className={styles.chevron}>
+                              {expandedObjectives.has(obj.id) ? "▾" : "▸"}
+                            </span>
+                            {obj.name}
                           </button>
                           {expandedObjectives.has(obj.id) && (
-                            <div style={{ marginLeft: "1rem" }}>
+                            <div className={styles.outcomeList}>
                               {obj.outcomes.map((outcome) => (
                                 <button
+                                  type="button"
                                   key={outcome.id}
                                   onClick={() =>
                                     onChange({
@@ -187,15 +228,12 @@ export const RcdoPicker: React.FC<RcdoPickerProps> = ({
                                       rallyCryName: cry.name,
                                     })
                                   }
-                                  style={{
-                                    display: "block",
-                                    background: value === outcome.id ? "#e0e7ff" : "none",
-                                    border: "none",
-                                    cursor: "pointer",
-                                    padding: "0.15rem 0.5rem",
-                                    width: "100%",
-                                    textAlign: "left",
-                                  }}
+                                  className={[
+                                    styles.outcomeButton,
+                                    value === outcome.id
+                                      ? styles.outcomeButtonSelected
+                                      : "",
+                                  ].join(" ").trim()}
                                   data-testid={`rcdo-outcome-${outcome.id}`}
                                 >
                                   {outcome.name}

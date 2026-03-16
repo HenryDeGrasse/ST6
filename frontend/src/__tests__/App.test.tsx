@@ -22,8 +22,9 @@ describe("App", () => {
     vi.clearAllMocks();
   });
 
-  it("renders the Weekly Commitments heading", async () => {
+  it("renders the Weekly Commitments heading inside the theme root", async () => {
     render(<App />);
+    expect(screen.getByTestId("wc-theme-root")).toHaveClass("wc-theme");
     expect(screen.getByText("Weekly Commitments")).toBeInTheDocument();
     await screen.findByTestId("create-plan-btn");
   });

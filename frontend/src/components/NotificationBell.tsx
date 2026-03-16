@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { NotificationItem } from "@weekly-commitments/contracts";
+import { StatusIcon } from "./icons/StatusIcon.js";
+import styles from "./NotificationBell.module.css";
 
 export interface NotificationBellProps {
   notifications: NotificationItem[];
@@ -40,43 +42,21 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
   }, [closeDropdown, open]);
 
   return (
-    <div data-testid="notification-bell" style={{ position: "relative", display: "inline-block" }}>
+    <div data-testid="notification-bell" className={styles.wrapper}>
       <button
         ref={bellButtonRef}
         data-testid="notification-bell-btn"
         onClick={() => setOpen(!open)}
         onKeyDown={handleEscapeToClose}
         aria-expanded={open}
-        style={{
-          background: "none",
-          border: "1px solid #ddd",
-          borderRadius: "50%",
-          width: "36px",
-          height: "36px",
-          cursor: "pointer",
-          position: "relative",
-          fontSize: "1.2rem",
-        }}
+        className={styles.bellButton}
         aria-label={`Notifications (${unreadCount} unread)`}
       >
-        🔔
+        <StatusIcon icon="bell" size={18} />
         {unreadCount > 0 && (
           <span
             data-testid="notification-count"
-            style={{
-              position: "absolute",
-              top: "-4px",
-              right: "-4px",
-              background: "#dc2626",
-              color: "white",
-              borderRadius: "50%",
-              width: "18px",
-              height: "18px",
-              fontSize: "0.7rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            className={styles.badge}
           >
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
@@ -87,27 +67,15 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
         <div
           data-testid="notification-dropdown"
           onKeyDown={handleEscapeToClose}
-          style={{
-            position: "absolute",
-            top: "40px",
-            right: 0,
-            width: "320px",
-            maxHeight: "400px",
-            overflowY: "auto",
-            background: "white",
-            border: "1px solid #ddd",
-            borderRadius: "8px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-            zIndex: 100,
-          }}
+          className={styles.dropdown}
         >
-          <div style={{ padding: "0.75rem", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <strong>Notifications</strong>
+          <div className={styles.dropdownHeader}>
+            <span className={styles.dropdownTitle}>Notifications</span>
             {unreadCount > 0 && (
               <button
                 data-testid="mark-all-read-btn"
                 onClick={() => { void onMarkAllRead(); }}
-                style={{ fontSize: "0.75rem", color: "#2563eb", background: "none", border: "none", cursor: "pointer" }}
+                className={styles.markAllBtn}
               >
                 Mark all read
               </button>
@@ -115,7 +83,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
           </div>
 
           {notifications.length === 0 && (
-            <div style={{ padding: "1rem", textAlign: "center", color: "#888" }}>
+            <div className={styles.emptyState}>
               No new notifications
             </div>
           )}
@@ -124,35 +92,22 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
             <div
               key={n.id}
               data-testid={`notification-item-${n.id}`}
-              style={{
-                padding: "0.75rem",
-                borderBottom: "1px solid #f3f4f6",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-              }}
+              className={styles.notificationItem}
             >
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: "bold", fontSize: "0.875rem" }}>
+              <div className={styles.notificationContent}>
+                <div className={styles.notificationType}>
                   {formatNotificationType(n.type)}
                 </div>
-                <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>
+                <div className={styles.notificationTime}>
                   {new Date(n.createdAt).toLocaleString()}
                 </div>
               </div>
               <button
                 onClick={() => { void onMarkRead(n.id); }}
-                style={{
-                  fontSize: "0.7rem",
-                  color: "#6b7280",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  marginLeft: "0.5rem",
-                }}
+                className={styles.dismissBtn}
                 title="Dismiss"
               >
-                ✕
+                <StatusIcon icon="error-x" size={14} />
               </button>
             </div>
           ))}

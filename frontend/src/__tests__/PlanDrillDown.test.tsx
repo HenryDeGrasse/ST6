@@ -234,7 +234,7 @@ describe("PlanDrillDown", () => {
       },
     });
 
-    it("applies green tint for DONE", () => {
+    it("applies green tint class for DONE", () => {
       render(
         <PlanDrillDown
           {...defaultProps}
@@ -244,10 +244,10 @@ describe("PlanDrillDown", () => {
       );
 
       const row = screen.getByTestId("drilldown-commit-commit-1");
-      expect(row.style.backgroundColor).toBe("rgba(34, 197, 94, 0.1)");
+      expect(row.className).toContain("rowDone");
     });
 
-    it("applies amber tint for PARTIALLY", () => {
+    it("applies amber tint class for PARTIALLY", () => {
       render(
         <PlanDrillDown
           {...defaultProps}
@@ -257,10 +257,10 @@ describe("PlanDrillDown", () => {
       );
 
       const row = screen.getByTestId("drilldown-commit-commit-1");
-      expect(row.style.backgroundColor).toBe("rgba(245, 158, 11, 0.1)");
+      expect(row.className).toContain("rowPartially");
     });
 
-    it("applies red tint for NOT_DONE", () => {
+    it("applies red tint class for NOT_DONE", () => {
       render(
         <PlanDrillDown
           {...defaultProps}
@@ -270,10 +270,10 @@ describe("PlanDrillDown", () => {
       );
 
       const row = screen.getByTestId("drilldown-commit-commit-1");
-      expect(row.style.backgroundColor).toBe("rgba(239, 68, 68, 0.1)");
+      expect(row.className).toContain("rowNotDone");
     });
 
-    it("applies red tint for DROPPED", () => {
+    it("applies red tint class for DROPPED", () => {
       render(
         <PlanDrillDown
           {...defaultProps}
@@ -283,10 +283,10 @@ describe("PlanDrillDown", () => {
       );
 
       const row = screen.getByTestId("drilldown-commit-commit-1");
-      expect(row.style.backgroundColor).toBe("rgba(239, 68, 68, 0.1)");
+      expect(row.className).toContain("rowDropped");
     });
 
-    it("does not apply color tint when plan is not in actuals-visible state", () => {
+    it("does not apply color tint class when plan is not in actuals-visible state", () => {
       render(
         <PlanDrillDown
           {...defaultProps}
@@ -296,7 +296,10 @@ describe("PlanDrillDown", () => {
       );
 
       const row = screen.getByTestId("drilldown-commit-commit-1");
-      expect(row.style.backgroundColor).toBe("");
+      expect(row.className).not.toContain("rowDone");
+      expect(row.className).not.toContain("rowPartially");
+      expect(row.className).not.toContain("rowNotDone");
+      expect(row.className).not.toContain("rowDropped");
     });
   });
 });

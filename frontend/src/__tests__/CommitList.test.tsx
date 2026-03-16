@@ -115,4 +115,21 @@ describe("CommitList", () => {
     // fireEvent returns false when preventDefault was called
     expect(event).toBe(false);
   });
+
+  it("does not expose read-only commit rows as interactive buttons", () => {
+    const commit = makeCommit();
+
+    render(
+      <CommitList
+        {...defaultProps}
+        commits={[commit]}
+        planState={PlanState.RECONCILED}
+      />,
+    );
+
+    const row = screen.getByTestId(`commit-row-${commit.id}`);
+    expect(row).not.toHaveAttribute("role");
+    expect(row).not.toHaveAttribute("tabindex");
+    expect(row).toHaveAttribute("aria-disabled", "true");
+  });
 });

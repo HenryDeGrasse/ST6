@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, within } from "@testing-library/react";
 import { ReconciliationView } from "../components/ReconciliationView.js";
 import { PlanState, ChessPriority, CompletionStatus } from "@weekly-commitments/contracts";
 import type { WeeklyCommit } from "@weekly-commitments/contracts";
@@ -72,7 +72,7 @@ describe("ReconciliationView", () => {
     expect(screen.getByTestId("reconcile-submit")).toBeDisabled();
   });
 
-  it("shows delta reason field when status is not DONE", () => {
+  it("shows delta reason field and status icon when status is not DONE", () => {
     render(
       <ReconciliationView
         commits={[makeCommit()]}
@@ -81,11 +81,14 @@ describe("ReconciliationView", () => {
         onSubmit={vi.fn()}
       />,
     );
-    // Select NOT_DONE
+
     fireEvent.change(screen.getByTestId("reconcile-status-commit-1"), {
       target: { value: CompletionStatus.NOT_DONE },
     });
+
+    const card = screen.getByTestId("reconcile-commit-commit-1");
     expect(screen.getByTestId("reconcile-delta-commit-1")).toBeInTheDocument();
+    expect(within(card).getByTestId("status-icon-error-x")).toBeInTheDocument();
   });
 
   it("does not show delta reason field when status is DONE", () => {
@@ -143,7 +146,6 @@ describe("ReconciliationView", () => {
       />,
     );
 
-    // Select a status so Save button is enabled
     fireEvent.change(screen.getByTestId("reconcile-status-commit-1"), {
       target: { value: CompletionStatus.DONE },
     });
@@ -152,12 +154,10 @@ describe("ReconciliationView", () => {
     expect(saveBtn).toHaveTextContent("Save Actual");
     expect(saveBtn).not.toBeDisabled();
 
-    // Click save — should show "Saving…" and be disabled
     fireEvent.click(saveBtn);
     expect(saveBtn).toHaveTextContent("Saving");
     expect(saveBtn).toBeDisabled();
 
-    // Resolve the promise — button should revert
     await act(async () => {
       resolveUpdate();
     });
@@ -212,5 +212,77 @@ describe("ReconciliationView", () => {
 
     expect(screen.getByTestId("reconcile-status-commit-1")).toHaveValue(CompletionStatus.DONE);
     expect(screen.getByTestId("reconcile-actual-commit-1")).toHaveValue("Recovered after reload");
+  });
+
+  it("preserves local edits until the server payload changes, then rehydrates", () => {
+    const { rerender } = render(
+      <ReconciliationView
+        commits={[
+          makeCommit({
+            actual: {
+              commitId: "commit-1",
+              actualResult: "Initial server value",
+              completionStatus: CompletionStatus.PARTIALLY,
+              deltaReason: "Initial delta",
+              timeSpent: null,
+            },
+          }),
+        ]}
+        planState={PlanState.RECONCILING}
+        onUpdateActual={vi.fn()}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByTestId("reconcile-actual-commit-1"), {
+      target: { value: "Unsaved local edit" },
+    });
+
+    rerender(
+      <ReconciliationView
+        commits={[
+          makeCommit({
+            actual: {
+              commitId: "commit-1",
+              actualResult: "Initial server value",
+              completionStatus: CompletionStatus.PARTIALLY,
+              deltaReason: "Initial delta",
+              timeSpent: null,
+            },
+          }),
+        ]}
+        planState={PlanState.RECONCILING}
+        onUpdateActual={vi.fn()}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("reconcile-actual-commit-1")).toHaveValue("Unsaved local edit");
+
+    rerender(
+      <ReconciliationView
+        commits={[
+          makeCommit({
+            version: 2,
+            actual: {
+              commitId: "commit-1",
+              actualResult: "Fresh server value",
+              completionStatus: CompletionStatus.DROPPED,
+              deltaReason: "Descoped",
+              timeSpent: null,
+            },
+          }),
+        ]}
+        planState={PlanState.RECONCILING}
+        onUpdateActual={vi.fn()}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    const card = screen.getByTestId("reconcile-commit-commit-1");
+    expect(screen.getByTestId("reconcile-status-commit-1")).toHaveValue(CompletionStatus.DROPPED);
+    expect(screen.getByTestId("reconcile-actual-commit-1")).toHaveValue("Fresh server value");
+    expect(screen.getByTestId("reconcile-delta-commit-1")).toHaveValue("Descoped");
+    expect(within(card).getByTestId("status-icon-trash")).toBeInTheDocument();
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { PlanHeader } from "../components/PlanHeader.js";
 import type { WeeklyPlan } from "@weekly-commitments/contracts";
 import { PlanState, ReviewStatus, LockType } from "@weekly-commitments/contracts";
@@ -90,7 +90,9 @@ describe("PlanHeader", () => {
         onCarryForward={noop}
       />,
     );
-    expect(screen.getByTestId("plan-review-status")).toHaveTextContent("Review pending");
+    const reviewStatus = screen.getByTestId("plan-review-status");
+    expect(reviewStatus).toHaveTextContent("Review pending");
+    expect(within(reviewStatus).getByTestId("status-icon-loading")).toBeInTheDocument();
   });
 
   it("shows late lock badge", () => {
@@ -135,6 +137,7 @@ describe("PlanHeader", () => {
     const btn = screen.getByTestId("lock-btn");
     expect(btn).toBeDisabled();
     expect(btn).toHaveTextContent("Locking");
+    expect(within(btn).getByTestId("status-icon-loading")).toBeInTheDocument();
   });
 
   it("shows loading text on Start Reconciliation button when loading=true", () => {

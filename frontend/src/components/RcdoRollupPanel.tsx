@@ -1,5 +1,7 @@
 import React from "react";
 import type { RcdoRollupResponse } from "@weekly-commitments/contracts";
+import { ChessIcon } from "./icons/ChessIcon.js";
+import styles from "./RcdoRollupPanel.module.css";
 
 export interface RcdoRollupPanelProps {
   rollup: RcdoRollupResponse | null;
@@ -19,46 +21,48 @@ export const RcdoRollupPanel: React.FC<RcdoRollupPanelProps> = ({
   }
 
   return (
-    <div data-testid="rcdo-rollup-panel" style={{ marginTop: "1.5rem" }}>
-      <h3>RCDO Roll-up</h3>
+    <div data-testid="rcdo-rollup-panel" className={styles.panel}>
+      <h3 className={styles.heading}>RCDO Roll-up</h3>
 
       {rollup.nonStrategicCount > 0 && (
-        <div
-          data-testid="non-strategic-count"
-          style={{
-            padding: "0.5rem",
-            background: "#fef3c7",
-            borderRadius: "4px",
-            marginBottom: "0.5rem",
-          }}
-        >
-          {rollup.nonStrategicCount} non-strategic commit{rollup.nonStrategicCount !== 1 ? "s" : ""} this week
+        <div data-testid="non-strategic-count" className={styles.nonStrategicCard}>
+          {rollup.nonStrategicCount} non-strategic commit
+          {rollup.nonStrategicCount !== 1 ? "s" : ""} this week
         </div>
       )}
 
       {rollup.items.length === 0 && rollup.nonStrategicCount === 0 && (
-        <p data-testid="rollup-empty" style={{ color: "#888" }}>
+        <p data-testid="rollup-empty" className={styles.empty}>
           No commits to roll up.
         </p>
       )}
 
       {rollup.items.length > 0 && (
-        <table
-          data-testid="rollup-table"
-          style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}
-        >
-          <thead>
-            <tr style={{ borderBottom: "2px solid #ddd", textAlign: "left" }}>
-              <th style={{ padding: "0.5rem" }}>Rally Cry</th>
-              <th style={{ padding: "0.5rem" }}>Objective</th>
-              <th style={{ padding: "0.5rem" }}>Outcome</th>
-              <th style={{ padding: "0.5rem" }}>Commits</th>
-              <th style={{ padding: "0.5rem" }}>👑</th>
-              <th style={{ padding: "0.5rem" }}>♛</th>
-              <th style={{ padding: "0.5rem" }}>♜</th>
-              <th style={{ padding: "0.5rem" }}>♝</th>
-              <th style={{ padding: "0.5rem" }}>♞</th>
-              <th style={{ padding: "0.5rem" }}>♟</th>
+        <table data-testid="rollup-table" className={styles.table}>
+          <thead className={styles.thead}>
+            <tr>
+              <th className={styles.th} scope="col">Rally Cry</th>
+              <th className={styles.th} scope="col">Objective</th>
+              <th className={styles.th} scope="col">Outcome</th>
+              <th className={styles.th} scope="col">Commits</th>
+              <th className={styles.thPiece} scope="col" aria-label="King">
+                <ChessIcon piece="KING" size={16} />
+              </th>
+              <th className={styles.thPiece} scope="col" aria-label="Queen">
+                <ChessIcon piece="QUEEN" size={16} />
+              </th>
+              <th className={styles.thPiece} scope="col" aria-label="Rook">
+                <ChessIcon piece="ROOK" size={16} />
+              </th>
+              <th className={styles.thPiece} scope="col" aria-label="Bishop">
+                <ChessIcon piece="BISHOP" size={16} />
+              </th>
+              <th className={styles.thPiece} scope="col" aria-label="Knight">
+                <ChessIcon piece="KNIGHT" size={16} />
+              </th>
+              <th className={styles.thPiece} scope="col" aria-label="Pawn">
+                <ChessIcon piece="PAWN" size={16} />
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -66,18 +70,42 @@ export const RcdoRollupPanel: React.FC<RcdoRollupPanelProps> = ({
               <tr
                 key={item.outcomeId}
                 data-testid={`rollup-row-${item.outcomeId}`}
-                style={{ borderBottom: "1px solid #eee" }}
+                className={styles.tr}
               >
-                <td style={{ padding: "0.5rem" }}>{item.rallyCryName ?? "—"}</td>
-                <td style={{ padding: "0.5rem" }}>{item.objectiveName ?? "—"}</td>
-                <td style={{ padding: "0.5rem" }}>{item.outcomeName ?? item.outcomeId}</td>
-                <td style={{ padding: "0.5rem" }}>{item.commitCount}</td>
-                <td style={{ padding: "0.5rem" }}>{item.kingCount || ""}</td>
-                <td style={{ padding: "0.5rem" }}>{item.queenCount || ""}</td>
-                <td style={{ padding: "0.5rem" }}>{item.rookCount || ""}</td>
-                <td style={{ padding: "0.5rem" }}>{item.bishopCount || ""}</td>
-                <td style={{ padding: "0.5rem" }}>{item.knightCount || ""}</td>
-                <td style={{ padding: "0.5rem" }}>{item.pawnCount || ""}</td>
+                <td className={styles.td}>{item.rallyCryName ?? "—"}</td>
+                <td className={styles.td}>{item.objectiveName ?? "—"}</td>
+                <td className={styles.td}>{item.outcomeName ?? item.outcomeId}</td>
+                <td className={styles.td}>{item.commitCount}</td>
+                <td className={styles.tdCenter}>
+                  {item.kingCount ? (
+                    <span className={styles.pieceCount}>{item.kingCount}</span>
+                  ) : null}
+                </td>
+                <td className={styles.tdCenter}>
+                  {item.queenCount ? (
+                    <span className={styles.pieceCount}>{item.queenCount}</span>
+                  ) : null}
+                </td>
+                <td className={styles.tdCenter}>
+                  {item.rookCount ? (
+                    <span className={styles.pieceCount}>{item.rookCount}</span>
+                  ) : null}
+                </td>
+                <td className={styles.tdCenter}>
+                  {item.bishopCount ? (
+                    <span className={styles.pieceCount}>{item.bishopCount}</span>
+                  ) : null}
+                </td>
+                <td className={styles.tdCenter}>
+                  {item.knightCount ? (
+                    <span className={styles.pieceCount}>{item.knightCount}</span>
+                  ) : null}
+                </td>
+                <td className={styles.tdCenter}>
+                  {item.pawnCount ? (
+                    <span className={styles.pieceCount}>{item.pawnCount}</span>
+                  ) : null}
+                </td>
               </tr>
             ))}
           </tbody>

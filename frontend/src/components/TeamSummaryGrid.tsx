@@ -1,5 +1,7 @@
 import React from "react";
 import type { TeamMemberSummary } from "@weekly-commitments/contracts";
+import { ChessIcon } from "./icons/ChessIcon.js";
+import styles from "./TeamSummaryGrid.module.css";
 
 export interface TeamSummaryGridProps {
   users: TeamMemberSummary[];
@@ -16,26 +18,44 @@ export const TeamSummaryGrid: React.FC<TeamSummaryGridProps> = ({
 }) => {
   if (users.length === 0) {
     return (
-      <div data-testid="team-summary-empty" style={{ padding: "1rem", textAlign: "center", color: "#888" }}>
+      <div data-testid="team-summary-empty" className={styles.empty}>
         No direct reports found for this week.
       </div>
     );
   }
 
   return (
-    <table data-testid="team-summary-grid" style={{ width: "100%", borderCollapse: "collapse" }}>
-      <thead>
-        <tr style={{ borderBottom: "2px solid #ddd", textAlign: "left" }}>
-          <th style={{ padding: "0.5rem" }}>User</th>
-          <th style={{ padding: "0.5rem" }}>State</th>
-          <th style={{ padding: "0.5rem" }}>Review</th>
-          <th style={{ padding: "0.5rem" }}>Commits</th>
-          <th style={{ padding: "0.5rem" }}>👑 / ♛</th>
-          <th style={{ padding: "0.5rem" }}>Issues</th>
-          <th style={{ padding: "0.5rem" }}>Incomplete</th>
-          <th style={{ padding: "0.5rem" }}>Non-Strategic</th>
-          <th style={{ padding: "0.5rem" }}>Badges</th>
-          <th style={{ padding: "0.5rem" }}></th>
+    <table data-testid="team-summary-grid" className={styles.table}>
+      <thead className={styles.thead}>
+        <tr>
+          <th className={styles.th} scope="col">User</th>
+          <th className={styles.th} scope="col">State</th>
+          <th className={styles.th} scope="col">Review</th>
+          <th className={`${styles.th} ${styles.tdCenter}`} scope="col">
+            Commits
+          </th>
+          <th
+            className={`${styles.th} ${styles.thPiece}`}
+            scope="col"
+            aria-label="King / Queen counts"
+          >
+            <span className={styles.piecePairHeader}>
+              <ChessIcon piece="KING" size={16} />
+              {" / "}
+              <ChessIcon piece="QUEEN" size={16} />
+            </span>
+          </th>
+          <th className={`${styles.th} ${styles.tdCenter}`} scope="col">
+            Issues
+          </th>
+          <th className={`${styles.th} ${styles.tdCenter}`} scope="col">
+            Incomplete
+          </th>
+          <th className={`${styles.th} ${styles.tdCenter}`} scope="col">
+            Non-Strategic
+          </th>
+          <th className={styles.th} scope="col">Badges</th>
+          <th className={styles.th} scope="col" aria-label="Actions"></th>
         </tr>
       </thead>
       <tbody>
@@ -43,68 +63,62 @@ export const TeamSummaryGrid: React.FC<TeamSummaryGridProps> = ({
           <tr
             key={user.userId}
             data-testid={`team-row-${user.userId}`}
-            style={{ borderBottom: "1px solid #eee" }}
+            className={styles.tr}
           >
-            <td style={{ padding: "0.5rem" }}>{user.displayName ?? user.userId}</td>
-            <td style={{ padding: "0.5rem" }}>
+            <td className={styles.td}>{user.displayName ?? user.userId}</td>
+            <td className={styles.td}>
               <StateBadge state={user.state} />
             </td>
-            <td style={{ padding: "0.5rem" }}>
+            <td className={styles.td}>
               <ReviewBadge status={user.reviewStatus} />
             </td>
-            <td style={{ padding: "0.5rem" }}>{user.commitCount}</td>
-            <td style={{ padding: "0.5rem" }}>
-              {user.kingCount} / {user.queenCount}
+            <td className={`${styles.td} ${styles.tdCenter}`}>{user.commitCount}</td>
+            <td className={`${styles.td} ${styles.tdCenter}`}>
+              <span className={styles.piecePair}>
+                {user.kingCount}
+                {" / "}
+                {user.queenCount}
+              </span>
             </td>
-            <td style={{ padding: "0.5rem" }}>
+            <td className={`${styles.td} ${styles.tdCenter}`}>
               {user.issueCount > 0 && (
-                <span style={{ color: "#dc2626" }}>{user.issueCount}</span>
+                <span className={styles.issueCount}>{user.issueCount}</span>
               )}
             </td>
-            <td style={{ padding: "0.5rem" }}>
+            <td className={`${styles.td} ${styles.tdCenter}`}>
               {user.incompleteCount > 0 && (
-                <span style={{ color: "#d97706" }}>{user.incompleteCount}</span>
+                <span className={styles.incompleteCount}>{user.incompleteCount}</span>
               )}
             </td>
-            <td style={{ padding: "0.5rem" }}>
+            <td className={`${styles.td} ${styles.tdCenter}`}>
               {user.nonStrategicCount > 0 && (
-                <span style={{ color: "#6b7280" }}>{user.nonStrategicCount}</span>
+                <span className={styles.nonStrategicCount}>{user.nonStrategicCount}</span>
               )}
             </td>
-            <td style={{ padding: "0.5rem" }}>
-              {user.isStale && (
-                <span
-                  data-testid={`stale-badge-${user.userId}`}
-                  style={{
-                    background: "#fef3c7",
-                    color: "#92400e",
-                    padding: "0.125rem 0.375rem",
-                    borderRadius: "4px",
-                    fontSize: "0.75rem",
-                    marginRight: "0.25rem",
-                  }}
-                >
-                  STALE
-                </span>
-              )}
-              {user.isLateLock && (
-                <span
-                  data-testid={`late-lock-badge-${user.userId}`}
-                  style={{
-                    background: "#fee2e2",
-                    color: "#991b1b",
-                    padding: "0.125rem 0.375rem",
-                    borderRadius: "4px",
-                    fontSize: "0.75rem",
-                  }}
-                >
-                  LATE LOCK
-                </span>
-              )}
+            <td className={styles.td}>
+              <span className={styles.badgesCell}>
+                {user.isStale && (
+                  <span
+                    data-testid={`stale-badge-${user.userId}`}
+                    className={styles.staleBadge}
+                  >
+                    STALE
+                  </span>
+                )}
+                {user.isLateLock && (
+                  <span
+                    data-testid={`late-lock-badge-${user.userId}`}
+                    className={styles.lateLockedBadge}
+                  >
+                    LATE LOCK
+                  </span>
+                )}
+              </span>
             </td>
-            <td style={{ padding: "0.5rem" }}>
+            <td className={styles.td}>
               <button
                 data-testid={`drill-down-${user.userId}`}
+                className={styles.drillButton}
                 onClick={() => onDrillDown(user.userId, user.planId)}
               >
                 View
@@ -117,61 +131,54 @@ export const TeamSummaryGrid: React.FC<TeamSummaryGridProps> = ({
   );
 };
 
+/* ─── StateBadge ─────────────────────────────────────────────────────────── */
+
+const STATE_CLASS: Record<string, string> = {
+  DRAFT:          styles.stateDraft,
+  LOCKED:         styles.stateLocked,
+  RECONCILING:    styles.stateReconciling,
+  RECONCILED:     styles.stateReconciled,
+  CARRY_FORWARD:  styles.stateCarryForward,
+};
+
 const StateBadge: React.FC<{ state: string | null }> = ({ state }) => {
   if (!state) {
-    return <span style={{ color: "#9ca3af" }}>No plan</span>;
+    return <span className={styles.badgeNoPlan}>No plan</span>;
   }
 
-  const colors: Record<string, { bg: string; fg: string }> = {
-    DRAFT: { bg: "#dbeafe", fg: "#1e40af" },
-    LOCKED: { bg: "#e0e7ff", fg: "#3730a3" },
-    RECONCILING: { bg: "#fef9c3", fg: "#854d0e" },
-    RECONCILED: { bg: "#d1fae5", fg: "#065f46" },
-    CARRY_FORWARD: { bg: "#f3e8ff", fg: "#6b21a8" },
-  };
-
-  const c = colors[state] ?? { bg: "#f3f4f6", fg: "#374151" };
+  const stateClass = STATE_CLASS[state] ?? styles.stateDefault;
 
   return (
-    <span
-      data-testid="state-badge"
-      style={{
-        background: c.bg,
-        color: c.fg,
-        padding: "0.125rem 0.375rem",
-        borderRadius: "4px",
-        fontSize: "0.75rem",
-      }}
-    >
+    <span data-testid="state-badge" className={`${styles.badge} ${stateClass}`}>
       {state}
     </span>
   );
 };
 
+/* ─── ReviewBadge ────────────────────────────────────────────────────────── */
+
 const ReviewBadge: React.FC<{ status: string | null }> = ({ status }) => {
   if (!status || status === "REVIEW_NOT_APPLICABLE") {
-    return <span style={{ color: "#9ca3af" }}>—</span>;
+    return <span className={styles.reviewNa}>—</span>;
   }
 
-  const colors: Record<string, { bg: string; fg: string }> = {
-    REVIEW_PENDING: { bg: "#fef3c7", fg: "#92400e" },
-    APPROVED: { bg: "#d1fae5", fg: "#065f46" },
-    CHANGES_REQUESTED: { bg: "#fee2e2", fg: "#991b1b" },
-  };
-
-  const c = colors[status] ?? { bg: "#f3f4f6", fg: "#374151" };
+  let reviewClass: string;
+  switch (status) {
+    case "REVIEW_PENDING":
+      reviewClass = styles.reviewPending;
+      break;
+    case "APPROVED":
+      reviewClass = styles.reviewApproved;
+      break;
+    case "CHANGES_REQUESTED":
+      reviewClass = styles.reviewChangesRequested;
+      break;
+    default:
+      reviewClass = styles.reviewDefault;
+  }
 
   return (
-    <span
-      data-testid="review-badge"
-      style={{
-        background: c.bg,
-        color: c.fg,
-        padding: "0.125rem 0.375rem",
-        borderRadius: "4px",
-        fontSize: "0.75rem",
-      }}
-    >
+    <span data-testid="review-badge" className={`${styles.badge} ${reviewClass}`}>
       {status.replace("REVIEW_", "").replace("_", " ")}
     </span>
   );

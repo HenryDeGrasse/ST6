@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type {
   WeeklyCommit,
   UpdateActualRequest,
 } from "@weekly-commitments/contracts";
 import { CompletionStatus, PlanState } from "@weekly-commitments/contracts";
+import { StatusIcon, type StatusIconName } from "./icons/index.js";
+import styles from "./ReconciliationView.module.css";
 
 export interface ActualEntry {
   commitId: string;
@@ -20,11 +22,34 @@ export interface ReconciliationViewProps {
   loading?: boolean;
 }
 
+/** Plain text labels for <option> elements (SVG not supported inside <option>). */
 const STATUS_LABELS: Record<CompletionStatus, string> = {
-  [CompletionStatus.DONE]: "✅ Done",
-  [CompletionStatus.PARTIALLY]: "🔶 Partially",
-  [CompletionStatus.NOT_DONE]: "❌ Not Done",
-  [CompletionStatus.DROPPED]: "🗑️ Dropped",
+  [CompletionStatus.DONE]: "Done",
+  [CompletionStatus.PARTIALLY]: "Partially",
+  [CompletionStatus.NOT_DONE]: "Not Done",
+  [CompletionStatus.DROPPED]: "Dropped",
+};
+
+/** Status-tinted card modifier classes keyed by CompletionStatus. */
+const STATUS_CARD_CLASS: Record<CompletionStatus, string> = {
+  [CompletionStatus.DONE]: styles.commitCardDone,
+  [CompletionStatus.PARTIALLY]: styles.commitCardPartially,
+  [CompletionStatus.NOT_DONE]: styles.commitCardNotDone,
+  [CompletionStatus.DROPPED]: styles.commitCardDropped,
+};
+
+const STATUS_BADGE_CLASS: Record<CompletionStatus, string> = {
+  [CompletionStatus.DONE]: styles.statusBadgeDone,
+  [CompletionStatus.PARTIALLY]: styles.statusBadgePartially,
+  [CompletionStatus.NOT_DONE]: styles.statusBadgeNotDone,
+  [CompletionStatus.DROPPED]: styles.statusBadgeDropped,
+};
+
+const STATUS_ICONS: Record<CompletionStatus, StatusIconName> = {
+  [CompletionStatus.DONE]: "check",
+  [CompletionStatus.PARTIALLY]: "partial",
+  [CompletionStatus.NOT_DONE]: "error-x",
+  [CompletionStatus.DROPPED]: "trash",
 };
 
 function buildActualEntry(commit: WeeklyCommit): ActualEntry {
@@ -34,6 +59,15 @@ function buildActualEntry(commit: WeeklyCommit): ActualEntry {
     completionStatus: commit.actual?.completionStatus ?? null,
     deltaReason: commit.actual?.deltaReason ?? "",
   };
+}
+
+function buildActualSignature(commit: WeeklyCommit): string {
+  return JSON.stringify({
+    version: commit.version,
+    actualResult: commit.actual?.actualResult ?? "",
+    completionStatus: commit.actual?.completionStatus ?? null,
+    deltaReason: commit.actual?.deltaReason ?? "",
+  });
 }
 
 /**
@@ -60,15 +94,27 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
     }
     return init;
   });
+  const serverActualSignaturesRef = useRef<Record<string, string>>(
+    Object.fromEntries(commits.map((commit) => [commit.id, buildActualSignature(commit)])),
+  );
 
   useEffect(() => {
+    const nextServerSignatures: Record<string, string> = {};
+
     setActuals((prev) => {
       const next: Record<string, ActualEntry> = {};
       for (const commit of commits) {
-        next[commit.id] = prev[commit.id] ?? buildActualEntry(commit);
+        const serverSignature = buildActualSignature(commit);
+        nextServerSignatures[commit.id] = serverSignature;
+        next[commit.id] =
+          !prev[commit.id] || serverActualSignaturesRef.current[commit.id] !== serverSignature
+            ? buildActualEntry(commit)
+            : prev[commit.id];
       }
       return next;
     });
+
+    serverActualSignaturesRef.current = nextServerSignatures;
   }, [commits]);
 
   const updateActualField = (commitId: string, field: keyof ActualEntry, value: string | CompletionStatus | null) => {
@@ -111,50 +157,60 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
     if (entry.completionStatus !== CompletionStatus.DONE && !entry.deltaReason.trim()) return false;
     return true;
   });
+  const isSubmitDisabled = !allComplete || loading;
 
   if (!isReconciling) {
     return null;
   }
 
   return (
-    <div data-testid="reconciliation-view" style={{ marginTop: "1rem" }}>
-      <h3>Reconciliation</h3>
-      <p style={{ color: "#555", fontSize: "0.9rem" }}>
+    <div data-testid="reconciliation-view" className={styles.container}>
+      <h3 className={styles.heading}>Reconciliation</h3>
+      <p className={styles.description}>
         Review each commitment and mark what actually happened this week.
       </p>
 
       {commits.map((commit) => {
         const entry = actuals[commit.id] ?? buildActualEntry(commit);
         const needsDelta = entry.completionStatus !== null && entry.completionStatus !== CompletionStatus.DONE;
+        const statusClass = entry.completionStatus ? STATUS_CARD_CLASS[entry.completionStatus] : "";
+        const statusBadgeClass = entry.completionStatus ? STATUS_BADGE_CLASS[entry.completionStatus] : "";
+        const statusIcon = entry.completionStatus ? STATUS_ICONS[entry.completionStatus] : null;
 
         return (
           <div
             key={commit.id}
             data-testid={`reconcile-commit-${commit.id}`}
-            style={{
-              padding: "0.75rem",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              marginBottom: "0.75rem",
-            }}
+            className={`${styles.commitCard} ${statusClass}`}
           >
-            <div style={{ marginBottom: "0.5rem" }}>
-              <strong>{commit.title}</strong>
+            <div className={styles.cardHeader}>
+              <strong className={styles.cardTitle}>{commit.title}</strong>
               {commit.chessPriority && (
-                <span style={{ marginLeft: "0.5rem", fontSize: "0.8rem", color: "#666" }}>
+                <span className={styles.chessBadge}>
                   {commit.chessPriority}
+                </span>
+              )}
+              {entry.completionStatus && statusIcon && (
+                <span className={`${styles.statusBadge} ${statusBadgeClass}`}>
+                  <StatusIcon icon={statusIcon} size={14} />
+                  {STATUS_LABELS[entry.completionStatus]}
                 </span>
               )}
             </div>
             {commit.expectedResult && (
-              <div style={{ fontSize: "0.85rem", color: "#555", marginBottom: "0.5rem" }}>
+              <div className={styles.expectedResult}>
                 Expected: {commit.expectedResult}
               </div>
             )}
 
             {/* Completion status */}
-            <div style={{ marginBottom: "0.5rem" }}>
-              <label htmlFor={`reconcile-status-select-${commit.id}`} style={{ fontSize: "0.85rem", fontWeight: 600 }}>Status:</label>
+            <div className={styles.statusRow}>
+              <label
+                htmlFor={`reconcile-status-select-${commit.id}`}
+                className={styles.statusLabel}
+              >
+                Status:
+              </label>
               <select
                 id={`reconcile-status-select-${commit.id}`}
                 data-testid={`reconcile-status-${commit.id}`}
@@ -166,7 +222,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
                     e.target.value ? (e.target.value as CompletionStatus) : null,
                   )
                 }
-                style={{ marginLeft: "0.5rem" }}
+                className={styles.statusSelect}
               >
                 <option value="">Select…</option>
                 {Object.values(CompletionStatus).map((s) => (
@@ -178,27 +234,29 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
             </div>
 
             {/* Actual result */}
-            <div style={{ marginBottom: "0.5rem" }}>
+            <div className={styles.fieldRow}>
               <textarea
                 data-testid={`reconcile-actual-${commit.id}`}
                 placeholder="What actually happened?"
                 value={entry.actualResult}
                 onChange={(e) => updateActualField(commit.id, "actualResult", e.target.value)}
                 rows={2}
-                style={{ width: "100%", padding: "0.25rem" }}
+                className={styles.textarea}
               />
             </div>
 
             {/* Delta reason (required if not DONE) */}
             {needsDelta && (
-              <div style={{ marginBottom: "0.5rem" }}>
+              <div className={styles.fieldRow}>
                 <textarea
                   data-testid={`reconcile-delta-${commit.id}`}
                   placeholder="Why wasn't this completed? (required)"
                   value={entry.deltaReason}
                   onChange={(e) => updateActualField(commit.id, "deltaReason", e.target.value)}
                   rows={2}
-                  style={{ width: "100%", padding: "0.25rem", borderColor: entry.deltaReason.trim() ? "#ccc" : "#c62828" }}
+                  className={`${styles.textarea} ${
+                    entry.deltaReason.trim() ? "" : styles.textareaError
+                  }`}
                 />
               </div>
             )}
@@ -207,32 +265,34 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
               data-testid={`reconcile-save-${commit.id}`}
               onClick={() => { void handleSaveActual(commit); }}
               disabled={!entry.completionStatus || savingCommits[commit.id]}
+              className={styles.saveButton}
             >
-              {savingCommits[commit.id] ? "⏳ Saving…" : "Save Actual"}
+              {savingCommits[commit.id] ? (
+                <>
+                  <StatusIcon icon="loading" size={14} />
+                  Saving…
+                </>
+              ) : (
+                "Save Actual"
+              )}
             </button>
           </div>
         );
       })}
 
-      <div style={{ marginTop: "1rem", display: "flex", gap: "0.75rem", alignItems: "center" }}>
+      <div className={styles.submitRow}>
         <button
           data-testid="reconcile-submit"
           onClick={onSubmit}
-          disabled={!allComplete || loading}
-          style={{
-            padding: "0.5rem 1.5rem",
-            fontWeight: 600,
-            background: allComplete ? "#1b5e20" : "#ccc",
-            color: allComplete ? "#fff" : "#666",
-            border: "none",
-            borderRadius: "4px",
-            cursor: allComplete ? "pointer" : "not-allowed",
-          }}
+          disabled={isSubmitDisabled}
+          className={`${styles.submitButton} ${
+            isSubmitDisabled ? styles.submitButtonDisabled : styles.submitButtonEnabled
+          }`}
         >
           Submit Reconciliation
         </button>
         {!allComplete && (
-          <span style={{ color: "#888", fontSize: "0.85rem" }}>
+          <span className={styles.incompleteHint}>
             Complete all commitments to submit.
           </span>
         )}

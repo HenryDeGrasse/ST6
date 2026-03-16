@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import styles from "./ConfirmDialog.module.css";
 
 export interface ConfirmDialogProps {
   /** Dialog title */
@@ -91,15 +92,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   return (
     <div
       data-testid="confirm-dialog-overlay"
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-      }}
+      className={styles.overlay}
       onClick={(e) => {
         if (!loading && e.target === e.currentTarget) {
           onCancel();
@@ -114,25 +107,19 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-message"
         aria-busy={loading}
-        style={{
-          background: "#fff",
-          borderRadius: "8px",
-          padding: "1.5rem",
-          minWidth: "320px",
-          maxWidth: "480px",
-          boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
-        }}
+        className={styles.dialog}
       >
-        <h3 id="confirm-dialog-title" style={{ margin: "0 0 0.75rem" }}>
+        <h3 id="confirm-dialog-title" className={styles.title}>
           {title}
         </h3>
-        <p id="confirm-dialog-message" style={{ margin: "0 0 1.25rem", color: "#555" }}>
+        <p id="confirm-dialog-message" className={styles.message}>
           {message}
         </p>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
+        <div className={styles.buttonRow}>
           <button
             ref={cancelBtnRef}
             data-testid="confirm-dialog-cancel"
+            className={styles.cancelButton}
             onClick={onCancel}
             disabled={loading}
           >
@@ -140,9 +127,9 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           </button>
           <button
             data-testid="confirm-dialog-confirm"
+            className={styles.confirmButton}
             onClick={onConfirm}
             disabled={loading}
-            style={{ fontWeight: 600 }}
           >
             {confirmLabel}
           </button>

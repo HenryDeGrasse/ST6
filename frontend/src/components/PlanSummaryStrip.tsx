@@ -1,6 +1,8 @@
 import React from "react";
 import type { WeeklyCommit } from "@weekly-commitments/contracts";
 import { ChessPriority } from "@weekly-commitments/contracts";
+import { ChessIcon } from "./icons/index.js";
+import styles from "./PlanSummaryStrip.module.css";
 
 export interface PlanSummaryStripProps {
   commits: WeeklyCommit[];
@@ -26,28 +28,6 @@ export function computeMetrics(commits: WeeklyCommit[]): PlanMetrics {
   return { total, strategicCount, nonStrategicCount, alignmentPct, kingCount, queenCount };
 }
 
-const metricCardStyle: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  padding: "0.5rem 1rem",
-  background: "#fff",
-  borderRadius: "4px",
-  minWidth: "80px",
-  border: "1px solid #e0e0e0",
-};
-
-const metricValueStyle: React.CSSProperties = {
-  fontSize: "1.25rem",
-  fontWeight: 700,
-};
-
-const metricLabelStyle: React.CSSProperties = {
-  fontSize: "0.75rem",
-  color: "#666",
-  marginTop: "0.125rem",
-};
-
 /**
  * Horizontal strip showing at-a-glance plan metrics:
  * total commitments, strategic alignment %, non-strategic count,
@@ -61,39 +41,54 @@ export const PlanSummaryStrip: React.FC<PlanSummaryStripProps> = ({ commits }) =
       data-testid="plan-summary-strip"
       role="region"
       aria-label="Plan summary metrics"
-      style={{
-        display: "flex",
-        gap: "0.75rem",
-        padding: "0.75rem",
-        background: "#f5f7fa",
-        borderRadius: "4px",
-        marginBottom: "1rem",
-        overflowX: "auto",
-      }}
+      className={styles.strip}
     >
-      <div style={metricCardStyle} data-testid="metric-total">
-        <span style={metricValueStyle} aria-label="Total commitments">{m.total}</span>
-        <span style={metricLabelStyle}>Total</span>
+      {/* Total commitments */}
+      <div className={styles.metricCard} data-testid="metric-total">
+        <span className={styles.metricValue} aria-label="Total commitments">
+          {m.total}
+        </span>
+        <span className={styles.metricLabel}>Total</span>
       </div>
 
-      <div style={metricCardStyle} data-testid="metric-alignment">
-        <span style={metricValueStyle} aria-label="Strategic alignment percentage">{m.alignmentPct}%</span>
-        <span style={metricLabelStyle}>Aligned</span>
+      {/* Strategic alignment % */}
+      <div className={styles.metricCard} data-testid="metric-alignment">
+        <span className={styles.metricValue} aria-label="Strategic alignment percentage">
+          {m.alignmentPct}%
+        </span>
+        <span className={styles.metricLabel}>Aligned</span>
       </div>
 
-      <div style={metricCardStyle} data-testid="metric-non-strategic">
-        <span style={metricValueStyle} aria-label="Non-strategic commitments">{m.nonStrategicCount}</span>
-        <span style={metricLabelStyle}>Non-strategic</span>
+      {/* Non-strategic count */}
+      <div className={styles.metricCard} data-testid="metric-non-strategic">
+        <span className={styles.metricValue} aria-label="Non-strategic commitments">
+          {m.nonStrategicCount}
+        </span>
+        <span className={styles.metricLabel}>Non-strategic</span>
       </div>
 
-      <div style={metricCardStyle} data-testid="metric-king">
-        <span style={metricValueStyle} aria-label="KING priority commitments">👑 {m.kingCount}</span>
-        <span style={metricLabelStyle}>KING</span>
+      {/* KING count – gold border card */}
+      <div
+        className={[styles.metricCard, styles.metricCardKing].join(" ")}
+        data-testid="metric-king"
+      >
+        <span className={styles.metricValue} aria-label="KING priority commitments">
+          <ChessIcon piece="KING" size={16} />
+          {m.kingCount}
+        </span>
+        <span className={styles.metricLabel}>KING</span>
       </div>
 
-      <div style={metricCardStyle} data-testid="metric-queen">
-        <span style={metricValueStyle} aria-label="QUEEN priority commitments">♛ {m.queenCount}</span>
-        <span style={metricLabelStyle}>QUEEN</span>
+      {/* QUEEN count – gold border card */}
+      <div
+        className={[styles.metricCard, styles.metricCardQueen].join(" ")}
+        data-testid="metric-queen"
+      >
+        <span className={styles.metricValue} aria-label="QUEEN priority commitments">
+          <ChessIcon piece="QUEEN" size={16} />
+          {m.queenCount}
+        </span>
+        <span className={styles.metricLabel}>QUEEN</span>
       </div>
     </div>
   );

@@ -9,7 +9,9 @@ import type {
 } from "@weekly-commitments/contracts";
 import { PlanState } from "@weekly-commitments/contracts";
 import { CommitEditor } from "./CommitEditor.js";
+import { StatusIcon } from "./icons/index.js";
 import type { AiRequestStatus } from "../hooks/useAiSuggestions.js";
+import styles from "./CommitList.module.css";
 
 export interface CommitListProps {
   commits: WeeklyCommit[];
@@ -29,6 +31,30 @@ export interface CommitListProps {
   onAiSuggestRequest?: (title: string, description?: string) => void;
   /** Clear AI suggestions (e.g. after accepting one). */
   onAiSuggestClear?: () => void;
+}
+
+/**
+ * Resolves the outcome name from the RCDO tree when snapshot fields aren't
+ * populated yet (i.e. plan is still in DRAFT, before lock).
+ */
+function resolveOutcomeFromTree(
+  outcomeId: string,
+  tree: RcdoCry[],
+): { rallyCryName: string; objectiveName: string; outcomeName: string } | null {
+  for (const cry of tree) {
+    for (const obj of cry.objectives) {
+      for (const out of obj.outcomes) {
+        if (out.id === outcomeId) {
+          return {
+            rallyCryName: cry.name,
+            objectiveName: obj.name,
+            outcomeName: out.name,
+          };
+        }
+      }
+    }
+  }
+  return null;
 }
 
 /**
@@ -53,19 +79,27 @@ export const CommitList: React.FC<CommitListProps> = ({
   const [showNewForm, setShowNewForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const isDraft = planState === PlanState.DRAFT;
+  const isEditable =
+    isDraft || planState === PlanState.LOCKED || planState === PlanState.RECONCILING;
 
   return (
-    <div data-testid="commit-list">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-        <h3 style={{ margin: 0 }}>Commitments ({String(commits.length)})</h3>
+    <div data-testid="commit-list" className={styles.container}>
+      {/* ── List header ── */}
+      <div className={styles.listHeader}>
+        <h3 className={styles.listTitle}>Commitments ({String(commits.length)})</h3>
         {isDraft && !showNewForm && (
-          <button data-testid="add-commit-btn" onClick={() => setShowNewForm(true)}>
+          <button
+            data-testid="add-commit-btn"
+            type="button"
+            className={styles.addButton}
+            onClick={() => setShowNewForm(true)}
+          >
             + Add Commitment
           </button>
         )}
       </div>
 
-      {/* New commit form */}
+      {/* ── New commit form ── */}
       {showNewForm && (
         <CommitEditor
           planState={planState}
@@ -89,7 +123,7 @@ export const CommitList: React.FC<CommitListProps> = ({
         />
       )}
 
-      {/* Existing commits */}
+      {/* ── Existing commits ── */}
       {commits.map((commit) =>
         editingId === commit.id ? (
           <CommitEditor
@@ -125,62 +159,100 @@ export const CommitList: React.FC<CommitListProps> = ({
           <div
             key={commit.id}
             data-testid={`commit-row-${commit.id}`}
-            onClick={() => {
-              // Editable in DRAFT; in LOCKED/RECONCILING only progressNotes editable
-              if (isDraft || planState === PlanState.LOCKED || planState === PlanState.RECONCILING) {
-                setEditingId(commit.id);
-              }
-            }}
-            style={{
-              padding: "0.5rem",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              marginBottom: "0.5rem",
-              cursor: isDraft || planState === PlanState.LOCKED || planState === PlanState.RECONCILING ? "pointer" : "default",
-            }}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                if (isDraft || planState === PlanState.LOCKED || planState === PlanState.RECONCILING) {
-                  setEditingId(commit.id);
-                }
-              }
-            }}
+            onClick={isEditable ? () => setEditingId(commit.id) : undefined}
+            className={[
+              styles.commitCard,
+              !isEditable ? styles.commitCardReadOnly : "",
+            ].join(" ")}
+            role={isEditable ? "button" : undefined}
+            tabIndex={isEditable ? 0 : undefined}
+            aria-disabled={!isEditable}
+            onKeyDown={
+              isEditable
+                ? (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setEditingId(commit.id);
+                    }
+                  }
+                : undefined
+            }
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <strong>{commit.title}</strong>
-              <div style={{ display: "flex", gap: "0.5rem", fontSize: "0.8rem", color: "#666" }}>
-                {commit.chessPriority && <span data-testid="commit-chess">{commit.chessPriority}</span>}
-                {commit.category && <span data-testid="commit-category">{commit.category}</span>}
+            {/* ── Card header ── */}
+            <div className={styles.cardHeader}>
+              <span className={styles.cardTitle}>{commit.title}</span>
+              <div className={styles.cardMeta}>
+                {commit.chessPriority && (
+                  <span data-testid="commit-chess" className={styles.metaBadge}>
+                    {commit.chessPriority}
+                  </span>
+                )}
+                {commit.category && (
+                  <span data-testid="commit-category" className={styles.metaBadge}>
+                    {commit.category}
+                  </span>
+                )}
               </div>
             </div>
+
+            {/* ── Description ── */}
             {commit.description && (
-              <p style={{ margin: "0.25rem 0", color: "#555", fontSize: "0.9rem" }}>{commit.description}</p>
+              <p className={styles.cardDescription}>{commit.description}</p>
             )}
-            <div style={{ fontSize: "0.8rem", color: "#777" }}>
-              {commit.outcomeId && commit.snapshotOutcomeName && (
-                <span data-testid="commit-rcdo">
-                  🎯 {commit.snapshotRallyCryName} → {commit.snapshotObjectiveName} → {commit.snapshotOutcomeName}
+
+            {/* ── Footer: RCDO / non-strategic / carried ── */}
+            <div className={styles.cardFooter}>
+              {commit.outcomeId && (() => {
+                // Use snapshot names if available (post-lock), otherwise look up from tree
+                const resolved = commit.snapshotOutcomeName
+                  ? {
+                      rallyCryName: commit.snapshotRallyCryName!,
+                      objectiveName: commit.snapshotObjectiveName!,
+                      outcomeName: commit.snapshotOutcomeName,
+                    }
+                  : resolveOutcomeFromTree(commit.outcomeId, rcdoTree);
+
+                if (resolved) {
+                  return (
+                    <span data-testid="commit-rcdo" className={styles.rcdoLink}>
+                      <StatusIcon icon="target" size={13} />
+                      <span className={styles.rcdoOutcome}>{resolved.outcomeName}</span>
+                      <span className={styles.rcdoBreadcrumb}>
+                        {resolved.rallyCryName} › {resolved.objectiveName}
+                      </span>
+                    </span>
+                  );
+                }
+
+                return (
+                  <span data-testid="commit-rcdo" className={styles.rcdoLink}>
+                    <StatusIcon icon="target" size={13} />
+                    Linked to outcome
+                  </span>
+                );
+              })()}
+              {commit.nonStrategicReason && (
+                <span data-testid="commit-non-strategic" className={styles.nonStrategicLabel}>
+                  <StatusIcon icon="pin" size={13} />
+                  Non-strategic: {commit.nonStrategicReason}
                 </span>
               )}
-              {commit.outcomeId && !commit.snapshotOutcomeName && (
-                <span data-testid="commit-rcdo">🎯 Linked to outcome</span>
-              )}
-              {commit.nonStrategicReason && (
-                <span data-testid="commit-non-strategic">📌 Non-strategic: {commit.nonStrategicReason}</span>
-              )}
               {commit.carriedFromCommitId && (
-                <span data-testid="commit-carried" style={{ marginLeft: "0.5rem", color: "#1565c0" }}>
-                  ↩ Carried forward
+                <span data-testid="commit-carried" className={styles.carriedBadge}>
+                  <StatusIcon icon="return-arrow" size={12} />
+                  Carried forward
                 </span>
               )}
             </div>
+
+            {/* ── Validation errors ── */}
             {commit.validationErrors.length > 0 && (
-              <div style={{ color: "#c62828", fontSize: "0.8rem", marginTop: "0.25rem" }}>
+              <div className={styles.cardErrors}>
                 {commit.validationErrors.map((ve, i) => (
-                  <span key={i}>⚠️ {ve.message} </span>
+                  <span key={i} className={styles.cardErrorItem}>
+                    <StatusIcon icon="warning" size={13} />
+                    {ve.message}
+                  </span>
                 ))}
               </div>
             )}
@@ -188,8 +260,9 @@ export const CommitList: React.FC<CommitListProps> = ({
         ),
       )}
 
+      {/* ── Empty state ── */}
       {commits.length === 0 && !showNewForm && (
-        <p style={{ color: "#888", fontStyle: "italic" }}>No commitments yet.</p>
+        <p className={styles.emptyState}>No commitments yet.</p>
       )}
     </div>
   );

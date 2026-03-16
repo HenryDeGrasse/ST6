@@ -1,174 +1,335 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { App as WeeklyCommitmentsApp } from "@weekly-commitments/frontend";
 
-/**
- * Stub auth user representing the PA host's identity context.
- * In production the host provides real JWT claims.
- */
-const STUB_USER = {
-  userId: "c0000000-0000-0000-0000-000000000001",
-  orgId: "a0000000-0000-0000-0000-000000000001",
-  displayName: "Jane Doe (stub)",
-  roles: ["IC", "MANAGER"],
-  timezone: "America/Chicago",
-};
+// ─── Persona definitions ──────────────────────────────────────────────────────
 
-const STUB_TOKEN = "stub-jwt-eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9";
+interface Persona {
+  key: string;
+  label: string;
+  description: string;
+  user: {
+    userId: string;
+    orgId: string;
+    displayName: string;
+    roles: string[];
+    timezone: string;
+  };
+  token: string;
+}
 
-/**
- * Simulates the PA host application shell.
- *
- * In production the WC micro-frontend is loaded via Module Federation.
- * This stub demonstrates:
- * 1. Auth/context handoff (user identity + JWT)
- * 2. Navigation frame (host → WC route)
- * 3. Slot rendering (the micro-frontend renders into a designated area)
- *
- * The auth contract is: the host provides `user` and `token` props
- * to the micro-frontend's root component, or exposes them via
- * a shared Module Federation context.
- */
+const ORG_ID = "a0000000-0000-0000-0000-000000000001";
+
+const PERSONAS: Persona[] = [
+  {
+    key: "carol",
+    label: "Carol Park",
+    description: "Manager + IC — LOCKED plan, manages Alice & Bob",
+    user: {
+      userId: "c0000000-0000-0000-0000-000000000001",
+      orgId: ORG_ID,
+      displayName: "Carol Park",
+      roles: ["IC", "MANAGER"],
+      timezone: "America/Chicago",
+    },
+    token: "dev-token-carol",
+  },
+  {
+    key: "alice",
+    label: "Alice Chen",
+    description: "IC — DRAFT plan with validation issues",
+    user: {
+      userId: "c0000000-0000-0000-0000-000000000010",
+      orgId: ORG_ID,
+      displayName: "Alice Chen",
+      roles: ["IC"],
+      timezone: "America/New_York",
+    },
+    token: "dev-token-alice",
+  },
+  {
+    key: "bob",
+    label: "Bob Martinez",
+    description: "IC — RECONCILED plan, awaiting review",
+    user: {
+      userId: "c0000000-0000-0000-0000-000000000020",
+      orgId: ORG_ID,
+      displayName: "Bob Martinez",
+      roles: ["IC"],
+      timezone: "America/Los_Angeles",
+    },
+    token: "dev-token-bob",
+  },
+];
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export const HostShell: React.FC = () => {
+  const [personaKey, setPersonaKey] = useState("carol");
   const [activeTab, setActiveTab] = useState<"weekly" | "dashboard">("weekly");
+  const [resetting, setResetting] = useState(false);
+  // Bump this key to force-remount the micro-frontend on persona switch
+  const [mountKey, setMountKey] = useState(0);
+
+  const persona = PERSONAS.find((p) => p.key === personaKey) ?? PERSONAS[0];
+  const isManager = persona.user.roles.includes("MANAGER");
+
+  const handlePersonaChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newKey = e.target.value;
+    setPersonaKey(newKey);
+    setActiveTab("weekly");
+    // Force remount so AuthContext picks up the new user
+    setMountKey((k) => k + 1);
+  }, []);
+
+  const handleResetData = useCallback(async () => {
+    if (resetting) return;
+    setResetting(true);
+    try {
+      const resp = await fetch("/api/v1/dev/reset-seed", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer dev:${persona.user.userId}:${persona.user.orgId}:${persona.user.roles.join(",")}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (resp.ok) {
+        // Force remount to reload fresh data
+        setMountKey((k) => k + 1);
+      } else {
+        console.error("Reset failed:", resp.status);
+      }
+    } catch (err) {
+      // If the endpoint doesn't exist, fall back to reloading the page
+      console.warn("Reset endpoint not available, reloading page...", err);
+      window.location.reload();
+    } finally {
+      setResetting(false);
+    }
+  }, [resetting]);
 
   return (
-    <div data-testid="pa-host-shell" style={{ fontFamily: "system-ui, sans-serif" }}>
-      {/* Host header / navigation */}
+    <div
+      data-testid="pa-host-shell"
+      style={{
+        fontFamily: "'Crimson Pro', Georgia, 'Times New Roman', serif",
+        background: "#1C1714",
+        minHeight: "100vh",
+        color: "#E8DFD4",
+      }}
+    >
+      {/* ── Host header ── */}
       <header
         style={{
           padding: "0.75rem 1.5rem",
-          background: "#1a237e",
-          color: "#fff",
+          background: "#251E19",
+          borderBottom: "1px solid #4A3F35",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          flexWrap: "wrap",
+          gap: "0.75rem",
         }}
       >
-        <div>
-          <h1 style={{ margin: 0, fontSize: "1.25rem" }}>PA Host Application</h1>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <span style={{ fontSize: "0.85rem" }}>{STUB_USER.displayName}</span>
-          <span
+        <h1
+          style={{
+            margin: 0,
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: "1.375rem",
+            fontWeight: 500,
+            color: "#E8DFD4",
+            letterSpacing: "-0.01em",
+          }}
+        >
+          PA Host Application
+        </h1>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+          {/* Reset Data button */}
+          <button
+            onClick={() => { void handleResetData(); }}
+            disabled={resetting}
             style={{
-              fontSize: "0.7rem",
-              background: "rgba(255,255,255,0.2)",
-              padding: "0.15rem 0.5rem",
+              fontFamily: "'Cinzel', serif",
+              fontSize: "0.5625rem",
+              fontWeight: 600,
+              textTransform: "uppercase" as const,
+              letterSpacing: "0.15em",
+              padding: "0.3rem 0.75rem",
               borderRadius: "4px",
+              border: "1px solid rgba(196, 122, 122, 0.4)",
+              background: resetting ? "#3D332B" : "rgba(139, 38, 53, 0.15)",
+              color: resetting ? "#7A6E62" : "#C47A84",
+              cursor: resetting ? "not-allowed" : "pointer",
+              transition: "background 200ms, border-color 200ms",
             }}
           >
-            {STUB_USER.roles.join(", ")}
+            {resetting ? "Resetting…" : "Reset Data"}
+          </button>
+
+          {/* Persona switcher */}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <label
+              htmlFor="persona-select"
+              style={{
+                fontFamily: "'Cinzel', serif",
+                fontSize: "0.5625rem",
+                fontWeight: 600,
+                textTransform: "uppercase" as const,
+                letterSpacing: "0.15em",
+                color: "#9C8B7A",
+              }}
+            >
+              Persona
+            </label>
+            <select
+              id="persona-select"
+              data-testid="persona-select"
+              value={personaKey}
+              onChange={handlePersonaChange}
+              style={{
+                fontFamily: "'Crimson Pro', serif",
+                fontSize: "0.875rem",
+                padding: "0.3rem 0.625rem",
+                borderRadius: "4px",
+                border: "1px solid #4A3F35",
+                background: "#1C1714",
+                color: "#E8DFD4",
+                cursor: "pointer",
+                minWidth: "10rem",
+              }}
+            >
+              {PERSONAS.map((p) => (
+                <option key={p.key} value={p.key}>
+                  {p.label} ({p.user.roles.join(", ")})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Role badge */}
+          <span
+            style={{
+              fontFamily: "'Cinzel', serif",
+              fontSize: "0.5625rem",
+              fontWeight: 600,
+              textTransform: "uppercase" as const,
+              letterSpacing: "0.15em",
+              background: "rgba(201, 169, 98, 0.15)",
+              color: "#C9A962",
+              padding: "0.2rem 0.625rem",
+              borderRadius: "4px",
+              border: "1px solid rgba(201, 169, 98, 0.30)",
+            }}
+          >
+            {persona.user.roles.join(", ")}
           </span>
         </div>
       </header>
 
-      {/* Host navigation */}
+      {/* ── Host navigation ── */}
       <nav
         style={{
-          padding: "0.5rem 1.5rem",
-          background: "#e8eaf6",
+          padding: "0.625rem 1.5rem",
+          background: "#1C1714",
           display: "flex",
-          gap: "1rem",
-          borderBottom: "1px solid #c5cae9",
+          gap: "1.5rem",
+          borderBottom: "1px solid #4A3F35",
+          alignItems: "center",
         }}
       >
         <button
           onClick={() => setActiveTab("weekly")}
           style={{
-            padding: "0.35rem 1rem",
-            fontWeight: activeTab === "weekly" ? 700 : 400,
-            background: activeTab === "weekly" ? "#fff" : "transparent",
-            border: "1px solid #c5cae9",
-            borderRadius: "4px",
+            fontFamily: "'Cinzel', serif",
+            fontSize: "0.65rem",
+            fontWeight: activeTab === "weekly" ? 700 : 500,
+            textTransform: "uppercase" as const,
+            letterSpacing: "0.2em",
+            color: activeTab === "weekly" ? "#C9A962" : "#9C8B7A",
+            background: "none",
+            border: "none",
+            borderBottom: activeTab === "weekly" ? "2px solid #C9A962" : "2px solid transparent",
+            paddingBottom: "0.5rem",
             cursor: "pointer",
+            transition: "color 300ms ease-out, border-color 300ms ease-out",
           }}
         >
           Weekly Commitments
         </button>
-        <button
-          onClick={() => setActiveTab("dashboard")}
+        {isManager && (
+          <button
+            onClick={() => setActiveTab("dashboard")}
+            style={{
+              fontFamily: "'Cinzel', serif",
+              fontSize: "0.65rem",
+              fontWeight: activeTab === "dashboard" ? 700 : 500,
+              textTransform: "uppercase" as const,
+              letterSpacing: "0.2em",
+              color: activeTab === "dashboard" ? "#C9A962" : "#9C8B7A",
+              background: "none",
+              border: "none",
+              borderBottom: activeTab === "dashboard" ? "2px solid #C9A962" : "2px solid transparent",
+              paddingBottom: "0.5rem",
+              cursor: "pointer",
+              transition: "color 300ms ease-out, border-color 300ms ease-out",
+            }}
+          >
+            Dashboard
+          </button>
+        )}
+
+        {/* Persona description hint */}
+        <span
           style={{
-            padding: "0.35rem 1rem",
-            fontWeight: activeTab === "dashboard" ? 700 : 400,
-            background: activeTab === "dashboard" ? "#fff" : "transparent",
-            border: "1px solid #c5cae9",
-            borderRadius: "4px",
-            cursor: "pointer",
+            marginLeft: "auto",
+            fontFamily: "'Crimson Pro', serif",
+            fontSize: "0.8rem",
+            color: "#7A6E62",
+            fontStyle: "italic",
           }}
         >
-          Dashboard
-        </button>
+          {persona.description}
+        </span>
       </nav>
 
-      {/* Content area — this is where the micro-frontend renders */}
-      <main style={{ padding: "1rem 1.5rem" }}>
+      {/* ── Content area ── */}
+      <main style={{ padding: "0.5rem 1rem" }}>
         {activeTab === "weekly" && (
           <div data-testid="wc-slot">
-            <div
-              style={{
-                padding: "1rem",
-                background: "#fffde7",
-                borderRadius: "4px",
-                marginBottom: "1rem",
-                fontSize: "0.85rem",
-              }}
-            >
-              <strong>Host Stub Info:</strong> This local shell is actively mounting the WC micro-frontend
-              with the same prop contract the PA host would use in production.
-              <code style={{ display: "block", marginTop: "0.5rem", fontSize: "0.8rem", color: "#333" }}>
-                {`{ userId: "${STUB_USER.userId}", orgId: "${STUB_USER.orgId}", token: "${STUB_TOKEN.slice(0, 20)}...", apiBaseUrl: "/api/v1" }`}
-              </code>
-            </div>
-            <p style={{ color: "#555", marginTop: 0 }}>
-              The host passes <code>user</code>, <code>token</code>, and <code>apiBaseUrl</code> to the remote.
-              The remote owns its internal auth/api contexts from there.
-            </p>
             <section
               data-testid="wc-remote-mount"
               style={{
-                marginTop: "1rem",
-                padding: "1rem",
-                background: "#fafafa",
-                border: "1px solid #e0e0e0",
-                borderRadius: "8px",
+                marginTop: "0.5rem",
+                borderRadius: "6px",
+                border: "1px solid #4A3F35",
+                overflow: "hidden",
               }}
             >
               <WeeklyCommitmentsApp
-                user={STUB_USER}
-                token={STUB_TOKEN}
+                key={mountKey}
+                user={persona.user}
+                token={persona.token}
                 apiBaseUrl="/api/v1"
                 initialRoute="weekly"
               />
             </section>
           </div>
         )}
-        {activeTab === "dashboard" && (
+        {activeTab === "dashboard" && isManager && (
           <div data-testid="wc-dashboard-slot">
-            <div
-              style={{
-                padding: "1rem",
-                background: "#e8f5e9",
-                borderRadius: "4px",
-                marginBottom: "1rem",
-                fontSize: "0.85rem",
-              }}
-            >
-              <strong>Host Stub Info:</strong> Manager dashboard view — the host mounts the same WC
-              micro-frontend with <code>initialRoute=&quot;weekly/team&quot;</code> to render the team view.
-            </div>
             <section
               data-testid="wc-dashboard-remote-mount"
               style={{
-                marginTop: "1rem",
-                padding: "1rem",
-                background: "#fafafa",
-                border: "1px solid #e0e0e0",
-                borderRadius: "8px",
+                marginTop: "0.5rem",
+                borderRadius: "6px",
+                border: "1px solid #4A3F35",
+                overflow: "hidden",
               }}
             >
               <WeeklyCommitmentsApp
-                user={STUB_USER}
-                token={STUB_TOKEN}
+                key={mountKey + 1000}
+                user={persona.user}
+                token={persona.token}
                 apiBaseUrl="/api/v1"
                 initialRoute="weekly/team"
               />
@@ -177,14 +338,17 @@ export const HostShell: React.FC = () => {
         )}
       </main>
 
-      {/* Host footer */}
+      {/* ── Host footer ── */}
       <footer
         style={{
-          padding: "0.5rem 1.5rem",
-          borderTop: "1px solid #e0e0e0",
+          padding: "0.625rem 1.5rem",
+          borderTop: "1px solid #4A3F35",
           fontSize: "0.75rem",
-          color: "#888",
-          textAlign: "center",
+          color: "#7A6E62",
+          textAlign: "center" as const,
+          fontFamily: "'Cinzel', serif",
+          letterSpacing: "0.15em",
+          textTransform: "uppercase" as const,
         }}
       >
         PA Host Stub — PM Remote Pattern Demo

@@ -22,16 +22,18 @@ describe("PA Host Stub - HostShell", () => {
     vi.clearAllMocks();
   });
 
-  it("renders the host shell with header", async () => {
+  it("renders the host shell with header and persona switcher", async () => {
     render(<HostShell />);
     expect(screen.getByTestId("pa-host-shell")).toBeInTheDocument();
     expect(screen.getByText("PA Host Application")).toBeInTheDocument();
+    expect(screen.getByTestId("persona-select")).toBeInTheDocument();
     await screen.findByTestId("create-plan-btn");
   });
 
-  it("displays the stub user name", async () => {
+  it("defaults to Carol Park persona", async () => {
     render(<HostShell />);
-    expect(screen.getByText("Jane Doe (stub)")).toBeInTheDocument();
+    const select = screen.getByTestId("persona-select") as HTMLSelectElement;
+    expect(select.value).toBe("carol");
     await screen.findByTestId("create-plan-btn");
   });
 
@@ -49,9 +51,7 @@ describe("PA Host Stub - HostShell", () => {
     fireEvent.click(screen.getByText("Dashboard"));
     expect(screen.getByTestId("wc-dashboard-slot")).toBeInTheDocument();
     expect(screen.getByTestId("wc-dashboard-remote-mount")).toBeInTheDocument();
-    // The WC app is mounted with initialRoute="weekly/team" — verify IC slot is gone
     expect(screen.queryByTestId("wc-slot")).not.toBeInTheDocument();
-    // Wait for team dashboard page to render
     await waitFor(() => {
       expect(screen.getByTestId("team-dashboard-page")).toBeInTheDocument();
     });
@@ -69,11 +69,17 @@ describe("PA Host Stub - HostShell", () => {
     await screen.findByTestId("create-plan-btn");
   });
 
-  it("displays auth/context handoff info in the WC slot", async () => {
+  it("persona switcher changes the mounted user", async () => {
     render(<HostShell />);
-    expect(screen.getByTestId("wc-slot")).toHaveTextContent("userId");
-    expect(screen.getByTestId("wc-slot")).toHaveTextContent("orgId");
-    expect(screen.getByTestId("wc-slot")).toHaveTextContent("apiBaseUrl");
     await screen.findByTestId("create-plan-btn");
+
+    // Switch to Alice (IC only — no Dashboard tab)
+    fireEvent.change(screen.getByTestId("persona-select"), { target: { value: "alice" } });
+
+    // Dashboard tab should not be visible for IC-only users
+    expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
+
+    // WC app should remount with Alice's context
+    await screen.findByTestId("weekly-plan-page");
   });
 });

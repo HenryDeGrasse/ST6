@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
+import styles from "./ToastContext.module.css";
 
 export interface ToastMessage {
   id: number;
@@ -19,6 +20,13 @@ const ToastContext = createContext<ToastContextValue>({
 export const useToast = (): ToastContextValue => useContext(ToastContext);
 
 const TOAST_DURATION_MS = 3000;
+
+/** Map toast type to the corresponding CSS module class. */
+const TYPE_CLASS: Record<ToastMessage["type"], string> = {
+  success: styles.toastSuccess,
+  error:   styles.toastError,
+  info:    styles.toastInfo,
+};
 
 /**
  * Lightweight toast notification provider.
@@ -67,36 +75,14 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           data-testid="toast-container"
           role="status"
           aria-live="polite"
-          style={{
-            position: "fixed",
-            bottom: "1rem",
-            right: "1rem",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.5rem",
-            zIndex: 9999,
-          }}
+          className={styles.container}
         >
           {toasts.map((toast) => (
             <div
               key={toast.id}
               data-testid="toast-message"
               role="alert"
-              style={{
-                padding: "0.75rem 1rem",
-                borderRadius: "6px",
-                color: "#fff",
-                fontWeight: 500,
-                fontSize: "0.9rem",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-                cursor: "pointer",
-                background:
-                  toast.type === "success"
-                    ? "#16a34a"
-                    : toast.type === "error"
-                      ? "#dc2626"
-                      : "#2563eb",
-              }}
+              className={`${styles.toast} ${TYPE_CLASS[toast.type]}`}
               onClick={() => dismiss(toast.id)}
             >
               {toast.text}

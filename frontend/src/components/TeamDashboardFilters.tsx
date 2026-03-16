@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { PlanState, ChessPriority, CommitCategory } from "@weekly-commitments/contracts";
 import type { TeamDashboardFilters as Filters } from "../hooks/useTeamDashboard.js";
+import styles from "./TeamDashboardFilters.module.css";
 
 export interface TeamDashboardFiltersProps {
   filters: Filters;
@@ -47,12 +48,12 @@ export const TeamDashboardFiltersPanel: React.FC<TeamDashboardFiltersProps> = ({
   };
 
   return (
-    <div data-testid="team-filters" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+    <div data-testid="team-filters" className={styles.filterRow}>
       <select
         data-testid="filter-state"
         value={filters.state ?? ""}
         onChange={(e) => update({ state: e.target.value || undefined })}
-        style={{ padding: "0.25rem" }}
+        className={styles.select}
       >
         <option value="">All States</option>
         {Object.values(PlanState).map((s) => (
@@ -67,19 +68,14 @@ export const TeamDashboardFiltersPanel: React.FC<TeamDashboardFiltersProps> = ({
         onChange={(e) => handleOutcomeChange(e.target.value)}
         placeholder="Outcome ID (UUID)"
         aria-invalid={!outcomeIdIsValid}
-        style={{
-          padding: "0.25rem",
-          minWidth: "220px",
-          border: `1px solid ${outcomeIdIsValid ? "#d1d5db" : "#dc2626"}`,
-          borderRadius: "4px",
-        }}
+        className={`${styles.input}${outcomeIdIsValid ? "" : ` ${styles.inputError}`}`}
       />
 
       <select
         data-testid="filter-priority"
         value={filters.priority ?? ""}
         onChange={(e) => update({ priority: e.target.value || undefined })}
-        style={{ padding: "0.25rem" }}
+        className={styles.select}
       >
         <option value="">All Priorities</option>
         {Object.values(ChessPriority).map((p) => (
@@ -91,7 +87,7 @@ export const TeamDashboardFiltersPanel: React.FC<TeamDashboardFiltersProps> = ({
         data-testid="filter-category"
         value={filters.category ?? ""}
         onChange={(e) => update({ category: e.target.value || undefined })}
-        style={{ padding: "0.25rem" }}
+        className={styles.select}
       >
         <option value="">All Categories</option>
         {Object.values(CommitCategory).map((c) => (
@@ -99,7 +95,7 @@ export const TeamDashboardFiltersPanel: React.FC<TeamDashboardFiltersProps> = ({
         ))}
       </select>
 
-      <label style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+      <label className={styles.checkboxLabel}>
         <input
           data-testid="filter-incomplete"
           type="checkbox"
@@ -109,7 +105,7 @@ export const TeamDashboardFiltersPanel: React.FC<TeamDashboardFiltersProps> = ({
         Incomplete only
       </label>
 
-      <label style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+      <label className={styles.checkboxLabel}>
         <input
           data-testid="filter-non-strategic"
           type="checkbox"
@@ -120,7 +116,7 @@ export const TeamDashboardFiltersPanel: React.FC<TeamDashboardFiltersProps> = ({
       </label>
 
       {!outcomeIdIsValid && (
-        <span data-testid="filter-outcome-id-error" style={{ color: "#dc2626", fontSize: "0.875rem" }}>
+        <span data-testid="filter-outcome-id-error" className={styles.errorMessage}>
           Enter a valid outcome UUID to apply this filter.
         </span>
       )}

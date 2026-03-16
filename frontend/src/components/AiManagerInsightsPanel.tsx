@@ -2,6 +2,8 @@ import React from "react";
 import type { ManagerInsightItem } from "@weekly-commitments/contracts";
 import type { AiRequestStatus } from "../hooks/useAiSuggestions.js";
 import { useFeatureFlags } from "../context/FeatureFlagContext.js";
+import { StatusIcon } from "./icons/index.js";
+import styles from "./AiManagerInsightsPanel.module.css";
 
 export interface AiManagerInsightsPanelProps {
   status: AiRequestStatus;
@@ -10,10 +12,10 @@ export interface AiManagerInsightsPanelProps {
   onRefresh: () => void;
 }
 
-const SEVERITY_COLORS: Record<ManagerInsightItem["severity"], string> = {
-  INFO: "#1565c0",
-  WARNING: "#b26a00",
-  POSITIVE: "#2e7d32",
+const SEVERITY_CLASS: Record<ManagerInsightItem["severity"], string> = {
+  INFO:     styles.insightTitleInfo,
+  WARNING:  styles.insightTitleWarning,
+  POSITIVE: styles.insightTitlePositive,
 };
 
 /**
@@ -35,77 +37,61 @@ export const AiManagerInsightsPanel: React.FC<AiManagerInsightsPanelProps> = ({
   }
 
   return (
-    <div
-      data-testid="ai-manager-insights"
-      style={{
-        padding: "0.75rem",
-        border: "1px dashed #ce93d8",
-        borderRadius: "4px",
-        backgroundColor: "#faf5ff",
-        marginBottom: "1rem",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "0.5rem",
-        }}
-      >
-        <div>
-          <span style={{ fontWeight: 600, color: "#7b1fa2", fontSize: "0.9rem" }}>
-            🤖 AI Manager Insights
+    <div data-testid="ai-manager-insights" className={styles.panel}>
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <span className={styles.robotIcon}>
+            <StatusIcon icon="robot" size={14} />
           </span>
-          <span style={{ fontSize: "0.75rem", color: "#555", marginLeft: "0.5rem" }}>
+          <span className={styles.title}>AI Manager Insights</span>
+          <span className={styles.betaBadge}>Beta</span>
+          <span className={styles.betaHint}>
             Beta — summary only, verify against the dashboard below
           </span>
         </div>
         <button
+          type="button"
           data-testid="ai-manager-insights-refresh"
           onClick={onRefresh}
-          style={{
-            padding: "0.3rem 0.75rem",
-            fontSize: "0.85rem",
-            border: "1px solid #ce93d8",
-            borderRadius: "3px",
-            backgroundColor: "#fff",
-            cursor: "pointer",
-          }}
+          className={styles.refreshButton}
         >
           Refresh
         </button>
       </div>
 
       {status === "loading" && (
-        <div data-testid="ai-manager-insights-loading" style={{ color: "#666", fontStyle: "italic", fontSize: "0.85rem" }}>
+        <div data-testid="ai-manager-insights-loading" className={styles.loading}>
           Summarizing team signals…
         </div>
       )}
 
       {status === "rate_limited" && (
-        <div data-testid="ai-manager-insights-rate-limited" style={{ color: "#b71c1c", fontSize: "0.85rem" }}>
+        <div data-testid="ai-manager-insights-rate-limited" className={styles.rateLimited}>
           Rate limit reached. Try again in a moment.
         </div>
       )}
 
       {status === "unavailable" && (
-        <div data-testid="ai-manager-insights-unavailable" style={{ color: "#666", fontSize: "0.85rem" }}>
+        <div data-testid="ai-manager-insights-unavailable" className={styles.unavailable}>
           AI insights unavailable. Use the manual dashboard below.
         </div>
       )}
 
       {status === "ok" && headline && (
-        <div data-testid="ai-manager-insights-content">
-          <p style={{ margin: "0 0 0.5rem", color: "#333", fontWeight: 500 }}>{headline}</p>
+        <div data-testid="ai-manager-insights-content" className={styles.content}>
+          <p className={styles.headline}>{headline}</p>
           {insights.length > 0 && (
-            <ul style={{ margin: 0, paddingLeft: "1.2rem" }}>
+            <ul className={styles.insightList}>
               {insights.map((insight, index) => (
-                <li key={`${insight.title}-${index}`} data-testid={`ai-manager-insight-${index}`} style={{ marginBottom: "0.35rem" }}>
-                  <span style={{ color: SEVERITY_COLORS[insight.severity], fontWeight: 600 }}>
+                <li
+                  key={`${insight.title}-${index}`}
+                  data-testid={`ai-manager-insight-${index}`}
+                  className={styles.insightItem}
+                >
+                  <span className={SEVERITY_CLASS[insight.severity]}>
                     {insight.title}
                   </span>
-                  <span style={{ color: "#555" }}> — {insight.detail}</span>
+                  <span className={styles.insightDetail}> — {insight.detail}</span>
                 </li>
               ))}
             </ul>

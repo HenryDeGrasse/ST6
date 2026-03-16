@@ -13,12 +13,14 @@ import { PlanDrillDown } from "../components/PlanDrillDown.js";
 import { NotificationBell } from "../components/NotificationBell.js";
 import { ErrorBanner } from "../components/ErrorBanner.js";
 import { AiManagerInsightsPanel } from "../components/AiManagerInsightsPanel.js";
+import { GlassPanel } from "../components/GlassPanel.js";
 import { useTeamDashboard, type TeamDashboardFilters } from "../hooks/useTeamDashboard.js";
 import { useNotifications } from "../hooks/useNotifications.js";
 import { useReview } from "../hooks/useReview.js";
 import { useAiManagerInsights } from "../hooks/useAiManagerInsights.js";
 import { useApiClient } from "../api/ApiContext.js";
 import { getWeekStart } from "../utils/week.js";
+import styles from "./TeamDashboardPage.module.css";
 
 /**
  * Manager team dashboard page.
@@ -173,91 +175,98 @@ export const TeamDashboardPage: React.FC = () => {
   // If in drill-down mode, show drill-down view
   if (drillDownUserId) {
     return (
-      <div data-testid="team-dashboard-page" style={{ maxWidth: "900px", margin: "0 auto", padding: "1rem" }}>
-        <PlanDrillDown
-          plan={drillDownPlan}
-          commits={drillDownCommits}
-          loading={drillDownLoading}
-          error={drillDownError}
-          displayName={drillDownDisplayName}
-          onSubmitReview={handleSubmitReview}
-          onBack={handleBack}
-        />
+      <div data-testid="team-dashboard-page" className={styles.page}>
+        <GlassPanel className={styles.contentPanel}>
+          <PlanDrillDown
+            plan={drillDownPlan}
+            commits={drillDownCommits}
+            loading={drillDownLoading}
+            error={drillDownError}
+            displayName={drillDownDisplayName}
+            onSubmitReview={handleSubmitReview}
+            onBack={handleBack}
+          />
+        </GlassPanel>
       </div>
     );
   }
 
   return (
-    <div data-testid="team-dashboard-page" style={{ maxWidth: "900px", margin: "0 auto", padding: "1rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h2>Team Dashboard</h2>
-        <NotificationBell
-          notifications={notifications}
-          unreadCount={unreadCount}
-          onMarkRead={markRead}
-          onMarkAllRead={markAllRead}
-          onFetchUnread={fetchUnread}
-        />
-      </div>
-
-      <WeekSelector selectedWeek={selectedWeek} onWeekChange={handleWeekChange} />
-
-      <ErrorBanner message={error} onDismiss={clearError} />
-
-      <TeamDashboardFiltersPanel filters={filters} onFiltersChange={handleFiltersChange} />
-
-      <AiManagerInsightsPanel
-        status={aiInsightsStatus}
-        headline={aiHeadline}
-        insights={aiInsights}
-        onRefresh={() => {
-          void fetchAiInsights(selectedWeek);
-        }}
-      />
-
-      {dashLoading && !summary && (
-        <div data-testid="dashboard-loading" style={{ padding: "2rem", textAlign: "center", color: "#888" }}>
-          Loading…
-        </div>
-      )}
-
-      {summary && (
-        <>
-          <div data-testid="review-status-counts" style={{ marginBottom: "1rem", display: "flex", gap: "1rem" }}>
-            <span>Pending: <strong>{summary.reviewStatusCounts.pending}</strong></span>
-            <span>Approved: <strong>{summary.reviewStatusCounts.approved}</strong></span>
-            <span>Changes Requested: <strong>{summary.reviewStatusCounts.changesRequested}</strong></span>
+    <div data-testid="team-dashboard-page" className={styles.page}>
+      <GlassPanel className={styles.contentPanel}>
+        <div className={styles.header}>
+          <div>
+            <span className="wc-volume-label" aria-hidden="true">Volume II</span>
+            <h2 className={styles.heading}>Team Dashboard</h2>
           </div>
-
-          <TeamSummaryGrid
-            users={summary.users}
-            onDrillDown={(userId, planId) => { void handleDrillDown(userId, planId); }}
+          <NotificationBell
+            notifications={notifications}
+            unreadCount={unreadCount}
+            onMarkRead={markRead}
+            onMarkAllRead={markAllRead}
+            onFetchUnread={fetchUnread}
           />
+        </div>
 
-          {/* Pagination controls */}
-          {summary.totalPages > 1 && (
-            <div data-testid="pagination" style={{ marginTop: "1rem", display: "flex", gap: "0.5rem", justifyContent: "center" }}>
-              <button
-                data-testid="prev-page"
-                disabled={page === 0}
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-              >
-                ← Previous
-              </button>
-              <span>Page {page + 1} of {summary.totalPages}</span>
-              <button
-                data-testid="next-page"
-                disabled={page >= summary.totalPages - 1}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Next →
-              </button>
+        <WeekSelector selectedWeek={selectedWeek} onWeekChange={handleWeekChange} />
+
+        <ErrorBanner message={error} onDismiss={clearError} />
+
+        <TeamDashboardFiltersPanel filters={filters} onFiltersChange={handleFiltersChange} />
+
+        <AiManagerInsightsPanel
+          status={aiInsightsStatus}
+          headline={aiHeadline}
+          insights={aiInsights}
+          onRefresh={() => {
+            void fetchAiInsights(selectedWeek);
+          }}
+        />
+
+        {dashLoading && !summary && (
+          <div data-testid="dashboard-loading" className={styles.loading}>
+            Loading…
+          </div>
+        )}
+
+        {summary && (
+          <>
+            <div data-testid="review-status-counts" className={styles.reviewStatusCounts}>
+              <span>Pending: <strong>{summary.reviewStatusCounts.pending}</strong></span>
+              <span>Approved: <strong>{summary.reviewStatusCounts.approved}</strong></span>
+              <span>Changes Requested: <strong>{summary.reviewStatusCounts.changesRequested}</strong></span>
             </div>
-          )}
-        </>
-      )}
 
-      <RcdoRollupPanel rollup={rollup} loading={dashLoading} />
+            <TeamSummaryGrid
+              users={summary.users}
+              onDrillDown={(userId, planId) => { void handleDrillDown(userId, planId); }}
+            />
+
+            {/* Pagination controls */}
+            {summary.totalPages > 1 && (
+              <div data-testid="pagination" className={styles.pagination}>
+                <button
+                  data-testid="prev-page"
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                >
+                  ← Previous
+                </button>
+                <span className={styles.paginationLabel}>Page {page + 1} of {summary.totalPages}</span>
+                <button
+                  data-testid="next-page"
+                  disabled={page >= summary.totalPages - 1}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        <RcdoRollupPanel rollup={rollup} loading={dashLoading} />
+      </GlassPanel>
     </div>
   );
 };

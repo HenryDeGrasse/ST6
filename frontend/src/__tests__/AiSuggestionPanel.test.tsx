@@ -51,8 +51,15 @@ describe("AiSuggestionPanel", () => {
       <AiSuggestionPanel suggestions={[suggestion]} status="ok" onAccept={vi.fn()} />,
     );
     expect(screen.getByTestId("ai-suggestion-panel")).toBeInTheDocument();
+    // Outcome name is the headline
+    expect(screen.getByText(/Close Q1 deals/)).toBeInTheDocument();
+    // Breadcrumb shows Rally Cry and Objective
     expect(screen.getByText(/Revenue Growth/)).toBeInTheDocument();
-    expect(screen.getByText(/87% match/)).toBeInTheDocument();
+    expect(screen.getByText(/Enterprise Sales/)).toBeInTheDocument();
+    // Confidence badge
+    expect(screen.getByText(/87%/)).toBeInTheDocument();
+    // Rationale is shown on hover — verify it appears on mouseEnter
+    fireEvent.mouseEnter(screen.getByTestId("ai-suggestion-0"));
     expect(screen.getByText(/Keywords match well/)).toBeInTheDocument();
   });
 

@@ -6,6 +6,7 @@ import { WeeklyPlanPage } from "./pages/WeeklyPlanPage.js";
 import { TeamDashboardPage } from "./pages/TeamDashboardPage.js";
 import { ErrorBoundary } from "./components/ErrorBoundary.js";
 import { ToastProvider } from "./context/ToastContext.js";
+import { ThemeProvider } from "./theme/ThemeContext.js";
 
 /**
  * Default auth context for standalone development.
@@ -55,42 +56,78 @@ export const App: React.FC<AppProps> = ({
   const isManager = user.roles.includes("MANAGER");
 
   return (
-    <AuthProvider user={user} token={token}>
-      <ApiProvider baseUrl={apiBaseUrl}>
-        <FeatureFlagProvider flags={featureFlags}>
-        <ErrorBoundary>
-        <ToastProvider>
-        <div data-testid="weekly-commitments-app">
-          {isManager && (
-            <nav data-testid="main-nav" style={{ marginBottom: "1rem", padding: "0.5rem" }}>
-              <button
-                data-testid="nav-my-plan"
-                onClick={() => setRoute("weekly")}
-                style={{
-                  fontWeight: route === "weekly" ? "bold" : "normal",
-                  marginRight: "1rem",
-                }}
-              >
-                My Plan
-              </button>
-              <button
-                data-testid="nav-team-dashboard"
-                onClick={() => setRoute("weekly/team")}
-                style={{
-                  fontWeight: route === "weekly/team" ? "bold" : "normal",
-                }}
-              >
-                Team Dashboard
-              </button>
-            </nav>
-          )}
-          {route === "weekly" && <WeeklyPlanPage />}
-          {route === "weekly/team" && isManager && <TeamDashboardPage />}
-        </div>
-        </ToastProvider>
-        </ErrorBoundary>
-        </FeatureFlagProvider>
-      </ApiProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      {/* All app content sits above the atmospheric overlays (z-index: 0) */}
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <AuthProvider user={user} token={token}>
+          <ApiProvider baseUrl={apiBaseUrl}>
+            <FeatureFlagProvider flags={featureFlags}>
+              <ErrorBoundary>
+                <ToastProvider>
+                  <div data-testid="weekly-commitments-app">
+                    {isManager && (
+                      <nav
+                        data-testid="main-nav"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "1.5rem",
+                          padding: "0.75rem 1rem",
+                          borderBottom: "1px solid #4A3F35",
+                          marginBottom: "0.5rem",
+                        }}
+                      >
+                        <button
+                          data-testid="nav-my-plan"
+                          onClick={() => setRoute("weekly")}
+                          style={{
+                            fontFamily: "'Cinzel', serif",
+                            fontSize: "0.7rem",
+                            fontWeight: route === "weekly" ? 700 : 500,
+                            textTransform: "uppercase" as const,
+                            letterSpacing: "0.2em",
+                            color: route === "weekly" ? "#C9A962" : "#9C8B7A",
+                            background: "none",
+                            border: "none",
+                            borderBottom: route === "weekly" ? "2px solid #C9A962" : "2px solid transparent",
+                            paddingBottom: "0.5rem",
+                            cursor: "pointer",
+                            transition: "color 300ms ease-out, border-color 300ms ease-out",
+                          }}
+                        >
+                          My Plan
+                        </button>
+                        <button
+                          data-testid="nav-team-dashboard"
+                          onClick={() => setRoute("weekly/team")}
+                          style={{
+                            fontFamily: "'Cinzel', serif",
+                            fontSize: "0.7rem",
+                            fontWeight: route === "weekly/team" ? 700 : 500,
+                            textTransform: "uppercase" as const,
+                            letterSpacing: "0.2em",
+                            color: route === "weekly/team" ? "#C9A962" : "#9C8B7A",
+                            background: "none",
+                            border: "none",
+                            borderBottom: route === "weekly/team" ? "2px solid #C9A962" : "2px solid transparent",
+                            paddingBottom: "0.5rem",
+                            cursor: "pointer",
+                            transition: "color 300ms ease-out, border-color 300ms ease-out",
+                          }}
+                        >
+                          Team Dashboard
+                        </button>
+                      </nav>
+                    )}
+                    {route === "weekly" && <WeeklyPlanPage />}
+                    {route === "weekly/team" && isManager && <TeamDashboardPage />}
+                  </div>
+                </ToastProvider>
+              </ErrorBoundary>
+            </FeatureFlagProvider>
+          </ApiProvider>
+        </AuthProvider>
+      </div>
+    </ThemeProvider>
   );
 };

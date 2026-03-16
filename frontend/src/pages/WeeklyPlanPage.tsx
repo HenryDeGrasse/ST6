@@ -16,12 +16,14 @@ import { CarryForwardDialog } from "../components/CarryForwardDialog.js";
 import { AiReconciliationDraft } from "../components/AiReconciliationDraft.js";
 import { ConfirmDialog } from "../components/ConfirmDialog.js";
 import { ErrorBanner } from "../components/ErrorBanner.js";
+import { GlassPanel } from "../components/GlassPanel.js";
 import { usePlan } from "../hooks/usePlan.js";
 import { useCommits } from "../hooks/useCommits.js";
 import { useRcdo } from "../hooks/useRcdo.js";
 import { useAiSuggestions } from "../hooks/useAiSuggestions.js";
 import { getWeekStart, isPastWeek, isFutureWeek, isCreateAllowedForWeek } from "../utils/week.js";
 import { useToast } from "../context/ToastContext.js";
+import styles from "./WeeklyPlanPage.module.css";
 
 /** Which confirmation dialog is currently shown */
 type ConfirmAction =
@@ -266,21 +268,23 @@ export const WeeklyPlanPage: React.FC = () => {
   }, [clearPlanError, clearCommitsError, clearRcdoError]);
 
   return (
-    <div data-testid="weekly-plan-page" style={{ maxWidth: "800px", margin: "0 auto", padding: "1rem" }}>
-      <h2>Weekly Commitments</h2>
+    <div data-testid="weekly-plan-page" className={styles.page}>
+      <span className="wc-volume-label" aria-hidden="true">Volume I</span>
+      <h2 className={styles.heading}>Weekly Commitments</h2>
+      <div className="wc-ornate-divider" role="separator" aria-hidden="true" />
 
       <WeekSelector selectedWeek={selectedWeek} onWeekChange={handleWeekChange} />
 
       <ErrorBanner message={error} onDismiss={clearError} />
 
       {loading && !plan && (
-        <div data-testid="loading-indicator" style={{ padding: "2rem", textAlign: "center", color: "#888" }}>
+        <div data-testid="loading-indicator" className={styles.loading}>
           Loading…
         </div>
       )}
 
       {!loading && !plan && (
-        <div data-testid="no-plan" style={{ padding: "2rem", textAlign: "center" }}>
+        <div data-testid="no-plan" className={styles.noPlan}>
           {isCreateAllowedForWeek(selectedWeek) && (
             <>
               <p>No plan for this week yet.</p>
@@ -290,12 +294,12 @@ export const WeeklyPlanPage: React.FC = () => {
             </>
           )}
           {isPastWeek(selectedWeek) && (
-            <p data-testid="no-plan-past" style={{ color: "#888" }}>
+            <p data-testid="no-plan-past" className={styles.noPlanMuted}>
               No plan was created for this week.
             </p>
           )}
           {isFutureWeek(selectedWeek) && (
-            <p data-testid="no-plan-future" style={{ color: "#888" }}>
+            <p data-testid="no-plan-future" className={styles.noPlanMuted}>
               Plans can only be created for the current or next week.
             </p>
           )}
@@ -303,7 +307,7 @@ export const WeeklyPlanPage: React.FC = () => {
       )}
 
       {plan && (
-        <>
+        <GlassPanel className={styles.contentPanel}>
           <PlanHeader
             plan={plan}
             onLock={handleRequestLock}
@@ -360,7 +364,7 @@ export const WeeklyPlanPage: React.FC = () => {
               loading={lifecycleAction === "carry-forward"}
             />
           )}
-        </>
+        </GlassPanel>
       )}
       {/* Confirmation dialogs */}
       {pendingConfirm?.type === "delete-commit" && (

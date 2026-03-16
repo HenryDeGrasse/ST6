@@ -1,11 +1,22 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { WeeklyCommit } from "@weekly-commitments/contracts";
+import { ChessIcon } from "./icons/ChessIcon.js";
+import type { ChessPiece } from "./icons/ChessIcon.js";
+import styles from "./CarryForwardDialog.module.css";
 
 export interface CarryForwardDialogProps {
   commits: WeeklyCommit[];
   onCarryForward: (commitIds: string[]) => void;
   onCancel: () => void;
   loading?: boolean;
+}
+
+/** Maps a chessPriority string to a ChessPiece for the SVG icon. */
+function priorityToPiece(priority: string | null | undefined): ChessPiece | null {
+  if (!priority) return null;
+  const valid: ChessPiece[] = ["KING", "QUEEN", "ROOK", "BISHOP", "KNIGHT", "PAWN"];
+  const upper = priority.toUpperCase() as ChessPiece;
+  return valid.includes(upper) ? upper : null;
 }
 
 /**
@@ -89,80 +100,72 @@ export const CarryForwardDialog: React.FC<CarryForwardDialogProps> = ({
       aria-modal="true"
       aria-labelledby="carry-forward-dialog-title"
       onKeyDown={handleKeyDown}
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: "rgba(0,0,0,0.4)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-      }}
+      className={styles.overlay}
     >
       <div
         ref={dialogRef}
-        style={{
-          background: "#fff",
-          borderRadius: "8px",
-          padding: "1.5rem",
-          maxWidth: "600px",
-          width: "90%",
-          maxHeight: "80vh",
-          overflow: "auto",
-        }}
+        className={styles.dialog}
       >
-        <h3 id="carry-forward-dialog-title" style={{ marginTop: 0 }}>Carry Forward to Next Week</h3>
-        <p style={{ color: "#555", fontSize: "0.9rem" }}>
+        <h3 id="carry-forward-dialog-title" className={styles.title}>
+          Carry Forward to Next Week
+        </h3>
+        <p className={styles.description}>
           Select commitments to carry into next week&apos;s plan. They will appear as new
           draft items with a carry-forward reference.
         </p>
 
         {incompleteCommits.length === 0 ? (
-          <p style={{ color: "#888" }}>No commits available to carry forward.</p>
+          <p className={styles.emptyState}>No commits available to carry forward.</p>
         ) : (
-          <div>
-            {incompleteCommits.map((commit) => (
-              <label
-                key={commit.id}
-                data-testid={`carry-option-${commit.id}`}
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: "0.5rem",
-                  padding: "0.5rem 0",
-                  borderBottom: "1px solid #eee",
-                  cursor: "pointer",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={selected.has(commit.id)}
-                  onChange={() => toggle(commit.id)}
-                />
-                <div>
-                  <strong>{commit.title}</strong>
-                  <div style={{ fontSize: "0.85rem", color: "#666" }}>
-                    {commit.chessPriority && <span>{commit.chessPriority}</span>}
-                    {commit.category && <span style={{ marginLeft: "0.5rem" }}>{commit.category}</span>}
+          <div className={styles.commitList}>
+            {incompleteCommits.map((commit) => {
+              const piece = priorityToPiece(commit.chessPriority);
+              return (
+                <label
+                  key={commit.id}
+                  data-testid={`carry-option-${commit.id}`}
+                  className={styles.commitRow}
+                >
+                  <input
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={selected.has(commit.id)}
+                    onChange={() => toggle(commit.id)}
+                  />
+                  <div className={styles.commitMeta}>
+                    <span className={styles.commitTitle}>{commit.title}</span>
+                    <div className={styles.commitInfo}>
+                      {piece && (
+                        <span className={styles.chessBadge}>
+                          <ChessIcon piece={piece} size={12} />
+                          {commit.chessPriority}
+                        </span>
+                      )}
+                      {commit.category && (
+                        <span className={styles.categoryBadge}>{commit.category}</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </label>
-            ))}
+                </label>
+              );
+            })}
           </div>
         )}
 
-        <div style={{ marginTop: "1rem", display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
-          <button data-testid="carry-cancel" onClick={onCancel} disabled={loading}>
+        <div className={styles.buttonRow}>
+          <button
+            data-testid="carry-cancel"
+            className={styles.cancelButton}
+            onClick={onCancel}
+            disabled={loading}
+          >
             Cancel
           </button>
           <button
             data-testid="carry-confirm"
+            className={styles.confirmButton}
             onClick={() => onCarryForward(Array.from(selected))}
             disabled={selected.size === 0 || loading}
-            style={{ fontWeight: 600 }}
           >
             {loading ? "Carrying…" : `Carry Forward (${String(selected.size)})`}
           </button>

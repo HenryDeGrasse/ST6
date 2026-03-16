@@ -6,6 +6,7 @@ import {
   formatWeekLabel,
   isCurrentWeek,
 } from "../utils/week.js";
+import styles from "./WeekSelector.module.css";
 
 export interface WeekSelectorProps {
   selectedWeek: string;
@@ -27,29 +28,41 @@ export const WeekSelector: React.FC<WeekSelectorProps> = ({
   const canGoNext = selectedWeek < nextWeek;
 
   return (
-    <div data-testid="week-selector" style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.5rem 0" }}>
+    <div data-testid="week-selector" className={styles.nav}>
       <button
+        type="button"
         data-testid="week-prev"
         onClick={() => onWeekChange(getPrevWeekStart(selectedWeek))}
         aria-label="Previous week"
+        className={styles.arrowButton}
       >
-        ← Prev
+        ←
       </button>
-      <span data-testid="week-label" style={{ fontWeight: 600, minWidth: "180px", textAlign: "center" }}>
+
+      <span
+        data-testid="week-label"
+        className={[styles.weekLabel, isCurrent ? styles.weekLabelCurrent : ""].join(" ").trim()}
+      >
         {formatWeekLabel(selectedWeek)}
       </span>
+
       <button
+        type="button"
         data-testid="week-next"
         onClick={() => onWeekChange(getNextWeekStart(selectedWeek))}
         disabled={!canGoNext}
         aria-label="Next week"
+        className={styles.arrowButton}
       >
-        Next →
+        →
       </button>
+
       {!isCurrent && (
         <button
+          type="button"
           data-testid="week-today"
           onClick={() => onWeekChange(currentWeek)}
+          className={styles.todayButton}
         >
           Today
         </button>

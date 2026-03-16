@@ -1,6 +1,9 @@
 import React from "react";
 import type { WeeklyPlan } from "@weekly-commitments/contracts";
 import { PlanState, ReviewStatus } from "@weekly-commitments/contracts";
+import { StatusIcon } from "./icons/index.js";
+import type { StatusIconName } from "./icons/index.js";
+import styles from "./PlanHeader.module.css";
 
 export interface PlanHeaderProps {
   plan: WeeklyPlan;
@@ -12,20 +15,57 @@ export interface PlanHeaderProps {
   canSubmitReconciliation?: boolean;
 }
 
-const STATE_LABELS: Record<PlanState, string> = {
-  [PlanState.DRAFT]: "📝 Draft",
-  [PlanState.LOCKED]: "🔒 Locked",
-  [PlanState.RECONCILING]: "🔄 Reconciling",
-  [PlanState.RECONCILED]: "✅ Reconciled",
-  [PlanState.CARRY_FORWARD]: "↩ Carry Forward",
+// ─── State badge config ────────────────────────────────────────────────────
+
+interface StateConfig {
+  icon: StatusIconName;
+  text: string;
+  /** CSS module class for the badge colour variant */
+  badgeClass: string;
+}
+
+const STATE_CONFIG: Record<PlanState, StateConfig> = {
+  [PlanState.DRAFT]: {
+    icon: "pencil",
+    text: "Draft",
+    badgeClass: styles.stateDraft,
+  },
+  [PlanState.LOCKED]: {
+    icon: "lock",
+    text: "Locked",
+    badgeClass: styles.stateLocked,
+  },
+  [PlanState.RECONCILING]: {
+    icon: "arrows",
+    text: "Reconciling",
+    badgeClass: styles.stateReconciling,
+  },
+  [PlanState.RECONCILED]: {
+    icon: "check",
+    text: "Reconciled",
+    badgeClass: styles.stateReconciled,
+  },
+  [PlanState.CARRY_FORWARD]: {
+    icon: "return-arrow",
+    text: "Carry Forward",
+    badgeClass: styles.stateCarryForward,
+  },
 };
 
-const REVIEW_LABELS: Record<ReviewStatus, string> = {
-  [ReviewStatus.REVIEW_NOT_APPLICABLE]: "",
-  [ReviewStatus.REVIEW_PENDING]: "⏳ Review pending",
-  [ReviewStatus.CHANGES_REQUESTED]: "🔁 Changes requested",
-  [ReviewStatus.APPROVED]: "✅ Approved",
+// ─── Review status config ──────────────────────────────────────────────────
+
+interface ReviewConfig {
+  icon: StatusIconName;
+  text: string;
+}
+
+const REVIEW_CONFIG: Partial<Record<ReviewStatus, ReviewConfig>> = {
+  [ReviewStatus.REVIEW_PENDING]: { icon: "loading", text: "Review pending" },
+  [ReviewStatus.CHANGES_REQUESTED]: { icon: "arrows", text: "Changes requested" },
+  [ReviewStatus.APPROVED]: { icon: "check", text: "Approved" },
 };
+
+// ─── Component ─────────────────────────────────────────────────────────────
 
 /**
  * Plan status header with lifecycle action buttons.
@@ -40,60 +80,118 @@ export const PlanHeader: React.FC<PlanHeaderProps> = ({
   loading = false,
   canSubmitReconciliation = false,
 }) => {
-  const reviewLabel = REVIEW_LABELS[plan.reviewStatus];
+  const stateConfig = STATE_CONFIG[plan.state];
+  const reviewConfig = REVIEW_CONFIG[plan.reviewStatus];
 
   return (
-    <div
-      data-testid="plan-header"
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "0.75rem",
-        background: "#f8f9fa",
-        borderRadius: "4px",
-        marginBottom: "1rem",
-      }}
-    >
-      <div>
-        <span data-testid="plan-state" style={{ fontWeight: 600, fontSize: "1.1rem" }}>
-          {STATE_LABELS[plan.state]}
+    <div data-testid="plan-header" className={styles.header}>
+      {/* ── Left: status info ── */}
+      <div className={styles.info}>
+        <span
+          data-testid="plan-state"
+          className={[styles.stateBadge, stateConfig.badgeClass].join(" ")}
+        >
+          <StatusIcon icon={stateConfig.icon} size={14} />
+          {stateConfig.text}
         </span>
-        {reviewLabel && (
-          <span data-testid="plan-review-status" style={{ marginLeft: "1rem", color: "#555" }}>
-            {reviewLabel}
+
+        {reviewConfig && (
+          <span data-testid="plan-review-status" className={styles.reviewStatus}>
+            <StatusIcon icon={reviewConfig.icon} size={14} />
+            {reviewConfig.text}
           </span>
         )}
+
         {plan.lockType === "LATE_LOCK" && (
-          <span data-testid="plan-late-lock" style={{ marginLeft: "0.5rem", color: "#e65100", fontSize: "0.85rem" }}>
+          <span data-testid="plan-late-lock" className={styles.lateLock}>
             (Late lock)
           </span>
         )}
       </div>
 
-      <div style={{ display: "flex", gap: "0.5rem" }}>
+      {/* ── Right: action buttons ── */}
+      <div className={styles.actions}>
         {plan.state === PlanState.DRAFT && (
-          <button data-testid="lock-btn" onClick={onLock} disabled={loading}>
-            {loading ? "⏳ Locking…" : "🔒 Lock Plan"}
+          <button
+            data-testid="lock-btn"
+            className={styles.ctaButton}
+            onClick={onLock}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <StatusIcon icon="loading" size={14} className={styles.loadingIcon} />
+                Locking…
+              </>
+            ) : (
+              <>
+                <StatusIcon icon="lock" size={14} />
+                Lock Plan
+              </>
+            )}
           </button>
         )}
+
         {plan.state === PlanState.LOCKED && (
-          <button data-testid="start-reconciliation-btn" onClick={onStartReconciliation} disabled={loading}>
-            {loading ? "⏳ Starting…" : "🔄 Start Reconciliation"}
+          <button
+            data-testid="start-reconciliation-btn"
+            className={styles.ctaButton}
+            onClick={onStartReconciliation}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <StatusIcon icon="loading" size={14} className={styles.loadingIcon} />
+                Starting…
+              </>
+            ) : (
+              <>
+                <StatusIcon icon="arrows" size={14} />
+                Start Reconciliation
+              </>
+            )}
           </button>
         )}
+
         {plan.state === PlanState.RECONCILING && (
           <button
             data-testid="submit-reconciliation-btn"
+            className={styles.ctaButton}
             onClick={onSubmitReconciliation}
             disabled={loading || !canSubmitReconciliation}
           >
-            {loading ? "⏳ Submitting…" : "✅ Submit Reconciliation"}
+            {loading ? (
+              <>
+                <StatusIcon icon="loading" size={14} className={styles.loadingIcon} />
+                Submitting…
+              </>
+            ) : (
+              <>
+                <StatusIcon icon="check" size={14} />
+                Submit Reconciliation
+              </>
+            )}
           </button>
         )}
+
         {plan.state === PlanState.RECONCILED && (
-          <button data-testid="carry-forward-btn" onClick={onCarryForward} disabled={loading}>
-            {loading ? "⏳ Carrying…" : "↩ Carry Forward"}
+          <button
+            data-testid="carry-forward-btn"
+            className={styles.ctaButton}
+            onClick={onCarryForward}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <StatusIcon icon="loading" size={14} className={styles.loadingIcon} />
+                Carrying…
+              </>
+            ) : (
+              <>
+                <StatusIcon icon="return-arrow" size={14} />
+                Carry Forward
+              </>
+            )}
           </button>
         )}
       </div>

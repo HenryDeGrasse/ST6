@@ -1,4 +1,6 @@
 import React from "react";
+import { StatusIcon } from "./icons/StatusIcon.js";
+import styles from "./ErrorBanner.module.css";
 
 export interface ErrorBannerProps {
   message: string | null;
@@ -15,26 +17,17 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({ message, onDismiss }) 
     <div
       data-testid="error-banner"
       role="alert"
-      style={{
-        padding: "0.75rem 1rem",
-        background: "#ffebee",
-        color: "#b71c1c",
-        borderRadius: "4px",
-        marginBottom: "0.75rem",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-      }}
+      className={styles.banner}
     >
-      <span>{message}</span>
+      <span className={styles.message}>{message}</span>
       {onDismiss && (
         <button
           data-testid="error-dismiss"
           onClick={onDismiss}
-          style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.1rem" }}
+          className={styles.dismissBtn}
           aria-label="Dismiss error"
         >
-          ✕
+          <StatusIcon icon="error-x" size={16} />
         </button>
       )}
     </div>

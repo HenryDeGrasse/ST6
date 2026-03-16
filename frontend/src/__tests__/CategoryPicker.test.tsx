@@ -22,6 +22,13 @@ describe("CategoryPicker", () => {
     expect(onChange).toHaveBeenCalledWith("DELIVERY");
   });
 
+  it("clears the selection when the placeholder option is chosen", () => {
+    const onChange = vi.fn();
+    render(<CategoryPicker value={null} onChange={onChange} />);
+    fireEvent.change(screen.getByTestId("category-picker"), { target: { value: "" } });
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
   it("disables when disabled prop is true", () => {
     render(<CategoryPicker value={null} onChange={vi.fn()} disabled />);
     expect(screen.getByTestId("category-picker")).toBeDisabled();

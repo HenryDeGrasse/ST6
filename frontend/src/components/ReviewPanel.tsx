@@ -1,5 +1,7 @@
 import React, { useState } from "react";
+import { ReviewStatus } from "@weekly-commitments/contracts";
 import type { WeeklyPlan, ReviewDecision } from "@weekly-commitments/contracts";
+import styles from "./ReviewPanel.module.css";
 
 export interface ReviewPanelProps {
   plan: WeeklyPlan;
@@ -20,13 +22,13 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
   const [submitted, setSubmitted] = useState(false);
 
   const canReview =
-    plan.reviewStatus === "REVIEW_PENDING" ||
-    plan.reviewStatus === "CHANGES_REQUESTED";
-
+    plan.reviewStatus === ReviewStatus.REVIEW_PENDING ||
+    plan.reviewStatus === ReviewStatus.CHANGES_REQUESTED;
   const canRequestChanges = plan.carryForwardExecutedAt === null;
+  const hasComments = comments.trim().length > 0;
 
   const handleSubmit = async (decision: ReviewDecision) => {
-    if (!comments.trim()) {
+    if (!hasComments) {
       return;
     }
     await onSubmitReview(decision, comments);
@@ -36,74 +38,66 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
 
   if (!canReview) {
     return (
-      <div data-testid="review-panel" style={{ marginTop: "1rem", padding: "1rem", background: "#f9fafb", borderRadius: "8px" }}>
-        <p>Review status: <strong>{plan.reviewStatus}</strong></p>
+      <div data-testid="review-panel" className={styles.panel}>
+        <p className={styles.statusText}>
+          Review status: <strong>{plan.reviewStatus}</strong>
+        </p>
       </div>
     );
   }
 
   if (submitted) {
     return (
-      <div data-testid="review-submitted" style={{ marginTop: "1rem", padding: "1rem", background: "#d1fae5", borderRadius: "8px" }}>
+      <div data-testid="review-submitted" className={styles.submitted}>
         Review submitted successfully.
       </div>
     );
   }
 
   return (
-    <div data-testid="review-panel" style={{ marginTop: "1rem", padding: "1rem", background: "#f9fafb", borderRadius: "8px" }}>
-      <h4>Manager Review</h4>
-      <div style={{ marginBottom: "0.5rem" }}>
-        <label htmlFor="review-comments">Comments:</label>
+    <div data-testid="review-panel" className={styles.panel}>
+      <h4 className={styles.heading}>Manager Review</h4>
+      <div className={styles.fieldRow}>
+        <label htmlFor="review-comments" className={styles.label}>
+          Comments:
+        </label>
         <textarea
           id="review-comments"
           data-testid="review-comments"
           value={comments}
           onChange={(e) => setComments(e.target.value)}
           rows={3}
-          style={{ width: "100%", marginTop: "0.25rem" }}
+          className={styles.textarea}
           placeholder="Add your review comments..."
         />
       </div>
-      <div style={{ display: "flex", gap: "0.5rem" }}>
+      <div className={styles.actionRow}>
         <button
+          type="button"
           data-testid="approve-btn"
-          onClick={() => handleSubmit("APPROVED")}
-          disabled={loading || !comments.trim()}
-          style={{
-            background: "#059669",
-            color: "white",
-            padding: "0.5rem 1rem",
-            border: "none",
-            borderRadius: "4px",
-            cursor: loading ? "wait" : "pointer",
-          }}
+          onClick={() => { void handleSubmit("APPROVED"); }}
+          disabled={loading || !hasComments}
+          className={`${styles.btn} ${styles.approveBtn}`}
         >
           Approve
         </button>
         <button
+          type="button"
           data-testid="request-changes-btn"
-          onClick={() => handleSubmit("CHANGES_REQUESTED")}
-          disabled={loading || !comments.trim() || !canRequestChanges}
+          onClick={() => { void handleSubmit("CHANGES_REQUESTED"); }}
+          disabled={loading || !hasComments || !canRequestChanges}
           title={
             canRequestChanges
               ? "Request changes to reconciliation"
               : "Carry-forward already executed. Add comments for next week's planning."
           }
-          style={{
-            background: canRequestChanges ? "#dc2626" : "#9ca3af",
-            color: "white",
-            padding: "0.5rem 1rem",
-            border: "none",
-            borderRadius: "4px",
-            cursor: !canRequestChanges || loading ? "not-allowed" : "pointer",
-          }}
+          className={`${styles.btn} ${canRequestChanges ? styles.requestChangesBtn : styles.requestChangesBtnMuted}`}
         >
           Request Changes
         </button>
       </div>
       {!canRequestChanges && (
-        <p data-testid="carry-forward-warning" style={{ color: "#92400e", fontSize: "0.875rem", marginTop: "0.5rem" }}>
+        <p data-testid="carry-forward-warning" className={styles.warning}>
           Carry-forward already executed. Add comments for next week&apos;s planning.
         </p>
       )}

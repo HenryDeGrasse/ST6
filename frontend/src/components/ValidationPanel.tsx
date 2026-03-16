@@ -1,6 +1,8 @@
 import React from "react";
 import type { WeeklyCommit } from "@weekly-commitments/contracts";
 import { ChessPriority } from "@weekly-commitments/contracts";
+import { StatusIcon } from "./icons/index.js";
+import styles from "./ValidationPanel.module.css";
 
 export interface ValidationPanelProps {
   commits: WeeklyCommit[];
@@ -48,34 +50,50 @@ export const ValidationPanel: React.FC<ValidationPanelProps> = ({ commits }) => 
 
   if (issues.length === 0) {
     return (
-      <div data-testid="validation-panel" style={{ padding: "0.5rem", background: "#e8f5e9", borderRadius: "4px" }}>
-        ✅ All validations pass. Ready to lock.
+      <div
+        data-testid="validation-panel"
+        className={`${styles.panel} ${styles.panelSuccess}`}
+      >
+        <span className={styles.successMessage}>
+          <StatusIcon icon="check" size={16} />
+          All validations pass. Ready to lock.
+        </span>
       </div>
     );
   }
 
   return (
-    <div data-testid="validation-panel" style={{ padding: "0.5rem", background: "#fff3e0", borderRadius: "4px" }}>
-      <strong>Validation Issues</strong>
-      <ul style={{ margin: "0.25rem 0", paddingLeft: "1.25rem" }}>
+    <div
+      data-testid="validation-panel"
+      className={`${styles.panel} ${styles.panelIssues}`}
+    >
+      <strong className={styles.heading}>Validation Issues</strong>
+      <ul className={styles.issueList}>
         {issues.map((issue, i) => (
           <li
             key={i}
             data-testid={`validation-issue-${String(i)}`}
-            style={{ color: issue.level === "error" ? "#c62828" : "#e65100" }}
+            className={`${styles.issueItem} ${
+              issue.level === "error" ? styles.issueError : styles.issueWarning
+            }`}
           >
-            {issue.level === "error" ? "❌" : "⚠️"} {issue.message}
+            {issue.level === "error" ? (
+              <StatusIcon icon="error-x" size={14} />
+            ) : (
+              <StatusIcon icon="warning" size={14} />
+            )}
+            {issue.message}
           </li>
         ))}
       </ul>
       {commitsWithErrors.length > 0 && (
-        <div style={{ marginTop: "0.5rem", fontSize: "0.85rem" }}>
-          <strong>Per-commit errors:</strong>
+        <div className={styles.perCommitErrors}>
+          <strong className={styles.perCommitHeading}>Per-commit errors:</strong>
           {commitsWithErrors.map((c) => (
-            <div key={c.id} style={{ marginLeft: "0.5rem" }}>
-              <em>{c.title || "(untitled)"}</em>:
+            <div key={c.id} className={styles.commitErrorGroup}>
+              <em className={styles.commitErrorTitle}>{c.title || "(untitled)"}</em>:
               {c.validationErrors.map((ve, j) => (
-                <span key={j} style={{ color: "#c62828", marginLeft: "0.25rem" }}>
+                <span key={j} className={styles.commitErrorMessage}>
                   {ve.message}
                 </span>
               ))}

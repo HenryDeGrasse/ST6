@@ -24,6 +24,13 @@ describe("ChessPicker", () => {
     expect(onChange).toHaveBeenCalledWith("KING");
   });
 
+  it("clears the selection when the placeholder option is chosen", () => {
+    const onChange = vi.fn();
+    render(<ChessPicker value={ChessPriority.QUEEN} onChange={onChange} />);
+    fireEvent.change(screen.getByTestId("chess-picker"), { target: { value: "" } });
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
   it("renders the current value", () => {
     render(<ChessPicker value={ChessPriority.QUEEN} onChange={vi.fn()} />);
     const select = screen.getByTestId("chess-picker") as HTMLSelectElement;
