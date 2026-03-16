@@ -15,6 +15,7 @@ backend/weekly-service/build/
 backend/weekly-service/bin/
 *.class
 *.jar
+!backend/weekly-service/gradle/wrapper/gradle-wrapper.jar
 *.war
 *.ear
 
