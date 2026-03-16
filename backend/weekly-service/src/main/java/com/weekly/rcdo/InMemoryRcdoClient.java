@@ -80,11 +80,15 @@ public class InMemoryRcdoClient implements RcdoClient {
     // ── Test helpers ─────────────────────────────────────────
 
     /**
-     * Sets the RCDO tree for an org (used in tests).
+     * Sets the RCDO tree for an org (used in tests and dev seeding).
+     *
+     * <p>Deliberately does NOT update {@code lastRefreshed}: in-memory data is
+     * always considered fresh (the null-check in {@link #isCacheFresh} handles
+     * this). Only {@link #markStale} should ever arm the staleness clock.
      */
     public void setTree(UUID orgId, RcdoTree tree) {
         treesByOrg.put(orgId, tree);
-        lastRefreshed.put(orgId, Instant.now());
+        // Do not set lastRefreshed here — in-memory data is always fresh.
     }
 
     /**
@@ -103,5 +107,15 @@ public class InMemoryRcdoClient implements RcdoClient {
     public void markStale(UUID orgId) {
         // 90 minutes in the past — safely beyond the 60-minute threshold
         lastRefreshed.put(orgId, Instant.now().minusSeconds(90L * 60));
+    }
+
+    /**
+     * Removes any explicit staleness marker for the org, restoring the
+     * default "always fresh" behaviour of in-memory data. Used by the
+     * dev/test {@code POST /rcdo/refresh} endpoint and by tests that need
+     * to reset state after calling {@link #markStale}.
+     */
+    public void unmarkStale(UUID orgId) {
+        lastRefreshed.remove(orgId);
     }
 }

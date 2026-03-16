@@ -71,8 +71,7 @@ public class RcdoController {
         }
         if (rcdoClient instanceof InMemoryRcdoClient inMemory) {
             var orgId = authenticatedUserContext.orgId();
-            RcdoTree tree = inMemory.getTree(orgId);
-            inMemory.setTree(orgId, tree);
+            inMemory.unmarkStale(orgId);
             return ResponseEntity.ok(Map.of("status", "refreshed", "orgId", orgId.toString()));
         }
         return ResponseEntity.ok(Map.of("status", "no-op", "reason", "not using in-memory client"));
