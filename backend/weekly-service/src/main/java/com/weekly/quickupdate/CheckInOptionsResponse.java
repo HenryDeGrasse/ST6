@@ -10,9 +10,10 @@ import java.util.stream.Collectors;
  *
  * <p>Contains:
  * <ul>
- *   <li>{@code status} — service status ({@code "ok"} or {@code "unavailable"})</li>
+ *   <li>{@code status} — currently always {@code "ok"}, including graceful fallback</li>
  *   <li>{@code statusOptions} — ordered list of valid progress status strings</li>
- *   <li>{@code progressOptions} — AI- and pattern-derived option items</li>
+ *   <li>{@code progressOptions} — deterministically tagged suggestion items sourced from
+ *       {@code user_history}, {@code team_common}, and/or {@code ai_generated}</li>
  * </ul>
  *
  * <p>Use {@link #empty()} as the safe fallback when the LLM is unavailable or the

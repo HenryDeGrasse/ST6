@@ -219,6 +219,12 @@ class UpdatePatternAggregationJobTest {
 
         job.aggregateRecentPatterns();
 
+        ArgumentCaptor<UpdatePatternAggregationCheckpointEntity> checkpointCaptor =
+                ArgumentCaptor.forClass(UpdatePatternAggregationCheckpointEntity.class);
+        verify(checkpointRepository).save(checkpointCaptor.capture());
+        assertEquals(orgId, checkpointCaptor.getValue().getOrgId());
+        assertEquals(processedAt, checkpointCaptor.getValue().getLastAggregatedAt());
+
         UpdatePatternAggregationJob restartedJob = new UpdatePatternAggregationJob(
                 progressEntryRepository,
                 userUpdatePatternService,
@@ -233,6 +239,25 @@ class UpdatePatternAggregationJobTest {
         restartedJob.aggregateRecentPatterns();
 
         verify(userUpdatePatternService, times(1)).upsertAggregatedPatterns(any());
+    }
+
+    @Test
+    void usesEarliestCheckpointAcrossOrgsToLoadRecentInputsOnce() {
+        UUID orgIdOne = UUID.randomUUID();
+        UUID orgIdTwo = UUID.randomUUID();
+        Instant earliestCheckpoint = Instant.parse("2026-03-10T00:00:00Z");
+        Instant laterCheckpoint = Instant.parse("2026-03-15T00:00:00Z");
+
+        when(checkpointRepository.findAll()).thenReturn(List.of(
+                new UpdatePatternAggregationCheckpointEntity(orgIdOne, laterCheckpoint),
+                new UpdatePatternAggregationCheckpointEntity(orgIdTwo, earliestCheckpoint)
+        ));
+        when(progressEntryRepository.findPatternInputsCreatedSince(earliestCheckpoint)).thenReturn(List.of());
+
+        job.aggregateRecentPatterns();
+
+        verify(progressEntryRepository).findPatternInputsCreatedSince(earliestCheckpoint);
+        verify(userUpdatePatternService, never()).upsertAggregatedPatterns(any());
     }
 
     @Test

@@ -25,7 +25,7 @@ class CheckInOptionPromptBuilderTest {
                 List.of("Wrapped API integration", "Waiting on review"),
                 List.of("Daily rollout status"),
                 "Improve activation",
-                "completion reliability 82%; current category DELIVERY done rate 90%"
+                "completion reliability 82%; current category DELIVERY done rate 90%; top categories DELIVERY, OPERATIONS; avg check-ins/week 2.3"
         );
 
         assertEquals(2, messages.size());
@@ -33,6 +33,9 @@ class CheckInOptionPromptBuilderTest {
         assertEquals(LlmClient.Role.USER, messages.get(1).role());
         assertTrue(messages.get(0).content().contains("Derived user model summary:"));
         assertTrue(messages.get(0).content().contains("completion reliability 82%"));
+        assertTrue(messages.get(0).content().contains("current category DELIVERY done rate 90%"));
+        assertTrue(messages.get(0).content().contains("top categories DELIVERY, OPERATIONS"));
+        assertTrue(messages.get(0).content().contains("avg check-ins/week 2.3"));
     }
 
     @Test

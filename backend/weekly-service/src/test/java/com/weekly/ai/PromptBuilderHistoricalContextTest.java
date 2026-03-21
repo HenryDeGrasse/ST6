@@ -128,6 +128,56 @@ class PromptBuilderHistoricalContextTest {
     }
 
     @Test
+    void includesAnalyticsDiagnosticsSectionWhenPresent() {
+        ManagerInsightDataProvider.ManagerWeekContext ctx =
+                new ManagerInsightDataProvider.ManagerWeekContext(
+                        WEEK_START,
+                        new ManagerInsightDataProvider.ReviewCounts(0, 0, 0),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        null,
+                        new ManagerInsightDataProvider.DiagnosticContext(
+                                List.of(new ManagerInsightDataProvider.UserCategoryShiftContext(
+                                        "user-1",
+                                        java.util.Map.of("DELIVERY", 0.75),
+                                        java.util.Map.of("DISCOVERY", 0.25)
+                                )),
+                                List.of(new ManagerInsightDataProvider.UserOutcomeCoverageContext(
+                                        "user-1",
+                                        List.of(new ManagerInsightDataProvider.UserOutcomeWeeklyCountContext(
+                                                "outcome-1",
+                                                WEEK_START,
+                                                2
+                                        ))
+                                )),
+                                List.of(new ManagerInsightDataProvider.UserBlockerFrequencyContext(
+                                        "user-1",
+                                        1,
+                                        2,
+                                        5
+                                ))
+                        ),
+                        List.of(),
+                        null
+                );
+
+        List<LlmClient.Message> messages = PromptBuilder.buildManagerInsightsMessages(ctx);
+        String contextMessage = messages.get(1).content();
+
+        assertTrue(contextMessage.contains("Analytics diagnostics"));
+        assertTrue(contextMessage.contains("Category mix shifts"));
+        assertTrue(contextMessage.contains("currentPeriod: DELIVERY=0.75"));
+        assertTrue(contextMessage.contains("priorPeriod: DISCOVERY=0.25"));
+        assertTrue(contextMessage.contains("Per-user outcome coverage"));
+        assertTrue(contextMessage.contains("outcome-1@2026-03-09=2"));
+        assertTrue(contextMessage.contains("Check-in blocker frequency"));
+        assertTrue(contextMessage.contains("blockedCount: 2"));
+    }
+
+    @Test
     void includesUrgencyAndSlackSectionBeforeHistoricalContext() {
         ManagerInsightDataProvider.ManagerWeekContext ctx =
                 new ManagerInsightDataProvider.ManagerWeekContext(
@@ -141,7 +191,15 @@ class PromptBuilderHistoricalContextTest {
                         List.of(),
                         List.of(),
                         null,
-                        null,
+                        new ManagerInsightDataProvider.DiagnosticContext(
+                                List.of(new ManagerInsightDataProvider.UserCategoryShiftContext(
+                                        "user-1",
+                                        java.util.Map.of("DELIVERY", 0.75),
+                                        java.util.Map.of("DISCOVERY", 0.25)
+                                )),
+                                List.of(),
+                                List.of()
+                        ),
                         List.of(new ManagerInsightDataProvider.OutcomeUrgencyContext(
                                 "outcome-1",
                                 "Grow ARR",
@@ -162,6 +220,7 @@ class PromptBuilderHistoricalContextTest {
         List<LlmClient.Message> messages = PromptBuilder.buildManagerInsightsMessages(ctx);
         String contextMessage = messages.get(1).content();
 
+        assertTrue(contextMessage.contains("Analytics diagnostics"));
         assertTrue(contextMessage.contains("Urgency and strategic slack context"));
         assertTrue(contextMessage.contains("Strategic slack: slackBand=LOW_SLACK | strategicFocusFloor=0.65"));
         assertTrue(contextMessage.contains("urgencyBand: AT_RISK"));
@@ -169,6 +228,9 @@ class PromptBuilderHistoricalContextTest {
         assertTrue(contextMessage.contains("actualProgressPct: 35"));
         assertTrue(contextMessage.contains("expectedProgressPct: 60"));
         assertTrue(contextMessage.contains("progressGapPct: -25"));
+        assertTrue(contextMessage.indexOf("Analytics diagnostics")
+                        < contextMessage.indexOf("Urgency and strategic slack context"),
+                "Diagnostics block should appear before urgency context");
         assertTrue(contextMessage.indexOf("Urgency and strategic slack context")
                         < contextMessage.indexOf("Multi-week historical context"),
                 "Urgency block should appear before historical trends");

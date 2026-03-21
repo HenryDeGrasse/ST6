@@ -142,15 +142,17 @@ class CheckInOptionServiceTest {
         }
 
         @Test
-        void includesTeamPatternsAndUserModelSummaryInPrompt() {
+        void includesPersonalHistoryTeamPatternsAndUserModelSummaryInPrompt() {
             UUID commitId = UUID.randomUUID();
             WeeklyCommitEntity commit = makeCommit(commitId);
             UserUpdatePatternEntity p1 = new UserUpdatePatternEntity(
                     UUID.randomUUID(), ORG_ID, USER_ID, "DELIVERY", "Deployed to staging");
+            UserUpdatePatternEntity p2 = new UserUpdatePatternEntity(
+                    UUID.randomUUID(), ORG_ID, USER_ID, "DELIVERY", "Validated production metrics");
 
             when(commitRepository.findById(commitId)).thenReturn(Optional.of(commit));
             when(userUpdatePatternService.getTopPatterns(any(), any(), any(), anyInt()))
-                    .thenReturn(List.of(p1));
+                    .thenReturn(List.of(p1, p2));
             when(teamPatternService.getTopPatterns(ORG_ID, "DELIVERY", 5))
                     .thenReturn(List.of("Daily rollout status"));
             when(userModelService.getSnapshot(ORG_ID, USER_ID)).thenReturn(Optional.of(makeProfile()));
@@ -175,7 +177,8 @@ class CheckInOptionServiceTest {
 
             assertTrue(systemMessageContent.contains("completion reliability 82%"));
             assertTrue(systemMessageContent.contains("current category DELIVERY done rate 90%"));
-            assertTrue(userMessageContent.contains("User's common phrases: [Deployed to staging]"));
+            assertTrue(userMessageContent.contains(
+                    "User's common phrases: [Deployed to staging, Validated production metrics]"));
             assertTrue(userMessageContent.contains("Team's common phrases: [Daily rollout status]"));
         }
 
@@ -199,6 +202,30 @@ class CheckInOptionServiceTest {
             assertIterableEquals(
                     List.of(
                             new CheckInOptionItem("Deployed to staging", "user_history"),
+                            new CheckInOptionItem("Daily rollout status", "team_common"),
+                            new CheckInOptionItem("Blocked on dependency", "team_common")
+                    ),
+                    response.progressOptions()
+            );
+        }
+
+        @Test
+        void surfacesTeamCommonPatternsForNewUserWhenNoPersonalHistoryExists() {
+            UUID commitId = UUID.randomUUID();
+            WeeklyCommitEntity commit = makeCommit(commitId);
+
+            when(commitRepository.findById(commitId)).thenReturn(Optional.of(commit));
+            when(userUpdatePatternService.getTopPatterns(any(), any(), any(), anyInt()))
+                    .thenReturn(List.of());
+            when(teamPatternService.getTopPatterns(ORG_ID, "DELIVERY", 5))
+                    .thenReturn(List.of("Daily rollout status", "Blocked on dependency"));
+            when(llmClient.complete(any(), any())).thenThrow(new LlmClient.LlmUnavailableException("down"));
+
+            CheckInOptionsResponse response = service.generateOptions(
+                    ORG_ID, USER_ID, commitId, null, null, 0);
+
+            assertIterableEquals(
+                    List.of(
                             new CheckInOptionItem("Daily rollout status", "team_common"),
                             new CheckInOptionItem("Blocked on dependency", "team_common")
                     ),

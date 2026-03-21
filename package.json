@@ -14,7 +14,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run unit",
     "unit": "npm run test --workspaces --if-present && npm run unit:backend",
-    "unit:backend": "cd backend/weekly-service && rm -rf build/test-results build/reports/tests/test && ./gradlew cleanTest test propertyTest jacocoTestReport jacocoTestCoverageVerification --no-daemon",
+    "unit:backend": "cd backend/weekly-service && ./gradlew test propertyTest jacocoTestReport jacocoTestCoverageVerification --no-daemon --max-workers=1",
     "property:backend": "cd backend/weekly-service && ./gradlew propertyTest --no-daemon",
     "build": "npm run build --workspaces --if-present && npm run build:backend",
     "build:backend": "cd backend/weekly-service && ./gradlew build --no-daemon -x test",

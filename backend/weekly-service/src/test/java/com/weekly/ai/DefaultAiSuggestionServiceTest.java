@@ -639,8 +639,132 @@ class DefaultAiSuggestionServiceTest {
                     "Cache key should change when urgency/slack prompt context changes");
         }
 
+        @Test
+        void invalidatesCachedManagerInsightsWhenDiagnosticContextChanges() {
+            UUID managerId = UUID.randomUUID();
+            LocalDate weekStart = LocalDate.of(2026, 3, 9);
+
+            when(managerInsightDataProvider.getManagerWeekContext(
+                    eq(ORG_ID), eq(managerId), eq(weekStart),
+                    eq(ManagerInsightDataProvider.DEFAULT_WINDOW_WEEKS)))
+                    .thenReturn(
+                            managerContextWithDiagnosticDeliveryShift(weekStart, 0.6),
+                            managerContextWithDiagnosticDeliveryShift(weekStart, 0.8)
+                    );
+
+            class CountingLlmClient implements LlmClient {
+                private int callCount;
+
+                @Override
+                public String complete(List<Message> messages, String responseSchema) {
+                    callCount++;
+                    return """
+                            {
+                              "headline": "Diagnostic drift",
+                              "insights": [
+                                {
+                                  "title": "Category mix changed",
+                                  "detail": "Delivery focus moved.",
+                                  "severity": "INFO"
+                                }
+                              ]
+                            }""";
+                }
+
+                int callCount() {
+                    return callCount;
+                }
+            }
+
+            CountingLlmClient countingLlmClient = new CountingLlmClient();
+            DefaultAiSuggestionService localService = new DefaultAiSuggestionService(
+                    countingLlmClient,
+                    rcdoClient,
+                    new AiCacheService(Duration.ofHours(1)),
+                    commitDataProvider,
+                    managerInsightDataProvider,
+                    teamRcdoUsageProvider,
+                    urgencyDataProvider
+            );
+
+            localService.draftManagerInsights(ORG_ID, managerId, weekStart);
+            localService.draftManagerInsights(ORG_ID, managerId, weekStart);
+
+            assertEquals(2, countingLlmClient.callCount(),
+                    "Cache key should change when diagnostic prompt context changes");
+        }
+
         private ManagerInsightDataProvider.ManagerWeekContext baseManagerContext(LocalDate weekStart) {
             return managerContextWithUrgency(weekStart, "AT_RISK", BigDecimal.valueOf(55));
+        }
+
+        private ManagerInsightDataProvider.ManagerWeekContext managerContextWithDiagnosticDeliveryShift(
+                LocalDate weekStart,
+                double deliveryShare
+        ) {
+            return new ManagerInsightDataProvider.ManagerWeekContext(
+                    weekStart.toString(),
+                    new ManagerInsightDataProvider.ReviewCounts(1, 2, 0),
+                    List.of(new ManagerInsightDataProvider.TeamMemberContext(
+                            UUID.randomUUID().toString(),
+                            "RECONCILED",
+                            "REVIEW_PENDING",
+                            5,
+                            1,
+                            0,
+                            0,
+                            1,
+                            2,
+                            false,
+                            false
+                    )),
+                    List.of(new ManagerInsightDataProvider.RcdoFocusContext(
+                            UUID.randomUUID().toString(),
+                            "Close Q1 deals",
+                            "Enterprise Sales",
+                            "Revenue Growth",
+                            4,
+                            1,
+                            2
+                    )),
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    null,
+                    new ManagerInsightDataProvider.DiagnosticContext(
+                            List.of(new ManagerInsightDataProvider.UserCategoryShiftContext(
+                                    "user-1",
+                                    java.util.Map.of("DELIVERY", deliveryShare),
+                                    java.util.Map.of("DISCOVERY", 1.0 - deliveryShare)
+                            )),
+                            List.of(new ManagerInsightDataProvider.UserOutcomeCoverageContext(
+                                    "user-1",
+                                    List.of(new ManagerInsightDataProvider.UserOutcomeWeeklyCountContext(
+                                            "outcome-1",
+                                            weekStart.toString(),
+                                            2
+                                    ))
+                            )),
+                            List.of(new ManagerInsightDataProvider.UserBlockerFrequencyContext(
+                                    "user-1", 1, 0, 3
+                            ))
+                    ),
+                    List.of(new ManagerInsightDataProvider.OutcomeUrgencyContext(
+                            "outcome-1",
+                            "Close Q1 deals",
+                            weekStart.plusWeeks(2).toString(),
+                            BigDecimal.valueOf(35),
+                            BigDecimal.valueOf(50),
+                            "AT_RISK",
+                            14
+                    )),
+                    new ManagerInsightDataProvider.StrategicSlackContext(
+                            "LOW_SLACK",
+                            BigDecimal.valueOf(0.55),
+                            2,
+                            1
+                    )
+            );
         }
 
         private ManagerInsightDataProvider.ManagerWeekContext managerContextWithUrgency(
