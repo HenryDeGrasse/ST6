@@ -99,7 +99,8 @@ export const CarryForwardHeatmap: React.FC<CarryForwardHeatmapProps> = ({ data, 
             <tbody>
               {users.map((user) => {
                 // Build a fast lookup from weekStart → cell for this user
-                const cellMap = new Map(user.cells.map((c) => [c.weekStart, c]));
+                const cells = user.cells ?? user.weekCells ?? [];
+                const cellMap = new Map(cells.map((c) => [c.weekStart, c]));
 
                 return (
                   <tr

@@ -9,6 +9,14 @@ import type {
   CreateReviewRequest,
   SuggestRcdoResponse,
   DraftReconciliationResponse,
+  QuickUpdateRequest,
+  QuickUpdateResponse,
+  CheckInOptionsResponse,
+  UserProfileResponse,
+  OutcomeMetadataRequest,
+  OutcomeMetadataResponse,
+  UrgencySummaryResponse,
+  StrategicSlackResponse,
   PaginatedResponse,
   OrgPolicy,
   UpdateDigestConfigRequest,
@@ -88,9 +96,45 @@ describe("UpdateActualRequest", () => {
       actualResult: "Done with minor adjustments",
       completionStatus: CompletionStatus.PARTIALLY,
       deltaReason: "Scope change mid-week",
+      actualHours: 6.5,
     };
     expect(req.completionStatus).toBe("PARTIALLY");
     expect(req.deltaReason).toBe("Scope change mid-week");
+    expect(req.actualHours).toBe(6.5);
+  });
+});
+
+describe("Quick update contracts", () => {
+  it("supports batch commit updates and typed responses", () => {
+    const req: QuickUpdateRequest = {
+      updates: [{
+        commitId: "commit-1",
+        status: "ON_TRACK",
+        note: "Waiting on review",
+        noteSource: "USER_TYPED",
+        selectedSuggestionText: null,
+        selectedSuggestionSource: null,
+      }],
+    };
+    const resp: QuickUpdateResponse = {
+      updatedCount: 1,
+      entries: [{ id: "entry-1", commitId: "commit-1", status: "ON_TRACK", note: "Waiting on review", createdAt: "2026-03-21T10:00:00Z" }],
+    };
+
+    expect(req.updates[0].status).toBe("ON_TRACK");
+    expect(req.updates[0].noteSource).toBe("USER_TYPED");
+    expect(resp.updatedCount).toBe(1);
+  });
+
+  it("supports AI check-in option responses", () => {
+    const resp: CheckInOptionsResponse = {
+      status: "ok",
+      statusOptions: ["ON_TRACK", "AT_RISK", "BLOCKED", "DONE_EARLY"],
+      progressOptions: [{ text: "Blocked on dependency", source: "ai" }],
+    };
+
+    expect(resp.statusOptions).toContain("BLOCKED");
+    expect(resp.progressOptions[0].source).toBe("ai");
   });
 });
 
@@ -210,6 +254,95 @@ describe("NextWorkSuggestionsResponse", () => {
 
     expect(resp.suggestions[0].suggestedChessPriority).toBe("QUEEN");
     expect(feedback.action).toBe("ACCEPT");
+  });
+});
+
+describe("UserProfileResponse", () => {
+  it("supports a populated behavioural profile", () => {
+    const profile: UserProfileResponse = {
+      userId: "user-1",
+      weeksAnalyzed: 6,
+      performanceProfile: {
+        estimationAccuracy: 0.74,
+        completionReliability: 0.81,
+        avgCommitsPerWeek: 4.5,
+        avgCarryForwardPerWeek: 0.8,
+        topCategories: ["DELIVERY", "OPERATIONS"],
+        categoryCompletionRates: { DELIVERY: 0.9 },
+        priorityCompletionRates: { KING: 0.8 },
+      },
+      preferences: {
+        typicalPriorityPattern: "1K-2Q-1R",
+        recurringCommitTitles: ["Weekly ops review"],
+        avgCheckInsPerWeek: 2.3,
+        preferredUpdateDays: ["MONDAY", "WEDNESDAY"],
+      },
+      trends: {
+        strategicAlignmentTrend: "IMPROVING",
+        completionTrend: "STABLE",
+        carryForwardTrend: "WORSENING",
+      },
+    };
+
+    expect(profile.performanceProfile?.topCategories[0]).toBe("DELIVERY");
+    expect(profile.trends?.carryForwardTrend).toBe("WORSENING");
+  });
+});
+
+describe("Outcome urgency contracts", () => {
+  it("supports metadata request/response payloads", () => {
+    const req: OutcomeMetadataRequest = {
+      targetDate: "2026-06-30",
+      progressType: "METRIC",
+      metricName: "ARR",
+      targetValue: 100,
+      currentValue: 45,
+      unit: "%",
+    };
+    const resp: OutcomeMetadataResponse = {
+      orgId: "org-1",
+      outcomeId: "outcome-1",
+      targetDate: "2026-06-30",
+      progressType: "METRIC",
+      metricName: "ARR",
+      targetValue: 100,
+      currentValue: 45,
+      unit: "%",
+      milestones: null,
+      progressPct: 45,
+      urgencyBand: "AT_RISK",
+      lastComputedAt: "2026-03-21T12:00:00Z",
+      createdAt: "2026-03-01T12:00:00Z",
+      updatedAt: "2026-03-21T12:00:00Z",
+    };
+
+    expect(req.progressType).toBe("METRIC");
+    expect(resp.urgencyBand).toBe("AT_RISK");
+  });
+
+  it("supports urgency summary and strategic slack envelopes", () => {
+    const summary: UrgencySummaryResponse = {
+      outcomes: [{
+        outcomeId: "outcome-1",
+        outcomeName: "Improve activation",
+        targetDate: "2026-06-30",
+        progressPct: 45,
+        expectedProgressPct: 60,
+        urgencyBand: "AT_RISK",
+        daysRemaining: 101,
+      }],
+    };
+    const slack: StrategicSlackResponse = {
+      slack: {
+        slackBand: "LOW_SLACK",
+        strategicFocusFloor: 0.8,
+        atRiskCount: 2,
+        criticalCount: 1,
+      },
+    };
+
+    expect(summary.outcomes[0].urgencyBand).toBe("AT_RISK");
+    expect(slack.slack.slackBand).toBe("LOW_SLACK");
   });
 });
 

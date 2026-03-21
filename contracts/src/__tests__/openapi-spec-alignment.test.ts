@@ -240,10 +240,12 @@ describe("WeeklyCommitActual schema alignment: spec ↔ manually-authored types.
     const manualHasStatus: Assert<HasKey<WeeklyCommitActual, "completionStatus">> = true;
     const manualHasDeltaReason: Assert<HasKey<WeeklyCommitActual, "deltaReason">> = true;
     const manualHasTimeSpent: Assert<HasKey<WeeklyCommitActual, "timeSpent">> = true;
+    const specHasActualHours: Assert<HasKey<SpecWeeklyCommitActual, "actualHours">> = true;
+    const manualHasActualHours: Assert<HasKey<WeeklyCommitActual, "actualHours">> = true;
 
     expect(specRequiredCommitId && specRequiredActualResult && specRequiredStatus).toBe(true);
     expect(manualHasCommitId && manualHasActualResult && manualHasStatus).toBe(true);
-    expect(manualHasDeltaReason && manualHasTimeSpent).toBe(true);
+    expect(manualHasDeltaReason && manualHasTimeSpent && specHasActualHours && manualHasActualHours).toBe(true);
   });
 });
 
@@ -298,12 +300,14 @@ describe("UpdateActualRequest schema alignment: spec ↔ manually-authored api.t
   it("spec requires actualResult and completionStatus; manual type agrees", () => {
     const specRequiresActualResult: Assert<IsRequiredKey<SpecUpdateActualRequest, "actualResult">> = true;
     const specRequiresCompletionStatus: Assert<IsRequiredKey<SpecUpdateActualRequest, "completionStatus">> = true;
+    const specHasActualHours: Assert<HasKey<SpecUpdateActualRequest, "actualHours">> = true;
 
     const manualRequiresActualResult: Assert<IsRequiredKey<UpdateActualRequest, "actualResult">> = true;
     const manualRequiresCompletionStatus: Assert<IsRequiredKey<UpdateActualRequest, "completionStatus">> = true;
+    const manualHasActualHours: Assert<HasKey<UpdateActualRequest, "actualHours">> = true;
 
-    expect(specRequiresActualResult && specRequiresCompletionStatus).toBe(true);
-    expect(manualRequiresActualResult && manualRequiresCompletionStatus).toBe(true);
+    expect(specRequiresActualResult && specRequiresCompletionStatus && specHasActualHours).toBe(true);
+    expect(manualRequiresActualResult && manualRequiresCompletionStatus && manualHasActualHours).toBe(true);
   });
 });
 
@@ -595,10 +599,6 @@ describe("OpenAPI operation catalog completeness", () => {
    * via WeeklyCommitmentsApiPaths; this test verifies operation-ID coverage.
    */
   it("generated operations map includes all documented operation IDs", () => {
-    // Verify type-level presence of all 31 operation IDs from the spec
-    // (Wave 1 step 5 added planQualityCheck)
-    // (Wave 2 step 7 added draftFromHistory)
-    // (Wave 2 step 9 added suggestNextWork + recordSuggestionFeedback)
     expectTypeOf<WeeklyCommitmentsApiOperations["createPlan"]>().toMatchTypeOf<object>();
     expectTypeOf<WeeklyCommitmentsApiOperations["getMyPlan"]>().toMatchTypeOf<object>();
     expectTypeOf<WeeklyCommitmentsApiOperations["getPlan"]>().toMatchTypeOf<object>();
@@ -613,6 +613,8 @@ describe("OpenAPI operation catalog completeness", () => {
     expectTypeOf<WeeklyCommitmentsApiOperations["updateCommit"]>().toMatchTypeOf<object>();
     expectTypeOf<WeeklyCommitmentsApiOperations["deleteCommit"]>().toMatchTypeOf<object>();
     expectTypeOf<WeeklyCommitmentsApiOperations["updateActual"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["addCheckIn"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getCheckIns"]>().toMatchTypeOf<object>();
     expectTypeOf<WeeklyCommitmentsApiOperations["getTeamSummary"]>().toMatchTypeOf<object>();
     expectTypeOf<WeeklyCommitmentsApiOperations["getRcdoRollup"]>().toMatchTypeOf<object>();
     expectTypeOf<WeeklyCommitmentsApiOperations["getUnreadNotifications"]>().toMatchTypeOf<object>();
@@ -624,21 +626,38 @@ describe("OpenAPI operation catalog completeness", () => {
     expectTypeOf<WeeklyCommitmentsApiOperations["suggestRcdo"]>().toMatchTypeOf<object>();
     expectTypeOf<WeeklyCommitmentsApiOperations["draftReconciliation"]>().toMatchTypeOf<object>();
     expectTypeOf<WeeklyCommitmentsApiOperations["managerInsights"]>().toMatchTypeOf<object>();
-    expectTypeOf<WeeklyCommitmentsApiOperations["healthCheck"]>().toMatchTypeOf<object>();
-    // Wave 1 step 5
     expectTypeOf<WeeklyCommitmentsApiOperations["planQualityCheck"]>().toMatchTypeOf<object>();
-    // Wave 2 step 7
-    expectTypeOf<WeeklyCommitmentsApiOperations["draftFromHistory"]>().toMatchTypeOf<object>();
-    // Wave 2 step 9 (GET /users/me/trends from step 1-2)
-    expectTypeOf<WeeklyCommitmentsApiOperations["getMyTrends"]>().toMatchTypeOf<object>();
-    // Wave 2 step 9
     expectTypeOf<WeeklyCommitmentsApiOperations["suggestNextWork"]>().toMatchTypeOf<object>();
     expectTypeOf<WeeklyCommitmentsApiOperations["recordSuggestionFeedback"]>().toMatchTypeOf<object>();
-    // Wave 3 step 17 — admin digest config
+    expectTypeOf<WeeklyCommitmentsApiOperations["draftFromHistory"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getMyTrends"]>().toMatchTypeOf<object>();
     expectTypeOf<WeeklyCommitmentsApiOperations["getOrgPolicy"]>().toMatchTypeOf<object>();
     expectTypeOf<WeeklyCommitmentsApiOperations["updateDigestConfig"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getAdoptionMetrics"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getAiUsage"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getRcdoHealth"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["linkTicket"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getLinkedTickets"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["handleIntegrationWebhook"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getMyCapacity"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getTeamCapacity"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getEstimationCoaching"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["healthCheck"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["quickUpdate"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getCheckInOptions"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getUserProfile"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getOutcomeCoverage"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getCarryForwardHeatmap"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getCategoryShifts"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getEstimationAccuracy"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getUserPredictions"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["listOutcomeMetadata"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getOutcomeMetadata"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["upsertOutcomeMetadata"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["updateOutcomeProgress"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getUrgencySummary"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["getStrategicSlack"]>().toMatchTypeOf<object>();
 
-    // Runtime: at least one operation can be used as a type guard
     expect(true).toBe(true);
   });
 });

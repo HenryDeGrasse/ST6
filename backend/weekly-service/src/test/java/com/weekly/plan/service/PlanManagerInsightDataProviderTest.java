@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -21,7 +22,12 @@ import com.weekly.plan.dto.TeamSummaryResponseDto;
 import com.weekly.plan.repository.ManagerReviewRepository;
 import com.weekly.plan.repository.WeeklyCommitRepository;
 import com.weekly.plan.repository.WeeklyPlanRepository;
+import com.weekly.shared.DiagnosticDataProvider;
 import com.weekly.shared.ManagerInsightDataProvider;
+import com.weekly.shared.SlackInfo;
+import com.weekly.shared.UrgencyDataProvider;
+import com.weekly.shared.UrgencyInfo;
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -52,6 +58,8 @@ class PlanManagerInsightDataProviderTest {
     private WeeklyPlanRepository planRepository;
     private WeeklyCommitRepository commitRepository;
     private ManagerReviewRepository reviewRepository;
+    private DiagnosticDataProvider diagnosticDataProvider;
+    private UrgencyDataProvider urgencyDataProvider;
     private PlanManagerInsightDataProvider provider;
 
     @BeforeEach
@@ -60,8 +68,26 @@ class PlanManagerInsightDataProviderTest {
         planRepository = mock(WeeklyPlanRepository.class);
         commitRepository = mock(WeeklyCommitRepository.class);
         reviewRepository = mock(ManagerReviewRepository.class);
+        diagnosticDataProvider = mock(DiagnosticDataProvider.class);
+        urgencyDataProvider = mock(UrgencyDataProvider.class);
+
+        when(diagnosticDataProvider.getCategoryShifts(any(), any(), any(), anyInt()))
+                .thenReturn(new DiagnosticDataProvider.CategoryShiftContext(List.of()));
+        when(diagnosticDataProvider.getPerUserOutcomeCoverage(any(), any(), any(), anyInt()))
+                .thenReturn(new DiagnosticDataProvider.PerUserOutcomeCoverageContext(List.of()));
+        when(diagnosticDataProvider.getBlockerFrequency(any(), any(), any(), anyInt()))
+                .thenReturn(new DiagnosticDataProvider.BlockerFrequencyContext(List.of()));
+        when(urgencyDataProvider.getOrgUrgencySummary(any())).thenReturn(List.of());
+        when(urgencyDataProvider.getStrategicSlack(any(), any())).thenReturn(
+                new SlackInfo("MODERATE_SLACK", BigDecimal.valueOf(0.75), 1, 0));
+
         provider = new PlanManagerInsightDataProvider(
-                dashboardService, planRepository, commitRepository, reviewRepository);
+                dashboardService,
+                planRepository,
+                commitRepository,
+                reviewRepository,
+                diagnosticDataProvider,
+                urgencyDataProvider);
     }
 
     // ── Test double for TeamDashboardService ──────────────────────────────
@@ -575,6 +601,81 @@ class PlanManagerInsightDataProviderTest {
             assertNotNull(ctx.reviewTurnaroundStats());
             assertEquals(0.0, ctx.reviewTurnaroundStats().avgDaysToReview(), 0.0001);
             assertEquals(1, ctx.reviewTurnaroundStats().sampleSize());
+        }
+    }
+
+    // ── Diagnostics / urgency enrichment ─────────────────────────────────
+
+    @Nested
+    class CrossModuleEnrichment {
+
+        @Test
+        void mapsDiagnosticAndUrgencyContextIntoManagerWeekContext() {
+            UUID user = userId("nina");
+            UUID outcomeId = UUID.randomUUID();
+            dashboardService.setTeamSummary(summaryWithUser(user));
+
+            when(planRepository.findByOrgIdAndWeekStartDateBetween(any(), any(), any()))
+                    .thenReturn(List.of());
+            when(commitRepository.findByOrgIdAndWeeklyPlanIdIn(any(), any()))
+                    .thenReturn(List.of());
+            when(reviewRepository.findByOrgIdAndWeeklyPlanIdIn(any(), any()))
+                    .thenReturn(List.of());
+
+            when(diagnosticDataProvider.getCategoryShifts(ORG_ID, MANAGER_ID, WEEK_START, 4))
+                    .thenReturn(new DiagnosticDataProvider.CategoryShiftContext(List.of(
+                            new DiagnosticDataProvider.UserCategoryShift(
+                                    user,
+                                    java.util.Map.of("DELIVERY", 0.75),
+                                    java.util.Map.of("DISCOVERY", 0.25)
+                            ))));
+            when(diagnosticDataProvider.getPerUserOutcomeCoverage(ORG_ID, MANAGER_ID, WEEK_START, 4))
+                    .thenReturn(new DiagnosticDataProvider.PerUserOutcomeCoverageContext(List.of(
+                            new DiagnosticDataProvider.UserOutcomeCoverage(
+                                    user,
+                                    List.of(new DiagnosticDataProvider.OutcomeWeeklyCount(
+                                            outcomeId,
+                                            WEEK_START.toString(),
+                                            2
+                                    ))
+                            ))));
+            when(diagnosticDataProvider.getBlockerFrequency(ORG_ID, MANAGER_ID, WEEK_START, 4))
+                    .thenReturn(new DiagnosticDataProvider.BlockerFrequencyContext(List.of(
+                            new DiagnosticDataProvider.UserBlockerFrequency(user, 1, 2, 5)
+                    )));
+            when(urgencyDataProvider.getOrgUrgencySummary(ORG_ID)).thenReturn(List.of(
+                    new UrgencyInfo(
+                            outcomeId,
+                            "Protect renewals",
+                            WEEK_START.plusWeeks(3),
+                            BigDecimal.valueOf(35),
+                            BigDecimal.valueOf(50),
+                            "AT_RISK",
+                            21
+                    )
+            ));
+            when(urgencyDataProvider.getStrategicSlack(ORG_ID, MANAGER_ID)).thenReturn(
+                    new SlackInfo("LOW_SLACK", BigDecimal.valueOf(0.82), 2, 1));
+
+            ManagerInsightDataProvider.ManagerWeekContext ctx =
+                    provider.getManagerWeekContext(ORG_ID, MANAGER_ID, WEEK_START, 4);
+
+            assertNotNull(ctx.diagnosticContext());
+            assertEquals(1, ctx.diagnosticContext().categoryShifts().size());
+            assertEquals(user.toString(), ctx.diagnosticContext().categoryShifts().get(0).userId());
+            assertEquals(0.75, ctx.diagnosticContext().categoryShifts().get(0)
+                    .currentPeriod().get("DELIVERY"));
+            assertEquals(1, ctx.diagnosticContext().outcomeCoverages().size());
+            assertEquals(outcomeId.toString(), ctx.diagnosticContext().outcomeCoverages().get(0)
+                    .outcomes().get(0).outcomeId());
+            assertEquals(1, ctx.diagnosticContext().blockerFrequencies().size());
+            assertEquals(2, ctx.diagnosticContext().blockerFrequencies().get(0).blockedCount());
+
+            assertEquals(1, ctx.outcomeUrgencies().size());
+            assertEquals("AT_RISK", ctx.outcomeUrgencies().get(0).urgencyBand());
+            assertNotNull(ctx.strategicSlackContext());
+            assertEquals("LOW_SLACK", ctx.strategicSlackContext().slackBand());
+            assertEquals(2, ctx.strategicSlackContext().atRiskCount());
         }
     }
 

@@ -10,8 +10,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.weekly.plan.domain.CommitCategory;
 import com.weekly.plan.domain.PlanState;
+import com.weekly.plan.domain.ProgressEntryEntity;
+import com.weekly.plan.domain.ProgressNoteSource;
 import com.weekly.plan.domain.WeeklyCommitEntity;
 import com.weekly.plan.domain.WeeklyPlanEntity;
 import com.weekly.plan.repository.ProgressEntryRepository;
@@ -21,7 +22,7 @@ import com.weekly.plan.service.CommitNotFoundException;
 import com.weekly.plan.service.PlanAccessForbiddenException;
 import com.weekly.plan.service.PlanNotFoundException;
 import com.weekly.plan.service.PlanStateException;
-import com.weekly.usermodel.UserUpdatePatternService;
+import com.weekly.plan.service.PlanValidationException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -29,9 +30,10 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /**
- * Unit tests for {@link QuickUpdateService}: batch check-in validations and pattern recording.
+ * Unit tests for {@link QuickUpdateService}: batch check-in validations and note provenance capture.
  */
 class QuickUpdateServiceTest {
 
@@ -42,7 +44,6 @@ class QuickUpdateServiceTest {
     private WeeklyPlanRepository planRepository;
     private WeeklyCommitRepository commitRepository;
     private ProgressEntryRepository progressEntryRepository;
-    private UserUpdatePatternService userUpdatePatternService;
     private QuickUpdateService quickUpdateService;
 
     @BeforeEach
@@ -50,9 +51,8 @@ class QuickUpdateServiceTest {
         planRepository = mock(WeeklyPlanRepository.class);
         commitRepository = mock(WeeklyCommitRepository.class);
         progressEntryRepository = mock(ProgressEntryRepository.class);
-        userUpdatePatternService = mock(UserUpdatePatternService.class);
         quickUpdateService = new QuickUpdateService(
-                planRepository, commitRepository, progressEntryRepository, userUpdatePatternService);
+                planRepository, commitRepository, progressEntryRepository);
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
@@ -75,7 +75,6 @@ class QuickUpdateServiceTest {
 
         @Test
         void successfulBatchCreatesEntriesForEachItem() {
-            // Arrange
             UUID commitId1 = UUID.randomUUID();
             UUID commitId2 = UUID.randomUUID();
 
@@ -90,19 +89,108 @@ class QuickUpdateServiceTest {
             when(progressEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             List<QuickUpdateItemDto> updates = List.of(
-                    new QuickUpdateItemDto(commitId1, "ON_TRACK", "Going well"),
-                    new QuickUpdateItemDto(commitId2, "AT_RISK", "Some concerns")
+                    new QuickUpdateItemDto(commitId1, "ON_TRACK", "Going well", null, null, null),
+                    new QuickUpdateItemDto(commitId2, "AT_RISK", "Some concerns", null, null, null)
             );
 
-            // Act
             QuickUpdateResponseDto response =
                     quickUpdateService.batchCheckIn(ORG_ID, USER_ID, PLAN_ID, updates);
 
-            // Assert
             verify(progressEntryRepository, times(2)).save(any());
             assertEquals(2, response.updatedCount());
             assertNotNull(response.entries());
             assertEquals(2, response.entries().size());
+        }
+
+        @Test
+        void storesProvidedNoteProvenanceMetadata() {
+            UUID commitId = UUID.randomUUID();
+            WeeklyPlanEntity plan = makePlan(PLAN_ID, USER_ID, PlanState.LOCKED);
+            WeeklyCommitEntity commit = makeCommit(commitId, PLAN_ID);
+
+            when(planRepository.findByOrgIdAndId(ORG_ID, PLAN_ID))
+                    .thenReturn(Optional.of(plan));
+            when(commitRepository.findByOrgIdAndWeeklyPlanId(ORG_ID, PLAN_ID))
+                    .thenReturn(List.of(commit));
+            when(progressEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            List<QuickUpdateItemDto> updates = List.of(
+                    new QuickUpdateItemDto(
+                            commitId,
+                            "ON_TRACK",
+                            "Wrapped API integration",
+                            "SUGGESTION_ACCEPTED",
+                            "Wrapped API integration",
+                            "ai"
+                    )
+            );
+
+            quickUpdateService.batchCheckIn(ORG_ID, USER_ID, PLAN_ID, updates);
+
+            ArgumentCaptor<ProgressEntryEntity> captor =
+                    ArgumentCaptor.forClass(ProgressEntryEntity.class);
+            verify(progressEntryRepository).save(captor.capture());
+
+            ProgressEntryEntity saved = captor.getValue();
+            assertEquals(ProgressNoteSource.SUGGESTION_ACCEPTED, saved.getNoteSource());
+            assertEquals("Wrapped API integration", saved.getSelectedSuggestionText());
+            assertEquals("ai", saved.getSelectedSuggestionSource());
+        }
+
+        @Test
+        void defaultsNoteSourceToUnknownWhenOmitted() {
+            UUID commitId = UUID.randomUUID();
+            WeeklyPlanEntity plan = makePlan(PLAN_ID, USER_ID, PlanState.LOCKED);
+            WeeklyCommitEntity commit = makeCommit(commitId, PLAN_ID);
+
+            when(planRepository.findByOrgIdAndId(ORG_ID, PLAN_ID))
+                    .thenReturn(Optional.of(plan));
+            when(commitRepository.findByOrgIdAndWeeklyPlanId(ORG_ID, PLAN_ID))
+                    .thenReturn(List.of(commit));
+            when(progressEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            quickUpdateService.batchCheckIn(
+                    ORG_ID,
+                    USER_ID,
+                    PLAN_ID,
+                    List.of(new QuickUpdateItemDto(commitId, "ON_TRACK", "Typed note", null, null, null))
+            );
+
+            ArgumentCaptor<ProgressEntryEntity> captor =
+                    ArgumentCaptor.forClass(ProgressEntryEntity.class);
+            verify(progressEntryRepository).save(captor.capture());
+            assertEquals(ProgressNoteSource.UNKNOWN, captor.getValue().getNoteSource());
+        }
+
+        @Test
+        void rejectsInvalidNoteSource() {
+            UUID commitId = UUID.randomUUID();
+            WeeklyPlanEntity plan = makePlan(PLAN_ID, USER_ID, PlanState.LOCKED);
+            WeeklyCommitEntity commit = makeCommit(commitId, PLAN_ID);
+
+            when(planRepository.findByOrgIdAndId(ORG_ID, PLAN_ID))
+                    .thenReturn(Optional.of(plan));
+            when(commitRepository.findByOrgIdAndWeeklyPlanId(ORG_ID, PLAN_ID))
+                    .thenReturn(List.of(commit));
+
+            assertThrows(
+                    PlanValidationException.class,
+                    () -> quickUpdateService.batchCheckIn(
+                            ORG_ID,
+                            USER_ID,
+                            PLAN_ID,
+                            List.of(new QuickUpdateItemDto(
+                                    commitId,
+                                    "ON_TRACK",
+                                    "Typed note",
+                                    "IMPORTED_FROM_MARS",
+                                    null,
+                                    null
+                            ))
+                    )
+            );
+
+            verify(progressEntryRepository, never()).save(any());
         }
 
         @Test
@@ -111,7 +199,7 @@ class QuickUpdateServiceTest {
                     .thenReturn(Optional.empty());
 
             List<QuickUpdateItemDto> updates = List.of(
-                    new QuickUpdateItemDto(UUID.randomUUID(), "ON_TRACK", null)
+                    new QuickUpdateItemDto(UUID.randomUUID(), "ON_TRACK", null, null, null, null)
             );
 
             assertThrows(PlanNotFoundException.class, () ->
@@ -129,7 +217,7 @@ class QuickUpdateServiceTest {
                     .thenReturn(Optional.of(plan));
 
             List<QuickUpdateItemDto> updates = List.of(
-                    new QuickUpdateItemDto(UUID.randomUUID(), "ON_TRACK", null)
+                    new QuickUpdateItemDto(UUID.randomUUID(), "ON_TRACK", null, null, null, null)
             );
 
             assertThrows(PlanAccessForbiddenException.class, () ->
@@ -146,7 +234,7 @@ class QuickUpdateServiceTest {
                     .thenReturn(Optional.of(plan));
 
             List<QuickUpdateItemDto> updates = List.of(
-                    new QuickUpdateItemDto(UUID.randomUUID(), "ON_TRACK", null)
+                    new QuickUpdateItemDto(UUID.randomUUID(), "ON_TRACK", null, null, null, null)
             );
 
             assertThrows(PlanStateException.class, () ->
@@ -166,44 +254,13 @@ class QuickUpdateServiceTest {
                     .thenReturn(List.of());
 
             List<QuickUpdateItemDto> updates = List.of(
-                    new QuickUpdateItemDto(unknownCommitId, "ON_TRACK", null)
+                    new QuickUpdateItemDto(unknownCommitId, "ON_TRACK", null, null, null, null)
             );
 
             assertThrows(CommitNotFoundException.class, () ->
                     quickUpdateService.batchCheckIn(ORG_ID, USER_ID, PLAN_ID, updates));
 
             verify(progressEntryRepository, never()).save(any());
-        }
-
-        @Test
-        void recordsPatternsForNonEmptyNotes() {
-            UUID commitId1 = UUID.randomUUID();
-            UUID commitId2 = UUID.randomUUID();
-
-            WeeklyPlanEntity plan = makePlan(PLAN_ID, USER_ID, PlanState.LOCKED);
-            WeeklyCommitEntity commit1 = makeCommit(commitId1, PLAN_ID);
-            commit1.setCategory(CommitCategory.DELIVERY);
-            WeeklyCommitEntity commit2 = makeCommit(commitId2, PLAN_ID);
-            commit2.setCategory(CommitCategory.OPERATIONS);
-
-            when(planRepository.findByOrgIdAndId(ORG_ID, PLAN_ID))
-                    .thenReturn(Optional.of(plan));
-            when(commitRepository.findByOrgIdAndWeeklyPlanId(ORG_ID, PLAN_ID))
-                    .thenReturn(List.of(commit1, commit2));
-            when(progressEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-            List<QuickUpdateItemDto> updates = List.of(
-                    new QuickUpdateItemDto(commitId1, "ON_TRACK", "Making good progress"),
-                    new QuickUpdateItemDto(commitId2, "BLOCKED", "")  // empty note
-            );
-
-            quickUpdateService.batchCheckIn(ORG_ID, USER_ID, PLAN_ID, updates);
-
-            // recordPattern called only for the item with a non-empty note
-            verify(userUpdatePatternService, times(1))
-                    .recordPattern(ORG_ID, USER_ID, "DELIVERY", "Making good progress");
-            verify(userUpdatePatternService, never())
-                    .recordPattern(any(), any(), any(), org.mockito.ArgumentMatchers.eq(""));
         }
 
         @Test
@@ -235,7 +292,7 @@ class QuickUpdateServiceTest {
             when(progressEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             List<QuickUpdateItemDto> updates = List.of(
-                    new QuickUpdateItemDto(commitId, "ON_TRACK", null)
+                    new QuickUpdateItemDto(commitId, "ON_TRACK", null, null, null, null)
             );
 
             QuickUpdateResponseDto response =

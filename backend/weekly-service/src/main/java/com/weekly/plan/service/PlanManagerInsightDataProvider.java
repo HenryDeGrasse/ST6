@@ -9,7 +9,11 @@ import com.weekly.plan.dto.TeamSummaryResponseDto;
 import com.weekly.plan.repository.ManagerReviewRepository;
 import com.weekly.plan.repository.WeeklyCommitRepository;
 import com.weekly.plan.repository.WeeklyPlanRepository;
+import com.weekly.shared.DiagnosticDataProvider;
 import com.weekly.shared.ManagerInsightDataProvider;
+import com.weekly.shared.SlackInfo;
+import com.weekly.shared.UrgencyDataProvider;
+import com.weekly.shared.UrgencyInfo;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -45,17 +49,23 @@ public class PlanManagerInsightDataProvider implements ManagerInsightDataProvide
     private final WeeklyPlanRepository planRepository;
     private final WeeklyCommitRepository commitRepository;
     private final ManagerReviewRepository reviewRepository;
+    private final DiagnosticDataProvider diagnosticDataProvider;
+    private final UrgencyDataProvider urgencyDataProvider;
 
     public PlanManagerInsightDataProvider(
             TeamDashboardService teamDashboardService,
             WeeklyPlanRepository planRepository,
             WeeklyCommitRepository commitRepository,
-            ManagerReviewRepository reviewRepository
+            ManagerReviewRepository reviewRepository,
+            DiagnosticDataProvider diagnosticDataProvider,
+            UrgencyDataProvider urgencyDataProvider
     ) {
         this.teamDashboardService = teamDashboardService;
         this.planRepository = planRepository;
         this.commitRepository = commitRepository;
         this.reviewRepository = reviewRepository;
+        this.diagnosticDataProvider = diagnosticDataProvider;
+        this.urgencyDataProvider = urgencyDataProvider;
     }
 
     @Override
@@ -85,6 +95,13 @@ public class PlanManagerInsightDataProvider implements ManagerInsightDataProvide
         List<OutcomeCoverageTrend> outcomeCoverageTrends;
         List<LateLockPattern> lateLockPatterns;
         ReviewTurnaroundStats reviewTurnaroundStats;
+
+        // ── Cross-module prompt-enrichment context ───────────────────────────
+        DiagnosticContext diagnosticContext = buildDiagnosticContext(
+                orgId, managerId, weekStart, windowWeeks);
+        List<OutcomeUrgencyContext> outcomeUrgencies = buildOutcomeUrgencies(orgId);
+        StrategicSlackContext strategicSlackContext = buildStrategicSlackContext(
+                urgencyDataProvider.getStrategicSlack(orgId, managerId));
 
         if (windowWeeks > 1 && !directReportIds.isEmpty()) {
             // Load all plans and commits once, then derive all metrics in-memory
@@ -158,7 +175,80 @@ public class PlanManagerInsightDataProvider implements ManagerInsightDataProvide
                 carryForwardStreaks,
                 outcomeCoverageTrends,
                 lateLockPatterns,
-                reviewTurnaroundStats
+                reviewTurnaroundStats,
+                diagnosticContext,
+                outcomeUrgencies,
+                strategicSlackContext
+        );
+    }
+
+    private DiagnosticContext buildDiagnosticContext(
+            UUID orgId, UUID managerId, LocalDate weekStart, int windowWeeks) {
+        DiagnosticDataProvider.CategoryShiftContext categoryShifts =
+                diagnosticDataProvider.getCategoryShifts(orgId, managerId, weekStart, windowWeeks);
+        DiagnosticDataProvider.PerUserOutcomeCoverageContext outcomeCoverage =
+                diagnosticDataProvider.getPerUserOutcomeCoverage(orgId, managerId, weekStart, windowWeeks);
+        DiagnosticDataProvider.BlockerFrequencyContext blockerFrequency =
+                diagnosticDataProvider.getBlockerFrequency(orgId, managerId, weekStart, windowWeeks);
+
+        return new DiagnosticContext(
+                categoryShifts == null ? List.of() : categoryShifts.shifts().stream()
+                        .map(shift -> new UserCategoryShiftContext(
+                                shift.userId().toString(),
+                                shift.currentPeriod(),
+                                shift.priorPeriod()))
+                        .toList(),
+                outcomeCoverage == null ? List.of() : outcomeCoverage.coverages().stream()
+                        .map(coverage -> new UserOutcomeCoverageContext(
+                                coverage.userId().toString(),
+                                coverage.outcomes().stream()
+                                        .map(outcome -> new UserOutcomeWeeklyCountContext(
+                                                outcome.outcomeId().toString(),
+                                                outcome.weekStart(),
+                                                outcome.commitCount()))
+                                        .toList()))
+                        .toList(),
+                blockerFrequency == null ? List.of() : blockerFrequency.frequencies().stream()
+                        .map(freq -> new UserBlockerFrequencyContext(
+                                freq.userId().toString(),
+                                freq.atRiskCount(),
+                                freq.blockedCount(),
+                                freq.totalCheckIns()))
+                        .toList()
+        );
+    }
+
+    private List<OutcomeUrgencyContext> buildOutcomeUrgencies(UUID orgId) {
+        List<UrgencyInfo> urgencySummary = urgencyDataProvider.getOrgUrgencySummary(orgId);
+        if (urgencySummary == null || urgencySummary.isEmpty()) {
+            return List.of();
+        }
+        return urgencySummary.stream()
+                .map(this::buildOutcomeUrgencyContext)
+                .toList();
+    }
+
+    private OutcomeUrgencyContext buildOutcomeUrgencyContext(UrgencyInfo urgencyInfo) {
+        return new OutcomeUrgencyContext(
+                urgencyInfo.outcomeId().toString(),
+                urgencyInfo.outcomeName(),
+                urgencyInfo.targetDate() == null ? null : urgencyInfo.targetDate().toString(),
+                urgencyInfo.progressPct(),
+                urgencyInfo.expectedProgressPct(),
+                urgencyInfo.urgencyBand(),
+                urgencyInfo.daysRemaining()
+        );
+    }
+
+    private StrategicSlackContext buildStrategicSlackContext(SlackInfo slackInfo) {
+        if (slackInfo == null) {
+            return null;
+        }
+        return new StrategicSlackContext(
+                slackInfo.slackBand(),
+                slackInfo.strategicFocusFloor(),
+                slackInfo.atRiskCount(),
+                slackInfo.criticalCount()
         );
     }
 

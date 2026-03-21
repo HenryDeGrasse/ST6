@@ -24,19 +24,54 @@ const API_PATHS = [
   "/plans/{planId}/commits",
   "/commits/{commitId}",
   "/commits/{commitId}/actual",
+  "/commits/{commitId}/check-in",
+  "/commits/{commitId}/check-ins",
   "/weeks/{weekStart}/team/summary",
+  "/weeks/{weekStart}/team/rcdo-rollup",
+  "/notifications/unread",
+  "/notifications/{notificationId}/read",
+  "/notifications/read-all",
   "/plans/{planId}/review",
   "/rcdo/tree",
   "/rcdo/search",
   "/ai/suggest-rcdo",
   "/ai/draft-reconciliation",
   "/ai/manager-insights",
+  "/ai/plan-quality-check",
+  "/ai/suggest-next-work",
+  "/ai/suggestion-feedback",
+  "/plans/draft-from-history",
+  "/users/me/trends",
+  "/admin/org-policy",
+  "/admin/org-policy/digest",
+  "/admin/adoption-metrics",
+  "/admin/ai-usage",
+  "/admin/rcdo-health",
+  "/integrations/link-ticket",
+  "/commits/{commitId}/linked-tickets",
+  "/integrations/webhook/{provider}",
+  "/users/me/capacity",
+  "/team/capacity",
+  "/users/me/estimation-coaching",
   "/health",
+  "/plans/{planId}/quick-update",
+  "/ai/check-in-options",
+  "/users/me/profile",
+  "/analytics/outcome-coverage",
+  "/analytics/carry-forward-heatmap",
+  "/analytics/category-shifts",
+  "/analytics/estimation-accuracy",
+  "/analytics/predictions/{userId}",
+  "/outcomes/metadata",
+  "/outcomes/{outcomeId}/metadata",
+  "/outcomes/{outcomeId}/progress",
+  "/outcomes/urgency-summary",
+  "/team/strategic-slack",
 ] as const satisfies readonly (keyof WeeklyCommitmentsApiPaths)[];
 
 describe("generated OpenAPI client", () => {
   it("covers every v1 path in the committed OpenAPI spec", () => {
-    expect(API_PATHS).toHaveLength(20);
+    expect(API_PATHS).toHaveLength(55);
   });
 
   it("creates a typed openapi-fetch client", () => {
@@ -72,10 +107,6 @@ describe("generated OpenAPI client", () => {
   });
 
   it("requires If-Match header on lock, start-reconciliation, submit-reconciliation, and carry-forward", () => {
-    // These compile-time assertions verify the generated types both include and
-    // require If-Match on all four lifecycle mutation endpoints. If If-Match is
-    // removed from the OpenAPI spec or made optional for any of these, the type
-    // assertions below will fail.
     type LockHeader = WeeklyCommitmentsApiOperations["lockPlan"]["parameters"]["header"];
     type StartHeader = WeeklyCommitmentsApiOperations["startReconciliation"]["parameters"]["header"];
     type SubmitHeader = WeeklyCommitmentsApiOperations["submitReconciliation"]["parameters"]["header"];

@@ -12,6 +12,7 @@ import com.weekly.rcdo.RcdoTree;
 import com.weekly.shared.CommitDataProvider;
 import com.weekly.shared.ManagerInsightDataProvider;
 import com.weekly.shared.TeamRcdoUsageProvider;
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
@@ -385,36 +386,7 @@ class DefaultAiSuggestionServiceTest {
             when(managerInsightDataProvider.getManagerWeekContext(
                     eq(ORG_ID), eq(managerId), eq(weekStart),
                     eq(ManagerInsightDataProvider.DEFAULT_WINDOW_WEEKS)))
-                    .thenReturn(new ManagerInsightDataProvider.ManagerWeekContext(
-                            weekStart.toString(),
-                            new ManagerInsightDataProvider.ReviewCounts(1, 2, 0),
-                            List.of(new ManagerInsightDataProvider.TeamMemberContext(
-                                    UUID.randomUUID().toString(),
-                                    "RECONCILED",
-                                    "REVIEW_PENDING",
-                                    5,
-                                    1,
-                                    0,
-                                    0,
-                                    1,
-                                    2,
-                                    false,
-                                    false
-                            )),
-                            List.of(new ManagerInsightDataProvider.RcdoFocusContext(
-                                    UUID.randomUUID().toString(),
-                                    "Close Q1 deals",
-                                    "Enterprise Sales",
-                                    "Revenue Growth",
-                                    4,
-                                    1,
-                                    2
-                            )),
-                            List.of(),
-                            List.of(),
-                            List.of(),
-                            null
-                    ));
+                    .thenReturn(baseManagerContext(weekStart));
 
             AiSuggestionService.ManagerInsightsResult result =
                     service.draftManagerInsights(ORG_ID, managerId, weekStart);
@@ -422,6 +394,134 @@ class DefaultAiSuggestionServiceTest {
             assertEquals("ok", result.status());
             assertFalse(result.insights().isEmpty());
             assertEquals("INFO", result.insights().get(0).severity());
+        }
+
+        @Test
+        void invalidatesCachedManagerInsightsWhenUrgencyContextChanges() {
+            UUID managerId = UUID.randomUUID();
+            LocalDate weekStart = LocalDate.of(2026, 3, 9);
+
+            when(managerInsightDataProvider.getManagerWeekContext(
+                    eq(ORG_ID), eq(managerId), eq(weekStart),
+                    eq(ManagerInsightDataProvider.DEFAULT_WINDOW_WEEKS)))
+                    .thenReturn(
+                            managerContextWithUrgency(weekStart, "AT_RISK", BigDecimal.valueOf(55)),
+                            managerContextWithUrgency(weekStart, "CRITICAL", BigDecimal.valueOf(70))
+                    );
+
+            class CountingLlmClient implements LlmClient {
+                private int callCount;
+
+                @Override
+                public String complete(List<Message> messages, String responseSchema) {
+                    callCount++;
+                    return """
+                            {
+                              "headline": "Attention needed",
+                              "insights": [
+                                {
+                                  "title": "Urgency changed",
+                                  "detail": "Outcome urgency shifted.",
+                                  "severity": "WARNING"
+                                }
+                              ]
+                            }""";
+                }
+
+                int callCount() {
+                    return callCount;
+                }
+            }
+
+            CountingLlmClient countingLlmClient = new CountingLlmClient();
+            DefaultAiSuggestionService localService = new DefaultAiSuggestionService(
+                    countingLlmClient,
+                    rcdoClient,
+                    new AiCacheService(Duration.ofHours(1)),
+                    commitDataProvider,
+                    managerInsightDataProvider,
+                    teamRcdoUsageProvider
+            );
+
+            localService.draftManagerInsights(ORG_ID, managerId, weekStart);
+            localService.draftManagerInsights(ORG_ID, managerId, weekStart);
+
+            assertEquals(2, countingLlmClient.callCount(),
+                    "Cache key should change when urgency/slack prompt context changes");
+        }
+
+        private ManagerInsightDataProvider.ManagerWeekContext baseManagerContext(LocalDate weekStart) {
+            return managerContextWithUrgency(weekStart, "AT_RISK", BigDecimal.valueOf(55));
+        }
+
+        private ManagerInsightDataProvider.ManagerWeekContext managerContextWithUrgency(
+                LocalDate weekStart,
+                String urgencyBand,
+                BigDecimal strategicFocusFloor
+        ) {
+            return new ManagerInsightDataProvider.ManagerWeekContext(
+                    weekStart.toString(),
+                    new ManagerInsightDataProvider.ReviewCounts(1, 2, 0),
+                    List.of(new ManagerInsightDataProvider.TeamMemberContext(
+                            UUID.randomUUID().toString(),
+                            "RECONCILED",
+                            "REVIEW_PENDING",
+                            5,
+                            1,
+                            0,
+                            0,
+                            1,
+                            2,
+                            false,
+                            false
+                    )),
+                    List.of(new ManagerInsightDataProvider.RcdoFocusContext(
+                            UUID.randomUUID().toString(),
+                            "Close Q1 deals",
+                            "Enterprise Sales",
+                            "Revenue Growth",
+                            4,
+                            1,
+                            2
+                    )),
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    null,
+                    new ManagerInsightDataProvider.DiagnosticContext(
+                            List.of(new ManagerInsightDataProvider.UserCategoryShiftContext(
+                                    "user-1",
+                                    java.util.Map.of("DELIVERY", 0.6),
+                                    java.util.Map.of("DISCOVERY", 0.4)
+                            )),
+                            List.of(new ManagerInsightDataProvider.UserOutcomeCoverageContext(
+                                    "user-1",
+                                    List.of(new ManagerInsightDataProvider.UserOutcomeWeeklyCountContext(
+                                            "outcome-1",
+                                            weekStart.toString(),
+                                            2
+                                    ))
+                            )),
+                            List.of(new ManagerInsightDataProvider.UserBlockerFrequencyContext(
+                                    "user-1", 1, 0, 3
+                            ))
+                    ),
+                    List.of(new ManagerInsightDataProvider.OutcomeUrgencyContext(
+                            "outcome-1",
+                            "Close Q1 deals",
+                            weekStart.plusWeeks(2).toString(),
+                            BigDecimal.valueOf(35),
+                            BigDecimal.valueOf(50),
+                            urgencyBand,
+                            14
+                    )),
+                    new ManagerInsightDataProvider.StrategicSlackContext(
+                            "LOW_SLACK",
+                            strategicFocusFloor,
+                            2,
+                            1
+                    )
+            );
         }
     }
 }

@@ -2,6 +2,7 @@ package com.weekly.quickupdate;
 
 import com.weekly.plan.domain.PlanState;
 import com.weekly.plan.domain.ProgressEntryEntity;
+import com.weekly.plan.domain.ProgressNoteSource;
 import com.weekly.plan.domain.ProgressStatus;
 import com.weekly.plan.domain.WeeklyCommitEntity;
 import com.weekly.plan.domain.WeeklyPlanEntity;
@@ -15,7 +16,6 @@ import com.weekly.plan.service.PlanNotFoundException;
 import com.weekly.plan.service.PlanStateException;
 import com.weekly.plan.service.PlanValidationException;
 import com.weekly.shared.ErrorCode;
-import com.weekly.usermodel.UserUpdatePatternService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,8 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>Validates plan ownership and state, then atomically creates
  * {@link ProgressEntryEntity} records for each item in the batch.
- * Non-empty notes are also recorded in the user-update pattern model
- * to power personalised option suggestions on the Quick Update card.
+ * Note provenance is persisted on each progress entry so downstream learning
+ * jobs can aggregate typed notes without double-counting accepted suggestions.
  */
 @Service
 public class QuickUpdateService {
@@ -39,18 +39,15 @@ public class QuickUpdateService {
     private final WeeklyPlanRepository planRepository;
     private final WeeklyCommitRepository commitRepository;
     private final ProgressEntryRepository progressEntryRepository;
-    private final UserUpdatePatternService userUpdatePatternService;
 
     public QuickUpdateService(
             WeeklyPlanRepository planRepository,
             WeeklyCommitRepository commitRepository,
-            ProgressEntryRepository progressEntryRepository,
-            UserUpdatePatternService userUpdatePatternService
+            ProgressEntryRepository progressEntryRepository
     ) {
         this.planRepository = planRepository;
         this.commitRepository = commitRepository;
         this.progressEntryRepository = progressEntryRepository;
-        this.userUpdatePatternService = userUpdatePatternService;
     }
 
     /**
@@ -64,7 +61,6 @@ public class QuickUpdateService {
      *       {@link PlanStateException} otherwise.</li>
      *   <li>Fetch all commits for the plan and build a by-ID lookup map.</li>
      *   <li>For each update item create a {@link ProgressEntryEntity} and persist it.</li>
-     *   <li>Record non-empty notes in the user-update pattern model.</li>
      *   <li>Return a {@link QuickUpdateResponseDto} with the created entries.</li>
      * </ol>
      *
@@ -77,7 +73,7 @@ public class QuickUpdateService {
      * @throws PlanAccessForbiddenException  if the plan belongs to a different user
      * @throws PlanStateException            if the plan is not LOCKED or RECONCILING
      * @throws CommitNotFoundException       if any update item references an unknown commit
-     * @throws PlanValidationException       if any status value is invalid
+     * @throws PlanValidationException       if any status or note-source value is invalid
      */
     @Transactional
     public QuickUpdateResponseDto batchCheckIn(
@@ -110,7 +106,7 @@ public class QuickUpdateService {
                 commitRepository.findByOrgIdAndWeeklyPlanId(orgId, planId).stream()
                         .collect(Collectors.toMap(WeeklyCommitEntity::getId, Function.identity()));
 
-        // 5 & 6. Process each update item
+        // 5. Process each update item
         List<ProgressEntryEntity> entries = new ArrayList<>(updates.size());
 
         for (QuickUpdateItemDto item : updates) {
@@ -122,26 +118,24 @@ public class QuickUpdateService {
 
             // Parse status (same helper as DefaultCheckInService)
             ProgressStatus status = parseStatus(item.status());
+            ProgressNoteSource noteSource = parseNoteSource(item.noteSource());
 
             // Create and persist the progress entry
             ProgressEntryEntity entry = new ProgressEntryEntity(
-                    UUID.randomUUID(), orgId, item.commitId(), status,
-                    item.note() != null ? item.note() : ""
+                    UUID.randomUUID(),
+                    orgId,
+                    item.commitId(),
+                    status,
+                    item.note() != null ? item.note() : "",
+                    noteSource,
+                    item.selectedSuggestionText(),
+                    item.selectedSuggestionSource()
             );
             progressEntryRepository.save(entry);
             entries.add(entry);
-
-            // Record non-empty notes in the user-update pattern model
-            String note = item.note();
-            if (note != null && !note.isBlank()) {
-                String category = commit.getCategory() != null
-                        ? commit.getCategory().name()
-                        : null;
-                userUpdatePatternService.recordPattern(orgId, userId, category, note);
-            }
         }
 
-        // 7. Build and return the response
+        // 6. Build and return the response
         List<CheckInEntryResponse> entryResponses = entries.stream()
                 .map(CheckInEntryResponse::from)
                 .toList();
@@ -172,6 +166,25 @@ public class QuickUpdateService {
                     List.of(Map.of(
                             "field", "status",
                             "message", "must be one of ON_TRACK, AT_RISK, BLOCKED, DONE_EARLY"
+                    ))
+            );
+        }
+    }
+
+    private ProgressNoteSource parseNoteSource(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return ProgressNoteSource.UNKNOWN;
+        }
+
+        try {
+            return ProgressNoteSource.valueOf(raw);
+        } catch (IllegalArgumentException ex) {
+            throw new PlanValidationException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "Request validation failed",
+                    List.of(Map.of(
+                            "field", "noteSource",
+                            "message", "must be one of UNKNOWN, USER_TYPED, SUGGESTION_ACCEPTED"
                     ))
             );
         }

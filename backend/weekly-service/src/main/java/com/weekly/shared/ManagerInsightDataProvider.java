@@ -1,7 +1,9 @@
 package com.weekly.shared;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -46,8 +48,41 @@ public interface ManagerInsightDataProvider {
             List<CarryForwardStreak> carryForwardStreaks,
             List<OutcomeCoverageTrend> outcomeCoverageTrends,
             List<LateLockPattern> lateLockPatterns,
-            ReviewTurnaroundStats reviewTurnaroundStats
-    ) {}
+            ReviewTurnaroundStats reviewTurnaroundStats,
+            // Cross-module prompt-enrichment context
+            DiagnosticContext diagnosticContext,
+            List<OutcomeUrgencyContext> outcomeUrgencies,
+            StrategicSlackContext strategicSlackContext
+    ) {
+        /**
+         * Backward-compatible constructor for callers that only populate the
+         * original snapshot + historical fields.
+         */
+        public ManagerWeekContext(
+                String weekStart,
+                ReviewCounts reviewCounts,
+                List<TeamMemberContext> teamMembers,
+                List<RcdoFocusContext> rcdoFocuses,
+                List<CarryForwardStreak> carryForwardStreaks,
+                List<OutcomeCoverageTrend> outcomeCoverageTrends,
+                List<LateLockPattern> lateLockPatterns,
+                ReviewTurnaroundStats reviewTurnaroundStats
+        ) {
+            this(
+                    weekStart,
+                    reviewCounts,
+                    teamMembers,
+                    rcdoFocuses,
+                    carryForwardStreaks,
+                    outcomeCoverageTrends,
+                    lateLockPatterns,
+                    reviewTurnaroundStats,
+                    null,
+                    List.of(),
+                    null
+            );
+        }
+    }
 
     /**
      * Review-status aggregates.
@@ -156,5 +191,73 @@ public interface ManagerInsightDataProvider {
     record ReviewTurnaroundStats(
             double avgDaysToReview,
             int sampleSize
+    ) {}
+
+    /**
+     * Consolidated diagnostic context derived from {@link DiagnosticDataProvider}.
+     */
+    record DiagnosticContext(
+            List<UserCategoryShiftContext> categoryShifts,
+            List<UserOutcomeCoverageContext> outcomeCoverages,
+            List<UserBlockerFrequencyContext> blockerFrequencies
+    ) {}
+
+    /**
+     * Category-distribution shift for a single team member.
+     */
+    record UserCategoryShiftContext(
+            String userId,
+            Map<String, Double> currentPeriod,
+            Map<String, Double> priorPeriod
+    ) {}
+
+    /**
+     * Per-user outcome-coverage detail for the rolling window.
+     */
+    record UserOutcomeCoverageContext(
+            String userId,
+            List<UserOutcomeWeeklyCountContext> outcomes
+    ) {}
+
+    /**
+     * Per-outcome weekly commit count for a team member.
+     */
+    record UserOutcomeWeeklyCountContext(
+            String outcomeId,
+            String weekStart,
+            int commitCount
+    ) {}
+
+    /**
+     * Blocker / at-risk frequency summary for a single team member.
+     */
+    record UserBlockerFrequencyContext(
+            String userId,
+            int atRiskCount,
+            int blockedCount,
+            int totalCheckIns
+    ) {}
+
+    /**
+     * Urgency snapshot for a single outcome relevant to the prompt context.
+     */
+    record OutcomeUrgencyContext(
+            String outcomeId,
+            String outcomeName,
+            String targetDate,
+            BigDecimal progressPct,
+            BigDecimal expectedProgressPct,
+            String urgencyBand,
+            long daysRemaining
+    ) {}
+
+    /**
+     * Strategic slack summary relevant to the manager prompt context.
+     */
+    record StrategicSlackContext(
+            String slackBand,
+            BigDecimal strategicFocusFloor,
+            int atRiskCount,
+            int criticalCount
     ) {}
 }

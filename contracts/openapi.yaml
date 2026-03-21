@@ -1,20 +1,18 @@
 openapi: 3.1.0
 info:
   title: Weekly Commitments API
-  description: |
+  description: >
     API for the Weekly Commitments module – plan creation, lifecycle management,
+
     reconciliation, manager review, RCDO integration, and AI-assisted suggestions.
   version: 1.0.0
   contact:
     name: ST6 Engineering
-
 servers:
   - url: /api/v1
     description: API v1 base path
-
 security:
   - BearerAuth: []
-
 tags:
   - name: Plans
     description: Weekly plan lifecycle operations
@@ -34,84 +32,102 @@ tags:
     description: External issue-tracker integrations (Jira, Linear) — Wave 4
   - name: Capacity
     description: Capacity planning and estimation coaching (Phase 4)
-
+  - name: Notifications
+    description: In-app notification endpoints
+  - name: QuickUpdate
+    description: Rapid-fire batch check-in flow (Phase 1)
+  - name: UserProfile
+    description: User model and behavioural profile (Phase 1)
+  - name: Analytics
+    description: |
+      Multi-week descriptive and diagnostic analytics for the manager
+      dashboard (Phase 2 — Strategic Intelligence).
+  - name: Outcome Metadata
+    description: |
+      CRUD operations for RCDO outcome metadata — target dates, progress
+      tracking configuration, and computed urgency bands (Phase 3).
+  - name: Urgency
+    description: |
+      Urgency summary and strategic slack APIs for the RCDO outcome portfolio
+      (Phase 3).
 paths:
-  /weeks/{weekStart}/plans:
+  "/weeks/{weekStart}/plans":
     post:
       operationId: createPlan
       summary: Create a weekly plan
       description: |
         Create a plan for the specified week. Idempotent: returns 201 on create,
         200 if the plan already exists for this user/week.
-      tags: [Plans]
+      tags:
+        - Plans
       parameters:
-        - $ref: '#/components/parameters/WeekStartPath'
+        - $ref: "#/components/parameters/WeekStartPath"
       responses:
-        '200':
+        "200":
           description: Plan already exists
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WeeklyPlan'
-        '201':
+                $ref: "#/components/schemas/WeeklyPlan"
+        "201":
           description: Plan created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WeeklyPlan'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
-  /weeks/{weekStart}/plans/me:
+                $ref: "#/components/schemas/WeeklyPlan"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  "/weeks/{weekStart}/plans/me":
     get:
       operationId: getMyPlan
       summary: Get my plan for a given week
-      tags: [Plans]
+      tags:
+        - Plans
       parameters:
-        - $ref: '#/components/parameters/WeekStartPath'
+        - $ref: "#/components/parameters/WeekStartPath"
       responses:
-        '200':
+        "200":
           description: Plan found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WeeklyPlan'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /plans/{planId}:
+                $ref: "#/components/schemas/WeeklyPlan"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  "/plans/{planId}":
     get:
       operationId: getPlan
       summary: Get plan by ID
       description: Accessible by the plan owner or their manager.
-      tags: [Plans]
+      tags:
+        - Plans
       parameters:
-        - $ref: '#/components/parameters/PlanIdPath'
+        - $ref: "#/components/parameters/PlanIdPath"
       responses:
-        '200':
+        "200":
           description: Plan found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WeeklyPlan'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /weeks/{weekStart}/plans/{userId}:
+                $ref: "#/components/schemas/WeeklyPlan"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  "/weeks/{weekStart}/plans/{userId}":
     get:
       operationId: getUserPlan
       summary: Get a user's plan (manager-only)
-      tags: [Plans]
+      tags:
+        - Plans
       parameters:
-        - $ref: '#/components/parameters/WeekStartPath'
+        - $ref: "#/components/parameters/WeekStartPath"
         - name: userId
           in: path
           required: true
@@ -119,26 +135,27 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Plan found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WeeklyPlan'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /weeks/{weekStart}/plans/{userId}/commits:
+                $ref: "#/components/schemas/WeeklyPlan"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  "/weeks/{weekStart}/plans/{userId}/commits":
     get:
       operationId: getUserPlanCommits
       summary: Get a user's commits for the selected week (manager-only)
-      tags: [Plans, Commits]
+      tags:
+        - Plans
+        - Commits
       parameters:
-        - $ref: '#/components/parameters/WeekStartPath'
+        - $ref: "#/components/parameters/WeekStartPath"
         - name: userId
           in: path
           required: true
@@ -146,336 +163,338 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Commit list for the user's weekly plan
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/WeeklyCommit'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /plans/{planId}/lock:
+                  $ref: "#/components/schemas/WeeklyCommit"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  "/plans/{planId}/lock":
     post:
       operationId: lockPlan
       summary: Lock a weekly plan
       description: |
         Transitions a plan from DRAFT to LOCKED. Validates all commits,
         populates RCDO snapshots, and enforces chess rules.
-      tags: [Plans]
+      tags:
+        - Plans
       parameters:
-        - $ref: '#/components/parameters/PlanIdPath'
-        - $ref: '#/components/parameters/IdempotencyKey'
-        - $ref: '#/components/parameters/IfMatch'
+        - $ref: "#/components/parameters/PlanIdPath"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/IfMatch"
       responses:
-        '200':
+        "200":
           description: Plan locked successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WeeklyPlan'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
-  /plans/{planId}/start-reconciliation:
+                $ref: "#/components/schemas/WeeklyPlan"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  "/plans/{planId}/start-reconciliation":
     post:
       operationId: startReconciliation
       summary: Start reconciliation
       description: |
         Transitions a plan from LOCKED to RECONCILING. If the plan is in
         DRAFT and the week has passed, performs a late lock first.
-      tags: [Plans]
+      tags:
+        - Plans
       parameters:
-        - $ref: '#/components/parameters/PlanIdPath'
-        - $ref: '#/components/parameters/IdempotencyKey'
-        - $ref: '#/components/parameters/IfMatch'
+        - $ref: "#/components/parameters/PlanIdPath"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/IfMatch"
       responses:
-        '200':
+        "200":
           description: Reconciliation started
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WeeklyPlan'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
-  /plans/{planId}/submit-reconciliation:
+                $ref: "#/components/schemas/WeeklyPlan"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  "/plans/{planId}/submit-reconciliation":
     post:
       operationId: submitReconciliation
       summary: Submit reconciliation
       description: |
         Transitions from RECONCILING to RECONCILED. Requires all commits
         to have completionStatus and deltaReason for non-DONE items.
-      tags: [Plans]
+      tags:
+        - Plans
       parameters:
-        - $ref: '#/components/parameters/PlanIdPath'
-        - $ref: '#/components/parameters/IdempotencyKey'
-        - $ref: '#/components/parameters/IfMatch'
+        - $ref: "#/components/parameters/PlanIdPath"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/IfMatch"
       responses:
-        '200':
+        "200":
           description: Reconciliation submitted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WeeklyPlan'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
-  /plans/{planId}/carry-forward:
+                $ref: "#/components/schemas/WeeklyPlan"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  "/plans/{planId}/carry-forward":
     post:
       operationId: carryForward
       summary: Carry forward incomplete commits
       description: |
         Copies selected commits into the next week's plan (DRAFT).
         Transitions the current plan to CARRY_FORWARD.
-      tags: [Plans]
+      tags:
+        - Plans
       parameters:
-        - $ref: '#/components/parameters/PlanIdPath'
-        - $ref: '#/components/parameters/IdempotencyKey'
-        - $ref: '#/components/parameters/IfMatch'
+        - $ref: "#/components/parameters/PlanIdPath"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/IfMatch"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CarryForwardRequest'
+              $ref: "#/components/schemas/CarryForwardRequest"
       responses:
-        '200':
+        "200":
           description: Carry-forward executed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WeeklyPlan'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-
-  /plans/{planId}/commits:
+                $ref: "#/components/schemas/WeeklyPlan"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  "/plans/{planId}/commits":
     get:
       operationId: listCommits
       summary: List commits for a plan
-      tags: [Commits]
+      tags:
+        - Commits
       parameters:
-        - $ref: '#/components/parameters/PlanIdPath'
+        - $ref: "#/components/parameters/PlanIdPath"
       responses:
-        '200':
+        "200":
           description: Commits returned
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/WeeklyCommit'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                  $ref: "#/components/schemas/WeeklyCommit"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
     post:
       operationId: createCommit
       summary: Create a new commit
-      tags: [Commits]
+      tags:
+        - Commits
       parameters:
-        - $ref: '#/components/parameters/PlanIdPath'
+        - $ref: "#/components/parameters/PlanIdPath"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateCommitRequest'
+              $ref: "#/components/schemas/CreateCommitRequest"
       responses:
-        '201':
+        "201":
           description: Commit created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WeeklyCommit'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
-          $ref: '#/components/responses/Conflict'
-
-  /commits/{commitId}:
+                $ref: "#/components/schemas/WeeklyCommit"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  "/commits/{commitId}":
     patch:
       operationId: updateCommit
       summary: Partially update a commit
-      tags: [Commits]
+      tags:
+        - Commits
       parameters:
-        - $ref: '#/components/parameters/CommitIdPath'
-        - $ref: '#/components/parameters/IfMatch'
+        - $ref: "#/components/parameters/CommitIdPath"
+        - $ref: "#/components/parameters/IfMatch"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateCommitRequest'
+              $ref: "#/components/schemas/UpdateCommitRequest"
       responses:
-        '200':
+        "200":
           description: Commit updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WeeklyCommit'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
+                $ref: "#/components/schemas/WeeklyCommit"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
     delete:
       operationId: deleteCommit
       summary: Delete a commit (DRAFT only)
-      tags: [Commits]
+      tags:
+        - Commits
       parameters:
-        - $ref: '#/components/parameters/CommitIdPath'
+        - $ref: "#/components/parameters/CommitIdPath"
       responses:
-        '204':
+        "204":
           description: Commit deleted
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-
-  /commits/{commitId}/actual:
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  "/commits/{commitId}/actual":
     patch:
       operationId: updateActual
       summary: Update reconciliation data for a commit
-      tags: [Commits]
+      tags:
+        - Commits
       parameters:
-        - $ref: '#/components/parameters/CommitIdPath'
-        - $ref: '#/components/parameters/IfMatch'
+        - $ref: "#/components/parameters/CommitIdPath"
+        - $ref: "#/components/parameters/IfMatch"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateActualRequest'
+              $ref: "#/components/schemas/UpdateActualRequest"
       responses:
-        '200':
+        "200":
           description: Actual updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WeeklyCommitActual'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-
-  /commits/{commitId}/check-in:
+                $ref: "#/components/schemas/WeeklyCommitActual"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  "/commits/{commitId}/check-in":
     post:
       operationId: addCheckIn
       summary: Append a daily check-in to a commit
       description: |
         Appends a structured progress micro-update to the given commit.
         Check-in history is append-only — entries are never modified or deleted.
-      tags: [Commits]
+      tags:
+        - Commits
       parameters:
-        - $ref: '#/components/parameters/CommitIdPath'
+        - $ref: "#/components/parameters/CommitIdPath"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CheckInRequest'
+              $ref: "#/components/schemas/CheckInRequest"
       responses:
-        '201':
+        "201":
           description: Check-in entry created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CheckInEntry'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
-  /commits/{commitId}/check-ins:
+                $ref: "#/components/schemas/CheckInEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  "/commits/{commitId}/check-ins":
     get:
       operationId: getCheckIns
       summary: Get check-in history for a commit
       description: |
         Returns the complete append-only check-in history for the given commit,
         ordered oldest-first.
-      tags: [Commits]
+      tags:
+        - Commits
       parameters:
-        - $ref: '#/components/parameters/CommitIdPath'
+        - $ref: "#/components/parameters/CommitIdPath"
       responses:
-        '200':
+        "200":
           description: Check-in history returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CheckInHistoryResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /weeks/{weekStart}/team/summary:
+                $ref: "#/components/schemas/CheckInHistoryResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  "/weeks/{weekStart}/team/summary":
     get:
       operationId: getTeamSummary
       summary: Manager team dashboard
       description: |
         Returns a paginated, filtered summary of direct reports' plans
         for the given week.
-      tags: [Manager]
+      tags:
+        - Manager
       parameters:
-        - $ref: '#/components/parameters/WeekStartPath'
+        - $ref: "#/components/parameters/WeekStartPath"
         - name: page
           in: query
           schema:
@@ -489,7 +508,7 @@ paths:
         - name: state
           in: query
           schema:
-            $ref: '#/components/schemas/PlanState'
+            $ref: "#/components/schemas/PlanState"
         - name: outcomeId
           in: query
           schema:
@@ -506,45 +525,44 @@ paths:
         - name: priority
           in: query
           schema:
-            $ref: '#/components/schemas/ChessPriority'
+            $ref: "#/components/schemas/ChessPriority"
         - name: category
           in: query
           schema:
-            $ref: '#/components/schemas/CommitCategory'
+            $ref: "#/components/schemas/CommitCategory"
       responses:
-        '200':
+        "200":
           description: Team summary returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TeamSummaryResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
-  /weeks/{weekStart}/team/rcdo-rollup:
+                $ref: "#/components/schemas/TeamSummaryResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  "/weeks/{weekStart}/team/rcdo-rollup":
     get:
       operationId: getRcdoRollup
       summary: RCDO roll-up for manager dashboard
       description: |
         Returns commits grouped by RCDO outcome across direct reports,
         with chess priority distribution and non-strategic counts.
-      tags: [Manager]
+      tags:
+        - Manager
       parameters:
-        - $ref: '#/components/parameters/WeekStartPath'
+        - $ref: "#/components/parameters/WeekStartPath"
       responses:
-        '200':
+        "200":
           description: RCDO roll-up returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RcdoRollupResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
+                $ref: "#/components/schemas/RcdoRollupResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /notifications/unread:
     get:
       operationId: getUnreadNotifications
@@ -552,24 +570,25 @@ paths:
       description: |
         Returns unread notifications for the current user, newest first.
         MVP renders in-app banners on page load.
-      tags: [Notifications]
+      tags:
+        - Notifications
       responses:
-        '200':
+        "200":
           description: Unread notifications returned
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Notification'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /notifications/{notificationId}/read:
+                  $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  "/notifications/{notificationId}/read":
     post:
       operationId: markNotificationRead
       summary: Mark a notification as read
-      tags: [Notifications]
+      tags:
+        - Notifications
       parameters:
         - name: notificationId
           in: path
@@ -578,78 +597,78 @@ paths:
             type: string
             format: uuid
       responses:
-        '204':
+        "204":
           description: Notification marked as read
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /notifications/read-all:
     post:
       operationId: markAllNotificationsRead
       summary: Mark all notifications as read
-      tags: [Notifications]
+      tags:
+        - Notifications
       responses:
-        '204':
+        "204":
           description: All notifications marked as read
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /plans/{planId}/review:
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  "/plans/{planId}/review":
     post:
       operationId: createReview
       summary: Submit manager review
       description: |
         Manager approves or requests changes to a plan. Request changes
         is blocked if carry-forward has already been executed.
-      tags: [Manager]
+      tags:
+        - Manager
       parameters:
-        - $ref: '#/components/parameters/PlanIdPath'
+        - $ref: "#/components/parameters/PlanIdPath"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateReviewRequest'
+              $ref: "#/components/schemas/CreateReviewRequest"
       responses:
-        '200':
+        "200":
           description: Review submitted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ManagerReview'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-
+                $ref: "#/components/schemas/ManagerReview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /rcdo/tree:
     get:
       operationId: getRcdoTree
       summary: Get RCDO hierarchy
-      tags: [RCDO]
+      tags:
+        - RCDO
       responses:
-        '200':
+        "200":
           description: RCDO tree returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RcdoTreeResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
-
+                $ref: "#/components/schemas/RcdoTreeResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /rcdo/search:
     get:
       operationId: searchRcdo
       summary: Typeahead search for RCDO outcomes
-      tags: [RCDO]
+      tags:
+        - RCDO
       parameters:
         - name: q
           in: query
@@ -658,15 +677,14 @@ paths:
             type: string
             minLength: 2
       responses:
-        '200':
+        "200":
           description: Search results
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RcdoSearchResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
+                $ref: "#/components/schemas/RcdoSearchResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /ai/suggest-rcdo:
     post:
       operationId: suggestRcdo
@@ -674,25 +692,25 @@ paths:
       description: |
         Given a commit title and description, returns ranked RCDO suggestions.
         Returns 200 with empty suggestions on LLM unavailability.
-      tags: [AI]
+      tags:
+        - AI
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SuggestRcdoRequest'
+              $ref: "#/components/schemas/SuggestRcdoRequest"
       responses:
-        '200':
+        "200":
           description: Suggestions returned (may be empty if AI unavailable)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuggestRcdoResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '429':
+                $ref: "#/components/schemas/SuggestRcdoResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
           description: Rate limit exceeded
-
   /ai/draft-reconciliation:
     post:
       operationId: draftReconciliation
@@ -700,25 +718,25 @@ paths:
       description: |
         Returns AI-suggested completion statuses and delta summaries
         for all commits in a plan.
-      tags: [AI]
+      tags:
+        - AI
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DraftReconciliationRequest'
+              $ref: "#/components/schemas/DraftReconciliationRequest"
       responses:
-        '200':
+        "200":
           description: Reconciliation draft returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DraftReconciliationResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '429':
+                $ref: "#/components/schemas/DraftReconciliationResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
           description: Rate limit exceeded
-
   /ai/manager-insights:
     post:
       operationId: managerInsights
@@ -726,25 +744,25 @@ paths:
       description: |
         Returns AI-generated manager insight summaries for a dashboard week.
         Returns 200 with empty insights when AI is unavailable.
-      tags: [AI]
+      tags:
+        - AI
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ManagerInsightsRequest'
+              $ref: "#/components/schemas/ManagerInsightsRequest"
       responses:
-        '200':
+        "200":
           description: Manager insights returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ManagerInsightsResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '429':
+                $ref: "#/components/schemas/ManagerInsightsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
           description: Rate limit exceeded
-
   /ai/plan-quality-check:
     post:
       operationId: planQualityCheck
@@ -756,142 +774,166 @@ paths:
         No LLM is required — all checks are computed from existing plan data.
         Returns 200 with status "unavailable" and empty nudges when the
         planQualityNudge feature flag is disabled.
-      tags: [AI]
+      tags:
+        - AI
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PlanQualityCheckRequest'
+              $ref: "#/components/schemas/PlanQualityCheckRequest"
       responses:
-        '200':
+        "200":
           description: Quality nudges returned (may be empty)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PlanQualityCheckResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '429':
+                $ref: "#/components/schemas/PlanQualityCheckResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
           description: Rate limit exceeded
-
   /ai/suggest-next-work:
     post:
       operationId: suggestNextWork
       summary: AI next-work suggestions — Phase 1 (Wave 2)
-      description: |
+      description: >
         Returns data-driven next-work suggestions for the authenticated user.
+
         Phase 1 is pure data queries — no LLM required.
 
+
         Suggestion sources:
+
         - CARRY_FORWARD — commits not completed in the user's last 2 weeks
+
         - COVERAGE_GAP — RCDO outcomes with zero team commits in the last 2–4 weeks
           that had prior team activity
 
         Results are filtered by recent DECLINE feedback (within 4 weeks) to avoid
+
         re-surfacing dismissed items.
 
+
         Returns 200 with status "unavailable" and empty suggestions when the
+
         suggestNextWork feature flag is disabled.
-      tags: [AI]
+      tags:
+        - AI
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SuggestNextWorkRequest'
+              $ref: "#/components/schemas/SuggestNextWorkRequest"
       responses:
-        '200':
+        "200":
           description: Suggestions returned (may be empty)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuggestNextWorkResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '429':
+                $ref: "#/components/schemas/SuggestNextWorkResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
           description: Rate limit exceeded
-
   /ai/suggestion-feedback:
     post:
       operationId: recordSuggestionFeedback
       summary: Record user feedback on a next-work suggestion
-      description: |
+      description: >
         Records a user action (ACCEPT, DEFER, DECLINE) on an AI-generated
+
         next-work suggestion.
 
+
         Upsert semantics: submitting feedback for a suggestion the user has already
+
         acted on updates the previous record.
 
+
         DECLINE actions suppress the suggestion from re-surfacing for 4 weeks.
+
         Returns 200 with status "unavailable" when the suggestNextWork flag is disabled.
-      tags: [AI]
+      tags:
+        - AI
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SuggestionFeedbackRequest'
+              $ref: "#/components/schemas/SuggestionFeedbackRequest"
       responses:
-        '200':
+        "200":
           description: Feedback recorded
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuggestionFeedbackResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+                $ref: "#/components/schemas/SuggestionFeedbackResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
   /plans/draft-from-history:
     post:
       operationId: draftFromHistory
       summary: '"Start My Week" — create a draft plan pre-filled from history'
-      description: |
-        Creates (or updates) a DRAFT plan for the requested week, pre-filled with
+      description: >
+        Creates (or updates) a DRAFT plan for the requested week, pre-filled
+        with
+
         AI-suggested commits derived from the user's last 4 weeks of planning history.
 
+
         Suggestion sources:
+
         - CARRIED_FORWARD — commits not completed (status != DONE) in the most recent
           reconciled plan
         - RECURRING — commit titles or outcome IDs appearing in 2+ consecutive historical weeks
+
         - COVERAGE_GAP — reserved for future NextWorkService integration
 
+
         Each suggested commit is persisted in the new/existing DRAFT plan with its source
+
         stored in the tags[] array as "draft_source:<SOURCE>".
 
+
         Returns 409 if the target week already has a plan in a non-DRAFT state.
-      tags: [Plans, AI]
+      tags:
+        - Plans
+        - AI
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DraftFromHistoryRequest'
+              $ref: "#/components/schemas/DraftFromHistoryRequest"
       responses:
-        '200':
+        "200":
           description: Draft plan created or updated with suggestions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DraftFromHistoryResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+                $ref: "#/components/schemas/DraftFromHistoryResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
   /users/me/trends:
     get:
       operationId: getMyTrends
       summary: Get cross-week trend analytics for the authenticated user
-      description: |
+      description: >
         Returns rolling-window planning metrics for the last N weeks:
+
         strategic alignment rate, carry-forward velocity, completion accuracy,
+
         priority/category distributions, per-week breakdown, and structured insights.
-      tags: [Trends]
+      tags:
+        - Trends
       parameters:
         - name: weeks
           in: query
@@ -903,17 +945,16 @@ paths:
             maximum: 26
             default: 8
       responses:
-        '200':
+        "200":
           description: Trend data returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TrendsResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+                $ref: "#/components/schemas/TrendsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
   /admin/org-policy:
     get:
       operationId: getOrgPolicy
@@ -921,48 +962,51 @@ paths:
       description: |
         Returns the current org policy including chess rules, cadence schedule,
         and weekly digest configuration. Requires the ADMIN role.
-      tags: [Admin]
+      tags:
+        - Admin
       responses:
-        '200':
+        "200":
           description: Org policy returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OrgPolicy'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
+                $ref: "#/components/schemas/OrgPolicy"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /admin/org-policy/digest:
     patch:
       operationId: updateDigestConfig
       summary: Update the weekly digest schedule (admin only)
-      description: |
-        Updates the digest_day and digest_time fields of the org's policy record.
+      description: >
+        Updates the digest_day and digest_time fields of the org's policy
+        record.
+
         Evicts the policy cache so the next digest job run picks up the change.
+
         Requires the ADMIN role.
-      tags: [Admin]
+      tags:
+        - Admin
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateDigestConfigRequest'
+              $ref: "#/components/schemas/UpdateDigestConfigRequest"
       responses:
-        '200':
+        "200":
           description: Digest configuration updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OrgPolicy'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+                $ref: "#/components/schemas/OrgPolicy"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
   /admin/adoption-metrics:
     get:
       operationId: getAdoptionMetrics
@@ -972,7 +1016,8 @@ paths:
         plans created, locked, reconciled, and reviewed, plus total active
         users and cadence-compliance rate over a rolling window.
         Requires the ADMIN role.
-      tags: [Admin]
+      tags:
+        - Admin
       parameters:
         - name: weeks
           in: query
@@ -984,19 +1029,18 @@ paths:
             default: 8
           description: Rolling-window size in weeks (1–26)
       responses:
-        '200':
+        "200":
           description: Adoption metrics returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AdoptionMetrics'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+                $ref: "#/components/schemas/AdoptionMetrics"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
   /admin/ai-usage:
     get:
       operationId: getAiUsage
@@ -1005,7 +1049,8 @@ paths:
         Returns suggestion acceptance/defer/decline rates from
         ai_suggestion_feedback and in-process cache hit/miss statistics.
         Requires the ADMIN role.
-      tags: [Admin]
+      tags:
+        - Admin
       parameters:
         - name: weeks
           in: query
@@ -1017,19 +1062,18 @@ paths:
             default: 8
           description: Rolling-window size in weeks (1–26)
       responses:
-        '200':
+        "200":
           description: AI usage metrics returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AiUsageMetrics'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+                $ref: "#/components/schemas/AiUsageMetrics"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
   /admin/rcdo-health:
     get:
       operationId: getRcdoHealth
@@ -1038,56 +1082,63 @@ paths:
         Examines locked commits from the last 8 weeks and produces a ranked
         list of RCDO outcomes by commit coverage. Outcomes with zero commits
         are listed as stale/uncovered. Requires the ADMIN role.
-      tags: [Admin]
+      tags:
+        - Admin
       responses:
-        '200':
+        "200":
           description: RCDO health report returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RcdoHealthReport'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
+                $ref: "#/components/schemas/RcdoHealthReport"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /integrations/link-ticket:
     post:
       operationId: linkTicket
       summary: Link a commit to an external ticket
-      description: |
-        Links a weekly commit to a ticket in an external issue-tracker (Jira or Linear).
+      description: >
+        Links a weekly commit to a ticket in an external issue-tracker (Jira or
+        Linear).
+
         When the commit's title or description is empty, the values are auto-populated
+
         from the fetched ticket data.
 
+
         Idempotent: if the link already exists, returns the existing record with 201.
-      tags: [Integrations]
+      tags:
+        - Integrations
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LinkTicketRequest'
+              $ref: "#/components/schemas/LinkTicketRequest"
       responses:
-        '201':
+        "201":
           description: Ticket linked (or already linked — idempotent)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExternalTicketLink'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
-  /commits/{commitId}/linked-tickets:
+                $ref: "#/components/schemas/ExternalTicketLink"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  "/commits/{commitId}/linked-tickets":
     get:
       operationId: getLinkedTickets
       summary: Get external ticket links for a commit
-      description: Returns all external ticket links associated with the given weekly commit.
-      tags: [Integrations, Commits]
+      description: Returns all external ticket links associated with the given weekly
+        commit.
+      tags:
+        - Integrations
+        - Commits
       parameters:
         - name: commitId
           in: path
@@ -1097,35 +1148,40 @@ paths:
             format: uuid
           description: The weekly commit UUID
       responses:
-        '200':
+        "200":
           description: List of linked tickets
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LinkedTicketsResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /integrations/webhook/{provider}:
+                $ref: "#/components/schemas/LinkedTicketsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  "/integrations/webhook/{provider}":
     post:
       operationId: handleIntegrationWebhook
       summary: Handle an external ticket status webhook
-      description: |
-        Receives a provider webhook payload and fan-outs any mapped ticket status
+      description: >
+        Receives a provider webhook payload and fan-outs any mapped ticket
+        status
+
         change to linked internal check-in entries. This endpoint is unauthenticated
+
         because external providers cannot present a user session; provider-specific
+
         signature verification is handled separately.
       security: []
-      tags: [Integrations]
+      tags:
+        - Integrations
       parameters:
         - name: provider
           in: path
           required: true
           schema:
             type: string
-          description: External issue-tracker provider (case-insensitive; e.g. jira or linear)
+          description: External issue-tracker provider (case-insensitive; e.g. jira or
+            linear)
       requestBody:
         required: true
         content:
@@ -1135,34 +1191,36 @@ paths:
               additionalProperties: true
               description: Provider-specific webhook payload
       responses:
-        '200':
+        "200":
           description: Webhook accepted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WebhookResponse'
-
+                $ref: "#/components/schemas/WebhookResponse"
   /users/me/capacity:
     get:
       operationId: getMyCapacity
       summary: Get my capacity profile
-      description: |
-        Returns the authenticated user's most recently computed capacity profile.
+      description: >
+        Returns the authenticated user's most recently computed capacity
+        profile.
+
         Returns 404 when no profile has been computed yet (the profile is
+
         generated by the weekly CapacityComputeJob).
-      tags: [Capacity]
+      tags:
+        - Capacity
       responses:
-        '200':
+        "200":
           description: Capacity profile returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CapacityProfileResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
+                $ref: "#/components/schemas/CapacityProfileResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /team/capacity:
     get:
       operationId: getTeamCapacity
@@ -1170,7 +1228,8 @@ paths:
       description: |
         Returns the capacity posture of every direct report of the authenticated
         manager for the requested week. Requires the MANAGER role.
-      tags: [Capacity]
+      tags:
+        - Capacity
       parameters:
         - name: weekStart
           in: query
@@ -1180,19 +1239,18 @@ paths:
             type: string
             format: date
       responses:
-        '200':
+        "200":
           description: Team capacity returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TeamCapacityResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+                $ref: "#/components/schemas/TeamCapacityResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
   /users/me/estimation-coaching:
     get:
       operationId: getEstimationCoaching
@@ -1201,7 +1259,8 @@ paths:
         Returns post-reconciliation estimation coaching insights for the
         authenticated user's specified plan. Gated by the estimationCoaching
         feature flag on the backend.
-      tags: [Capacity]
+      tags:
+        - Capacity
       parameters:
         - name: planId
           in: query
@@ -1211,36 +1270,604 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Estimation coaching returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EstimationCoachingResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+                $ref: "#/components/schemas/EstimationCoachingResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
   /health:
     get:
       operationId: healthCheck
       summary: Service health check
       security: []
-      tags: [Plans]
+      tags:
+        - Plans
       responses:
-        '200':
+        "200":
           description: Service is healthy
+  "/plans/{planId}/quick-update":
+    post:
+      operationId: quickUpdate
+      summary: Batch check-in for multiple commits
+      description: |
+        Submits a rapid-fire batch of progress check-ins for multiple commits
+        within a single plan. Each item in the `updates` array creates a new
+        immutable ProgressEntry for the target commit.
 
+        Behaviour:
+        - The plan must belong to the authenticated user.
+        - The plan must be in LOCKED or RECONCILING state.
+        - Each referenced commitId must belong to the target plan.
+        - An empty `updates` array is accepted and returns `updatedCount: 0`.
+      tags:
+        - QuickUpdate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          description: UUID of the weekly plan to check in against
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuickUpdateRequest"
+      responses:
+        "200":
+          description: Batch check-in recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickUpdateResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  /ai/check-in-options:
+    post:
+      operationId: getCheckInOptions
+      summary: Generate AI check-in note options
+      description: >
+        Generates context-aware check-in note suggestions for a single commit.
+
+
+        The response contains:
+
+        - `statusOptions` — valid ProgressStatus values for the status picker.
+
+        - `progressOptions` — short text suggestions derived from AI analysis of
+          the commit context plus pattern-matched options from the user's past
+          check-in notes.
+
+        This endpoint always returns HTTP 200 on application-level fallback.
+
+        When the LLM is unavailable, the commit is not found, or response parsing
+
+        fails, the service returns `status: "ok"`, the standard status options,
+
+        and an empty `progressOptions` list.
+      tags:
+        - AI
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckInOptionRequest"
+      responses:
+        "200":
+          description: Check-in options returned (may be empty on fallback)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckInOptionsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  /users/me/profile:
+    get:
+      operationId: getUserProfile
+      summary: Get the authenticated user's behavioural profile
+      description: |
+        Returns the computed user model snapshot for the authenticated user.
+
+        If a snapshot exists, the response contains the latest computed
+        performance metrics, preferences, and trend signals. If no snapshot has
+        been computed yet, the endpoint still returns HTTP 200 with:
+        - `userId` set to the authenticated user
+        - `weeksAnalyzed` set to 0
+        - `performanceProfile`, `preferences`, and `trends` set to null
+      tags:
+        - UserProfile
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User profile returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /analytics/outcome-coverage:
+    get:
+      operationId: getOutcomeCoverage
+      summary: Get outcome coverage timeline
+      description: |
+        Returns per-week commit activity for a specific RCDO outcome over the
+        last `weeks` weeks.
+
+        Each week shows:
+        - `commitCount`       — total strategic commits linked to the outcome
+        - `contributorCount`  — distinct contributors who made those commits
+        - `highPriorityCount` — commits with chess priority KING or QUEEN
+
+        A `trendDirection` compares the two most recent weeks: `RISING` when
+        the latest week has more commits than the prior week, `FALLING` when
+        it has fewer, or `STABLE` when equal.
+
+        Requires MANAGER role.
+        Gated by the `strategicIntelligence` feature flag.
+      tags:
+        - Analytics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: outcomeId
+          in: query
+          required: true
+          description: UUID of the RCDO outcome to analyse
+          schema:
+            type: string
+            format: uuid
+        - name: weeks
+          in: query
+          required: false
+          description: Rolling-window size in weeks (1–26, default 8)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 26
+            default: 8
+      responses:
+        "200":
+          description: Outcome coverage timeline returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutcomeCoverageTimeline"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  /analytics/carry-forward-heatmap:
+    get:
+      operationId: getCarryForwardHeatmap
+      summary: Get team carry-forward heatmap
+      description: |
+        Returns a carry-forward heatmap for the authenticated manager's direct
+        reports over the last `weeks` weeks.
+
+        Each user row contains an ordered list of per-week cells (oldest first).
+        Weeks with no data for a user produce a cell with `carriedCount: 0`.
+
+        High carry-forward counts may indicate scope creep, estimation problems,
+        or capacity constraints.
+
+        Requires MANAGER role.
+        Gated by the `strategicIntelligence` feature flag.
+      tags:
+        - Analytics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: weeks
+          in: query
+          required: false
+          description: Rolling-window size in weeks (1–26, default 8)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 26
+            default: 8
+      responses:
+        "200":
+          description: Carry-forward heatmap returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CarryForwardHeatmap"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  /analytics/category-shifts:
+    get:
+      operationId: getCategoryShifts
+      summary: Get commit category shift analysis
+      description: |
+        Returns per-user commit category distribution shifts between the prior
+        and recent halves of the analysis window for the authenticated manager's
+        direct reports.
+
+        Each user entry includes:
+        - `currentDistribution` — category → proportion for the recent half
+        - `priorDistribution`   — category → proportion for the prior half
+        - `biggestShift`        — the category with the largest absolute change
+          in proportion (positive delta = increased, negative = decreased)
+
+        Requires MANAGER role.
+        Gated by the `strategicIntelligence` feature flag.
+      tags:
+        - Analytics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: weeks
+          in: query
+          required: false
+          description: Rolling-window size in weeks (1–26, default 8)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 26
+            default: 8
+      responses:
+        "200":
+          description: Category shift analysis returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserCategoryShift"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  /analytics/estimation-accuracy:
+    get:
+      operationId: getEstimationAccuracy
+      summary: Get team estimation accuracy distribution
+      description: |
+        Returns per-user confidence-vs-actual-completion-rate accuracy metrics
+        for the authenticated manager's direct reports over the last `weeks`
+        weeks.
+
+        A positive `calibrationGap` indicates systematic over-confidence:
+        the user's stated confidence exceeds their actual completion rate.
+
+        Requires MANAGER role.
+        Gated by the `strategicIntelligence` feature flag.
+      tags:
+        - Analytics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: weeks
+          in: query
+          required: false
+          description: Rolling-window size in weeks (1–26, default 8)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 26
+            default: 8
+      responses:
+        "200":
+          description: Estimation accuracy distribution returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserEstimationAccuracy"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  "/analytics/predictions/{userId}":
+    get:
+      operationId: getUserPredictions
+      summary: Get rule-based predictions for a user
+      description: >
+        Returns all likely (actionable) predictions for the given user.
+
+        Only predictions where `likely: true` are included.
+
+
+        Three prediction types are evaluated:
+
+
+        | type               | description                                                                 |
+
+        |--------------------|-----------------------------------------------------------------------------|
+
+        | `CARRY_FORWARD`    | User has a pattern of carrying ≥ 3 items forward in ≥ 2 of the last 3 weeks AND current week already has ≥ 5 commits |
+
+        | `LATE_LOCK`        | User late-locked in ≥ 3 of the last 4 weeks AND current plan is still DRAFT on lock day |
+
+        | `COVERAGE_DECLINE` | Strategic outcome coverage declined for 3 or more consecutive weeks AND no new commits this week |
+
+
+        **Access control:** the caller must have the MANAGER role **or** be
+
+        requesting predictions for themselves (self-service, `userId` must equal
+
+        the authenticated user's ID).
+
+
+        Gated by the `predictions` feature flag.
+      tags:
+        - Analytics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: UUID of the user to generate predictions for
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: |
+            Predictions returned. An empty array is returned when no prediction
+            rules fire for the given user.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Prediction"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  /outcomes/metadata:
+    get:
+      operationId: listOutcomeMetadata
+      summary: List all outcome metadata for the organisation
+      description: |
+        Returns all outcome metadata rows for the authenticated user's
+        organisation.
+
+        Each record includes the target date, progress configuration, and
+        computed urgency band (null when urgency has not been computed yet).
+
+        Available to any authenticated user.
+        Gated by the `outcomeUrgency` feature flag.
+      tags:
+        - Outcome Metadata
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of outcome metadata records returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OutcomeMetadataResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  "/outcomes/{outcomeId}/metadata":
+    get:
+      operationId: getOutcomeMetadata
+      summary: Get metadata for a single outcome
+      description: |
+        Returns the outcome metadata record for the specified outcome in the
+        authenticated user's organisation. Returns 404 when no metadata row
+        exists for the given outcome.
+
+        Available to any authenticated user.
+        Gated by the `outcomeUrgency` feature flag.
+      tags:
+        - Outcome Metadata
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/OutcomeIdPath"
+      responses:
+        "200":
+          description: Outcome metadata returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutcomeMetadataResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: upsertOutcomeMetadata
+      summary: Create or update outcome metadata
+      description: |
+        Creates or updates (upserts) the metadata for the given outcome. All
+        fields are optional — omitted fields leave the existing persisted value
+        unchanged on update.
+
+        Setting `targetDate` to null removes target-date tracking and causes
+        the urgency band to be set to `NO_TARGET` on the next recomputation.
+
+        After persisting, urgency recomputation is triggered immediately for
+        the updated outcome.
+
+        Requires ADMIN or MANAGER role.
+        Gated by the `outcomeUrgency` feature flag.
+      tags:
+        - Outcome Metadata
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/OutcomeIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OutcomeMetadataRequest"
+      responses:
+        "200":
+          description: Outcome metadata created or updated; urgency recomputed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutcomeMetadataResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  "/outcomes/{outcomeId}/progress":
+    patch:
+      operationId: updateOutcomeProgress
+      summary: Update progress fields of an existing outcome metadata record
+      description: |
+        Lightweight update that modifies only the `currentValue` and/or
+        `milestones` fields of an existing outcome metadata record. Both
+        fields are optional — supply only the ones that need updating.
+
+        Returns 404 when no metadata row exists for the given outcome
+        (use PUT /outcomes/{outcomeId}/metadata to create one first).
+
+        After persisting the update, urgency recomputation is triggered
+        immediately so that urgency bands reflect the new progress values.
+
+        Requires ADMIN or MANAGER role.
+        Gated by the `outcomeUrgency` feature flag.
+      tags:
+        - Outcome Metadata
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/OutcomeIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProgressUpdateRequest"
+      responses:
+        "200":
+          description: Progress updated; urgency recomputed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutcomeMetadataResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  /outcomes/urgency-summary:
+    get:
+      operationId: getUrgencySummary
+      summary: Get urgency summary for all tracked outcomes
+      description: |
+        Returns all RCDO outcomes with their computed urgency bands for the
+        authenticated user's organisation.
+
+        Only outcomes that have a metadata row with a configured `targetDate`
+        appear in this list. Outcomes with no metadata row or no target date
+        are omitted.
+
+        Available to any authenticated user.
+        Gated by the `outcomeUrgency` feature flag.
+      tags:
+        - Urgency
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Urgency summary returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UrgencySummaryResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /team/strategic-slack:
+    get:
+      operationId: getStrategicSlack
+      summary: Get strategic slack band and focus floor for the team
+      description: |
+        Returns the current slack band and recommended strategic focus floor
+        for the authenticated user's organisation, derived from the distribution
+        of urgency bands across the outcome portfolio.
+
+        The `strategicFocusFloor` is a value in the range 0.50–0.95 indicating
+        the recommended minimum fraction of weekly commits that should target
+        strategic outcomes.
+
+        | slackBand         | strategicFocusFloor range |
+        |-------------------|---------------------------|
+        | `HIGH_SLACK`      | ≤ 0.55                    |
+        | `MODERATE_SLACK`  | 0.56 – 0.70               |
+        | `LOW_SLACK`       | 0.71 – 0.85               |
+        | `NO_SLACK`        | 0.86 – 0.95               |
+
+        Available to any authenticated user.
+        Gated by the `strategicSlack` feature flag.
+      tags:
+        - Urgency
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Strategic slack returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StrategicSlackResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 components:
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-
   parameters:
     WeekStartPath:
       name: weekStart
@@ -1250,7 +1877,6 @@ components:
       schema:
         type: string
         format: date
-
     PlanIdPath:
       name: planId
       in: path
@@ -1258,7 +1884,6 @@ components:
       schema:
         type: string
         format: uuid
-
     CommitIdPath:
       name: commitId
       in: path
@@ -1266,7 +1891,6 @@ components:
       schema:
         type: string
         format: uuid
-
     IdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -1274,7 +1898,6 @@ components:
       schema:
         type: string
         format: uuid
-
     IfMatch:
       name: If-Match
       in: header
@@ -1282,35 +1905,73 @@ components:
       description: Optimistic lock version number
       schema:
         type: integer
-
+    OutcomeIdPath:
+      name: outcomeId
+      in: path
+      required: true
+      description: UUID of the RCDO outcome
+      schema:
+        type: string
+        format: uuid
   schemas:
     PlanState:
       type: string
-      enum: [DRAFT, LOCKED, RECONCILING, RECONCILED, CARRY_FORWARD]
-
+      enum:
+        - DRAFT
+        - LOCKED
+        - RECONCILING
+        - RECONCILED
+        - CARRY_FORWARD
     ReviewStatus:
       type: string
-      enum: [REVIEW_NOT_APPLICABLE, REVIEW_PENDING, CHANGES_REQUESTED, APPROVED]
-
+      enum:
+        - REVIEW_NOT_APPLICABLE
+        - REVIEW_PENDING
+        - CHANGES_REQUESTED
+        - APPROVED
     ChessPriority:
       type: string
-      enum: [KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN]
-
+      enum:
+        - KING
+        - QUEEN
+        - ROOK
+        - BISHOP
+        - KNIGHT
+        - PAWN
     CompletionStatus:
       type: string
-      enum: [DONE, PARTIALLY, NOT_DONE, DROPPED]
-
+      enum:
+        - DONE
+        - PARTIALLY
+        - NOT_DONE
+        - DROPPED
     LockType:
       type: string
-      enum: [ON_TIME, LATE_LOCK]
-
+      enum:
+        - ON_TIME
+        - LATE_LOCK
     CommitCategory:
       type: string
-      enum: [DELIVERY, OPERATIONS, CUSTOMER, GTM, PEOPLE, LEARNING, TECH_DEBT]
-
+      enum:
+        - DELIVERY
+        - OPERATIONS
+        - CUSTOMER
+        - GTM
+        - PEOPLE
+        - LEARNING
+        - TECH_DEBT
     WeeklyPlan:
       type: object
-      required: [id, orgId, ownerUserId, weekStartDate, state, reviewStatus, version, createdAt, updatedAt]
+      required:
+        - id
+        - orgId
+        - ownerUserId
+        - weekStartDate
+        - state
+        - reviewStatus
+        - version
+        - createdAt
+        - updatedAt
       properties:
         id:
           type: string
@@ -1325,11 +1986,11 @@ components:
           type: string
           format: date
         state:
-          $ref: '#/components/schemas/PlanState'
+          $ref: "#/components/schemas/PlanState"
         reviewStatus:
-          $ref: '#/components/schemas/ReviewStatus'
+          $ref: "#/components/schemas/ReviewStatus"
         lockType:
-          $ref: '#/components/schemas/LockType'
+          $ref: "#/components/schemas/LockType"
         lockedAt:
           type: string
           format: date-time
@@ -1346,19 +2007,30 @@ components:
         updatedAt:
           type: string
           format: date-time
-
     ValidationError:
       type: object
-      required: [code, message]
+      required:
+        - code
+        - message
       properties:
         code:
           type: string
         message:
           type: string
-
     WeeklyCommit:
       type: object
-      required: [id, weeklyPlanId, title, description, expectedResult, progressNotes, tags, version, createdAt, updatedAt, validationErrors]
+      required:
+        - id
+        - weeklyPlanId
+        - title
+        - description
+        - expectedResult
+        - progressNotes
+        - tags
+        - version
+        - createdAt
+        - updatedAt
+        - validationErrors
       properties:
         id:
           type: string
@@ -1371,9 +2043,9 @@ components:
         description:
           type: string
         chessPriority:
-          $ref: '#/components/schemas/ChessPriority'
+          $ref: "#/components/schemas/ChessPriority"
         category:
-          $ref: '#/components/schemas/CommitCategory'
+          $ref: "#/components/schemas/CommitCategory"
         outcomeId:
           type: string
           format: uuid
@@ -1433,15 +2105,17 @@ components:
         validationErrors:
           type: array
           items:
-            $ref: '#/components/schemas/ValidationError'
+            $ref: "#/components/schemas/ValidationError"
         actual:
           nullable: true
           allOf:
-            - $ref: '#/components/schemas/WeeklyCommitActual'
-
+            - $ref: "#/components/schemas/WeeklyCommitActual"
     WeeklyCommitActual:
       type: object
-      required: [commitId, actualResult, completionStatus]
+      required:
+        - commitId
+        - actualResult
+        - completionStatus
       properties:
         commitId:
           type: string
@@ -1449,17 +2123,32 @@ components:
         actualResult:
           type: string
         completionStatus:
-          $ref: '#/components/schemas/CompletionStatus'
+          $ref: "#/components/schemas/CompletionStatus"
         deltaReason:
           type: string
           nullable: true
         timeSpent:
           type: number
           nullable: true
-
+        actualHours:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: |
+            Optional actual hours spent on this commitment, recorded during
+            reconciliation. Used by CapacityProfileService to compute
+            actual-vs-estimated bias.
     ManagerReview:
       type: object
-      required: [id, weeklyPlanId, reviewerUserId, decision, comments, createdAt]
+      required:
+        - id
+        - weeklyPlanId
+        - reviewerUserId
+        - decision
+        - comments
+        - createdAt
       properties:
         id:
           type: string
@@ -1472,26 +2161,28 @@ components:
           format: uuid
         decision:
           type: string
-          enum: [APPROVED, CHANGES_REQUESTED]
+          enum:
+            - APPROVED
+            - CHANGES_REQUESTED
         comments:
           type: string
         createdAt:
           type: string
           format: date-time
-
     CarryForwardRequest:
       type: object
-      required: [commitIds]
+      required:
+        - commitIds
       properties:
         commitIds:
           type: array
           items:
             type: string
             format: uuid
-
     CreateCommitRequest:
       type: object
-      required: [title]
+      required:
+        - title
       properties:
         title:
           type: string
@@ -1499,11 +2190,11 @@ components:
           maxLength: 500
         description:
           type: string
-          default: ''
+          default: ""
         chessPriority:
-          $ref: '#/components/schemas/ChessPriority'
+          $ref: "#/components/schemas/ChessPriority"
         category:
-          $ref: '#/components/schemas/CommitCategory'
+          $ref: "#/components/schemas/CommitCategory"
         outcomeId:
           type: string
           format: uuid
@@ -1513,7 +2204,7 @@ components:
           nullable: true
         expectedResult:
           type: string
-          default: ''
+          default: ""
         confidence:
           type: number
           minimum: 0
@@ -1529,7 +2220,6 @@ components:
           minimum: 0
           maximum: 100
           nullable: true
-
     UpdateCommitRequest:
       type: object
       properties:
@@ -1540,9 +2230,9 @@ components:
         description:
           type: string
         chessPriority:
-          $ref: '#/components/schemas/ChessPriority'
+          $ref: "#/components/schemas/ChessPriority"
         category:
-          $ref: '#/components/schemas/CommitCategory'
+          $ref: "#/components/schemas/CommitCategory"
         outcomeId:
           type: string
           format: uuid
@@ -1568,35 +2258,52 @@ components:
           minimum: 0
           maximum: 100
           nullable: true
-
     UpdateActualRequest:
       type: object
-      required: [actualResult, completionStatus]
+      required:
+        - actualResult
+        - completionStatus
       properties:
         actualResult:
           type: string
         completionStatus:
-          $ref: '#/components/schemas/CompletionStatus'
+          $ref: "#/components/schemas/CompletionStatus"
         deltaReason:
           type: string
           nullable: true
         timeSpent:
           type: number
           nullable: true
-
+        actualHours:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Optional actual hours spent; omit to leave unchanged
     CreateReviewRequest:
       type: object
-      required: [decision, comments]
+      required:
+        - decision
+        - comments
       properties:
         decision:
           type: string
-          enum: [APPROVED, CHANGES_REQUESTED]
+          enum:
+            - APPROVED
+            - CHANGES_REQUESTED
         comments:
           type: string
-
     TeamSummaryResponse:
       type: object
-      required: [weekStart, users, reviewStatusCounts, page, size, totalElements, totalPages]
+      required:
+        - weekStart
+        - users
+        - reviewStatusCounts
+        - page
+        - size
+        - totalElements
+        - totalPages
       properties:
         weekStart:
           type: string
@@ -1604,9 +2311,9 @@ components:
         users:
           type: array
           items:
-            $ref: '#/components/schemas/TeamMemberSummary'
+            $ref: "#/components/schemas/TeamMemberSummary"
         reviewStatusCounts:
-          $ref: '#/components/schemas/ReviewStatusCounts'
+          $ref: "#/components/schemas/ReviewStatusCounts"
         page:
           type: integer
         size:
@@ -1615,10 +2322,18 @@ components:
           type: integer
         totalPages:
           type: integer
-
     TeamMemberSummary:
       type: object
-      required: [userId, commitCount, incompleteCount, issueCount, nonStrategicCount, kingCount, queenCount, isStale, isLateLock]
+      required:
+        - userId
+        - commitCount
+        - incompleteCount
+        - issueCount
+        - nonStrategicCount
+        - kingCount
+        - queenCount
+        - isStale
+        - isLateLock
       properties:
         userId:
           type: string
@@ -1631,14 +2346,15 @@ components:
           format: uuid
           nullable: true
         state:
-          $ref: '#/components/schemas/PlanState'
+          $ref: "#/components/schemas/PlanState"
         reviewStatus:
-          $ref: '#/components/schemas/ReviewStatus'
+          $ref: "#/components/schemas/ReviewStatus"
         commitCount:
           type: integer
         incompleteCount:
           type: integer
-          description: Count of saved actuals with completionStatus != DONE for RECONCILED/CARRY_FORWARD plans
+          description: Count of saved actuals with completionStatus != DONE for
+            RECONCILED/CARRY_FORWARD plans
         issueCount:
           type: integer
           description: Count of commits with validation errors (missing required fields)
@@ -1656,10 +2372,12 @@ components:
           type: boolean
         isLateLock:
           type: boolean
-
     ReviewStatusCounts:
       type: object
-      required: [pending, approved, changesRequested]
+      required:
+        - pending
+        - approved
+        - changesRequested
       properties:
         pending:
           type: integer
@@ -1667,10 +2385,12 @@ components:
           type: integer
         changesRequested:
           type: integer
-
     RcdoRollupResponse:
       type: object
-      required: [weekStart, items, nonStrategicCount]
+      required:
+        - weekStart
+        - items
+        - nonStrategicCount
       properties:
         weekStart:
           type: string
@@ -1678,13 +2398,20 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/RcdoRollupItem'
+            $ref: "#/components/schemas/RcdoRollupItem"
         nonStrategicCount:
           type: integer
-
     RcdoRollupItem:
       type: object
-      required: [outcomeId, commitCount, kingCount, queenCount, rookCount, bishopCount, knightCount, pawnCount]
+      required:
+        - outcomeId
+        - commitCount
+        - kingCount
+        - queenCount
+        - rookCount
+        - bishopCount
+        - knightCount
+        - pawnCount
       properties:
         outcomeId:
           type: string
@@ -1720,10 +2447,14 @@ components:
           type: integer
         pawnCount:
           type: integer
-
     Notification:
       type: object
-      required: [id, type, payload, read, createdAt]
+      required:
+        - id
+        - type
+        - payload
+        - read
+        - createdAt
       properties:
         id:
           type: string
@@ -1737,19 +2468,21 @@ components:
         createdAt:
           type: string
           format: date-time
-
     RcdoTreeResponse:
       type: object
-      required: [rallyCries]
+      required:
+        - rallyCries
       properties:
         rallyCries:
           type: array
           items:
-            $ref: '#/components/schemas/RcdoCry'
-
+            $ref: "#/components/schemas/RcdoCry"
     RcdoCry:
       type: object
-      required: [id, name, objectives]
+      required:
+        - id
+        - name
+        - objectives
       properties:
         id:
           type: string
@@ -1759,11 +2492,14 @@ components:
         objectives:
           type: array
           items:
-            $ref: '#/components/schemas/RcdoObjective'
-
+            $ref: "#/components/schemas/RcdoObjective"
     RcdoObjective:
       type: object
-      required: [id, name, rallyCryId, outcomes]
+      required:
+        - id
+        - name
+        - rallyCryId
+        - outcomes
       properties:
         id:
           type: string
@@ -1776,11 +2512,13 @@ components:
         outcomes:
           type: array
           items:
-            $ref: '#/components/schemas/RcdoOutcome'
-
+            $ref: "#/components/schemas/RcdoOutcome"
     RcdoOutcome:
       type: object
-      required: [id, name, objectiveId]
+      required:
+        - id
+        - name
+        - objectiveId
       properties:
         id:
           type: string
@@ -1790,19 +2528,24 @@ components:
         objectiveId:
           type: string
           format: uuid
-
     RcdoSearchResponse:
       type: object
-      required: [results]
+      required:
+        - results
       properties:
         results:
           type: array
           items:
-            $ref: '#/components/schemas/RcdoSearchResult'
-
+            $ref: "#/components/schemas/RcdoSearchResult"
     RcdoSearchResult:
       type: object
-      required: [id, name, objectiveId, objectiveName, rallyCryId, rallyCryName]
+      required:
+        - id
+        - name
+        - objectiveId
+        - objectiveName
+        - rallyCryId
+        - rallyCryName
       properties:
         id:
           type: string
@@ -1819,31 +2562,39 @@ components:
           format: uuid
         rallyCryName:
           type: string
-
     SuggestRcdoRequest:
       type: object
-      required: [title]
+      required:
+        - title
       properties:
         title:
           type: string
         description:
           type: string
-
     SuggestRcdoResponse:
       type: object
-      required: [status, suggestions]
+      required:
+        - status
+        - suggestions
       properties:
         status:
           type: string
-          enum: [ok, unavailable]
+          enum:
+            - ok
+            - unavailable
         suggestions:
           type: array
           items:
-            $ref: '#/components/schemas/RcdoSuggestion'
-
+            $ref: "#/components/schemas/RcdoSuggestion"
     RcdoSuggestion:
       type: object
-      required: [outcomeId, rallyCryName, objectiveName, outcomeName, confidence, rationale]
+      required:
+        - outcomeId
+        - rallyCryName
+        - objectiveName
+        - outcomeName
+        - confidence
+        - rationale
       properties:
         outcomeId:
           type: string
@@ -1860,68 +2611,78 @@ components:
           maximum: 1
         rationale:
           type: string
-
     DraftReconciliationRequest:
       type: object
-      required: [planId]
+      required:
+        - planId
       properties:
         planId:
           type: string
           format: uuid
-
     DraftReconciliationResponse:
       type: object
-      required: [status, drafts]
+      required:
+        - status
+        - drafts
       properties:
         status:
           type: string
-          enum: [ok, unavailable]
+          enum:
+            - ok
+            - unavailable
         drafts:
           type: array
           items:
-            $ref: '#/components/schemas/ReconciliationDraftItem'
-
+            $ref: "#/components/schemas/ReconciliationDraftItem"
     ReconciliationDraftItem:
       type: object
-      required: [commitId, suggestedStatus, suggestedActualResult]
+      required:
+        - commitId
+        - suggestedStatus
+        - suggestedActualResult
       properties:
         commitId:
           type: string
           format: uuid
         suggestedStatus:
-          $ref: '#/components/schemas/CompletionStatus'
+          $ref: "#/components/schemas/CompletionStatus"
         suggestedDeltaReason:
           type: string
           nullable: true
         suggestedActualResult:
           type: string
-
     ManagerInsightsRequest:
       type: object
-      required: [weekStart]
+      required:
+        - weekStart
       properties:
         weekStart:
           type: string
           format: date
-
     ManagerInsightsResponse:
       type: object
-      required: [status, insights]
+      required:
+        - status
+        - insights
       properties:
         status:
           type: string
-          enum: [ok, unavailable]
+          enum:
+            - ok
+            - unavailable
         headline:
           type: string
           nullable: true
         insights:
           type: array
           items:
-            $ref: '#/components/schemas/ManagerInsightItem'
-
+            $ref: "#/components/schemas/ManagerInsightItem"
     ManagerInsightItem:
       type: object
-      required: [title, detail, severity]
+      required:
+        - title
+        - detail
+        - severity
       properties:
         title:
           type: string
@@ -1929,33 +2690,41 @@ components:
           type: string
         severity:
           type: string
-          enum: [INFO, WARNING, POSITIVE]
-
+          enum:
+            - INFO
+            - WARNING
+            - POSITIVE
     PlanQualityCheckRequest:
       type: object
-      required: [planId]
+      required:
+        - planId
       properties:
         planId:
           type: string
           format: uuid
           description: The plan to assess for quality nudges
-
     PlanQualityCheckResponse:
       type: object
-      required: [status, nudges]
+      required:
+        - status
+        - nudges
       properties:
         status:
           type: string
-          enum: [ok, unavailable]
+          enum:
+            - ok
+            - unavailable
           description: ok when checks ran successfully; unavailable when flag is disabled
         nudges:
           type: array
           items:
-            $ref: '#/components/schemas/QualityNudge'
-
+            $ref: "#/components/schemas/QualityNudge"
     QualityNudge:
       type: object
-      required: [type, message, severity]
+      required:
+        - type
+        - message
+        - severity
       properties:
         type:
           type: string
@@ -1970,35 +2739,48 @@ components:
           description: Human-readable explanation shown in the UI
         severity:
           type: string
-          enum: [INFO, WARNING, POSITIVE]
-          description: Visual treatment — INFO is neutral, WARNING is amber, POSITIVE is green
-
+          enum:
+            - INFO
+            - WARNING
+            - POSITIVE
+          description: Visual treatment — INFO is neutral, WARNING is amber, POSITIVE is
+            green
     SuggestNextWorkRequest:
       type: object
       properties:
         weekStart:
           type: string
           format: date
-          description: |
-            ISO date of the Monday to use as the reference week (e.g. 2026-03-16).
-            Defaults to the current Monday if omitted.
+          description: >
+            ISO date of the Monday to use as the reference week (e.g.
+            2026-03-16).
 
+            Defaults to the current Monday if omitted.
     SuggestNextWorkResponse:
       type: object
-      required: [status, suggestions]
+      required:
+        - status
+        - suggestions
       properties:
         status:
           type: string
-          enum: [ok, unavailable]
+          enum:
+            - ok
+            - unavailable
           description: ok when suggestions were computed; unavailable when flag is disabled
         suggestions:
           type: array
           items:
-            $ref: '#/components/schemas/NextWorkSuggestion'
-
+            $ref: "#/components/schemas/NextWorkSuggestion"
     NextWorkSuggestion:
       type: object
-      required: [suggestionId, title, confidence, source, sourceDetail, rationale]
+      required:
+        - suggestionId
+        - title
+        - confidence
+        - source
+        - sourceDetail
+        - rationale
       properties:
         suggestionId:
           type: string
@@ -2014,7 +2796,7 @@ components:
           description: RCDO outcome UUID (null for non-strategic carry-forward items)
         suggestedChessPriority:
           allOf:
-            - $ref: '#/components/schemas/ChessPriority'
+            - $ref: "#/components/schemas/ChessPriority"
           nullable: true
           description: Recommended chess priority (null when no recommendation available)
         confidence:
@@ -2025,7 +2807,10 @@ components:
           description: Confidence score for this suggestion
         source:
           type: string
-          enum: [CARRY_FORWARD, COVERAGE_GAP, EXTERNAL_TICKET]
+          enum:
+            - CARRY_FORWARD
+            - COVERAGE_GAP
+            - EXTERNAL_TICKET
           description: How this suggestion was generated
         sourceDetail:
           type: string
@@ -2042,13 +2827,16 @@ components:
         externalTicketStatus:
           type: string
           nullable: true
-          description: |
-            Last-synced status label from the external provider (e.g. "In Progress").
-            Only present when source is EXTERNAL_TICKET.
+          description: >
+            Last-synced status label from the external provider (e.g. "In
+            Progress").
 
+            Only present when source is EXTERNAL_TICKET.
     SuggestionFeedbackRequest:
       type: object
-      required: [suggestionId, action]
+      required:
+        - suggestionId
+        - action
       properties:
         suggestionId:
           type: string
@@ -2056,7 +2844,10 @@ components:
           description: ID of the suggestion being acted upon
         action:
           type: string
-          enum: [ACCEPT, DEFER, DECLINE]
+          enum:
+            - ACCEPT
+            - DEFER
+            - DECLINE
           description: |
             User action on the suggestion.
             DECLINE suppresses the suggestion for 4 weeks.
@@ -2072,29 +2863,39 @@ components:
           type: string
           nullable: true
           description: Additional source context for traceability
-
     SuggestionFeedbackResponse:
       type: object
-      required: [status]
+      required:
+        - status
       properties:
         status:
           type: string
-          enum: [ok, unavailable]
+          enum:
+            - ok
+            - unavailable
           description: ok when feedback was recorded; unavailable when flag is disabled
-
     CommitSource:
       type: string
-      enum: [CARRIED_FORWARD, RECURRING, COVERAGE_GAP]
-      description: |
+      enum:
+        - CARRIED_FORWARD
+        - RECURRING
+        - COVERAGE_GAP
+      description: >
         Source classification for AI-suggested commits produced by the
-        draft-from-history service:
-        - CARRIED_FORWARD: not completed in the most recent reconciled plan
-        - RECURRING: similar title or outcome ID appeared in 2+ consecutive weeks
-        - COVERAGE_GAP: coverage gap (future NextWorkService integration)
 
+        draft-from-history service:
+
+        - CARRIED_FORWARD: not completed in the most recent reconciled plan
+
+        - RECURRING: similar title or outcome ID appeared in 2+ consecutive weeks
+
+        - COVERAGE_GAP: coverage gap (future NextWorkService integration)
     SuggestedCommit:
       type: object
-      required: [commitId, title, source]
+      required:
+        - commitId
+        - title
+        - source
       properties:
         commitId:
           type: string
@@ -2107,11 +2908,11 @@ components:
           nullable: true
         chessPriority:
           allOf:
-            - $ref: '#/components/schemas/ChessPriority'
+            - $ref: "#/components/schemas/ChessPriority"
           nullable: true
         category:
           allOf:
-            - $ref: '#/components/schemas/CommitCategory'
+            - $ref: "#/components/schemas/CommitCategory"
           nullable: true
         outcomeId:
           type: string
@@ -2124,22 +2925,25 @@ components:
           type: string
           nullable: true
         source:
-          $ref: '#/components/schemas/CommitSource'
-
+          $ref: "#/components/schemas/CommitSource"
     DraftFromHistoryRequest:
       type: object
-      required: [weekStart]
+      required:
+        - weekStart
       properties:
         weekStart:
           type: string
           format: date
-          description: |
-            ISO date of the Monday that starts the target week (e.g. 2026-03-16).
-            Must be a Monday; returns 422 otherwise.
+          description: >
+            ISO date of the Monday that starts the target week (e.g.
+            2026-03-16).
 
+            Must be a Monday; returns 422 otherwise.
     DraftFromHistoryResponse:
       type: object
-      required: [planId, suggestedCommits]
+      required:
+        - planId
+        - suggestedCommits
       properties:
         planId:
           type: string
@@ -2148,9 +2952,8 @@ components:
         suggestedCommits:
           type: array
           items:
-            $ref: '#/components/schemas/SuggestedCommit'
+            $ref: "#/components/schemas/SuggestedCommit"
           description: Ordered list of suggested commits added to the draft plan
-
     CheckInRequest:
       type: object
       required:
@@ -2158,12 +2961,15 @@ components:
       properties:
         status:
           type: string
-          enum: [ON_TRACK, AT_RISK, BLOCKED, DONE_EARLY]
+          enum:
+            - ON_TRACK
+            - AT_RISK
+            - BLOCKED
+            - DONE_EARLY
           description: Current progress status of the commit
         note:
           type: string
           description: Optional free-text note (stored as empty string if omitted)
-
     CheckInEntry:
       type: object
       required:
@@ -2181,13 +2987,16 @@ components:
           format: uuid
         status:
           type: string
-          enum: [ON_TRACK, AT_RISK, BLOCKED, DONE_EARLY]
+          enum:
+            - ON_TRACK
+            - AT_RISK
+            - BLOCKED
+            - DONE_EARLY
         note:
           type: string
         createdAt:
           type: string
           format: date-time
-
     CheckInHistoryResponse:
       type: object
       required:
@@ -2200,9 +3009,8 @@ components:
         entries:
           type: array
           items:
-            $ref: '#/components/schemas/CheckInEntry'
+            $ref: "#/components/schemas/CheckInEntry"
           description: Append-only history ordered oldest-first
-
     TrendsResponse:
       type: object
       required:
@@ -2282,14 +3090,13 @@ components:
         weekPoints:
           type: array
           items:
-            $ref: '#/components/schemas/WeekTrendPoint'
+            $ref: "#/components/schemas/WeekTrendPoint"
           description: Per-week breakdown, oldest to newest
         insights:
           type: array
           items:
-            $ref: '#/components/schemas/TrendInsight'
+            $ref: "#/components/schemas/TrendInsight"
           description: Structured insights for notable patterns
-
     WeekTrendPoint:
       type: object
       required:
@@ -2328,10 +3135,12 @@ components:
           type: object
           additionalProperties:
             type: integer
-
     TrendInsight:
       type: object
-      required: [type, message, severity]
+      required:
+        - type
+        - message
+        - severity
       properties:
         type:
           type: string
@@ -2342,8 +3151,10 @@ components:
           description: Human-readable explanation
         severity:
           type: string
-          enum: [INFO, WARNING, POSITIVE]
-
+          enum:
+            - INFO
+            - WARNING
+            - POSITIVE
     OrgPolicy:
       type: object
       required:
@@ -2358,8 +3169,9 @@ components:
         - rcdoStalenessThresholdMinutes
         - digestDay
         - digestTime
-      description: |
-        Immutable snapshot of an org's configuration. Returned by the admin org-policy endpoints.
+      description: >
+        Immutable snapshot of an org's configuration. Returned by the admin
+        org-policy endpoints.
       properties:
         chessKingRequired:
           type: boolean
@@ -2375,13 +3187,15 @@ components:
           description: Day-of-week for the plan lock reminder (e.g. "MONDAY")
         lockTime:
           type: string
-          description: Wall-clock time for the plan lock reminder in HH:mm format (e.g. "10:00")
+          description: Wall-clock time for the plan lock reminder in HH:mm format (e.g.
+            "10:00")
         reconcileDay:
           type: string
           description: Day-of-week for the reconciliation reminder (e.g. "FRIDAY")
         reconcileTime:
           type: string
-          description: Wall-clock time for the reconciliation reminder in HH:mm format (e.g. "16:00")
+          description: Wall-clock time for the reconciliation reminder in HH:mm format
+            (e.g. "16:00")
         blockLockOnStaleRcdo:
           type: boolean
           description: Whether locking is blocked when RCDO data is stale
@@ -2390,17 +3204,20 @@ components:
           description: How many minutes before RCDO data is considered stale
         digestDay:
           type: string
-          description: |
+          description: >
             Day-of-week for the weekly digest notification (e.g. "FRIDAY").
+
             The DigestJob fires once the current time is on or after digestTime on this day.
         digestTime:
           type: string
-          pattern: '^(?:[01]\\d|2[0-3]):[0-5]\\d$'
-          description: Wall-clock time for the weekly digest in valid 24-hour HH:mm format (e.g. "17:00")
-
+          pattern: ^(?:[01]\\d|2[0-3]):[0-5]\\d$
+          description: Wall-clock time for the weekly digest in valid 24-hour HH:mm format
+            (e.g. "17:00")
     UpdateDigestConfigRequest:
       type: object
-      required: [digestDay, digestTime]
+      required:
+        - digestDay
+        - digestTime
       description: Request body for updating the org's weekly digest schedule.
       properties:
         digestDay:
@@ -2411,10 +3228,10 @@ components:
           example: FRIDAY
         digestTime:
           type: string
-          pattern: '^(?:[01]\\d|2[0-3]):[0-5]\\d$'
-          description: Wall-clock time for the weekly digest in valid 24-hour HH:mm format (e.g. "17:00")
-          example: '17:00'
-
+          pattern: ^(?:[01]\\d|2[0-3]):[0-5]\\d$
+          description: Wall-clock time for the weekly digest in valid 24-hour HH:mm format
+            (e.g. "17:00")
+          example: 17:00
     AdoptionMetrics:
       type: object
       required:
@@ -2451,9 +3268,8 @@ components:
         weeklyPoints:
           type: array
           items:
-            $ref: '#/components/schemas/WeeklyAdoptionPoint'
+            $ref: "#/components/schemas/WeeklyAdoptionPoint"
           description: Per-week funnel breakdown, oldest to newest
-
     WeeklyAdoptionPoint:
       type: object
       required:
@@ -2483,8 +3299,8 @@ components:
           description: Plans that reached RECONCILED or CARRY_FORWARD state
         plansReviewed:
           type: integer
-          description: Plans where a manager review was submitted (APPROVED or CHANGES_REQUESTED)
-
+          description: Plans where a manager review was submitted (APPROVED or
+            CHANGES_REQUESTED)
     AiUsageMetrics:
       type: object
       required:
@@ -2539,12 +3355,14 @@ components:
         cacheHits:
           type: integer
           format: int64
-          description: |
-            Cumulative AI cache hits attributed to this org since the last service restart.
+          description: >
+            Cumulative AI cache hits attributed to this org since the last
+            service restart.
         cacheMisses:
           type: integer
           format: int64
-          description: Cumulative AI cache misses attributed to this org since the last service restart
+          description: Cumulative AI cache misses attributed to this org since the last
+            service restart
         cacheHitRate:
           type: number
           format: double
@@ -2554,16 +3372,19 @@ components:
         approximateTokensSpent:
           type: integer
           format: int64
-          description: |
-            Coarse estimate of AI tokens spent for this org since the last service restart.
+          description: >
+            Coarse estimate of AI tokens spent for this org since the last
+            service restart.
+
             Computed as cacheMisses × 1000 tokens/request.
         approximateTokensSaved:
           type: integer
           format: int64
-          description: |
-            Coarse estimate of AI tokens avoided by cache hits for this org since the last
-            service restart. Computed as cacheHits × 1000 tokens/request.
+          description: >
+            Coarse estimate of AI tokens avoided by cache hits for this org
+            since the last
 
+            service restart. Computed as cacheHits × 1000 tokens/request.
     RcdoHealthReport:
       type: object
       required:
@@ -2573,8 +3394,10 @@ components:
         - coveredOutcomes
         - topOutcomes
         - staleOutcomes
-      description: |
-        RCDO health report ranking outcomes by commit coverage over a recent window.
+      description: >
+        RCDO health report ranking outcomes by commit coverage over a recent
+        window.
+
         Helps leadership identify strategic objectives that are being neglected.
       properties:
         generatedAt:
@@ -2593,14 +3416,13 @@ components:
         topOutcomes:
           type: array
           items:
-            $ref: '#/components/schemas/OutcomeHealthItem'
+            $ref: "#/components/schemas/OutcomeHealthItem"
           description: Covered outcomes ranked by commitCount descending
         staleOutcomes:
           type: array
           items:
-            $ref: '#/components/schemas/OutcomeHealthItem'
+            $ref: "#/components/schemas/OutcomeHealthItem"
           description: Outcomes with zero commits in the window, sorted by outcomeName
-
     OutcomeHealthItem:
       type: object
       required:
@@ -2634,15 +3456,15 @@ components:
         commitCount:
           type: integer
           description: Number of commits linked to this outcome in the analysis window
-
     LinkTicketRequest:
       type: object
       required:
         - commitId
         - provider
         - externalTicketId
-      description: |
-        Request body for linking a weekly commit to an external issue-tracker ticket.
+      description: >
+        Request body for linking a weekly commit to an external issue-tracker
+        ticket.
       properties:
         commitId:
           type: string
@@ -2650,12 +3472,13 @@ components:
           description: ID of the weekly commit to link
         provider:
           type: string
-          enum: [JIRA, LINEAR]
+          enum:
+            - JIRA
+            - LINEAR
           description: External issue-tracker provider
         externalTicketId:
           type: string
           description: Provider-specific ticket identifier (e.g. "PROJ-42" for Jira)
-
     ExternalTicketLink:
       type: object
       required:
@@ -2681,7 +3504,9 @@ components:
           description: Weekly commit UUID
         provider:
           type: string
-          enum: [JIRA, LINEAR]
+          enum:
+            - JIRA
+            - LINEAR
           description: External issue-tracker provider
         externalTicketId:
           type: string
@@ -2703,7 +3528,6 @@ components:
           type: string
           format: date-time
           description: Timestamp when the link was created
-
     LinkedTicketsResponse:
       type: object
       required:
@@ -2718,9 +3542,8 @@ components:
         links:
           type: array
           items:
-            $ref: '#/components/schemas/ExternalTicketLink'
+            $ref: "#/components/schemas/ExternalTicketLink"
           description: List of linked external tickets
-
     WebhookResponse:
       type: object
       required:
@@ -2730,14 +3553,15 @@ components:
       properties:
         provider:
           type: string
-          enum: [JIRA, LINEAR]
+          enum:
+            - JIRA
+            - LINEAR
           description: External issue-tracker provider that sent the webhook
         checkInsCreated:
           type: integer
           format: int32
           minimum: 0
           description: Number of check-in entries auto-created from the webhook
-
     CapacityProfileResponse:
       type: object
       required:
@@ -2771,7 +3595,8 @@ components:
           type: number
           format: double
           nullable: true
-          description: Ratio of avgActual / avgEstimated; null when no estimated hours recorded
+          description: Ratio of avgActual / avgEstimated; null when no estimated hours
+            recorded
         realisticWeeklyCap:
           type: number
           format: double
@@ -2787,14 +3612,16 @@ components:
           description: JSON array of per-priority completion statistics
         confidenceLevel:
           type: string
-          enum: [LOW, MEDIUM, HIGH]
+          enum:
+            - LOW
+            - MEDIUM
+            - HIGH
           description: Data quality tier
         computedAt:
           type: string
           format: date-time
           nullable: true
           description: ISO-8601 timestamp of the most recent profile computation
-
     TeamCapacityResponse:
       type: object
       required:
@@ -2809,9 +3636,8 @@ components:
         members:
           type: array
           items:
-            $ref: '#/components/schemas/TeamMemberCapacity'
+            $ref: "#/components/schemas/TeamMemberCapacity"
           description: Capacity summary for each direct report
-
     TeamMemberCapacity:
       type: object
       required:
@@ -2845,9 +3671,11 @@ components:
           description: p50 realistic weekly capacity cap, or null if no profile
         overcommitLevel:
           type: string
-          enum: [NONE, MODERATE, HIGH]
+          enum:
+            - NONE
+            - MODERATE
+            - HIGH
           description: Overcommitment severity level
-
     EstimationCoachingResponse:
       type: object
       required:
@@ -2870,27 +3698,31 @@ components:
           type: number
           format: double
           nullable: true
-          description: thisWeekActual / thisWeekEstimated ratio; null when thisWeekEstimated is zero
+          description: thisWeekActual / thisWeekEstimated ratio; null when
+            thisWeekEstimated is zero
         overallBias:
           type: number
           format: double
           nullable: true
-          description: Historical avgActual / avgEstimated from capacity profile; null if no profile
+          description: Historical avgActual / avgEstimated from capacity profile; null if
+            no profile
         confidenceLevel:
           type: string
-          enum: [LOW, MEDIUM, HIGH]
+          enum:
+            - LOW
+            - MEDIUM
+            - HIGH
           description: Profile data quality tier
         categoryInsights:
           type: array
           items:
-            $ref: '#/components/schemas/CategoryInsight'
+            $ref: "#/components/schemas/CategoryInsight"
           description: Per-category bias breakdown with optional coaching tips
         priorityInsights:
           type: array
           items:
-            $ref: '#/components/schemas/PriorityInsight'
+            $ref: "#/components/schemas/PriorityInsight"
           description: Per-priority completion-rate statistics
-
     CategoryInsight:
       type: object
       required:
@@ -2909,7 +3741,6 @@ components:
           type: string
           nullable: true
           description: Human-readable coaching tip when bias deviates from 1.0 by ≥15%
-
     PriorityInsight:
       type: object
       required:
@@ -2930,10 +3761,12 @@ components:
         sampleSize:
           type: integer
           description: Number of historical commits in this priority tier
-
     ApiError:
       type: object
-      required: [code, message, details]
+      required:
+        - code
+        - message
+        - details
       properties:
         code:
           type: string
@@ -2943,7 +3776,956 @@ components:
           type: array
           items:
             type: object
+    QuickUpdateRequest:
+      type: object
+      required:
+        - updates
+      description: Batch check-in request containing zero or more per-commit items.
+      properties:
+        updates:
+          type: array
+          description: List of per-commit check-in items
+          items:
+            $ref: "#/components/schemas/QuickUpdateItem"
+    QuickUpdateItem:
+      type: object
+      required:
+        - commitId
+        - status
+      description: A single per-commit check-in entry within a quick-update batch.
+      properties:
+        commitId:
+          type: string
+          format: uuid
+          description: UUID of the weekly commit to check in against
+        status:
+          type: string
+          enum:
+            - ON_TRACK
+            - AT_RISK
+            - BLOCKED
+            - DONE_EARLY
+          description: Current progress status for the commit
+        note:
+          type: string
+          nullable: true
+          description: Optional free-text note accompanying this check-in
+        noteSource:
+          type: string
+          nullable: true
+          enum:
+            - UNKNOWN
+            - USER_TYPED
+            - SUGGESTION_ACCEPTED
+          description: Optional provenance for the submitted note text
+        selectedSuggestionText:
+          type: string
+          nullable: true
+          description: Suggestion text the user accepted, when applicable
+        selectedSuggestionSource:
+          type: string
+          nullable: true
+          description: Origin of the accepted suggestion, when applicable
+    QuickUpdateResponse:
+      type: object
+      required:
+        - updatedCount
+        - entries
+      description: Result of a batch quick-update operation.
+      properties:
+        updatedCount:
+          type: integer
+          minimum: 0
+          description: Total number of progress entries created by this request
+        entries:
+          type: array
+          description: The newly created progress entries, in processing order
+          items:
+            $ref: "#/components/schemas/CheckInEntry"
+    CheckInOptionRequest:
+      type: object
+      required:
+        - commitId
+      description: Context for generating AI check-in note options for a single commit.
+      properties:
+        commitId:
+          type: string
+          format: uuid
+          description: UUID of the weekly commit to generate options for
+        currentStatus:
+          type: string
+          nullable: true
+          description: Current progress status selection, if any
+        lastNote:
+          type: string
+          nullable: true
+          description: Most recent check-in note for this commit, if any
+        daysSinceLastCheckIn:
+          type: integer
+          minimum: 0
+          description: Number of days elapsed since the commit's most recent check-in
+    CheckInOptionsResponse:
+      type: object
+      required:
+        - status
+        - statusOptions
+        - progressOptions
+      description: |
+        Generated check-in option payload.
 
+        `status` is currently always `"ok"`.
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+          description: Service status
+        statusOptions:
+          type: array
+          description: Ordered list of valid progress status strings for the UI picker
+          items:
+            type: string
+            enum:
+              - ON_TRACK
+              - AT_RISK
+              - BLOCKED
+              - DONE_EARLY
+        progressOptions:
+          type: array
+          description: AI- and pattern-derived note suggestions (may be empty on fallback)
+          items:
+            $ref: "#/components/schemas/CheckInOptionItem"
+    CheckInOptionItem:
+      type: object
+      required:
+        - text
+        - source
+      description: A single note suggestion within a CheckInOptionsResponse.
+      properties:
+        text:
+          type: string
+          maxLength: 50
+          description: Short phrase presented to the user in the Quick Update card
+        source:
+          type: string
+          description: Suggestion origin, typically `ai` or `pattern`
+    UserProfileResponse:
+      type: object
+      required:
+        - userId
+        - weeksAnalyzed
+        - performanceProfile
+        - preferences
+        - trends
+      description: |
+        Computed user model snapshot derived from a rolling window of reconciled
+        weekly plans.
+
+        When no snapshot exists yet, the nested profile sections are null and
+        `weeksAnalyzed` is 0.
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: UUID of the user this profile belongs to
+        weeksAnalyzed:
+          type: integer
+          minimum: 0
+          description: Number of reconciled plan weeks used to derive this profile
+        performanceProfile:
+          allOf:
+            - $ref: "#/components/schemas/PerformanceProfile"
+          nullable: true
+        preferences:
+          allOf:
+            - $ref: "#/components/schemas/UserPreferences"
+          nullable: true
+        trends:
+          allOf:
+            - $ref: "#/components/schemas/UserTrends"
+          nullable: true
+    PerformanceProfile:
+      type: object
+      required:
+        - estimationAccuracy
+        - completionReliability
+        - avgCommitsPerWeek
+        - avgCarryForwardPerWeek
+        - topCategories
+        - categoryCompletionRates
+        - priorityCompletionRates
+      description: Aggregated performance metrics computed from the user's reconciled
+        plan history.
+      properties:
+        estimationAccuracy:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Confidence accuracy ratio against final completion outcome
+        completionReliability:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Fraction of reconciled commits marked DONE across the analysis window
+        avgCommitsPerWeek:
+          type: number
+          format: double
+          minimum: 0
+          description: Average number of commits created per analyzed week
+        avgCarryForwardPerWeek:
+          type: number
+          format: double
+          minimum: 0
+          description: Average number of commits carried forward per analyzed week
+        topCategories:
+          type: array
+          maxItems: 3
+          description: Top commit categories by DONE completion rate, ordered descending
+          items:
+            type: string
+            description: CommitCategory name (for example DELIVERY or OPERATIONS)
+        categoryCompletionRates:
+          type: object
+          description: DONE completion rate per CommitCategory
+          additionalProperties:
+            type: number
+            format: double
+        priorityCompletionRates:
+          type: object
+          description: DONE completion rate per ChessPriority
+          additionalProperties:
+            type: number
+            format: double
+    UserPreferences:
+      type: object
+      required:
+        - typicalPriorityPattern
+        - recurringCommitTitles
+        - avgCheckInsPerWeek
+        - preferredUpdateDays
+      description: Behavioural preference signals derived from the user's planning history.
+      properties:
+        typicalPriorityPattern:
+          type: string
+          description: Average weekly chess-priority mix, for example `1K-2Q-3R`
+        recurringCommitTitles:
+          type: array
+          description: Commonly repeated commit titles from recent history
+          items:
+            type: string
+        avgCheckInsPerWeek:
+          type: number
+          format: double
+          minimum: 0
+          description: Average number of progress entries recorded per analyzed week
+        preferredUpdateDays:
+          type: array
+          description: Day-of-week names ordered by frequency descending
+          items:
+            type: string
+            description: ISO day-of-week name, for example MONDAY
+    UserTrends:
+      type: object
+      required:
+        - strategicAlignmentTrend
+        - completionTrend
+        - carryForwardTrend
+      description: Directional trend signals comparing recent performance with earlier
+        history.
+      properties:
+        strategicAlignmentTrend:
+          type: string
+          enum:
+            - IMPROVING
+            - STABLE
+            - WORSENING
+          description: Trend in the fraction of commits linked to RCDO outcomes
+        completionTrend:
+          type: string
+          enum:
+            - IMPROVING
+            - STABLE
+            - WORSENING
+          description: Trend in commit completion reliability
+        carryForwardTrend:
+          type: string
+          enum:
+            - IMPROVING
+            - STABLE
+            - WORSENING
+          description: Trend in carry-forward velocity
+    OutcomeCoverageTimeline:
+      type: object
+      required:
+        - weeks
+        - trendDirection
+      description: |
+        Multi-week commit activity for a single RCDO outcome.
+
+        Contains an ordered list of per-week data points (oldest first) and
+        a derived `trendDirection` comparing the two most recent weeks.
+      properties:
+        weeks:
+          type: array
+          description: Ordered per-week data points, oldest first
+          items:
+            $ref: "#/components/schemas/OutcomeCoverageWeek"
+        trendDirection:
+          type: string
+          enum:
+            - RISING
+            - FALLING
+            - STABLE
+          description: |
+            Derived trend from the most recent two weeks.
+            `RISING` when the latest week commit count exceeds the prior week;
+            `FALLING` when it is lower; `STABLE` when equal or fewer than two
+            data points are available.
+    OutcomeCoverageWeek:
+      type: object
+      required:
+        - weekStart
+        - commitCount
+        - contributorCount
+        - highPriorityCount
+      description: |
+        A single week's commit activity for a specific RCDO outcome.
+
+        Sourced from the `mv_outcome_coverage_weekly` materialized view.
+        Weeks with no data produce a row with zero counts.
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: ISO-8601 Monday date for this week (e.g. 2026-03-16)
+        commitCount:
+          type: integer
+          minimum: 0
+          description: Total strategic commits linked to the outcome this week
+        contributorCount:
+          type: integer
+          minimum: 0
+          description: Distinct contributors who made commits linked to the outcome this
+            week
+        highPriorityCount:
+          type: integer
+          minimum: 0
+          description: Commits with chess priority KING or QUEEN this week
+    CarryForwardHeatmap:
+      type: object
+      required:
+        - users
+      description: |
+        Team-level carry-forward heatmap showing how many commits each direct
+        report carried forward each week over the analysis window.
+
+        Users are ordered by userId; weeks within each user row are ordered
+        oldest first.
+      properties:
+        users:
+          type: array
+          description: Team member rows, one per direct report
+          items:
+            $ref: "#/components/schemas/HeatmapUser"
+    HeatmapUser:
+      type: object
+      required:
+        - userId
+        - displayName
+        - weekCells
+      description: >
+        A row in the carry-forward heatmap representing one team member.
+
+
+        `weekCells` contains an ordered list of per-week carry-forward counts
+
+        (oldest first). Weeks with no data produce a cell with `carriedCount: 0`.
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: The team member's user ID
+        displayName:
+          type: string
+          description: Human-readable name from the org-graph / HRIS
+        weekCells:
+          type: array
+          description: Ordered per-week carry-forward counts, oldest first
+          items:
+            $ref: "#/components/schemas/HeatmapCell"
+    HeatmapCell:
+      type: object
+      required:
+        - weekStart
+        - carriedCount
+      description: |
+        A single cell in the carry-forward heatmap, representing one user's
+        carry-forward count for one week.
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: ISO-8601 Monday date for this cell's week (e.g. 2026-03-16)
+        carriedCount:
+          type: integer
+          minimum: 0
+          description: Number of commits the user carried forward into this week
+    UserCategoryShift:
+      type: object
+      required:
+        - userId
+        - currentDistribution
+        - priorDistribution
+        - biggestShift
+      description: |
+        Per-user commit category distribution shift between the prior and
+        recent halves of the analysis window.
+
+        Proportions in `currentDistribution` and `priorDistribution` sum to
+        approximately 1.0 per user.
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: The team member's user ID
+        currentDistribution:
+          type: object
+          description: Category → proportion mapping for the recent half-window
+          additionalProperties:
+            type: number
+            format: double
+        priorDistribution:
+          type: object
+          description: Category → proportion mapping for the prior half-window
+          additionalProperties:
+            type: number
+            format: double
+        biggestShift:
+          $ref: "#/components/schemas/CategoryShift"
+    CategoryShift:
+      type: object
+      required:
+        - category
+        - delta
+      description: |
+        The single largest shift in commit category distribution for a user
+        between the prior half-window and the recent half-window.
+      properties:
+        category:
+          type: string
+          description: |
+            The commit category name that changed the most (e.g. `DELIVERY`,
+            `OPERATIONS`, `ENABLEMENT`, `LEARNING`)
+        delta:
+          type: number
+          format: double
+          description: |
+            Signed change in proportion (recent − prior).
+            Positive values indicate the category increased; negative values
+            indicate it decreased.
+    UserEstimationAccuracy:
+      type: object
+      required:
+        - userId
+        - avgConfidence
+        - completionRate
+        - calibrationGap
+      description: |
+        Per-user estimation accuracy metrics. Compares a team member's stated
+        confidence against their actual completion rate across reconciled
+        planning weeks.
+
+        Sourced from the `mv_user_weekly_summary` materialized view.
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: The team member's user ID
+        avgConfidence:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: |
+            Average confidence score across reconciled weeks. Values are in
+            [0, 1] where 1.0 represents full confidence.
+        completionRate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: |
+            Ratio of DONE commits to total commits across reconciled weeks.
+            Values are in [0, 1].
+        calibrationGap:
+          type: number
+          format: double
+          description: |
+            `avgConfidence − completionRate`. Positive values indicate
+            systematic over-confidence; negative values indicate
+            under-confidence.
+    Prediction:
+      type: object
+      required:
+        - type
+        - likely
+        - confidence
+        - reason
+      description: |
+        A single rule-based prediction produced by evaluating historical
+        patterns from the analytics materialized views and current plan state.
+
+        Only predictions where `likely: true` are returned by the API
+        (actionable alerts only).
+      properties:
+        type:
+          type: string
+          enum:
+            - CARRY_FORWARD
+            - LATE_LOCK
+            - COVERAGE_DECLINE
+          description: >
+            The prediction type identifier:
+
+            - `CARRY_FORWARD`    — pattern of carrying too many items forward
+
+            - `LATE_LOCK`        — habitual late plan submission on lock day
+
+            - `COVERAGE_DECLINE` — strategic outcome coverage declining 3+ consecutive weeks
+        likely:
+          type: boolean
+          description: |
+            `true` when the rule conditions are met (this prediction is
+            actionable). The API only returns predictions where `likely` is
+            `true`.
+        confidence:
+          type: string
+          enum:
+            - HIGH
+            - MEDIUM
+            - LOW
+          description: |
+            Confidence level of the prediction:
+            - `HIGH`   — strong rule signal based on clear historical pattern
+            - `MEDIUM` — moderate signal; context may vary
+            - `LOW`    — weak signal; informational only
+        reason:
+          type: string
+          description: Human-readable explanation of why the prediction was made
+    Milestone:
+      type: object
+      required:
+        - name
+        - status
+      description: >
+        A single milestone within an outcome's milestone-based progress
+        tracking.
+
+        Milestone objects are stored as a JSONB array in the `milestones` field
+
+        of OutcomeMetadataRequest/OutcomeMetadataResponse.
+      properties:
+        name:
+          type: string
+          description: Human-readable name of the milestone (e.g. "Alpha release")
+        weight:
+          type: number
+          default: 1
+          description: |
+            Relative weight of this milestone when computing overall progress.
+            Defaults to 1.0 if omitted. Higher-weight milestones contribute
+            proportionally more to the overall progress percentage.
+        status:
+          type: string
+          enum:
+            - PENDING
+            - IN_PROGRESS
+            - DONE
+          description: |
+            Current completion status of the milestone:
+            - `PENDING`     — not yet started
+            - `IN_PROGRESS` — work is in progress
+            - `DONE`        — milestone has been completed
+    OutcomeMetadataRequest:
+      type: object
+      description: |
+        Request body for creating or updating outcome metadata.
+
+        All fields are optional — omitted fields leave the existing persisted
+        value unchanged on update. Set `targetDate` to null explicitly to
+        remove target-date tracking.
+      properties:
+        targetDate:
+          type:
+            - string
+            - "null"
+          format: date
+          description: >
+            Target completion date for the outcome (ISO-8601 date, e.g.
+            2026-12-31).
+
+            Set to null to remove target-date tracking; the urgency band will be
+
+            set to `NO_TARGET` on the next recomputation.
+        progressType:
+          type: string
+          enum:
+            - ACTIVITY
+            - METRIC
+            - MILESTONE
+          description: >
+            Progress tracking model:
+
+            - `ACTIVITY`  — progress is derived from linked weekly commit activity (default)
+
+            - `METRIC`    — progress is tracked via a numeric metric (`currentValue` / `targetValue`)
+
+            - `MILESTONE` — progress is derived from milestone completion (`milestones` array)
+        metricName:
+          type:
+            - string
+            - "null"
+          maxLength: 200
+          description: Descriptive name of the tracked metric (METRIC type only, e.g.
+            "ARR" or "NPS")
+        targetValue:
+          type:
+            - number
+            - "null"
+          description: Numeric goal value for the metric (METRIC type only)
+        currentValue:
+          type:
+            - number
+            - "null"
+          description: Current metric value (METRIC type only)
+        unit:
+          type:
+            - string
+            - "null"
+          maxLength: 50
+          description: Unit of measurement, e.g. "%" or "USD" (METRIC type only)
+        milestones:
+          type:
+            - string
+            - "null"
+          contentMediaType: application/json
+          contentSchema:
+            type: array
+            description: Array of milestone objects (MILESTONE type only)
+            items:
+              $ref: "#/components/schemas/Milestone"
+          description: >
+            JSON-encoded array of milestone objects (stored as JSONB). Each
+
+            object conforms to the `Milestone` schema. Example:
+
+            `[{"name":"Alpha","weight":1.0,"status":"DONE"},{"name":"Beta","weight":2.0,"status":"PENDING"}]`
+
+            (MILESTONE type only)
+    OutcomeMetadataResponse:
+      type: object
+      required:
+        - orgId
+        - outcomeId
+        - progressType
+        - createdAt
+        - updatedAt
+      description: |
+        Full outcome metadata record including computed urgency fields.
+
+        The `urgencyBand`, `progressPct`, and `lastComputedAt` fields are null
+        when urgency has not been computed yet (i.e., immediately after creation
+        before the first scheduled or on-demand recomputation).
+      properties:
+        orgId:
+          type: string
+          format: uuid
+          description: UUID of the organisation this record belongs to
+        outcomeId:
+          type: string
+          format: uuid
+          description: UUID of the RCDO outcome
+        targetDate:
+          type:
+            - string
+            - "null"
+          format: date
+          description: Target completion date for the outcome; null if not set
+        progressType:
+          type: string
+          enum:
+            - ACTIVITY
+            - METRIC
+            - MILESTONE
+          description: Progress tracking model in use for this outcome
+        metricName:
+          type:
+            - string
+            - "null"
+          description: Descriptive name of the tracked metric; null when not applicable
+        targetValue:
+          type:
+            - number
+            - "null"
+          description: Numeric goal value; null when not applicable
+        currentValue:
+          type:
+            - number
+            - "null"
+          description: Current metric value; null when not applicable
+        unit:
+          type:
+            - string
+            - "null"
+          description: Unit of measurement; null when not applicable
+        milestones:
+          type:
+            - string
+            - "null"
+          contentMediaType: application/json
+          contentSchema:
+            type: array
+            description: Array of milestone objects
+            items:
+              $ref: "#/components/schemas/Milestone"
+          description: Raw JSON-encoded array of milestone objects; null when not applicable
+        progressPct:
+          type:
+            - number
+            - "null"
+          minimum: 0
+          maximum: 100
+          description: |
+            Computed progress percentage (0–100). Null when urgency has not been
+            computed yet.
+        urgencyBand:
+          type:
+            - string
+            - "null"
+          enum:
+            - NO_TARGET
+            - ON_TRACK
+            - NEEDS_ATTENTION
+            - AT_RISK
+            - CRITICAL
+            - null
+          description: >
+            Computed urgency classification. Null when urgency has not been
+
+            computed yet.
+
+
+            | Band              | Meaning                                                           |
+
+            |-------------------|-------------------------------------------------------------------|
+
+            | `NO_TARGET`       | No target date is set for this outcome                           |
+
+            | `ON_TRACK`        | Progress gap (expected − actual) is < 10%                        |
+
+            | `NEEDS_ATTENTION` | Progress gap is 10%–25%                                          |
+
+            | `AT_RISK`         | Progress gap is > 25%                                            |
+
+            | `CRITICAL`        | Due today or overdue, OR ≤ 30 days remaining with < 50% progress |
+        lastComputedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+          description: ISO-8601 UTC timestamp of the last urgency computation; null if not
+            yet computed
+        createdAt:
+          type: string
+          format: date-time
+          description: ISO-8601 UTC timestamp when this metadata record was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: ISO-8601 UTC timestamp of the last update to this record
+    ProgressUpdateRequest:
+      type: object
+      description: |
+        Lightweight progress update request. Both fields are optional — supply
+        only the ones that need updating.
+      properties:
+        currentValue:
+          type:
+            - number
+            - "null"
+          description: Updated current value of the tracked metric; null if unchanged
+        milestones:
+          type:
+            - string
+            - "null"
+          contentMediaType: application/json
+          contentSchema:
+            type: array
+            description: Array of milestone objects
+            items:
+              $ref: "#/components/schemas/Milestone"
+          description: |
+            Updated JSON-encoded array of milestone objects. Replaces the
+            entire existing milestones array; null if unchanged.
+    UrgencyInfo:
+      type: object
+      required:
+        - outcomeId
+        - outcomeName
+        - urgencyBand
+        - daysRemaining
+      description: |
+        Urgency snapshot for a single RCDO outcome.
+
+        Produced by the urgency computation pipeline and consumed by downstream
+        phases without depending on outcome metadata internals.
+      properties:
+        outcomeId:
+          type: string
+          format: uuid
+          description: UUID of the RCDO outcome
+        outcomeName:
+          type: string
+          description: Display name of the outcome
+        targetDate:
+          type:
+            - string
+            - "null"
+          format: date
+          description: Target completion date; null if no target date is set
+        progressPct:
+          type:
+            - number
+            - "null"
+          minimum: 0
+          maximum: 100
+          description: Current progress percentage (0–100); null if not yet computed
+        expectedProgressPct:
+          type:
+            - number
+            - "null"
+          minimum: 0
+          maximum: 100
+          description: |
+            Expected progress percentage at today's date assuming linear
+            progression from start to target date. Null when no target date
+            is set.
+        urgencyBand:
+          type: string
+          enum:
+            - NO_TARGET
+            - ON_TRACK
+            - NEEDS_ATTENTION
+            - AT_RISK
+            - CRITICAL
+          description: Computed urgency classification for this outcome
+        daysRemaining:
+          type: integer
+          description: |
+            Calendar days from today to the target date. Negative when the
+            target date is in the past (overdue). Set to the minimum integer
+            value (`Long.MIN_VALUE`) when no target date is set.
+    SlackInfo:
+      type: object
+      required:
+        - slackBand
+        - strategicFocusFloor
+        - atRiskCount
+        - criticalCount
+      description: |
+        Strategic slack summary derived from the distribution of urgency bands
+        across the organisation's RCDO outcome portfolio.
+
+        The `strategicFocusFloor` is the recommended minimum fraction of weekly
+        commits that should target strategic outcomes, computed from the ratio
+        of at-risk and critical outcomes.
+      properties:
+        slackBand:
+          type: string
+          enum:
+            - HIGH_SLACK
+            - MODERATE_SLACK
+            - LOW_SLACK
+            - NO_SLACK
+          description: |
+            High-level slack classification:
+            - `HIGH_SLACK`     — low urgency pressure; floor ≤ 0.55
+            - `MODERATE_SLACK` — moderate urgency pressure; 0.56 ≤ floor ≤ 0.70
+            - `LOW_SLACK`      — high urgency pressure; 0.71 ≤ floor ≤ 0.85
+            - `NO_SLACK`       — critical urgency pressure; 0.86 ≤ floor ≤ 0.95
+        strategicFocusFloor:
+          type: number
+          minimum: 0.5
+          maximum: 0.95
+          description: |
+            Computed strategic focus floor in the range 0.50–0.95. Represents
+            the recommended minimum fraction of commits that should be linked
+            to strategic RCDO outcomes given the current urgency landscape.
+        atRiskCount:
+          type: integer
+          minimum: 0
+          description: Number of outcomes currently in the AT_RISK urgency band
+        criticalCount:
+          type: integer
+          minimum: 0
+          description: Number of outcomes currently in the CRITICAL urgency band
+    UrgencySummaryResponse:
+      type: object
+      required:
+        - outcomes
+      description: |
+        Response payload for the urgency summary endpoint.
+        Contains a list of urgency snapshots for all tracked RCDO outcomes in
+        the authenticated user's organisation.
+      properties:
+        outcomes:
+          type: array
+          description: >
+            Urgency snapshots for all outcomes that have a configured target
+            date.
+
+            Ordered by urgency severity (CRITICAL first) then by days remaining
+
+            ascending.
+          items:
+            $ref: "#/components/schemas/UrgencyInfo"
+    StrategicSlackResponse:
+      type: object
+      required:
+        - slack
+      description: Response payload for the strategic slack endpoint.
+      properties:
+        slack:
+          $ref: "#/components/schemas/SlackInfo"
+    OvercommitWarning:
+      type: object
+      required:
+        - level
+        - message
+      description: Warning about a detected overcommitment in a user's plan.
+      properties:
+        level:
+          type: string
+          enum:
+            - NONE
+            - MODERATE
+            - HIGH
+          description: Overcommitment severity
+        message:
+          type: string
+          description: Human-readable overcommitment warning message shown in the UI
+        adjustedTotal:
+          type: number
+          format: double
+          nullable: true
+          description: Bias-adjusted total hour estimate for the plan
+        realisticCap:
+          type: number
+          format: double
+          nullable: true
+          description: The user's p50 realistic weekly capacity cap
   responses:
     Unauthorized:
       description: Missing or invalid JWT
@@ -2953,8 +4735,7 @@ components:
             type: object
             properties:
               error:
-                $ref: '#/components/schemas/ApiError'
-
+                $ref: "#/components/schemas/ApiError"
     Forbidden:
       description: Valid JWT but insufficient access
       content:
@@ -2963,8 +4744,7 @@ components:
             type: object
             properties:
               error:
-                $ref: '#/components/schemas/ApiError'
-
+                $ref: "#/components/schemas/ApiError"
     NotFound:
       description: Resource not found
       content:
@@ -2973,8 +4753,7 @@ components:
             type: object
             properties:
               error:
-                $ref: '#/components/schemas/ApiError'
-
+                $ref: "#/components/schemas/ApiError"
     Conflict:
       description: State conflict (version mismatch, invalid transition)
       content:
@@ -2983,8 +4762,7 @@ components:
             type: object
             properties:
               error:
-                $ref: '#/components/schemas/ApiError'
-
+                $ref: "#/components/schemas/ApiError"
     ValidationError:
       description: Validation failed
       content:
@@ -2993,8 +4771,7 @@ components:
             type: object
             properties:
               error:
-                $ref: '#/components/schemas/ApiError'
-
+                $ref: "#/components/schemas/ApiError"
     ServiceUnavailable:
       description: Backing service unavailable
       content:
@@ -3003,4 +4780,4 @@ components:
             type: object
             properties:
               error:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"

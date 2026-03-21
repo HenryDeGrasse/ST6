@@ -8,6 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.weekly.auth.UserPrincipal;
+import com.weekly.plan.repository.ProgressEntryPatternInput;
+import com.weekly.plan.repository.ProgressEntryRepository;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -15,6 +18,7 @@ import java.sql.Statement;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,12 +26,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -98,6 +106,12 @@ class QuickUpdateIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private ProgressEntryRepository progressEntryRepository;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     // ── Test identifiers ─────────────────────────────────────
 
@@ -199,10 +213,22 @@ class QuickUpdateIntegrationTest {
 
         // ── 5. POST quick-update with 2 items ─────────────────
         String quickUpdateBody = objectMapper.writeValueAsString(new QuickUpdateRequest(List.of(
-                new QuickUpdateItem(UUID.fromString(kingCommitId), "ON_TRACK",
-                        "Making good progress on APIs"),
-                new QuickUpdateItem(UUID.fromString(queenCommitId), "DONE_EARLY",
-                        "CI fixed ahead of schedule")
+                new QuickUpdateItem(
+                        UUID.fromString(kingCommitId),
+                        "ON_TRACK",
+                        "Making good progress on APIs",
+                        "USER_TYPED",
+                        null,
+                        null
+                ),
+                new QuickUpdateItem(
+                        UUID.fromString(queenCommitId),
+                        "DONE_EARLY",
+                        "CI fixed ahead of schedule",
+                        "SUGGESTION_ACCEPTED",
+                        "CI fixed ahead of schedule",
+                        "ai"
+                )
         )));
 
         MvcResult quickUpdateResult = mockMvc.perform(
@@ -238,6 +264,12 @@ class QuickUpdateIntegrationTest {
                 .andExpect(jsonPath("$.entries.length()").value(1))
                 .andExpect(jsonPath("$.entries[0].status").value("DONE_EARLY"))
                 .andExpect(jsonPath("$.entries[0].note").value("CI fixed ahead of schedule"));
+
+        List<ProgressEntryPatternInput> inputs = loadPatternInputsForOrg(ORG_1);
+        assertThat(inputs).hasSize(2);
+        assertThat(inputs.get(0).ownerUserId()).isEqualTo(USER_1);
+        assertThat(inputs.get(0).noteSource().name()).isEqualTo("USER_TYPED");
+        assertThat(inputs.get(1).selectedSuggestionSource()).isEqualTo("ai");
     }
 
     // ── Test 2: Reject quick-update on a DRAFT plan ───────────
@@ -266,7 +298,7 @@ class QuickUpdateIntegrationTest {
 
         // Attempt quick-update on DRAFT plan
         String quickUpdateBody = objectMapper.writeValueAsString(new QuickUpdateRequest(List.of(
-                new QuickUpdateItem(UUID.randomUUID(), "ON_TRACK", null)
+                new QuickUpdateItem(UUID.randomUUID(), "ON_TRACK", null, null, null, null)
         )));
 
         MvcResult result = mockMvc.perform(
@@ -298,7 +330,7 @@ class QuickUpdateIntegrationTest {
         UUID randomPlanId = UUID.randomUUID();
 
         String quickUpdateBody = objectMapper.writeValueAsString(new QuickUpdateRequest(List.of(
-                new QuickUpdateItem(UUID.randomUUID(), "ON_TRACK", null)
+                new QuickUpdateItem(UUID.randomUUID(), "ON_TRACK", null, null, null, null)
         )));
 
         MvcResult result = mockMvc.perform(
@@ -362,7 +394,7 @@ class QuickUpdateIntegrationTest {
         // ── 4. Quick-update with a commit ID not in this plan ─
         UUID wrongCommitId = UUID.randomUUID();
         String quickUpdateBody = objectMapper.writeValueAsString(new QuickUpdateRequest(List.of(
-                new QuickUpdateItem(wrongCommitId, "ON_TRACK", null)
+                new QuickUpdateItem(wrongCommitId, "ON_TRACK", null, null, null, null)
         )));
 
         MvcResult result = mockMvc.perform(
@@ -395,6 +427,23 @@ class QuickUpdateIntegrationTest {
                 result.getResponse().getContentAsString()).get("version").asInt();
     }
 
+    private List<ProgressEntryPatternInput> loadPatternInputsForOrg(UUID orgId) {
+        UserPrincipal principal = new UserPrincipal(USER_1, orgId, Set.of("IC"));
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        principal,
+                        null,
+                        List.of(new SimpleGrantedAuthority("IC"))
+                );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        try {
+            return transactionTemplate.execute(status ->
+                    progressEntryRepository.findPatternInputsCreatedSince(java.time.Instant.EPOCH));
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
     // ── Request DTOs for JSON serialization ──────────────────
 
     private record CommitRequest(
@@ -416,6 +465,9 @@ class QuickUpdateIntegrationTest {
     private record QuickUpdateItem(
             UUID commitId,
             String status,
-            String note
+            String note,
+            String noteSource,
+            String selectedSuggestionText,
+            String selectedSuggestionSource
     ) {}
 }

@@ -382,6 +382,51 @@ public class DefaultAiSuggestionService implements AiSuggestionService {
                         context.reviewTurnaroundStats().avgDaysToReview(),
                         context.reviewTurnaroundStats().sampleSize());
 
+        String diagnostics = context.diagnosticContext() == null ? "" : String.join("|",
+                context.diagnosticContext().categoryShifts().stream()
+                        .sorted(Comparator.comparing(ManagerInsightDataProvider.UserCategoryShiftContext::userId))
+                        .map(shift -> shift.userId() + ":"
+                                + formatDoubleMap(shift.currentPeriod()) + ":"
+                                + formatDoubleMap(shift.priorPeriod()))
+                        .collect(Collectors.joining(";")),
+                context.diagnosticContext().outcomeCoverages().stream()
+                        .sorted(Comparator.comparing(ManagerInsightDataProvider.UserOutcomeCoverageContext::userId))
+                        .map(coverage -> coverage.userId() + ":"
+                                + coverage.outcomes().stream()
+                                        .sorted(Comparator
+                                                .comparing(ManagerInsightDataProvider.UserOutcomeWeeklyCountContext::outcomeId)
+                                                .thenComparing(ManagerInsightDataProvider.UserOutcomeWeeklyCountContext::weekStart))
+                                        .map(outcome -> outcome.outcomeId() + "@"
+                                                + outcome.weekStart() + "=" + outcome.commitCount())
+                                        .collect(Collectors.joining(",")))
+                        .collect(Collectors.joining(";")),
+                context.diagnosticContext().blockerFrequencies().stream()
+                        .sorted(Comparator.comparing(ManagerInsightDataProvider.UserBlockerFrequencyContext::userId))
+                        .map(freq -> freq.userId() + ":"
+                                + freq.atRiskCount() + "/"
+                                + freq.blockedCount() + "/"
+                                + freq.totalCheckIns())
+                        .collect(Collectors.joining(";")));
+
+        String urgencies = context.outcomeUrgencies() == null ? "" :
+                context.outcomeUrgencies().stream()
+                        .sorted(Comparator.comparing(ManagerInsightDataProvider.OutcomeUrgencyContext::outcomeId))
+                        .map(urgency -> String.join("|",
+                                String.valueOf(urgency.outcomeId()),
+                                String.valueOf(urgency.outcomeName()),
+                                String.valueOf(urgency.targetDate()),
+                                String.valueOf(urgency.progressPct()),
+                                String.valueOf(urgency.expectedProgressPct()),
+                                String.valueOf(urgency.urgencyBand()),
+                                String.valueOf(urgency.daysRemaining())))
+                        .collect(Collectors.joining(";"));
+
+        String slack = context.strategicSlackContext() == null ? "" : String.join("|",
+                String.valueOf(context.strategicSlackContext().slackBand()),
+                String.valueOf(context.strategicSlackContext().strategicFocusFloor()),
+                String.valueOf(context.strategicSlackContext().atRiskCount()),
+                String.valueOf(context.strategicSlackContext().criticalCount()));
+
         return String.join("#",
                 context.weekStart(),
                 String.valueOf(context.reviewCounts().pending()),
@@ -392,6 +437,19 @@ public class DefaultAiSuggestionService implements AiSuggestionService {
                 streaks,
                 trends,
                 lateLocks,
-                turnaround);
+                turnaround,
+                diagnostics,
+                urgencies,
+                slack);
+    }
+
+    private String formatDoubleMap(java.util.Map<String, Double> values) {
+        if (values == null || values.isEmpty()) {
+            return "";
+        }
+        return values.entrySet().stream()
+                .sorted(java.util.Map.Entry.comparingByKey())
+                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .collect(Collectors.joining(","));
     }
 }

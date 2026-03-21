@@ -14,37 +14,22 @@
  * as-is.
  */
 import { useState, useCallback } from "react";
-import type { ApiErrorResponse, CheckInEntry } from "@weekly-commitments/contracts";
+import type {
+  ApiErrorResponse,
+  CheckInOptionsResponse,
+  QuickUpdateItem,
+  QuickUpdateResponse,
+} from "@weekly-commitments/contracts";
 import { useApiBaseUrl } from "../api/ApiContext.js";
 import { buildDevToken } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.js";
 
-export interface QuickUpdateItem {
-  commitId: string;
-  status: string;
-  note: string;
-}
-
-export interface CheckInOptionItem {
-  text: string;
-  source: string;
-}
-
-export interface CheckInOptionsResult {
-  status: string;
-  statusOptions: string[];
-  progressOptions: CheckInOptionItem[];
-}
-
-export interface QuickUpdateResult {
-  updatedCount: number;
-  entries: CheckInEntry[];
-}
+export type CheckInOptionsResult = CheckInOptionsResponse;
 
 export interface UseQuickUpdateResult {
   loading: boolean;
   error: string | null;
-  submitBatchUpdate: (planId: string, updates: QuickUpdateItem[]) => Promise<QuickUpdateResult | null>;
+  submitBatchUpdate: (planId: string, updates: QuickUpdateItem[]) => Promise<QuickUpdateResponse | null>;
   fetchCheckInOptions: (
     commitId: string,
     currentStatus: string,
@@ -112,8 +97,8 @@ export function useQuickUpdate(): UseQuickUpdateResult {
   );
 
   const submitBatchUpdate = useCallback(
-    async (planId: string, updates: QuickUpdateItem[]): Promise<QuickUpdateResult | null> =>
-      postJson<QuickUpdateResult>(`/plans/${encodeURIComponent(planId)}/quick-update`, { updates }),
+    async (planId: string, updates: QuickUpdateItem[]): Promise<QuickUpdateResponse | null> =>
+      postJson<QuickUpdateResponse>(`/plans/${encodeURIComponent(planId)}/quick-update`, { updates }),
     [postJson],
   );
 

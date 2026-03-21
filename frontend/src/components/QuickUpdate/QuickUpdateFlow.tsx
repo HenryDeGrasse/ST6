@@ -12,6 +12,7 @@
  * disabled so the parent never needs to check.
  */
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import type { QuickUpdateItem, QuickUpdateNoteSource } from "@weekly-commitments/contracts";
 import { useFeatureFlags } from "../../context/FeatureFlagContext.js";
 import { useQuickUpdate } from "../../hooks/useQuickUpdate.js";
 import type { CheckInOptionsResult } from "../../hooks/useQuickUpdate.js";
@@ -53,7 +54,7 @@ export const STATUS_MAP: Record<string, { label: string; emoji: string }> = {
   DONE_EARLY: { label: "Done Early", emoji: "🎉" },
 };
 
-const ALL_STATUS_KEYS = ["ON_TRACK", "AT_RISK", "BLOCKED", "DONE_EARLY"] as const;
+const ALL_STATUS_KEYS = ["ON_TRACK", "AT_RISK", "BLOCKED", "DONE_EARLY"] as const satisfies readonly QuickUpdateItem["status"][];
 
 // ─── Chess-priority labels ──────────────────────────────────────────────────
 
@@ -64,6 +65,14 @@ const CHESS_LABELS: Record<string, string> = {
   BISHOP: "♝ Bishop",
   KNIGHT: "♞ Knight",
   PAWN: "♟ Pawn",
+};
+
+type CommitUpdateDraft = {
+  status: QuickUpdateItem["status"] | "";
+  note: string;
+  noteSource: QuickUpdateNoteSource;
+  selectedSuggestionText?: string | null;
+  selectedSuggestionSource?: string | null;
 };
 
 // ─── Component ─────────────────────────────────────────────────────────────
@@ -86,8 +95,8 @@ export const QuickUpdateFlow: React.FC<QuickUpdateFlowProps> = ({
   // ── State ──────────────────────────────────────────────────────────────
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  /** Map<commitId, {status, note}> — accumulated user selections. */
-  const [updates, setUpdates] = useState<Map<string, { status: string; note: string }>>(new Map());
+  /** Map<commitId, draft> — accumulated user selections plus note provenance. */
+  const [updates, setUpdates] = useState<Map<string, CommitUpdateDraft>>(new Map());
 
   /** Map<commitId, CheckInOptionsResult> — AI options cache. */
   const [aiOptions, setAiOptions] = useState<Map<string, CheckInOptionsResult>>(new Map());
@@ -172,24 +181,60 @@ export const QuickUpdateFlow: React.FC<QuickUpdateFlowProps> = ({
 
   // ── Update helpers ─────────────────────────────────────────────────────
 
+  const buildTypedNoteUpdate = useCallback(
+    (existingStatus: CommitUpdateDraft["status"] | undefined, note: string): CommitUpdateDraft => ({
+      status: existingStatus ?? "",
+      note,
+      noteSource: note.trim() ? "USER_TYPED" : "UNKNOWN",
+      selectedSuggestionText: null,
+      selectedSuggestionSource: null,
+    }),
+    [],
+  );
+
   const setStatus = useCallback(
-    (commitId: string, status: string) => {
+    (commitId: string, status: QuickUpdateItem["status"]) => {
       setUpdates((prev) => {
         const next = new Map(prev);
         const existing = prev.get(commitId);
-        next.set(commitId, { status, note: existing?.note ?? "" });
+        next.set(commitId, {
+          status,
+          note: existing?.note ?? "",
+          noteSource: existing?.noteSource ?? "UNKNOWN",
+          selectedSuggestionText: existing?.selectedSuggestionText ?? null,
+          selectedSuggestionSource: existing?.selectedSuggestionSource ?? null,
+        });
         return next;
       });
     },
     [],
   );
 
-  const setNote = useCallback(
+  const setTypedNote = useCallback(
     (commitId: string, note: string) => {
       setUpdates((prev) => {
         const next = new Map(prev);
         const existing = prev.get(commitId);
-        next.set(commitId, { status: existing?.status ?? "", note });
+        next.set(commitId, buildTypedNoteUpdate(existing?.status, note));
+        return next;
+      });
+    },
+    [buildTypedNoteUpdate],
+  );
+
+  const setSuggestedNote = useCallback(
+    (commitId: string, note: string, source: string) => {
+      setUpdates((prev) => {
+        const next = new Map(prev);
+        const existing = prev.get(commitId);
+        const isClearing = note.trim() === "";
+        next.set(commitId, {
+          status: existing?.status ?? "",
+          note,
+          noteSource: isClearing ? "UNKNOWN" : "SUGGESTION_ACCEPTED",
+          selectedSuggestionText: isClearing ? null : note,
+          selectedSuggestionSource: isClearing ? null : source,
+        });
         return next;
       });
     },
@@ -212,13 +257,21 @@ export const QuickUpdateFlow: React.FC<QuickUpdateFlowProps> = ({
   const handleSubmit = useCallback(async () => {
     setSubmitting(true);
     try {
-      const items = commitments
-        .map((c) => {
-          const u = updates.get(c.id);
-          if (!u?.status) return null;
-          return { commitId: c.id, status: u.status, note: u.note ?? "" };
-        })
-        .filter((item): item is { commitId: string; status: string; note: string } => item !== null);
+      const items: QuickUpdateItem[] = commitments.flatMap((c) => {
+        const u = updates.get(c.id);
+        if (!u?.status) {
+          return [];
+        }
+
+        return [{
+          commitId: c.id,
+          status: u.status,
+          note: u.note ?? "",
+          noteSource: u.noteSource,
+          selectedSuggestionText: u.selectedSuggestionText ?? null,
+          selectedSuggestionSource: u.selectedSuggestionSource ?? null,
+        } satisfies QuickUpdateItem];
+      });
 
       const result = await submitBatchUpdate(planId, items);
       if (result) {
@@ -358,7 +411,9 @@ export const QuickUpdateFlow: React.FC<QuickUpdateFlowProps> = ({
             <span className={styles.sectionLabel}>AI progress notes</span>
             <div className={styles.chipRow}>
               {options.progressOptions.map((opt, idx) => {
-                const isChipSelected = update?.note === opt.text;
+                const isChipSelected =
+                  update?.noteSource === "SUGGESTION_ACCEPTED" &&
+                  update?.selectedSuggestionText === opt.text;
                 return (
                   <button
                     key={idx}
@@ -369,7 +424,9 @@ export const QuickUpdateFlow: React.FC<QuickUpdateFlowProps> = ({
                     ]
                       .filter(Boolean)
                       .join(" ")}
-                    onClick={() => setNote(commitment.id, isChipSelected ? "" : opt.text)}
+                    onClick={() =>
+                      setSuggestedNote(commitment.id, isChipSelected ? "" : opt.text, opt.source)
+                    }
                     disabled={submitting}
                   >
                     {opt.text}
@@ -387,7 +444,7 @@ export const QuickUpdateFlow: React.FC<QuickUpdateFlowProps> = ({
             className={styles.noteInput}
             placeholder="Add a note (optional)"
             value={update?.note ?? ""}
-            onChange={(e) => setNote(commitment.id, e.target.value)}
+            onChange={(e) => setTypedNote(commitment.id, e.target.value)}
             rows={2}
             maxLength={500}
             disabled={submitting}

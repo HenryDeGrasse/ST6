@@ -887,6 +887,411 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/plans/{planId}/quick-update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch check-in for multiple commits
+         * @description Submits a rapid-fire batch of progress check-ins for multiple commits
+         *     within a single plan. Each item in the `updates` array creates a new
+         *     immutable ProgressEntry for the target commit.
+         *
+         *     Behaviour:
+         *     - The plan must belong to the authenticated user.
+         *     - The plan must be in LOCKED or RECONCILING state.
+         *     - Each referenced commitId must belong to the target plan.
+         *     - An empty `updates` array is accepted and returns `updatedCount: 0`.
+         */
+        post: operations["quickUpdate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/check-in-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate AI check-in note options
+         * @description Generates context-aware check-in note suggestions for a single commit.
+         *
+         *     The response contains:
+         *     - `statusOptions` — valid ProgressStatus values for the status picker.
+         *     - `progressOptions` — short text suggestions derived from AI analysis of
+         *       the commit context plus pattern-matched options from the user's past
+         *       check-in notes.
+         *
+         *     This endpoint always returns HTTP 200 on application-level fallback.
+         *     When the LLM is unavailable, the commit is not found, or response parsing
+         *     fails, the service returns `status: "ok"`, the standard status options,
+         *     and an empty `progressOptions` list.
+         */
+        post: operations["getCheckInOptions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the authenticated user's behavioural profile
+         * @description Returns the computed user model snapshot for the authenticated user.
+         *
+         *     If a snapshot exists, the response contains the latest computed
+         *     performance metrics, preferences, and trend signals. If no snapshot has
+         *     been computed yet, the endpoint still returns HTTP 200 with:
+         *     - `userId` set to the authenticated user
+         *     - `weeksAnalyzed` set to 0
+         *     - `performanceProfile`, `preferences`, and `trends` set to null
+         */
+        get: operations["getUserProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/analytics/outcome-coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get outcome coverage timeline
+         * @description Returns per-week commit activity for a specific RCDO outcome over the
+         *     last `weeks` weeks.
+         *
+         *     Each week shows:
+         *     - `commitCount`       — total strategic commits linked to the outcome
+         *     - `contributorCount`  — distinct contributors who made those commits
+         *     - `highPriorityCount` — commits with chess priority KING or QUEEN
+         *
+         *     A `trendDirection` compares the two most recent weeks: `RISING` when
+         *     the latest week has more commits than the prior week, `FALLING` when
+         *     it has fewer, or `STABLE` when equal.
+         *
+         *     Requires MANAGER role.
+         *     Gated by the `strategicIntelligence` feature flag.
+         */
+        get: operations["getOutcomeCoverage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/analytics/carry-forward-heatmap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get team carry-forward heatmap
+         * @description Returns a carry-forward heatmap for the authenticated manager's direct
+         *     reports over the last `weeks` weeks.
+         *
+         *     Each user row contains an ordered list of per-week cells (oldest first).
+         *     Weeks with no data for a user produce a cell with `carriedCount: 0`.
+         *
+         *     High carry-forward counts may indicate scope creep, estimation problems,
+         *     or capacity constraints.
+         *
+         *     Requires MANAGER role.
+         *     Gated by the `strategicIntelligence` feature flag.
+         */
+        get: operations["getCarryForwardHeatmap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/analytics/category-shifts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get commit category shift analysis
+         * @description Returns per-user commit category distribution shifts between the prior
+         *     and recent halves of the analysis window for the authenticated manager's
+         *     direct reports.
+         *
+         *     Each user entry includes:
+         *     - `currentDistribution` — category → proportion for the recent half
+         *     - `priorDistribution`   — category → proportion for the prior half
+         *     - `biggestShift`        — the category with the largest absolute change
+         *       in proportion (positive delta = increased, negative = decreased)
+         *
+         *     Requires MANAGER role.
+         *     Gated by the `strategicIntelligence` feature flag.
+         */
+        get: operations["getCategoryShifts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/analytics/estimation-accuracy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get team estimation accuracy distribution
+         * @description Returns per-user confidence-vs-actual-completion-rate accuracy metrics
+         *     for the authenticated manager's direct reports over the last `weeks`
+         *     weeks.
+         *
+         *     A positive `calibrationGap` indicates systematic over-confidence:
+         *     the user's stated confidence exceeds their actual completion rate.
+         *
+         *     Requires MANAGER role.
+         *     Gated by the `strategicIntelligence` feature flag.
+         */
+        get: operations["getEstimationAccuracy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/analytics/predictions/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get rule-based predictions for a user
+         * @description Returns all likely (actionable) predictions for the given user.
+         *     Only predictions where `likely: true` are included.
+         *
+         *     Three prediction types are evaluated:
+         *
+         *     | type               | description                                                                 |
+         *     |--------------------|-----------------------------------------------------------------------------|
+         *     | `CARRY_FORWARD`    | User has a pattern of carrying ≥ 3 items forward in ≥ 2 of the last 3 weeks AND current week already has ≥ 5 commits |
+         *     | `LATE_LOCK`        | User late-locked in ≥ 3 of the last 4 weeks AND current plan is still DRAFT on lock day |
+         *     | `COVERAGE_DECLINE` | Strategic outcome coverage declined for 3 or more consecutive weeks AND no new commits this week |
+         *
+         *     **Access control:** the caller must have the MANAGER role **or** be
+         *     requesting predictions for themselves (self-service, `userId` must equal
+         *     the authenticated user's ID).
+         *
+         *     Gated by the `predictions` feature flag.
+         */
+        get: operations["getUserPredictions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outcomes/metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all outcome metadata for the organisation
+         * @description Returns all outcome metadata rows for the authenticated user's
+         *     organisation.
+         *
+         *     Each record includes the target date, progress configuration, and
+         *     computed urgency band (null when urgency has not been computed yet).
+         *
+         *     Available to any authenticated user.
+         *     Gated by the `outcomeUrgency` feature flag.
+         */
+        get: operations["listOutcomeMetadata"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outcomes/{outcomeId}/metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get metadata for a single outcome
+         * @description Returns the outcome metadata record for the specified outcome in the
+         *     authenticated user's organisation. Returns 404 when no metadata row
+         *     exists for the given outcome.
+         *
+         *     Available to any authenticated user.
+         *     Gated by the `outcomeUrgency` feature flag.
+         */
+        get: operations["getOutcomeMetadata"];
+        /**
+         * Create or update outcome metadata
+         * @description Creates or updates (upserts) the metadata for the given outcome. All
+         *     fields are optional — omitted fields leave the existing persisted value
+         *     unchanged on update.
+         *
+         *     Setting `targetDate` to null removes target-date tracking and causes
+         *     the urgency band to be set to `NO_TARGET` on the next recomputation.
+         *
+         *     After persisting, urgency recomputation is triggered immediately for
+         *     the updated outcome.
+         *
+         *     Requires ADMIN or MANAGER role.
+         *     Gated by the `outcomeUrgency` feature flag.
+         */
+        put: operations["upsertOutcomeMetadata"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outcomes/{outcomeId}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update progress fields of an existing outcome metadata record
+         * @description Lightweight update that modifies only the `currentValue` and/or
+         *     `milestones` fields of an existing outcome metadata record. Both
+         *     fields are optional — supply only the ones that need updating.
+         *
+         *     Returns 404 when no metadata row exists for the given outcome
+         *     (use PUT /outcomes/{outcomeId}/metadata to create one first).
+         *
+         *     After persisting the update, urgency recomputation is triggered
+         *     immediately so that urgency bands reflect the new progress values.
+         *
+         *     Requires ADMIN or MANAGER role.
+         *     Gated by the `outcomeUrgency` feature flag.
+         */
+        patch: operations["updateOutcomeProgress"];
+        trace?: never;
+    };
+    "/outcomes/urgency-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get urgency summary for all tracked outcomes
+         * @description Returns all RCDO outcomes with their computed urgency bands for the
+         *     authenticated user's organisation.
+         *
+         *     Only outcomes that have a metadata row with a configured `targetDate`
+         *     appear in this list. Outcomes with no metadata row or no target date
+         *     are omitted.
+         *
+         *     Available to any authenticated user.
+         *     Gated by the `outcomeUrgency` feature flag.
+         */
+        get: operations["getUrgencySummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/team/strategic-slack": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get strategic slack band and focus floor for the team
+         * @description Returns the current slack band and recommended strategic focus floor
+         *     for the authenticated user's organisation, derived from the distribution
+         *     of urgency bands across the outcome portfolio.
+         *
+         *     The `strategicFocusFloor` is a value in the range 0.50–0.95 indicating
+         *     the recommended minimum fraction of weekly commits that should target
+         *     strategic outcomes.
+         *
+         *     | slackBand         | strategicFocusFloor range |
+         *     |-------------------|---------------------------|
+         *     | `HIGH_SLACK`      | ≤ 0.55                    |
+         *     | `MODERATE_SLACK`  | 0.56 – 0.70               |
+         *     | `LOW_SLACK`       | 0.71 – 0.85               |
+         *     | `NO_SLACK`        | 0.86 – 0.95               |
+         *
+         *     Available to any authenticated user.
+         *     Gated by the `strategicSlack` feature flag.
+         */
+        get: operations["getStrategicSlack"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -972,6 +1377,13 @@ export interface components {
             completionStatus: components["schemas"]["CompletionStatus"];
             deltaReason?: string | null;
             timeSpent?: number | null;
+            /**
+             * Format: double
+             * @description Optional actual hours spent on this commitment, recorded during
+             *     reconciliation. Used by CapacityProfileService to compute
+             *     actual-vs-estimated bias.
+             */
+            actualHours?: number | null;
         };
         ManagerReview: {
             /** Format: uuid */
@@ -1024,6 +1436,11 @@ export interface components {
             completionStatus: components["schemas"]["CompletionStatus"];
             deltaReason?: string | null;
             timeSpent?: number | null;
+            /**
+             * Format: double
+             * @description Optional actual hours spent; omit to leave unchanged
+             */
+            actualHours?: number | null;
         };
         CreateReviewRequest: {
             /** @enum {string} */
@@ -1874,6 +2291,602 @@ export interface components {
             message: string;
             details: Record<string, never>[];
         };
+        /** @description Batch check-in request containing zero or more per-commit items. */
+        QuickUpdateRequest: {
+            /** @description List of per-commit check-in items */
+            updates: components["schemas"]["QuickUpdateItem"][];
+        };
+        /** @description A single per-commit check-in entry within a quick-update batch. */
+        QuickUpdateItem: {
+            /**
+             * Format: uuid
+             * @description UUID of the weekly commit to check in against
+             */
+            commitId: string;
+            /**
+             * @description Current progress status for the commit
+             * @enum {string}
+             */
+            status: "ON_TRACK" | "AT_RISK" | "BLOCKED" | "DONE_EARLY";
+            /** @description Optional free-text note accompanying this check-in */
+            note?: string | null;
+            /**
+             * @description Optional provenance for the submitted note text
+             * @enum {string|null}
+             */
+            noteSource?: "UNKNOWN" | "USER_TYPED" | "SUGGESTION_ACCEPTED" | null;
+            /** @description Suggestion text the user accepted, when applicable */
+            selectedSuggestionText?: string | null;
+            /** @description Origin of the accepted suggestion, when applicable */
+            selectedSuggestionSource?: string | null;
+        };
+        /** @description Result of a batch quick-update operation. */
+        QuickUpdateResponse: {
+            /** @description Total number of progress entries created by this request */
+            updatedCount: number;
+            /** @description The newly created progress entries, in processing order */
+            entries: components["schemas"]["CheckInEntry"][];
+        };
+        /** @description Context for generating AI check-in note options for a single commit. */
+        CheckInOptionRequest: {
+            /**
+             * Format: uuid
+             * @description UUID of the weekly commit to generate options for
+             */
+            commitId: string;
+            /** @description Current progress status selection, if any */
+            currentStatus?: string | null;
+            /** @description Most recent check-in note for this commit, if any */
+            lastNote?: string | null;
+            /** @description Number of days elapsed since the commit's most recent check-in */
+            daysSinceLastCheckIn?: number;
+        };
+        /**
+         * @description Generated check-in option payload.
+         *
+         *     `status` is currently always `"ok"`.
+         */
+        CheckInOptionsResponse: {
+            /**
+             * @description Service status
+             * @enum {string}
+             */
+            status: "ok";
+            /** @description Ordered list of valid progress status strings for the UI picker */
+            statusOptions: ("ON_TRACK" | "AT_RISK" | "BLOCKED" | "DONE_EARLY")[];
+            /** @description AI- and pattern-derived note suggestions (may be empty on fallback) */
+            progressOptions: components["schemas"]["CheckInOptionItem"][];
+        };
+        /** @description A single note suggestion within a CheckInOptionsResponse. */
+        CheckInOptionItem: {
+            /** @description Short phrase presented to the user in the Quick Update card */
+            text: string;
+            /** @description Suggestion origin, typically `ai` or `pattern` */
+            source: string;
+        };
+        /**
+         * @description Computed user model snapshot derived from a rolling window of reconciled
+         *     weekly plans.
+         *
+         *     When no snapshot exists yet, the nested profile sections are null and
+         *     `weeksAnalyzed` is 0.
+         */
+        UserProfileResponse: {
+            /**
+             * Format: uuid
+             * @description UUID of the user this profile belongs to
+             */
+            userId: string;
+            /** @description Number of reconciled plan weeks used to derive this profile */
+            weeksAnalyzed: number;
+            performanceProfile: components["schemas"]["PerformanceProfile"] | null;
+            preferences: components["schemas"]["UserPreferences"] | null;
+            trends: components["schemas"]["UserTrends"] | null;
+        };
+        /** @description Aggregated performance metrics computed from the user's reconciled plan history. */
+        PerformanceProfile: {
+            /**
+             * Format: double
+             * @description Confidence accuracy ratio against final completion outcome
+             */
+            estimationAccuracy: number;
+            /**
+             * Format: double
+             * @description Fraction of reconciled commits marked DONE across the analysis window
+             */
+            completionReliability: number;
+            /**
+             * Format: double
+             * @description Average number of commits created per analyzed week
+             */
+            avgCommitsPerWeek: number;
+            /**
+             * Format: double
+             * @description Average number of commits carried forward per analyzed week
+             */
+            avgCarryForwardPerWeek: number;
+            /** @description Top commit categories by DONE completion rate, ordered descending */
+            topCategories: string[];
+            /** @description DONE completion rate per CommitCategory */
+            categoryCompletionRates: {
+                [key: string]: number;
+            };
+            /** @description DONE completion rate per ChessPriority */
+            priorityCompletionRates: {
+                [key: string]: number;
+            };
+        };
+        /** @description Behavioural preference signals derived from the user's planning history. */
+        UserPreferences: {
+            /** @description Average weekly chess-priority mix, for example `1K-2Q-3R` */
+            typicalPriorityPattern: string;
+            /** @description Commonly repeated commit titles from recent history */
+            recurringCommitTitles: string[];
+            /**
+             * Format: double
+             * @description Average number of progress entries recorded per analyzed week
+             */
+            avgCheckInsPerWeek: number;
+            /** @description Day-of-week names ordered by frequency descending */
+            preferredUpdateDays: string[];
+        };
+        /** @description Directional trend signals comparing recent performance with earlier history. */
+        UserTrends: {
+            /**
+             * @description Trend in the fraction of commits linked to RCDO outcomes
+             * @enum {string}
+             */
+            strategicAlignmentTrend: "IMPROVING" | "STABLE" | "WORSENING";
+            /**
+             * @description Trend in commit completion reliability
+             * @enum {string}
+             */
+            completionTrend: "IMPROVING" | "STABLE" | "WORSENING";
+            /**
+             * @description Trend in carry-forward velocity
+             * @enum {string}
+             */
+            carryForwardTrend: "IMPROVING" | "STABLE" | "WORSENING";
+        };
+        /**
+         * @description Multi-week commit activity for a single RCDO outcome.
+         *
+         *     Contains an ordered list of per-week data points (oldest first) and
+         *     a derived `trendDirection` comparing the two most recent weeks.
+         */
+        OutcomeCoverageTimeline: {
+            /** @description Ordered per-week data points, oldest first */
+            weeks: components["schemas"]["OutcomeCoverageWeek"][];
+            /**
+             * @description Derived trend from the most recent two weeks.
+             *     `RISING` when the latest week commit count exceeds the prior week;
+             *     `FALLING` when it is lower; `STABLE` when equal or fewer than two
+             *     data points are available.
+             * @enum {string}
+             */
+            trendDirection: "RISING" | "FALLING" | "STABLE";
+        };
+        /**
+         * @description A single week's commit activity for a specific RCDO outcome.
+         *
+         *     Sourced from the `mv_outcome_coverage_weekly` materialized view.
+         *     Weeks with no data produce a row with zero counts.
+         */
+        OutcomeCoverageWeek: {
+            /**
+             * Format: date
+             * @description ISO-8601 Monday date for this week (e.g. 2026-03-16)
+             */
+            weekStart: string;
+            /** @description Total strategic commits linked to the outcome this week */
+            commitCount: number;
+            /** @description Distinct contributors who made commits linked to the outcome this week */
+            contributorCount: number;
+            /** @description Commits with chess priority KING or QUEEN this week */
+            highPriorityCount: number;
+        };
+        /**
+         * @description Team-level carry-forward heatmap showing how many commits each direct
+         *     report carried forward each week over the analysis window.
+         *
+         *     Users are ordered by userId; weeks within each user row are ordered
+         *     oldest first.
+         */
+        CarryForwardHeatmap: {
+            /** @description Team member rows, one per direct report */
+            users: components["schemas"]["HeatmapUser"][];
+        };
+        /**
+         * @description A row in the carry-forward heatmap representing one team member.
+         *
+         *     `weekCells` contains an ordered list of per-week carry-forward counts
+         *     (oldest first). Weeks with no data produce a cell with `carriedCount: 0`.
+         */
+        HeatmapUser: {
+            /**
+             * Format: uuid
+             * @description The team member's user ID
+             */
+            userId: string;
+            /** @description Human-readable name from the org-graph / HRIS */
+            displayName: string;
+            /** @description Ordered per-week carry-forward counts, oldest first */
+            weekCells: components["schemas"]["HeatmapCell"][];
+        };
+        /**
+         * @description A single cell in the carry-forward heatmap, representing one user's
+         *     carry-forward count for one week.
+         */
+        HeatmapCell: {
+            /**
+             * Format: date
+             * @description ISO-8601 Monday date for this cell's week (e.g. 2026-03-16)
+             */
+            weekStart: string;
+            /** @description Number of commits the user carried forward into this week */
+            carriedCount: number;
+        };
+        /**
+         * @description Per-user commit category distribution shift between the prior and
+         *     recent halves of the analysis window.
+         *
+         *     Proportions in `currentDistribution` and `priorDistribution` sum to
+         *     approximately 1.0 per user.
+         */
+        UserCategoryShift: {
+            /**
+             * Format: uuid
+             * @description The team member's user ID
+             */
+            userId: string;
+            /** @description Category → proportion mapping for the recent half-window */
+            currentDistribution: {
+                [key: string]: number;
+            };
+            /** @description Category → proportion mapping for the prior half-window */
+            priorDistribution: {
+                [key: string]: number;
+            };
+            biggestShift: components["schemas"]["CategoryShift"];
+        };
+        /**
+         * @description The single largest shift in commit category distribution for a user
+         *     between the prior half-window and the recent half-window.
+         */
+        CategoryShift: {
+            /**
+             * @description The commit category name that changed the most (e.g. `DELIVERY`,
+             *     `OPERATIONS`, `ENABLEMENT`, `LEARNING`)
+             */
+            category: string;
+            /**
+             * Format: double
+             * @description Signed change in proportion (recent − prior).
+             *     Positive values indicate the category increased; negative values
+             *     indicate it decreased.
+             */
+            delta: number;
+        };
+        /**
+         * @description Per-user estimation accuracy metrics. Compares a team member's stated
+         *     confidence against their actual completion rate across reconciled
+         *     planning weeks.
+         *
+         *     Sourced from the `mv_user_weekly_summary` materialized view.
+         */
+        UserEstimationAccuracy: {
+            /**
+             * Format: uuid
+             * @description The team member's user ID
+             */
+            userId: string;
+            /**
+             * Format: double
+             * @description Average confidence score across reconciled weeks. Values are in
+             *     [0, 1] where 1.0 represents full confidence.
+             */
+            avgConfidence: number;
+            /**
+             * Format: double
+             * @description Ratio of DONE commits to total commits across reconciled weeks.
+             *     Values are in [0, 1].
+             */
+            completionRate: number;
+            /**
+             * Format: double
+             * @description `avgConfidence − completionRate`. Positive values indicate
+             *     systematic over-confidence; negative values indicate
+             *     under-confidence.
+             */
+            calibrationGap: number;
+        };
+        /**
+         * @description A single rule-based prediction produced by evaluating historical
+         *     patterns from the analytics materialized views and current plan state.
+         *
+         *     Only predictions where `likely: true` are returned by the API
+         *     (actionable alerts only).
+         */
+        Prediction: {
+            /**
+             * @description The prediction type identifier:
+             *     - `CARRY_FORWARD`    — pattern of carrying too many items forward
+             *     - `LATE_LOCK`        — habitual late plan submission on lock day
+             *     - `COVERAGE_DECLINE` — strategic outcome coverage declining 3+ consecutive weeks
+             * @enum {string}
+             */
+            type: "CARRY_FORWARD" | "LATE_LOCK" | "COVERAGE_DECLINE";
+            /**
+             * @description `true` when the rule conditions are met (this prediction is
+             *     actionable). The API only returns predictions where `likely` is
+             *     `true`.
+             */
+            likely: boolean;
+            /**
+             * @description Confidence level of the prediction:
+             *     - `HIGH`   — strong rule signal based on clear historical pattern
+             *     - `MEDIUM` — moderate signal; context may vary
+             *     - `LOW`    — weak signal; informational only
+             * @enum {string}
+             */
+            confidence: "HIGH" | "MEDIUM" | "LOW";
+            /** @description Human-readable explanation of why the prediction was made */
+            reason: string;
+        };
+        /**
+         * @description A single milestone within an outcome's milestone-based progress tracking.
+         *     Milestone objects are stored as a JSONB array in the `milestones` field
+         *     of OutcomeMetadataRequest/OutcomeMetadataResponse.
+         */
+        Milestone: {
+            /** @description Human-readable name of the milestone (e.g. "Alpha release") */
+            name: string;
+            /**
+             * @description Relative weight of this milestone when computing overall progress.
+             *     Defaults to 1.0 if omitted. Higher-weight milestones contribute
+             *     proportionally more to the overall progress percentage.
+             * @default 1
+             */
+            weight: number;
+            /**
+             * @description Current completion status of the milestone:
+             *     - `PENDING`     — not yet started
+             *     - `IN_PROGRESS` — work is in progress
+             *     - `DONE`        — milestone has been completed
+             * @enum {string}
+             */
+            status: "PENDING" | "IN_PROGRESS" | "DONE";
+        };
+        /**
+         * @description Request body for creating or updating outcome metadata.
+         *
+         *     All fields are optional — omitted fields leave the existing persisted
+         *     value unchanged on update. Set `targetDate` to null explicitly to
+         *     remove target-date tracking.
+         */
+        OutcomeMetadataRequest: {
+            /**
+             * Format: date
+             * @description Target completion date for the outcome (ISO-8601 date, e.g. 2026-12-31).
+             *     Set to null to remove target-date tracking; the urgency band will be
+             *     set to `NO_TARGET` on the next recomputation.
+             */
+            targetDate?: string | null;
+            /**
+             * @description Progress tracking model:
+             *     - `ACTIVITY`  — progress is derived from linked weekly commit activity (default)
+             *     - `METRIC`    — progress is tracked via a numeric metric (`currentValue` / `targetValue`)
+             *     - `MILESTONE` — progress is derived from milestone completion (`milestones` array)
+             * @enum {string}
+             */
+            progressType?: "ACTIVITY" | "METRIC" | "MILESTONE";
+            /** @description Descriptive name of the tracked metric (METRIC type only, e.g. "ARR" or "NPS") */
+            metricName?: string | null;
+            /** @description Numeric goal value for the metric (METRIC type only) */
+            targetValue?: number | null;
+            /** @description Current metric value (METRIC type only) */
+            currentValue?: number | null;
+            /** @description Unit of measurement, e.g. "%" or "USD" (METRIC type only) */
+            unit?: string | null;
+            /**
+             * @description JSON-encoded array of milestone objects (stored as JSONB). Each
+             *     object conforms to the `Milestone` schema. Example:
+             *     `[{"name":"Alpha","weight":1.0,"status":"DONE"},{"name":"Beta","weight":2.0,"status":"PENDING"}]`
+             *     (MILESTONE type only)
+             */
+            milestones?: string | null;
+        };
+        /**
+         * @description Full outcome metadata record including computed urgency fields.
+         *
+         *     The `urgencyBand`, `progressPct`, and `lastComputedAt` fields are null
+         *     when urgency has not been computed yet (i.e., immediately after creation
+         *     before the first scheduled or on-demand recomputation).
+         */
+        OutcomeMetadataResponse: {
+            /**
+             * Format: uuid
+             * @description UUID of the organisation this record belongs to
+             */
+            orgId: string;
+            /**
+             * Format: uuid
+             * @description UUID of the RCDO outcome
+             */
+            outcomeId: string;
+            /**
+             * Format: date
+             * @description Target completion date for the outcome; null if not set
+             */
+            targetDate?: string | null;
+            /**
+             * @description Progress tracking model in use for this outcome
+             * @enum {string}
+             */
+            progressType: "ACTIVITY" | "METRIC" | "MILESTONE";
+            /** @description Descriptive name of the tracked metric; null when not applicable */
+            metricName?: string | null;
+            /** @description Numeric goal value; null when not applicable */
+            targetValue?: number | null;
+            /** @description Current metric value; null when not applicable */
+            currentValue?: number | null;
+            /** @description Unit of measurement; null when not applicable */
+            unit?: string | null;
+            /** @description Raw JSON-encoded array of milestone objects; null when not applicable */
+            milestones?: string | null;
+            /**
+             * @description Computed progress percentage (0–100). Null when urgency has not been
+             *     computed yet.
+             */
+            progressPct?: number | null;
+            /**
+             * @description Computed urgency classification. Null when urgency has not been
+             *     computed yet.
+             *
+             *     | Band              | Meaning                                                           |
+             *     |-------------------|-------------------------------------------------------------------|
+             *     | `NO_TARGET`       | No target date is set for this outcome                           |
+             *     | `ON_TRACK`        | Progress gap (expected − actual) is < 10%                        |
+             *     | `NEEDS_ATTENTION` | Progress gap is 10%–25%                                          |
+             *     | `AT_RISK`         | Progress gap is > 25%                                            |
+             *     | `CRITICAL`        | Due today or overdue, OR ≤ 30 days remaining with < 50% progress |
+             * @enum {string|null}
+             */
+            urgencyBand?: "NO_TARGET" | "ON_TRACK" | "NEEDS_ATTENTION" | "AT_RISK" | "CRITICAL" | null;
+            /**
+             * Format: date-time
+             * @description ISO-8601 UTC timestamp of the last urgency computation; null if not yet computed
+             */
+            lastComputedAt?: string | null;
+            /**
+             * Format: date-time
+             * @description ISO-8601 UTC timestamp when this metadata record was created
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description ISO-8601 UTC timestamp of the last update to this record
+             */
+            updatedAt: string;
+        };
+        /**
+         * @description Lightweight progress update request. Both fields are optional — supply
+         *     only the ones that need updating.
+         */
+        ProgressUpdateRequest: {
+            /** @description Updated current value of the tracked metric; null if unchanged */
+            currentValue?: number | null;
+            /**
+             * @description Updated JSON-encoded array of milestone objects. Replaces the
+             *     entire existing milestones array; null if unchanged.
+             */
+            milestones?: string | null;
+        };
+        /**
+         * @description Urgency snapshot for a single RCDO outcome.
+         *
+         *     Produced by the urgency computation pipeline and consumed by downstream
+         *     phases without depending on outcome metadata internals.
+         */
+        UrgencyInfo: {
+            /**
+             * Format: uuid
+             * @description UUID of the RCDO outcome
+             */
+            outcomeId: string;
+            /** @description Display name of the outcome */
+            outcomeName: string;
+            /**
+             * Format: date
+             * @description Target completion date; null if no target date is set
+             */
+            targetDate?: string | null;
+            /** @description Current progress percentage (0–100); null if not yet computed */
+            progressPct?: number | null;
+            /**
+             * @description Expected progress percentage at today's date assuming linear
+             *     progression from start to target date. Null when no target date
+             *     is set.
+             */
+            expectedProgressPct?: number | null;
+            /**
+             * @description Computed urgency classification for this outcome
+             * @enum {string}
+             */
+            urgencyBand: "NO_TARGET" | "ON_TRACK" | "NEEDS_ATTENTION" | "AT_RISK" | "CRITICAL";
+            /**
+             * @description Calendar days from today to the target date. Negative when the
+             *     target date is in the past (overdue). Set to the minimum integer
+             *     value (`Long.MIN_VALUE`) when no target date is set.
+             */
+            daysRemaining: number;
+        };
+        /**
+         * @description Strategic slack summary derived from the distribution of urgency bands
+         *     across the organisation's RCDO outcome portfolio.
+         *
+         *     The `strategicFocusFloor` is the recommended minimum fraction of weekly
+         *     commits that should target strategic outcomes, computed from the ratio
+         *     of at-risk and critical outcomes.
+         */
+        SlackInfo: {
+            /**
+             * @description High-level slack classification:
+             *     - `HIGH_SLACK`     — low urgency pressure; floor ≤ 0.55
+             *     - `MODERATE_SLACK` — moderate urgency pressure; 0.56 ≤ floor ≤ 0.70
+             *     - `LOW_SLACK`      — high urgency pressure; 0.71 ≤ floor ≤ 0.85
+             *     - `NO_SLACK`       — critical urgency pressure; 0.86 ≤ floor ≤ 0.95
+             * @enum {string}
+             */
+            slackBand: "HIGH_SLACK" | "MODERATE_SLACK" | "LOW_SLACK" | "NO_SLACK";
+            /**
+             * @description Computed strategic focus floor in the range 0.50–0.95. Represents
+             *     the recommended minimum fraction of commits that should be linked
+             *     to strategic RCDO outcomes given the current urgency landscape.
+             */
+            strategicFocusFloor: number;
+            /** @description Number of outcomes currently in the AT_RISK urgency band */
+            atRiskCount: number;
+            /** @description Number of outcomes currently in the CRITICAL urgency band */
+            criticalCount: number;
+        };
+        /**
+         * @description Response payload for the urgency summary endpoint.
+         *     Contains a list of urgency snapshots for all tracked RCDO outcomes in
+         *     the authenticated user's organisation.
+         */
+        UrgencySummaryResponse: {
+            /**
+             * @description Urgency snapshots for all outcomes that have a configured target date.
+             *     Ordered by urgency severity (CRITICAL first) then by days remaining
+             *     ascending.
+             */
+            outcomes: components["schemas"]["UrgencyInfo"][];
+        };
+        /** @description Response payload for the strategic slack endpoint. */
+        StrategicSlackResponse: {
+            slack: components["schemas"]["SlackInfo"];
+        };
+        /** @description Warning about a detected overcommitment in a user's plan. */
+        OvercommitWarning: {
+            /**
+             * @description Overcommitment severity
+             * @enum {string}
+             */
+            level: "NONE" | "MODERATE" | "HIGH";
+            /** @description Human-readable overcommitment warning message shown in the UI */
+            message: string;
+            /**
+             * Format: double
+             * @description Bias-adjusted total hour estimate for the plan
+             */
+            adjustedTotal?: number | null;
+            /**
+             * Format: double
+             * @description The user's p50 realistic weekly capacity cap
+             */
+            realisticCap?: number | null;
+        };
     };
     responses: {
         /** @description Missing or invalid JWT */
@@ -1951,6 +2964,8 @@ export interface components {
         IdempotencyKey: string;
         /** @description Optimistic lock version number */
         IfMatch: number;
+        /** @description UUID of the RCDO outcome */
+        OutcomeIdPath: string;
     };
     requestBodies: never;
     headers: never;
@@ -3150,6 +4165,370 @@ export interface operations {
                 };
                 content?: never;
             };
+        };
+    };
+    quickUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description UUID of the weekly plan to check in against */
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuickUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Batch check-in recorded successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuickUpdateResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getCheckInOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInOptionRequest"];
+            };
+        };
+        responses: {
+            /** @description Check-in options returned (may be empty on fallback) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckInOptionsResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getUserProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User profile returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserProfileResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getOutcomeCoverage: {
+        parameters: {
+            query: {
+                /** @description UUID of the RCDO outcome to analyse */
+                outcomeId: string;
+                /** @description Rolling-window size in weeks (1–26, default 8) */
+                weeks?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Outcome coverage timeline returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutcomeCoverageTimeline"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getCarryForwardHeatmap: {
+        parameters: {
+            query?: {
+                /** @description Rolling-window size in weeks (1–26, default 8) */
+                weeks?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Carry-forward heatmap returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarryForwardHeatmap"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getCategoryShifts: {
+        parameters: {
+            query?: {
+                /** @description Rolling-window size in weeks (1–26, default 8) */
+                weeks?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Category shift analysis returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserCategoryShift"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getEstimationAccuracy: {
+        parameters: {
+            query?: {
+                /** @description Rolling-window size in weeks (1–26, default 8) */
+                weeks?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Estimation accuracy distribution returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserEstimationAccuracy"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getUserPredictions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description UUID of the user to generate predictions for */
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /**
+             * @description Predictions returned. An empty array is returned when no prediction
+             *     rules fire for the given user.
+             */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Prediction"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    listOutcomeMetadata: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of outcome metadata records returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutcomeMetadataResponse"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getOutcomeMetadata: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description UUID of the RCDO outcome */
+                outcomeId: components["parameters"]["OutcomeIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Outcome metadata returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutcomeMetadataResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    upsertOutcomeMetadata: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description UUID of the RCDO outcome */
+                outcomeId: components["parameters"]["OutcomeIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OutcomeMetadataRequest"];
+            };
+        };
+        responses: {
+            /** @description Outcome metadata created or updated; urgency recomputed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutcomeMetadataResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    updateOutcomeProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description UUID of the RCDO outcome */
+                outcomeId: components["parameters"]["OutcomeIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgressUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Progress updated; urgency recomputed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutcomeMetadataResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getUrgencySummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Urgency summary returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UrgencySummaryResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getStrategicSlack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Strategic slack returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategicSlackResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
         };
     };
 }

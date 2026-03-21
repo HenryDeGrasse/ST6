@@ -175,6 +175,33 @@ describe("QuickUpdateFlow", () => {
     expect(textarea).toHaveValue("Making great progress on this task");
   });
 
+  it("marks manually edited notes as user typed when submitting", async () => {
+    renderWithFlags(<QuickUpdateFlow {...defaultProps} />);
+
+    fireEvent.click(screen.getByTestId("quick-update-status-ON_TRACK"));
+    fireEvent.change(screen.getByTestId("quick-update-note-input"), {
+      target: { value: "Working through rollout checklist" },
+    });
+
+    fireEvent.click(screen.getByTestId("quick-update-next"));
+    fireEvent.click(screen.getByTestId("quick-update-status-ON_TRACK"));
+    fireEvent.click(screen.getByTestId("quick-update-next"));
+    fireEvent.click(screen.getByTestId("quick-update-status-ON_TRACK"));
+    fireEvent.click(screen.getByTestId("quick-update-submit"));
+
+    await waitFor(() => {
+      expect(mockSubmitBatchUpdate).toHaveBeenCalledWith("plan-1", expect.arrayContaining([
+        expect.objectContaining({
+          commitId: "commit-1",
+          note: "Working through rollout checklist",
+          noteSource: "USER_TYPED",
+          selectedSuggestionText: null,
+          selectedSuggestionSource: null,
+        }),
+      ]));
+    });
+  });
+
   // ── (9) Submit All calls submitBatchUpdate with correct updates ──────────
 
   it("Submit All on the last card calls submitBatchUpdate with correct updates", async () => {
@@ -198,10 +225,65 @@ describe("QuickUpdateFlow", () => {
 
     await waitFor(() => {
       expect(mockSubmitBatchUpdate).toHaveBeenCalledWith("plan-1", [
-        { commitId: "commit-1", status: "ON_TRACK", note: "" },
-        { commitId: "commit-2", status: "AT_RISK", note: "" },
-        { commitId: "commit-3", status: "BLOCKED", note: "" },
+        {
+          commitId: "commit-1",
+          status: "ON_TRACK",
+          note: "",
+          noteSource: "UNKNOWN",
+          selectedSuggestionText: null,
+          selectedSuggestionSource: null,
+        },
+        {
+          commitId: "commit-2",
+          status: "AT_RISK",
+          note: "",
+          noteSource: "UNKNOWN",
+          selectedSuggestionText: null,
+          selectedSuggestionSource: null,
+        },
+        {
+          commitId: "commit-3",
+          status: "BLOCKED",
+          note: "",
+          noteSource: "UNKNOWN",
+          selectedSuggestionText: null,
+          selectedSuggestionSource: null,
+        },
       ]);
+    });
+  });
+
+  it("submits AI chip selections with suggestion provenance metadata", async () => {
+    mockFetchCheckInOptions.mockResolvedValue({
+      status: "ok",
+      statusOptions: ["ON_TRACK", "AT_RISK", "BLOCKED", "DONE_EARLY"],
+      progressOptions: [{ text: "Blocked on API review", source: "ai" }],
+    });
+
+    renderWithFlags(<QuickUpdateFlow {...defaultProps} />);
+
+    fireEvent.click(screen.getByTestId("quick-update-status-BLOCKED"));
+
+    const suggestionChip = await screen.findByRole("button", { name: "Blocked on API review" });
+    fireEvent.click(suggestionChip);
+
+    fireEvent.click(screen.getByTestId("quick-update-next"));
+    fireEvent.click(screen.getByTestId("quick-update-status-ON_TRACK"));
+    fireEvent.click(screen.getByTestId("quick-update-next"));
+    fireEvent.click(screen.getByTestId("quick-update-status-ON_TRACK"));
+    fireEvent.click(screen.getByTestId("quick-update-submit"));
+
+    await waitFor(() => {
+      expect(mockSubmitBatchUpdate).toHaveBeenCalledWith("plan-1", expect.arrayContaining([
+        expect.objectContaining({
+          commitId: "commit-1",
+          status: "BLOCKED",
+          note: "Blocked on API review",
+          noteSource: "SUGGESTION_ACCEPTED",
+          selectedSuggestionText: "Blocked on API review",
+          selectedSuggestionSource: "ai",
+        }),
+      ]));
     });
   });
 

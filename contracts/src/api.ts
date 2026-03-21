@@ -14,6 +14,7 @@ import type {
   ManagerReview,
   RcdoCry,
   CheckInStatus,
+  CheckInEntry,
 } from "./types.js";
 
 // ─── Standard Error Envelope ────────────────────────────────
@@ -106,6 +107,44 @@ export interface UpdateActualRequest {
 export interface CheckInRequest {
   status: CheckInStatus;
   note?: string;
+}
+
+export type QuickUpdateNoteSource = "UNKNOWN" | "USER_TYPED" | "SUGGESTION_ACCEPTED";
+
+export interface QuickUpdateItem {
+  commitId: string;
+  status: CheckInStatus;
+  note?: string | null;
+  noteSource?: QuickUpdateNoteSource | null;
+  selectedSuggestionText?: string | null;
+  selectedSuggestionSource?: string | null;
+}
+
+export interface QuickUpdateRequest {
+  updates: QuickUpdateItem[];
+}
+
+export interface QuickUpdateResponse {
+  updatedCount: number;
+  entries: CheckInEntry[];
+}
+
+export interface CheckInOptionRequest {
+  commitId: string;
+  currentStatus?: string | null;
+  lastNote?: string | null;
+  daysSinceLastCheckIn?: number;
+}
+
+export interface CheckInOptionItem {
+  text: string;
+  source: string;
+}
+
+export interface CheckInOptionsResponse {
+  status: "ok";
+  statusOptions: CheckInStatus[];
+  progressOptions: CheckInOptionItem[];
 }
 
 // ─── Manager Endpoints ──────────────────────────────────────
@@ -320,6 +359,111 @@ export interface DraftFromHistoryResponse {
   planId: string;
   /** Ordered list of suggested commits added to the draft plan. */
   suggestedCommits: SuggestedCommit[];
+}
+
+// ─── User Profile (Phase 1) ────────────────────────────────
+
+export type TrendDirection = "IMPROVING" | "STABLE" | "WORSENING";
+
+export interface PerformanceProfile {
+  estimationAccuracy: number;
+  completionReliability: number;
+  avgCommitsPerWeek: number;
+  avgCarryForwardPerWeek: number;
+  topCategories: string[];
+  categoryCompletionRates: Record<string, number>;
+  priorityCompletionRates: Record<string, number>;
+}
+
+export interface UserPreferences {
+  typicalPriorityPattern: string;
+  recurringCommitTitles: string[];
+  avgCheckInsPerWeek: number;
+  preferredUpdateDays: string[];
+}
+
+export interface UserTrends {
+  strategicAlignmentTrend: TrendDirection;
+  completionTrend: TrendDirection;
+  carryForwardTrend: TrendDirection;
+}
+
+export interface UserProfileResponse {
+  userId: string;
+  weeksAnalyzed: number;
+  performanceProfile: PerformanceProfile | null;
+  preferences: UserPreferences | null;
+  trends: UserTrends | null;
+}
+
+// ─── Outcome Urgency (Phase 3) ─────────────────────────────
+
+export type OutcomeProgressType = "ACTIVITY" | "METRIC" | "MILESTONE";
+export type OutcomeUrgencyBand = "NO_TARGET" | "ON_TRACK" | "NEEDS_ATTENTION" | "AT_RISK" | "CRITICAL";
+export type StrategicSlackBand = "HIGH_SLACK" | "MODERATE_SLACK" | "LOW_SLACK" | "NO_SLACK";
+export type MilestoneStatus = "PENDING" | "IN_PROGRESS" | "DONE";
+
+export interface Milestone {
+  name: string;
+  weight?: number;
+  status: MilestoneStatus;
+}
+
+export interface OutcomeMetadataRequest {
+  targetDate?: string | null;
+  progressType?: OutcomeProgressType;
+  metricName?: string | null;
+  targetValue?: number | null;
+  currentValue?: number | null;
+  unit?: string | null;
+  milestones?: string | null;
+}
+
+export interface OutcomeMetadataResponse {
+  orgId: string;
+  outcomeId: string;
+  targetDate?: string | null;
+  progressType: OutcomeProgressType;
+  metricName?: string | null;
+  targetValue?: number | null;
+  currentValue?: number | null;
+  unit?: string | null;
+  milestones?: string | null;
+  progressPct?: number | null;
+  urgencyBand?: OutcomeUrgencyBand | null;
+  lastComputedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProgressUpdateRequest {
+  currentValue?: number | null;
+  milestones?: string | null;
+}
+
+export interface UrgencyInfo {
+  outcomeId: string;
+  outcomeName: string;
+  targetDate?: string | null;
+  progressPct?: number | null;
+  expectedProgressPct?: number | null;
+  urgencyBand: OutcomeUrgencyBand;
+  daysRemaining: number;
+}
+
+export interface SlackInfo {
+  slackBand: StrategicSlackBand;
+  strategicFocusFloor: number;
+  atRiskCount: number;
+  criticalCount: number;
+}
+
+export interface UrgencySummaryResponse {
+  outcomes: UrgencyInfo[];
+}
+
+export interface StrategicSlackResponse {
+  slack: SlackInfo;
 }
 
 // ─── Capacity Planning (Phase 4) ───────────────────────────

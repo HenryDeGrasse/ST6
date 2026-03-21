@@ -37,6 +37,16 @@ public class ProgressEntryEntity {
     @Column(name = "note", nullable = false, updatable = false, columnDefinition = "TEXT")
     private String note;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "note_source", nullable = false, updatable = false, length = 25)
+    private ProgressNoteSource noteSource;
+
+    @Column(name = "selected_suggestion_text", updatable = false, columnDefinition = "TEXT")
+    private String selectedSuggestionText;
+
+    @Column(name = "selected_suggestion_source", updatable = false, length = 50)
+    private String selectedSuggestionSource;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -45,11 +55,27 @@ public class ProgressEntryEntity {
     }
 
     public ProgressEntryEntity(UUID id, UUID orgId, UUID commitId, ProgressStatus status, String note) {
+        this(id, orgId, commitId, status, note, ProgressNoteSource.UNKNOWN, null, null);
+    }
+
+    public ProgressEntryEntity(
+            UUID id,
+            UUID orgId,
+            UUID commitId,
+            ProgressStatus status,
+            String note,
+            ProgressNoteSource noteSource,
+            String selectedSuggestionText,
+            String selectedSuggestionSource
+    ) {
         this.id = id;
         this.orgId = orgId;
         this.commitId = commitId;
         this.status = status;
         this.note = note == null ? "" : note;
+        this.noteSource = noteSource == null ? ProgressNoteSource.UNKNOWN : noteSource;
+        this.selectedSuggestionText = selectedSuggestionText;
+        this.selectedSuggestionSource = selectedSuggestionSource;
         this.createdAt = Instant.now();
     }
 
@@ -73,6 +99,18 @@ public class ProgressEntryEntity {
 
     public String getNote() {
         return note;
+    }
+
+    public ProgressNoteSource getNoteSource() {
+        return noteSource;
+    }
+
+    public String getSelectedSuggestionText() {
+        return selectedSuggestionText;
+    }
+
+    public String getSelectedSuggestionSource() {
+        return selectedSuggestionSource;
     }
 
     public Instant getCreatedAt() {
