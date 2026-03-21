@@ -1,24 +1,25 @@
 package com.weekly.ai;
 
-import com.weekly.rcdo.InMemoryRcdoClient;
-import com.weekly.rcdo.RcdoTree;
-import com.weekly.shared.CommitDataProvider;
-import com.weekly.shared.ManagerInsightDataProvider;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
-import java.time.Duration;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import com.weekly.rcdo.InMemoryRcdoClient;
+import com.weekly.rcdo.RcdoTree;
+import com.weekly.shared.CommitDataProvider;
+import com.weekly.shared.ManagerInsightDataProvider;
+import com.weekly.shared.TeamRcdoUsageProvider;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link DefaultAiSuggestionService}.
@@ -32,6 +33,7 @@ class DefaultAiSuggestionServiceTest {
     private AiCacheService cacheService;
     private CommitDataProvider commitDataProvider;
     private ManagerInsightDataProvider managerInsightDataProvider;
+    private TeamRcdoUsageProvider teamRcdoUsageProvider;
     private DefaultAiSuggestionService service;
 
     @BeforeEach
@@ -41,8 +43,14 @@ class DefaultAiSuggestionServiceTest {
         cacheService = new AiCacheService(Duration.ofHours(1));
         commitDataProvider = mock(CommitDataProvider.class);
         managerInsightDataProvider = mock(ManagerInsightDataProvider.class);
+        teamRcdoUsageProvider = mock(TeamRcdoUsageProvider.class);
+        // Default: empty team usage (no team context)
+        when(teamRcdoUsageProvider.getTeamRcdoUsage(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new TeamRcdoUsageProvider.TeamRcdoUsageResult(List.of(), Set.of()));
         service = new DefaultAiSuggestionService(
-                llmClient, rcdoClient, cacheService, commitDataProvider, managerInsightDataProvider
+                llmClient, rcdoClient, cacheService, commitDataProvider,
+                managerInsightDataProvider, teamRcdoUsageProvider
         );
     }
 
@@ -180,6 +188,61 @@ class DefaultAiSuggestionServiceTest {
             assertTrue(result.suggestions().isEmpty(),
                     "Hallucinated outcome IDs should be rejected");
         }
+
+        @Test
+        void usesQuarterCoverageForZeroCoveragePromptContext() {
+            String coveredThisQuarter = UUID.randomUUID().toString();
+            String uncoveredThisQuarter = UUID.randomUUID().toString();
+            RcdoTree tree = new RcdoTree(List.of(
+                    new RcdoTree.RallyCry("rc1", "Revenue Growth", List.of(
+                            new RcdoTree.Objective("obj1", "Enterprise Sales", "rc1", List.of(
+                                    new RcdoTree.Outcome(coveredThisQuarter, "Covered Outcome", "obj1"),
+                                    new RcdoTree.Outcome(uncoveredThisQuarter, "Uncovered Outcome", "obj1")
+                            ))
+                    ))
+            ));
+            rcdoClient.setTree(ORG_ID, tree);
+            when(teamRcdoUsageProvider.getTeamRcdoUsage(
+                    org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                    .thenReturn(new TeamRcdoUsageProvider.TeamRcdoUsageResult(List.of(), Set.of(coveredThisQuarter)));
+
+            class CapturingLlmClient implements LlmClient {
+                private List<Message> lastMessages = List.of();
+
+                @Override
+                public String complete(List<Message> messages, String responseSchema) {
+                    this.lastMessages = messages;
+                    return "{\"suggestions\": []}";
+                }
+            }
+
+            CapturingLlmClient capturingLlmClient = new CapturingLlmClient();
+            DefaultAiSuggestionService localService = new DefaultAiSuggestionService(
+                    capturingLlmClient,
+                    rcdoClient,
+                    new AiCacheService(Duration.ofHours(1)),
+                    commitDataProvider,
+                    managerInsightDataProvider,
+                    teamRcdoUsageProvider
+            );
+
+            AiSuggestionService.SuggestionResult result = localService.suggestRcdo(
+                    ORG_ID, "Pipeline review", "Prioritise account coverage"
+            );
+
+            assertEquals("ok", result.status());
+            String assistantContent = capturingLlmClient.lastMessages.stream()
+                    .filter(message -> message.role() == LlmClient.Role.ASSISTANT)
+                    .findFirst()
+                    .map(LlmClient.Message::content)
+                    .orElseThrow();
+            String zeroCoverageSection = assistantContent.substring(
+                    assistantContent.indexOf("Outcomes with 0 commits from your team this quarter")
+            );
+            assertTrue(zeroCoverageSection.contains("- Uncovered Outcome\n"));
+            assertFalse(zeroCoverageSection.contains("- Covered Outcome\n"),
+                    "Quarter-covered outcomes should not appear in the zero-coverage prompt section");
+        }
     }
 
     @Nested
@@ -206,7 +269,8 @@ class DefaultAiSuggestionServiceTest {
             when(commitDataProvider.getCommitSummaries(eq(ORG_ID), eq(planId)))
                     .thenReturn(List.of(
                             new CommitDataProvider.CommitSummary(
-                                    commitId.toString(), "Ship feature", "Feature shipped", "In progress"
+                                    commitId.toString(), "Ship feature", "Feature shipped",
+                                    "In progress", List.of(), List.of(), null
                             )
                     ));
 
@@ -219,6 +283,75 @@ class DefaultAiSuggestionServiceTest {
         }
 
         @Test
+        void invalidatesCachedDraftWhenCheckInContentChangesButCountDoesNot() {
+            UUID planId = UUID.randomUUID();
+            UUID commitId = UUID.randomUUID();
+
+            when(commitDataProvider.planExists(eq(ORG_ID), eq(planId))).thenReturn(true);
+            when(commitDataProvider.getCommitSummaries(eq(ORG_ID), eq(planId)))
+                    .thenReturn(
+                            List.of(new CommitDataProvider.CommitSummary(
+                                    commitId.toString(),
+                                    "Ship feature",
+                                    "Feature shipped",
+                                    "In progress",
+                                    List.of(new CommitDataProvider.CheckInEntry("AT_RISK", "blocked by API")),
+                                    List.of("PARTIALLY"),
+                                    "DELIVERY: 50% DONE (team, last 4 wks)"
+                            )),
+                            List.of(new CommitDataProvider.CommitSummary(
+                                    commitId.toString(),
+                                    "Ship feature",
+                                    "Feature shipped",
+                                    "In progress",
+                                    List.of(new CommitDataProvider.CheckInEntry("AT_RISK", "unblocked after fix")),
+                                    List.of("PARTIALLY"),
+                                    "DELIVERY: 50% DONE (team, last 4 wks)"
+                            ))
+                    );
+
+            class CountingLlmClient implements LlmClient {
+                private int callCount;
+
+                @Override
+                public String complete(List<Message> messages, String responseSchema) {
+                    callCount++;
+                    return String.format("""
+                            {
+                              "drafts": [
+                                {
+                                  "commitId": "%s",
+                                  "suggestedStatus": "PARTIALLY",
+                                  "suggestedDeltaReason": "Check-in context changed",
+                                  "suggestedActualResult": "Made partial progress"
+                                }
+                              ]
+                            }""", commitId);
+                }
+
+                int callCount() {
+                    return callCount;
+                }
+            }
+
+            CountingLlmClient countingLlmClient = new CountingLlmClient();
+            DefaultAiSuggestionService localService = new DefaultAiSuggestionService(
+                    countingLlmClient,
+                    rcdoClient,
+                    new AiCacheService(Duration.ofHours(1)),
+                    commitDataProvider,
+                    managerInsightDataProvider,
+                    teamRcdoUsageProvider
+            );
+
+            localService.draftReconciliation(ORG_ID, planId);
+            localService.draftReconciliation(ORG_ID, planId);
+
+            assertEquals(2, countingLlmClient.callCount(),
+                    "Cache key should change when check-in content changes, even if the entry count is unchanged");
+        }
+
+        @Test
         void returnsUnavailableWhenLlmDown() {
             UUID planId = UUID.randomUUID();
             UUID commitId = UUID.randomUUID();
@@ -227,7 +360,8 @@ class DefaultAiSuggestionServiceTest {
             when(commitDataProvider.getCommitSummaries(eq(ORG_ID), eq(planId)))
                     .thenReturn(List.of(
                             new CommitDataProvider.CommitSummary(
-                                    commitId.toString(), "Ship feature", "Feature shipped", ""
+                                    commitId.toString(), "Ship feature", "Feature shipped",
+                                    "", List.of(), List.of(), null
                             )
                     ));
 
@@ -248,7 +382,9 @@ class DefaultAiSuggestionServiceTest {
         void returnsManagerInsightsFromLlm() {
             UUID managerId = UUID.randomUUID();
             LocalDate weekStart = LocalDate.of(2026, 3, 9);
-            when(managerInsightDataProvider.getManagerWeekContext(eq(ORG_ID), eq(managerId), eq(weekStart)))
+            when(managerInsightDataProvider.getManagerWeekContext(
+                    eq(ORG_ID), eq(managerId), eq(weekStart),
+                    eq(ManagerInsightDataProvider.DEFAULT_WINDOW_WEEKS)))
                     .thenReturn(new ManagerInsightDataProvider.ManagerWeekContext(
                             weekStart.toString(),
                             new ManagerInsightDataProvider.ReviewCounts(1, 2, 0),
@@ -273,7 +409,11 @@ class DefaultAiSuggestionServiceTest {
                                     4,
                                     1,
                                     2
-                            ))
+                            )),
+                            List.of(),
+                            List.of(),
+                            List.of(),
+                            null
                     ));
 
             AiSuggestionService.ManagerInsightsResult result =

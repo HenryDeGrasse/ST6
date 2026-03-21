@@ -9,9 +9,15 @@ const localStorageMock = (() => {
   let store: Map<string, string> = new Map();
   return {
     getItem: vi.fn((key: string) => store.get(key) ?? null),
-    setItem: vi.fn((key: string, value: string) => { store.set(key, value); }),
-    removeItem: vi.fn((key: string) => { store.delete(key); }),
-    clear: vi.fn(() => { store = new Map(); }),
+    setItem: vi.fn((key: string, value: string) => {
+      store.set(key, value);
+    }),
+    removeItem: vi.fn((key: string) => {
+      store.delete(key);
+    }),
+    clear: vi.fn(() => {
+      store = new Map();
+    }),
   };
 })();
 
@@ -27,7 +33,9 @@ const ThemeConsumer: React.FC = () => {
   return (
     <div>
       <span data-testid="current-theme">{theme}</span>
-      <button data-testid="toggle-btn" onClick={toggleTheme}>Toggle</button>
+      <button data-testid="toggle-btn" onClick={toggleTheme}>
+        Toggle
+      </button>
     </div>
   );
 };
@@ -74,11 +82,15 @@ describe("ThemeContext", () => {
     );
 
     // Toggle to light
-    act(() => { screen.getByTestId("toggle-btn").click(); });
+    act(() => {
+      screen.getByTestId("toggle-btn").click();
+    });
     expect(screen.getByTestId("current-theme")).toHaveTextContent("light");
 
     // Toggle back to dark
-    act(() => { screen.getByTestId("toggle-btn").click(); });
+    act(() => {
+      screen.getByTestId("toggle-btn").click();
+    });
     expect(screen.getByTestId("current-theme")).toHaveTextContent("dark");
   });
 
@@ -123,9 +135,7 @@ describe("ThemeContext", () => {
   it("throws when useTheme is used outside ThemeProvider", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-    expect(() => render(<ThemeConsumer />)).toThrow(
-      "useTheme must be used within a ThemeProvider",
-    );
+    expect(() => render(<ThemeConsumer />)).toThrow("useTheme must be used within a ThemeProvider");
 
     spy.mockRestore();
   });

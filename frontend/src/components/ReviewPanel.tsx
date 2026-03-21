@@ -13,17 +13,12 @@ export interface ReviewPanelProps {
  * Manager review panel for approving or requesting changes on a plan.
  * Disables "Request Changes" if carry-forward has been executed (PRD §6).
  */
-export const ReviewPanel: React.FC<ReviewPanelProps> = ({
-  plan,
-  onSubmitReview,
-  loading,
-}) => {
+export const ReviewPanel: React.FC<ReviewPanelProps> = ({ plan, onSubmitReview, loading }) => {
   const [comments, setComments] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   const canReview =
-    plan.reviewStatus === ReviewStatus.REVIEW_PENDING ||
-    plan.reviewStatus === ReviewStatus.CHANGES_REQUESTED;
+    plan.reviewStatus === ReviewStatus.REVIEW_PENDING || plan.reviewStatus === ReviewStatus.CHANGES_REQUESTED;
   const canRequestChanges = plan.carryForwardExecutedAt === null;
   const hasComments = comments.trim().length > 0;
 
@@ -77,7 +72,9 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
         <button
           type="button"
           data-testid="approve-btn"
-          onClick={() => { void handleSubmit("APPROVED"); }}
+          onClick={() => {
+            void handleSubmit("APPROVED");
+          }}
           disabled={loading || !hasComments}
           className={`${styles.btn} ${styles.approveBtn}`}
         >
@@ -86,7 +83,9 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
         <button
           type="button"
           data-testid="request-changes-btn"
-          onClick={() => { void handleSubmit("CHANGES_REQUESTED"); }}
+          onClick={() => {
+            void handleSubmit("CHANGES_REQUESTED");
+          }}
           disabled={loading || !hasComments || !canRequestChanges}
           title={
             canRequestChanges

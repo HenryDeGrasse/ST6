@@ -20,24 +20,20 @@ const CATEGORY_LABELS: Record<CommitCategory, string> = {
 
 /** Maps a CommitCategory value to the matching dot CSS class. */
 const CATEGORY_DOT_CLASS: Record<CommitCategory, string> = {
-  [CommitCategory.DELIVERY]:   styles.dotDelivery,
+  [CommitCategory.DELIVERY]: styles.dotDelivery,
   [CommitCategory.OPERATIONS]: styles.dotOperations,
-  [CommitCategory.CUSTOMER]:   styles.dotCustomer,
-  [CommitCategory.GTM]:        styles.dotGtm,
-  [CommitCategory.PEOPLE]:     styles.dotPeople,
-  [CommitCategory.LEARNING]:   styles.dotLearning,
-  [CommitCategory.TECH_DEBT]:  styles.dotTechDebt,
+  [CommitCategory.CUSTOMER]: styles.dotCustomer,
+  [CommitCategory.GTM]: styles.dotGtm,
+  [CommitCategory.PEOPLE]: styles.dotPeople,
+  [CommitCategory.LEARNING]: styles.dotLearning,
+  [CommitCategory.TECH_DEBT]: styles.dotTechDebt,
 };
 
 /**
  * Category dropdown for a commitment.
  * Shows a colour-coded dot next to the select when a category is chosen.
  */
-export const CategoryPicker: React.FC<CategoryPickerProps> = ({
-  value,
-  onChange,
-  disabled = false,
-}) => {
+export const CategoryPicker: React.FC<CategoryPickerProps> = ({ value, onChange, disabled = false }) => {
   return (
     <div className={styles.wrapper}>
       <select

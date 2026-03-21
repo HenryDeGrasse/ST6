@@ -1,6 +1,9 @@
 package com.weekly.rcdo;
 
 import com.weekly.auth.AuthenticatedUserContext;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -8,10 +11,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 /**
  * REST controller for RCDO hierarchy browsing and search.
@@ -69,7 +68,12 @@ public class RcdoController {
                 && !activeProfiles.contains("test")) {
             return ResponseEntity.notFound().build();
         }
-        if (rcdoClient instanceof InMemoryRcdoClient inMemory) {
+        // Unwrap Caffeine decorator if present so the instanceof check still works.
+        RcdoClient actual = rcdoClient;
+        if (actual instanceof CachingRcdoClientDecorator decorator) {
+            actual = decorator.getDelegate();
+        }
+        if (actual instanceof InMemoryRcdoClient inMemory) {
             var orgId = authenticatedUserContext.orgId();
             inMemory.unmarkStale(orgId);
             return ResponseEntity.ok(Map.of("status", "refreshed", "orgId", orgId.toString()));

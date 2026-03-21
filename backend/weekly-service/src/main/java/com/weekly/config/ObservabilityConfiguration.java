@@ -2,10 +2,9 @@ package com.weekly.config;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Observability configuration for weekly-service metrics.

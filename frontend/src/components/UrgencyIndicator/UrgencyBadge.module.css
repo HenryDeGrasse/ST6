@@ -1,0 +1,70 @@
+/**
+ * UrgencyBadge – CSS Module (Academia / Classical)
+ *
+ * Small inline badge for RCDO outcome urgency bands.
+ * Follows the project's badge/severity chip pattern from PlanQualityNudge.
+ */
+
+/* ─── Base badge ─────────────────────────────────────────────────────────── */
+
+.badge {
+  display:        inline-flex;
+  align-items:    center;
+  border-radius:  var(--wc-radius-sm);
+  font-family:    var(--wc-font-display);
+  font-weight:    600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space:    nowrap;
+  flex-shrink:    0;
+  line-height:    1;
+}
+
+/* ─── Size variants ──────────────────────────────────────────────────────── */
+
+.sm {
+  padding:   0.1rem 0.4rem;
+  font-size: 0.5625rem;   /* 9px */
+}
+
+.md {
+  padding:   0.2rem 0.55rem;
+  font-size: 0.6875rem;   /* 11px */
+}
+
+/* ─── Band colour variants ───────────────────────────────────────────────── */
+
+/* ON_TRACK — green (success) */
+.onTrack {
+  background-color: var(--wc-color-success-bg);
+  color:            var(--wc-color-success);
+  border:           1px solid var(--wc-color-success-border);
+}
+
+/* NEEDS_ATTENTION — yellow / brass (warning) */
+.needsAttention {
+  background-color: var(--wc-color-warning-bg);
+  color:            var(--wc-color-warning);
+  border:           1px solid var(--wc-color-warning-border);
+}
+
+/* AT_RISK — orange (between warning and error) */
+.atRisk {
+  background-color: rgba(210, 130, 60, 0.18);
+  color:            #D2823C;
+  border:           1px solid rgba(210, 130, 60, 0.35);
+}
+
+/* CRITICAL — red (error) */
+.critical {
+  background-color: var(--wc-color-error-bg);
+  color:            var(--wc-color-error);
+  border:           1px solid var(--wc-color-error-border);
+}
+
+/* NO_TARGET — muted gray */
+.noTarget {
+  background-color: rgba(122, 110, 98, 0.18);
+  color:            var(--wc-color-text-muted);
+  border:           1px solid rgba(122, 110, 98, 0.30);
+}

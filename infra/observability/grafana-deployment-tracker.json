@@ -1,0 +1,285 @@
+{
+  "dashboard": {
+    "title": "WC Deployment Tracker",
+    "description": "Weekly Commitments – Deployment history, canary metrics, rollback tracking, and feature flags (PRD §14.3)",
+    "tags": ["weekly-commitments", "deployment-tracker"],
+    "timezone": "utc",
+    "refresh": "1m",
+    "panels": [
+      {
+        "title": "Recent Deployments",
+        "type": "table",
+        "gridPos": { "x": 0, "y": 0, "w": 14, "h": 6 },
+        "targets": [
+          {
+            "expr": "sort_desc(last_over_time(deployment_info{application=\"weekly-service\"}[7d]))",
+            "legendFormat": "",
+            "instant": true
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "short" },
+          "overrides": [
+            {
+              "matcher": { "id": "byName", "options": "timestamp" },
+              "properties": [{ "id": "unit", "value": "dateTimeAsIso" }]
+            },
+            {
+              "matcher": { "id": "byName", "options": "status" },
+              "properties": [
+                {
+                  "id": "custom.displayMode",
+                  "value": "color-background"
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    { "type": "value", "options": { "success": { "color": "green" } } },
+                    { "type": "value", "options": { "failed": { "color": "red" } } },
+                    { "type": "value", "options": { "in_progress": { "color": "yellow" } } }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "title": "Current Deployment Version",
+        "type": "stat",
+        "gridPos": { "x": 14, "y": 0, "w": 5, "h": 3 },
+        "targets": [
+          {
+            "expr": "max(deployment_info{application=\"weekly-service\"})",
+            "legendFormat": "version"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "string" }
+        }
+      },
+      {
+        "title": "Last Deploy Time",
+        "type": "stat",
+        "gridPos": { "x": 19, "y": 0, "w": 5, "h": 3 },
+        "targets": [
+          {
+            "expr": "max(deployment_timestamp_seconds{application=\"weekly-service\"})",
+            "legendFormat": "last deploy"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "dateTimeAsIso" }
+        }
+      },
+      {
+        "title": "Canary Error Rate",
+        "type": "timeseries",
+        "gridPos": { "x": 14, "y": 3, "w": 10, "h": 3 },
+        "targets": [
+          {
+            "expr": "sum(rate(http_server_requests_seconds_count{status=~\"5..\",application=\"weekly-service\",version=\"canary\"}[1m])) / sum(rate(http_server_requests_seconds_count{application=\"weekly-service\",version=\"canary\"}[1m]))",
+            "legendFormat": "canary error rate"
+          },
+          {
+            "expr": "sum(rate(http_server_requests_seconds_count{status=~\"5..\",application=\"weekly-service\",version=\"stable\"}[1m])) / sum(rate(http_server_requests_seconds_count{application=\"weekly-service\",version=\"stable\"}[1m]))",
+            "legendFormat": "stable error rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "percentunit" }
+        }
+      },
+      {
+        "title": "Canary Traffic Split",
+        "type": "gauge",
+        "gridPos": { "x": 0, "y": 6, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "sum(rate(http_server_requests_seconds_count{application=\"weekly-service\",version=\"canary\"}[5m])) / sum(rate(http_server_requests_seconds_count{application=\"weekly-service\"}[5m]))",
+            "legendFormat": "canary %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": 0 },
+                { "color": "yellow", "value": 0.1 },
+                { "color": "red", "value": 0.5 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Canary Latency (p95) vs Stable",
+        "type": "timeseries",
+        "gridPos": { "x": 6, "y": 6, "w": 10, "h": 4 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"weekly-service\",version=\"canary\"}[5m])) by (le))",
+            "legendFormat": "canary p95"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"weekly-service\",version=\"stable\"}[5m])) by (le))",
+            "legendFormat": "stable p95"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "s" }
+        }
+      },
+      {
+        "title": "Rollback Count (30d)",
+        "type": "stat",
+        "gridPos": { "x": 16, "y": 6, "w": 4, "h": 4 },
+        "targets": [
+          {
+            "expr": "sum(increase(deployment_rollback_total{application=\"weekly-service\"}[30d]))",
+            "legendFormat": "rollbacks"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": 0 },
+                { "color": "yellow", "value": 1 },
+                { "color": "red", "value": 3 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Rollback History",
+        "type": "table",
+        "gridPos": { "x": 20, "y": 6, "w": 4, "h": 4 },
+        "targets": [
+          {
+            "expr": "sort_desc(last_over_time(deployment_rollback_info{application=\"weekly-service\"}[30d]))",
+            "legendFormat": "",
+            "instant": true
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "short" }
+        }
+      },
+      {
+        "title": "Migration History (Applied)",
+        "type": "table",
+        "gridPos": { "x": 0, "y": 10, "w": 12, "h": 5 },
+        "targets": [
+          {
+            "expr": "sort_desc(last_over_time(db_migration_applied_info{application=\"weekly-service\"}[30d]))",
+            "legendFormat": "",
+            "instant": true
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "short" },
+          "overrides": [
+            {
+              "matcher": { "id": "byName", "options": "applied_at" },
+              "properties": [{ "id": "unit", "value": "dateTimeAsIso" }]
+            }
+          ]
+        }
+      },
+      {
+        "title": "Migration Execution Time",
+        "type": "timeseries",
+        "gridPos": { "x": 12, "y": 10, "w": 12, "h": 5 },
+        "targets": [
+          {
+            "expr": "db_migration_execution_seconds{application=\"weekly-service\"}",
+            "legendFormat": "{{ version }} {{ description }}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "s" }
+        }
+      },
+      {
+        "title": "Feature Flag Changes (24h)",
+        "type": "table",
+        "gridPos": { "x": 0, "y": 15, "w": 14, "h": 5 },
+        "targets": [
+          {
+            "expr": "sort_desc(last_over_time(feature_flag_change_info{application=\"weekly-service\"}[24h]))",
+            "legendFormat": "",
+            "instant": true
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "short" },
+          "overrides": [
+            {
+              "matcher": { "id": "byName", "options": "changed_at" },
+              "properties": [{ "id": "unit", "value": "dateTimeAsIso" }]
+            },
+            {
+              "matcher": { "id": "byName", "options": "new_value" },
+              "properties": [
+                {
+                  "id": "custom.displayMode",
+                  "value": "color-background"
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    { "type": "value", "options": { "true": { "color": "green" } } },
+                    { "type": "value", "options": { "false": { "color": "red" } } }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "title": "Active Feature Flags",
+        "type": "stat",
+        "gridPos": { "x": 14, "y": 15, "w": 5, "h": 5 },
+        "targets": [
+          {
+            "expr": "sum(feature_flag_enabled{application=\"weekly-service\"})",
+            "legendFormat": "enabled flags"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "short" }
+        }
+      },
+      {
+        "title": "Deployment Frequency (deploys/week)",
+        "type": "stat",
+        "gridPos": { "x": 19, "y": 15, "w": 5, "h": 5 },
+        "targets": [
+          {
+            "expr": "sum(increase(deployment_total{application=\"weekly-service\",status=\"success\"}[7d]))",
+            "legendFormat": "deploys/week"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                { "color": "red", "value": 0 },
+                { "color": "yellow", "value": 1 },
+                { "color": "green", "value": 3 }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  }
+}

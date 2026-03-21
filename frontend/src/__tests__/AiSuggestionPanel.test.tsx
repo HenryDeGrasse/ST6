@@ -17,39 +17,29 @@ function makeSuggestion(overrides: Partial<RcdoSuggestion> = {}): RcdoSuggestion
 
 describe("AiSuggestionPanel", () => {
   it("renders nothing when idle", () => {
-    const { container } = render(
-      <AiSuggestionPanel suggestions={[]} status="idle" onAccept={vi.fn()} />,
-    );
+    const { container } = render(<AiSuggestionPanel suggestions={[]} status="idle" onAccept={vi.fn()} />);
     expect(container.innerHTML).toBe("");
   });
 
   it("shows loading indicator", () => {
-    render(
-      <AiSuggestionPanel suggestions={[]} status="loading" onAccept={vi.fn()} />,
-    );
+    render(<AiSuggestionPanel suggestions={[]} status="loading" onAccept={vi.fn()} />);
     expect(screen.getByTestId("ai-suggestion-loading")).toBeInTheDocument();
     expect(screen.getByText(/Finding relevant outcomes/)).toBeInTheDocument();
   });
 
   it("shows rate limit message", () => {
-    render(
-      <AiSuggestionPanel suggestions={[]} status="rate_limited" onAccept={vi.fn()} />,
-    );
+    render(<AiSuggestionPanel suggestions={[]} status="rate_limited" onAccept={vi.fn()} />);
     expect(screen.getByTestId("ai-suggestion-rate-limited")).toBeInTheDocument();
   });
 
   it("renders nothing when unavailable", () => {
-    const { container } = render(
-      <AiSuggestionPanel suggestions={[]} status="unavailable" onAccept={vi.fn()} />,
-    );
+    const { container } = render(<AiSuggestionPanel suggestions={[]} status="unavailable" onAccept={vi.fn()} />);
     expect(container.innerHTML).toBe("");
   });
 
   it("renders suggestions with confidence and rationale", () => {
     const suggestion = makeSuggestion();
-    render(
-      <AiSuggestionPanel suggestions={[suggestion]} status="ok" onAccept={vi.fn()} />,
-    );
+    render(<AiSuggestionPanel suggestions={[suggestion]} status="ok" onAccept={vi.fn()} />);
     expect(screen.getByTestId("ai-suggestion-panel")).toBeInTheDocument();
     // Outcome name is the headline
     expect(screen.getByText(/Close Q1 deals/)).toBeInTheDocument();
@@ -66,9 +56,7 @@ describe("AiSuggestionPanel", () => {
   it("calls onAccept when a suggestion is clicked", () => {
     const suggestion = makeSuggestion();
     const onAccept = vi.fn();
-    render(
-      <AiSuggestionPanel suggestions={[suggestion]} status="ok" onAccept={onAccept} />,
-    );
+    render(<AiSuggestionPanel suggestions={[suggestion]} status="ok" onAccept={onAccept} />);
     fireEvent.click(screen.getByTestId("ai-suggestion-0"));
     expect(onAccept).toHaveBeenCalledWith(suggestion);
   });
@@ -78,21 +66,13 @@ describe("AiSuggestionPanel", () => {
       makeSuggestion({ outcomeId: "a", confidence: 0.9, outcomeName: "Outcome A" }),
       makeSuggestion({ outcomeId: "b", confidence: 0.7, outcomeName: "Outcome B" }),
     ];
-    render(
-      <AiSuggestionPanel suggestions={suggestions} status="ok" onAccept={vi.fn()} />,
-    );
+    render(<AiSuggestionPanel suggestions={suggestions} status="ok" onAccept={vi.fn()} />);
     expect(screen.getByTestId("ai-suggestion-0")).toBeInTheDocument();
     expect(screen.getByTestId("ai-suggestion-1")).toBeInTheDocument();
   });
 
   it("labels panel as AI Suggestions", () => {
-    render(
-      <AiSuggestionPanel
-        suggestions={[makeSuggestion()]}
-        status="ok"
-        onAccept={vi.fn()}
-      />,
-    );
+    render(<AiSuggestionPanel suggestions={[makeSuggestion()]} status="ok" onAccept={vi.fn()} />);
     expect(screen.getByText(/AI Suggestions/)).toBeInTheDocument();
   });
 });

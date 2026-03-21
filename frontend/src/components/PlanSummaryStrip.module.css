@@ -52,7 +52,7 @@
   font-family:    var(--wc-font-display);
   font-size:      0.5625rem;
   font-weight:    600;
-  color:          var(--wc-color-text-muted);
+  color:          var(--wc-color-text-primary);
   margin-top:     0.125rem;
   text-transform: uppercase;
   letter-spacing: 0.2em;

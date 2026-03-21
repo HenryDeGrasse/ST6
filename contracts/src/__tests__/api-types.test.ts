@@ -10,7 +10,15 @@ import type {
   SuggestRcdoResponse,
   DraftReconciliationResponse,
   PaginatedResponse,
+  OrgPolicy,
+  UpdateDigestConfigRequest,
+  AdoptionMetrics,
+  WeeklyAdoptionPoint,
+  AiUsageMetrics,
+  RcdoHealthReport,
+  OutcomeHealthItem,
 } from "../api.js";
+import type { NextWorkSuggestionsResponse, SuggestionFeedbackRequest } from "../types.js";
 import { ErrorCode } from "../errors.js";
 import { ChessPriority, CompletionStatus, PlanState, ReviewStatus, CommitCategory } from "../enums.js";
 
@@ -176,6 +184,35 @@ describe("DraftReconciliationResponse", () => {
   });
 });
 
+describe("NextWorkSuggestionsResponse", () => {
+  it("supports the roadmap alias for next-work suggestions", () => {
+    const resp: NextWorkSuggestionsResponse = {
+      status: "ok",
+      suggestions: [
+        {
+          suggestionId: "suggestion-1",
+          title: "Follow up on activation fixes",
+          suggestedOutcomeId: "outcome-1",
+          suggestedChessPriority: ChessPriority.QUEEN,
+          confidence: 0.82,
+          source: "CARRY_FORWARD",
+          sourceDetail: "Carried from the previous week",
+          rationale: "This was not completed last week and remains strategically important.",
+        },
+      ],
+    };
+    const feedback: SuggestionFeedbackRequest = {
+      suggestionId: resp.suggestions[0].suggestionId,
+      action: "ACCEPT",
+      sourceType: resp.suggestions[0].source,
+      sourceDetail: resp.suggestions[0].sourceDetail,
+    };
+
+    expect(resp.suggestions[0].suggestedChessPriority).toBe("QUEEN");
+    expect(feedback.action).toBe("ACCEPT");
+  });
+});
+
 describe("PaginatedResponse", () => {
   it("wraps any content type", () => {
     const page: PaginatedResponse<string> = {
@@ -186,5 +223,170 @@ describe("PaginatedResponse", () => {
       totalPages: 1,
     };
     expect(page.content).toHaveLength(2);
+  });
+});
+
+describe("OrgPolicy", () => {
+  it("contains all required fields including digest schedule", () => {
+    const policy: OrgPolicy = {
+      chessKingRequired: true,
+      chessMaxKing: 1,
+      chessMaxQueen: 2,
+      lockDay: "MONDAY",
+      lockTime: "10:00",
+      reconcileDay: "FRIDAY",
+      reconcileTime: "16:00",
+      blockLockOnStaleRcdo: true,
+      rcdoStalenessThresholdMinutes: 60,
+      digestDay: "FRIDAY",
+      digestTime: "17:00",
+    };
+
+    expect(policy.digestDay).toBe("FRIDAY");
+    expect(policy.digestTime).toBe("17:00");
+    expect(policy.chessMaxKing).toBe(1);
+    expect(policy.chessMaxQueen).toBe(2);
+  });
+
+  it("supports Monday digest schedule for start-of-week summaries", () => {
+    const policy: OrgPolicy = {
+      chessKingRequired: true,
+      chessMaxKing: 1,
+      chessMaxQueen: 2,
+      lockDay: "MONDAY",
+      lockTime: "10:00",
+      reconcileDay: "FRIDAY",
+      reconcileTime: "16:00",
+      blockLockOnStaleRcdo: true,
+      rcdoStalenessThresholdMinutes: 60,
+      digestDay: "MONDAY",
+      digestTime: "08:00",
+    };
+
+    expect(policy.digestDay).toBe("MONDAY");
+    expect(policy.digestTime).toBe("08:00");
+  });
+});
+
+describe("UpdateDigestConfigRequest", () => {
+  it("requires digestDay and digestTime", () => {
+    const req: UpdateDigestConfigRequest = {
+      digestDay: "FRIDAY",
+      digestTime: "17:00",
+    };
+
+    expect(req.digestDay).toBe("FRIDAY");
+    expect(req.digestTime).toBe("17:00");
+  });
+
+  it("supports any valid day of week", () => {
+    const days = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
+    for (const day of days) {
+      const req: UpdateDigestConfigRequest = { digestDay: day, digestTime: "09:00" };
+      expect(req.digestDay).toBe(day);
+    }
+  });
+});
+
+describe("AdoptionMetrics", () => {
+  it("contains rolling-window metadata and weekly points", () => {
+    const point: WeeklyAdoptionPoint = {
+      weekStart: "2026-03-09",
+      activeUsers: 10,
+      plansCreated: 10,
+      plansLocked: 8,
+      plansReconciled: 6,
+      plansReviewed: 5,
+    };
+
+    const metrics: AdoptionMetrics = {
+      weeks: 8,
+      windowStart: "2026-01-26",
+      windowEnd: "2026-03-16",
+      totalActiveUsers: 15,
+      cadenceComplianceRate: 0.85,
+      weeklyPoints: [point],
+    };
+
+    expect(metrics.weeks).toBe(8);
+    expect(metrics.cadenceComplianceRate).toBeGreaterThan(0);
+    expect(metrics.weeklyPoints).toHaveLength(1);
+    expect(metrics.weeklyPoints[0].plansLocked).toBe(8);
+  });
+});
+
+describe("AiUsageMetrics", () => {
+  it("contains feedback counts and cache statistics", () => {
+    const metrics: AiUsageMetrics = {
+      weeks: 8,
+      windowStart: "2026-01-26",
+      windowEnd: "2026-03-16",
+      totalFeedbackCount: 100,
+      acceptedCount: 60,
+      deferredCount: 25,
+      declinedCount: 15,
+      acceptanceRate: 0.6,
+      cacheHits: 500,
+      cacheMisses: 200,
+      cacheHitRate: 0.714,
+      approximateTokensSpent: 200000,
+      approximateTokensSaved: 500000,
+    };
+
+    expect(metrics.acceptanceRate).toBe(0.6);
+    expect(metrics.cacheHitRate).toBeGreaterThan(0);
+    expect(metrics.approximateTokensSaved).toBeGreaterThan(metrics.approximateTokensSpent);
+  });
+});
+
+describe("RcdoHealthReport", () => {
+  it("contains covered and stale outcomes", () => {
+    const item: OutcomeHealthItem = {
+      outcomeId: "o1",
+      outcomeName: "Increase Revenue",
+      objectiveId: "obj1",
+      objectiveName: "Grow Market",
+      rallyCryId: "rc1",
+      rallyCryName: "Dominate Q1",
+      commitCount: 12,
+    };
+
+    const report: RcdoHealthReport = {
+      generatedAt: "2026-03-19T12:00:00Z",
+      windowWeeks: 8,
+      totalOutcomes: 10,
+      coveredOutcomes: 7,
+      topOutcomes: [item],
+      staleOutcomes: [],
+    };
+
+    expect(report.totalOutcomes).toBe(10);
+    expect(report.coveredOutcomes).toBe(7);
+    expect(report.topOutcomes).toHaveLength(1);
+    expect(report.topOutcomes[0].commitCount).toBe(12);
+    expect(report.staleOutcomes).toHaveLength(0);
+  });
+
+  it("supports stale outcomes with zero commits", () => {
+    const staleItem: OutcomeHealthItem = {
+      outcomeId: "o2",
+      outcomeName: "Reduce Churn",
+      objectiveId: "obj2",
+      objectiveName: "Retain Customers",
+      rallyCryId: "rc1",
+      rallyCryName: "Dominate Q1",
+      commitCount: 0,
+    };
+
+    const report: RcdoHealthReport = {
+      generatedAt: "2026-03-19T12:00:00Z",
+      windowWeeks: 8,
+      totalOutcomes: 5,
+      coveredOutcomes: 3,
+      topOutcomes: [],
+      staleOutcomes: [staleItem],
+    };
+
+    expect(report.staleOutcomes[0].commitCount).toBe(0);
   });
 });

@@ -3,13 +3,19 @@ package com.weekly.plan.controller;
 import com.weekly.auth.AuthenticatedUserContext;
 import com.weekly.plan.dto.CarryForwardRequest;
 import com.weekly.plan.dto.CreateReviewRequest;
+import com.weekly.plan.dto.DraftFromHistoryRequest;
+import com.weekly.plan.dto.DraftFromHistoryResponse;
 import com.weekly.plan.dto.ManagerReviewResponse;
 import com.weekly.plan.dto.WeeklyPlanResponse;
+import com.weekly.plan.service.DraftFromHistoryService;
 import com.weekly.plan.service.PlanService;
 import com.weekly.plan.service.ReviewService;
 import com.weekly.shared.ApiErrorResponse;
 import com.weekly.shared.ErrorCode;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,10 +25,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * REST controller for weekly plan lifecycle operations.
@@ -38,15 +40,18 @@ public class PlanController {
 
     private final PlanService planService;
     private final ReviewService reviewService;
+    private final DraftFromHistoryService draftFromHistoryService;
     private final AuthenticatedUserContext authenticatedUserContext;
 
     public PlanController(
             PlanService planService,
             ReviewService reviewService,
+            DraftFromHistoryService draftFromHistoryService,
             AuthenticatedUserContext authenticatedUserContext
     ) {
         this.planService = planService;
         this.reviewService = reviewService;
+        this.draftFromHistoryService = draftFromHistoryService;
         this.authenticatedUserContext = authenticatedUserContext;
     }
 
@@ -165,5 +170,30 @@ public class PlanController {
                 request
         );
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/v1/plans/draft-from-history
+     *
+     * <p>Creates (or updates) a DRAFT plan for the requested week, pre-filled with
+     * AI-suggested commits derived from the user's last {@value DraftFromHistoryService#HISTORY_WEEKS}
+     * weeks of planning history.
+     *
+     * <p>Suggestions are tagged with their source: CARRIED_FORWARD (not-done items from the
+     * most recent reconciled plan), RECURRING (commit patterns appearing in 2+ consecutive weeks),
+     * or COVERAGE_GAP (reserved for future integration).
+     */
+    @PostMapping("/plans/draft-from-history")
+    public ResponseEntity<DraftFromHistoryResponse> draftFromHistory(
+            @Valid @RequestBody DraftFromHistoryRequest request
+    ) {
+        LocalDate weekStart = LocalDate.parse(request.weekStart());
+        DraftFromHistoryService.DraftFromHistoryResult result =
+                draftFromHistoryService.draftFromHistory(
+                        authenticatedUserContext.orgId(),
+                        authenticatedUserContext.userId(),
+                        weekStart
+                );
+        return ResponseEntity.ok(DraftFromHistoryResponse.from(result));
     }
 }

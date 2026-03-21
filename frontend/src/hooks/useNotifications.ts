@@ -2,10 +2,7 @@
  * Hook for in-app notifications (unread count, list, mark-read).
  */
 import { useState, useCallback } from "react";
-import type {
-  NotificationItem,
-  ApiErrorResponse,
-} from "@weekly-commitments/contracts";
+import type { NotificationItem, ApiErrorResponse } from "@weekly-commitments/contracts";
 import { useApiClient } from "../api/ApiContext.js";
 
 export interface UseNotificationsResult {
@@ -27,14 +24,11 @@ export function useNotifications(): UseNotificationsResult {
 
   const clearError = useCallback(() => setError(null), []);
 
-  const extractError = useCallback(
-    (resp: { error?: unknown; response: Response }): string => {
-      const err = resp.error as ApiErrorResponse | undefined;
-      if (err?.error?.message) return err.error.message;
-      return `Request failed (${String(resp.response.status)})`;
-    },
-    [],
-  );
+  const extractError = useCallback((resp: { error?: unknown; response: Response }): string => {
+    const err = resp.error as ApiErrorResponse | undefined;
+    if (err?.error?.message) return err.error.message;
+    return `Request failed (${String(resp.response.status)})`;
+  }, []);
 
   const fetchUnread = useCallback(async () => {
     setLoading(true);
@@ -60,9 +54,7 @@ export function useNotifications(): UseNotificationsResult {
           params: { path: { notificationId } },
         });
         if (resp.response.ok) {
-          setNotifications((prev) =>
-            prev.filter((n) => n.id !== notificationId),
-          );
+          setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
           return;
         }
         setError(extractError(resp));

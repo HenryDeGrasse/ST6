@@ -35,9 +35,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   const cancelBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    const previousActiveElement = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
+    const previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     cancelBtnRef.current?.focus();
 

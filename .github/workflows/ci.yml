@@ -42,6 +42,12 @@ jobs:
       - name: Typecheck (frontend + contracts + pa-host-stub)
         run: npm run typecheck
 
+      - name: Formatting (frontend)
+        run: npm run format:check
+
+      - name: Formatting (backend)
+        run: npm run format:backend
+
       - name: Lint (frontend + contracts + pa-host-stub)
         run: npm run lint --workspaces --if-present
 
@@ -69,10 +75,16 @@ jobs:
         run: npm ci
 
       - name: Unit tests (frontend workspaces)
+        # Note: `npm run test --workspaces` runs `vitest run --coverage` for the
+        # frontend workspace, which picks up ALL test files under src/__tests__/
+        # including accessibility.test.tsx (jest-axe component-level a11y audits).
+        # PRD §13.1: zero critical/serious a11y violations enforced here.
         run: npm run test --workspaces --if-present
 
       - name: Unit tests (backend)
         run: npm run unit:backend
+        # Note: unit:backend runs `./gradlew test jacocoTestReport jacocoTestCoverageVerification`
+        # which enforces PRD §13.2 Gate 2 coverage thresholds.
 
   migration-checks:
     name: 'Gate 3 – Migration Compatibility'
@@ -112,12 +124,24 @@ jobs:
           npm run generate:client
           git diff --exit-code src/generated/ || (echo 'Generated types are stale. Regenerate and commit.' && exit 1)
 
+      - name: Detect OpenAPI breaking changes
+        run: |
+          git fetch origin main --depth=1
+          if ! git show origin/main:contracts/openapi.yaml > /tmp/openapi-main.yaml 2>/dev/null; then
+            echo "No OpenAPI spec found on main branch – skipping breaking-change check."
+            exit 0
+          fi
+          ./scripts/openapi-diff.sh /tmp/openapi-main.yaml contracts/openapi.yaml
+
   security-checks:
     name: 'Gate 5 – Security'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history required for Gitleaks secret scanning across all commits
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -135,6 +159,70 @@ jobs:
 
       - name: Audit E2E dependencies
         run: npm run audit:e2e
+
+      - name: SAST scan (Semgrep)
+        # Equivalent CLI: semgrep scan --config auto --error --severity ERROR --severity WARNING
+        # (see scripts/semgrep-scan.sh for the verbatim command used in local dev)
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            auto
+        env:
+          # Set SEMGREP_APP_TOKEN in repository secrets for Semgrep App dashboard reporting (optional)
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Secret detection (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Set GITLEAKS_LICENSE in repository secrets if using Gitleaks Pro features
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+      - name: License compliance check (npm)
+        run: |
+          tmp_dir="$(mktemp -d)"
+          trap 'rm -rf "$tmp_dir"' EXIT
+
+          export LICENSE_CHECKER_TMP_DIR="$tmp_dir"
+          node <<'NODE'
+          const fs = require('fs');
+
+          const manifests = [
+            'package.json',
+            'contracts/package.json',
+            'frontend/package.json',
+            'pa-host-stub/package.json',
+          ];
+
+          const dependencies = {};
+          for (const manifest of manifests) {
+            const pkg = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+            Object.assign(dependencies, pkg.dependencies || {});
+          }
+
+          fs.writeFileSync(
+            `${process.env.LICENSE_CHECKER_TMP_DIR}/package.json`,
+            JSON.stringify(
+              {
+                name: 'license-checker-aggregate',
+                private: true,
+                dependencies,
+              },
+              null,
+              2,
+            ),
+          );
+          NODE
+
+          ln -s "$(pwd)/node_modules" "$tmp_dir/node_modules"
+
+          # Fail if any production npm dependency in the npm workspaces uses a copyleft license
+          npx --yes license-checker --production \
+            --start "$tmp_dir" \
+            --failOn 'GPL-2.0;GPL-3.0;AGPL-1.0;AGPL-3.0'
+          # TODO: Add Gradle license plugin (com.github.jk1.dependency-license-report)
+          #       to backend/weekly-service/build.gradle when the build system configuration
+          #       supports it, to enforce the same policy on Java dependencies.
 
   build:
     name: 'Gate 6 – Build'
@@ -165,10 +253,28 @@ jobs:
           cd backend/weekly-service
           docker build -t weekly-service:ci-${{ github.sha }} .
 
+      - name: Generate frontend SBOM
+        # PRD §13.3 – CycloneDX BOM for npm workspace packages
+        run: npm run sbom:frontend
+
+      - name: Generate backend SBOM
+        # PRD §13.3 – CycloneDX BOM for JVM runtime dependencies
+        run: cd backend/weekly-service && ./gradlew cyclonedxBom --no-daemon
+
+      - name: Upload SBOMs as build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: |
+            frontend-sbom.json
+            backend/weekly-service/build/reports/sbom.json
+          if-no-files-found: error
+          retention-days: 90
+
   e2e-smoke:
     name: 'Gate 7 – E2E Smoke'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     needs: [build]
     steps:
       - uses: actions/checkout@v4
@@ -178,14 +284,47 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
       - name: Install npm dependencies
         run: npm ci
 
       - name: Install E2E dependencies
         run: cd e2e && npm ci
 
+      - name: Start seeded local stack for API smoke tests
+        run: |
+          ./scripts/dev.sh --seed > ci-dev-stack.log 2>&1 &
+
+          for attempt in {1..90}; do
+            if curl -sf http://localhost:8080/actuator/health/liveness > /dev/null \
+              && curl -sf http://localhost:3000 > /dev/null; then
+              echo 'Seeded local stack is ready.'
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo 'Seeded local stack did not become ready in time.'
+          tail -n 200 ci-dev-stack.log || true
+          exit 1
+
       - name: Install Playwright browser
         run: cd e2e && npx playwright install --with-deps chromium
 
       - name: Run smoke tests
         run: npm run e2e:smoke
+
+      - name: Dump stack logs on failure
+        if: failure()
+        run: |
+          tail -n 200 ci-dev-stack.log || true
+          tail -n 200 backend/weekly-service/logs/bootRun.log || true
+          docker compose logs --tail=200 || true
+
+      - name: Stop local stack
+        if: always()
+        run: ./scripts/dev.sh --stop || true

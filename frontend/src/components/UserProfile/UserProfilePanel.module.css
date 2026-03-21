@@ -1,0 +1,286 @@
+/**
+ * UserProfilePanel – CSS Module (Academia / Classical)
+ * Collapsible user model profile panel using the same ai-insight
+ * design tokens as MyTrendsPanel.
+ */
+
+.panel {
+  padding:          var(--wc-space-sm) var(--wc-space-md);
+  border:           1.5px dashed var(--wc-ai-insight-border);
+  border-radius:    var(--wc-radius-md);
+  background-color: var(--wc-ai-insight-bg);
+  margin-bottom:    var(--wc-space-md);
+}
+
+/* ─── Header row ─────────────────────────────────────────────────────────── */
+
+.header {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  gap:             var(--wc-space-sm);
+  flex-wrap:       wrap;
+}
+
+.headerLeft {
+  display:     flex;
+  align-items: center;
+  gap:         var(--wc-space-xs);
+  flex-wrap:   wrap;
+}
+
+.profileIcon {
+  color:       var(--wc-ai-insight-text);
+  flex-shrink: 0;
+}
+
+.title {
+  font-family:    var(--wc-font-display);
+  font-size:      0.6875rem;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color:          var(--wc-ai-insight-text);
+  white-space:    nowrap;
+}
+
+.toggleButton {
+  display:          inline-flex;
+  align-items:      center;
+  gap:              var(--wc-space-xs);
+  padding:          0.3rem 0.75rem;
+  border-radius:    var(--wc-radius-sm);
+  border:           1px solid var(--wc-ai-insight-border);
+  background-color: var(--wc-color-bg-secondary);
+  color:            var(--wc-ai-insight-text);
+  font-family:      var(--wc-font-body);
+  font-size:        0.875rem;
+  font-weight:      500;
+  cursor:           pointer;
+  transition:       background-color var(--wc-transition-fast),
+                    border-color var(--wc-transition-fast);
+}
+
+.toggleButton:hover {
+  background-color: var(--wc-ai-insight-bg);
+  border-color:     var(--wc-color-accent);
+}
+
+.toggleButton:focus-visible {
+  outline:        2px solid var(--wc-color-accent);
+  outline-offset: 2px;
+}
+
+/* ─── Collapsed summary line ─────────────────────────────────────────────── */
+
+.summary {
+  margin-top: var(--wc-space-xs);
+  font-size:  0.875rem;
+  color:      var(--wc-color-text-muted);
+  font-style: italic;
+}
+
+/* ─── Loading / error / empty states ────────────────────────────────────── */
+
+.loading {
+  margin-top: var(--wc-space-sm);
+  font-size:  0.875rem;
+  color:      var(--wc-color-text-muted);
+  font-style: italic;
+}
+
+.errorMsg {
+  margin-top: var(--wc-space-sm);
+  font-size:  0.875rem;
+  color:      var(--wc-color-error);
+}
+
+.empty {
+  font-size:  0.875rem;
+  color:      var(--wc-color-text-muted);
+  font-style: italic;
+}
+
+/* ─── Content area ───────────────────────────────────────────────────────── */
+
+.content {
+  margin-top: var(--wc-space-md);
+}
+
+/* ─── Metric grid ────────────────────────────────────────────────────────── */
+
+.metricsGrid {
+  display:               grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap:                   var(--wc-space-sm);
+  margin-bottom:         var(--wc-space-md);
+}
+
+.metricCard {
+  padding:          var(--wc-space-xs) var(--wc-space-sm);
+  border:           1px solid var(--wc-ai-insight-border);
+  border-radius:    var(--wc-radius-sm);
+  background-color: var(--wc-color-bg-secondary);
+}
+
+.metricLabel {
+  font-family:    var(--wc-font-display);
+  font-size:      0.5625rem;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color:          var(--wc-color-text-muted);
+  margin-bottom:  0.15rem;
+}
+
+.metricValue {
+  font-family: var(--wc-font-body);
+  font-size:   1rem;
+  font-weight: 600;
+  color:       var(--wc-color-text-primary);
+  line-height: 1.3;
+}
+
+.metricSub {
+  font-size:  0.75rem;
+  color:      var(--wc-color-text-muted);
+  margin-top: 0.1rem;
+}
+
+/* ─── Section labels ─────────────────────────────────────────────────────── */
+
+.sectionLabel {
+  font-family:    var(--wc-font-display);
+  font-size:      0.5625rem;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color:          var(--wc-color-text-muted);
+  margin-bottom:  var(--wc-space-xs);
+}
+
+/* ─── Rates / bar charts ─────────────────────────────────────────────────── */
+
+.ratesSection {
+  margin-bottom: var(--wc-space-md);
+}
+
+.barList {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.375rem;
+}
+
+.barItem {
+  display:     flex;
+  align-items: center;
+  gap:         0.5rem;
+}
+
+.barLabel {
+  font-size:    0.8125rem;
+  color:        var(--wc-color-text-secondary);
+  min-width:    6rem;
+  flex-shrink:  0;
+  white-space:  nowrap;
+  overflow:     hidden;
+  text-overflow: ellipsis;
+}
+
+.barTrack {
+  flex:             1;
+  height:           6px;
+  background-color: var(--wc-color-bg-tertiary);
+  border-radius:    var(--wc-radius-full);
+  overflow:         hidden;
+}
+
+.barFill {
+  height:        100%;
+  background:    var(--wc-brass-gradient);
+  border-radius: var(--wc-radius-full);
+  transition:    width var(--wc-transition-base);
+}
+
+.barValue {
+  font-size:   0.75rem;
+  color:       var(--wc-color-text-muted);
+  min-width:   2.5rem;
+  text-align:  right;
+  flex-shrink: 0;
+}
+
+/* ─── Preferred update days ──────────────────────────────────────────────── */
+
+.daysSection {
+  margin-bottom: var(--wc-space-md);
+}
+
+.chipRow {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       0.375rem;
+}
+
+.dayChip {
+  display:          inline-flex;
+  align-items:      center;
+  padding:          0.1875rem 0.5625rem;
+  border-radius:    var(--wc-radius-full);
+  border:           1px solid var(--wc-ai-insight-border);
+  background-color: var(--wc-color-bg-secondary);
+  color:            var(--wc-ai-insight-text);
+  font-family:      var(--wc-font-display);
+  font-size:        0.6875rem;
+  font-weight:      600;
+  text-transform:   uppercase;
+  letter-spacing:   0.08em;
+  white-space:      nowrap;
+}
+
+/* ─── Trend badges ───────────────────────────────────────────────────────── */
+
+.trendsSection {
+  margin-bottom: var(--wc-space-sm);
+}
+
+.trendBadgeRow {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       0.375rem;
+}
+
+.trendBadge {
+  display:       inline-flex;
+  align-items:   center;
+  padding:       0.1875rem 0.5rem;
+  border-radius: var(--wc-radius-sm);
+  font-family:   var(--wc-font-display);
+  font-size:     0.5625rem;
+  font-weight:   600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space:    nowrap;
+  flex-shrink:    0;
+}
+
+/* IMPROVING = green */
+.badgeImproving {
+  background-color: rgba(var(--wc-color-success-rgb, 80, 160, 100), 0.12);
+  color:            var(--wc-color-success);
+  border:           1px solid rgba(var(--wc-color-success-rgb, 80, 160, 100), 0.25);
+}
+
+/* STABLE = blue */
+.badgeStable {
+  background-color: rgba(139, 170, 176, 0.15);
+  color:            #8BAAB0;
+  border:           1px solid rgba(139, 170, 176, 0.3);
+}
+
+/* WORSENING = orange */
+.badgeWorsening {
+  background-color: rgba(var(--wc-color-warning-rgb, 200, 140, 0), 0.12);
+  color:            var(--wc-color-warning);
+  border:           1px solid rgba(var(--wc-color-warning-rgb, 200, 140, 0), 0.25);
+}

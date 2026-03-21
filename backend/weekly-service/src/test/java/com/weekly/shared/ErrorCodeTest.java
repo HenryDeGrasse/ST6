@@ -1,9 +1,9 @@
 package com.weekly.shared;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Verifies ErrorCode enum aligns with the PRD Appendix A

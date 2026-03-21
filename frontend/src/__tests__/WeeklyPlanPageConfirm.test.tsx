@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { WeeklyPlanPage } from "../pages/WeeklyPlanPage.js";
+import { FeatureFlagProvider } from "../context/FeatureFlagContext.js";
 import { PlanState, ReviewStatus, ChessPriority } from "@weekly-commitments/contracts";
-import type { WeeklyPlan, WeeklyCommit } from "@weekly-commitments/contracts";
+import type { QualityNudge, WeeklyPlan, WeeklyCommit, NextWorkSuggestion } from "@weekly-commitments/contracts";
 
 /* ---- Mock data ---- */
 
@@ -54,6 +55,20 @@ function makeCommit(overrides: Partial<WeeklyCommit> = {}): WeeklyCommit {
   };
 }
 
+function makeNextWorkSuggestion(overrides: Partial<NextWorkSuggestion> = {}): NextWorkSuggestion {
+  return {
+    suggestionId: "next-work-1",
+    title: "Follow up on activation fixes",
+    suggestedOutcomeId: "outcome-1",
+    suggestedChessPriority: ChessPriority.QUEEN,
+    confidence: 0.82,
+    source: "CARRY_FORWARD",
+    sourceDetail: "Carried from the previous week",
+    rationale: "This was not completed last week and remains strategically important.",
+    ...overrides,
+  };
+}
+
 /* ---- Mock hooks ---- */
 
 const mockFetchPlan = vi.fn();
@@ -74,6 +89,16 @@ let mockPlan: WeeklyPlan | null = null;
 let mockCommits: WeeklyCommit[] = [];
 let mockPlanLoading = false;
 let mockCommitsLoading = false;
+let mockQualityNudges: QualityNudge[] = [];
+let mockQualityStatus: "idle" | "loading" | "ok" | "unavailable" | "rate_limited" = "idle";
+const mockCheckQuality = vi.fn();
+const mockClearQualityNudges = vi.fn();
+const mockFetchNextWorkSuggestions = vi.fn();
+const mockSubmitNextWorkFeedback = vi.fn();
+const mockDismissNextWorkSuggestion = vi.fn();
+const mockClearNextWorkSuggestions = vi.fn();
+let mockNextWorkSuggestions: NextWorkSuggestion[] = [];
+let mockNextWorkStatus: "idle" | "loading" | "ok" | "unavailable" | "rate_limited" = "idle";
 
 vi.mock("../hooks/usePlan.js", () => ({
   usePlan: () => ({
@@ -132,6 +157,82 @@ vi.mock("../hooks/useAiSuggestions.js", () => ({
   }),
 }));
 
+vi.mock("../hooks/useTrends.js", () => ({
+  useTrends: () => ({
+    trends: null,
+    loading: false,
+    error: null,
+    fetchTrends: vi.fn(),
+    clearError: vi.fn(),
+  }),
+}));
+
+vi.mock("../hooks/usePlanQualityCheck.js", () => ({
+  usePlanQualityCheck: () => ({
+    nudges: mockQualityNudges,
+    status: mockQualityStatus,
+    checkQuality: mockCheckQuality,
+    clearNudges: mockClearQualityNudges,
+  }),
+}));
+
+vi.mock("../hooks/useDraftFromHistory.js", () => ({
+  useDraftFromHistory: () => ({
+    status: "idle",
+    planId: null,
+    suggestedCommits: [],
+    error: null,
+    draftFromHistory: vi.fn().mockResolvedValue(null),
+    reset: vi.fn(),
+  }),
+}));
+
+vi.mock("../hooks/useNextWorkSuggestions.js", () => ({
+  useNextWorkSuggestions: () => ({
+    suggestions: mockNextWorkSuggestions,
+    status: mockNextWorkStatus,
+    fetchSuggestions: mockFetchNextWorkSuggestions,
+    submitFeedback: mockSubmitNextWorkFeedback,
+    dismissSuggestion: mockDismissNextWorkSuggestion,
+    clearSuggestions: mockClearNextWorkSuggestions,
+  }),
+}));
+
+vi.mock("../hooks/useCheckIn.js", () => ({
+  useCheckIn: () => ({
+    entries: [],
+    loading: false,
+    error: null,
+    addCheckIn: vi.fn().mockResolvedValue(null),
+    fetchCheckIns: vi.fn().mockResolvedValue(undefined),
+    clearEntries: vi.fn(),
+    clearError: vi.fn(),
+  }),
+}));
+
+vi.mock("../hooks/useUserProfile.js", () => ({
+  useUserProfile: () => ({
+    profile: null,
+    loading: false,
+    error: null,
+    fetchProfile: vi.fn().mockResolvedValue(undefined),
+    clearError: vi.fn(),
+  }),
+}));
+
+function renderWeeklyPlanPage(
+  flags?: Partial<{
+    planQualityNudge: boolean;
+    suggestNextWork: boolean;
+  }>,
+) {
+  return render(
+    <FeatureFlagProvider flags={flags}>
+      <WeeklyPlanPage />
+    </FeatureFlagProvider>,
+  );
+}
+
 describe("WeeklyPlanPage confirmation dialogs", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -139,23 +240,66 @@ describe("WeeklyPlanPage confirmation dialogs", () => {
     mockCommits = [];
     mockPlanLoading = false;
     mockCommitsLoading = false;
+    mockQualityNudges = [];
+    mockQualityStatus = "idle";
+    mockNextWorkSuggestions = [];
+    mockNextWorkStatus = "idle";
+    mockSubmitNextWorkFeedback.mockResolvedValue(true);
   });
 
   describe("Lock plan confirmation", () => {
     it("shows confirm dialog when Lock button is clicked", () => {
       mockPlan = makePlan({ state: PlanState.DRAFT });
-      render(<WeeklyPlanPage />);
+      renderWeeklyPlanPage();
 
       fireEvent.click(screen.getByTestId("lock-btn"));
 
       expect(screen.getByTestId("confirm-dialog")).toBeInTheDocument();
-      expect(screen.getByText("Lock this plan? Once locked, you cannot add or remove commitments.")).toBeInTheDocument();
+      expect(
+        screen.getByText("Lock this plan? Once locked, you cannot add or remove commitments."),
+      ).toBeInTheDocument();
+    });
+
+    it("shows the quality nudge before the confirm dialog when the flag is enabled", () => {
+      mockPlan = makePlan({ state: PlanState.DRAFT });
+      renderWeeklyPlanPage({ planQualityNudge: true });
+
+      fireEvent.click(screen.getByTestId("lock-btn"));
+
+      expect(mockCheckQuality).toHaveBeenCalledWith("plan-1");
+      expect(screen.getByTestId("plan-quality-nudge-dialog")).toBeInTheDocument();
+      expect(screen.queryByTestId("confirm-dialog")).not.toBeInTheDocument();
+    });
+
+    it("allows proceeding from the quality nudge to the confirm dialog", () => {
+      mockPlan = makePlan({ state: PlanState.DRAFT });
+      mockQualityStatus = "loading";
+      renderWeeklyPlanPage({ planQualityNudge: true });
+
+      fireEvent.click(screen.getByTestId("lock-btn"));
+      fireEvent.click(screen.getByTestId("plan-quality-nudge-lock-anyway"));
+
+      expect(mockClearQualityNudges).toHaveBeenCalledTimes(1);
+      expect(screen.queryByTestId("plan-quality-nudge-dialog")).not.toBeInTheDocument();
+      expect(screen.getByTestId("confirm-dialog")).toBeInTheDocument();
+    });
+
+    it("dismisses the quality nudge when Review Plan is clicked", () => {
+      mockPlan = makePlan({ state: PlanState.DRAFT });
+      renderWeeklyPlanPage({ planQualityNudge: true });
+
+      fireEvent.click(screen.getByTestId("lock-btn"));
+      fireEvent.click(screen.getByTestId("plan-quality-nudge-review"));
+
+      expect(mockClearQualityNudges).toHaveBeenCalledTimes(1);
+      expect(screen.queryByTestId("plan-quality-nudge-dialog")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("confirm-dialog")).not.toBeInTheDocument();
     });
 
     it("calls lockPlan when confirm is clicked", async () => {
       mockPlan = makePlan({ state: PlanState.DRAFT });
       mockLockPlan.mockResolvedValue(makePlan({ state: PlanState.LOCKED }));
-      render(<WeeklyPlanPage />);
+      renderWeeklyPlanPage();
 
       fireEvent.click(screen.getByTestId("lock-btn"));
       fireEvent.click(screen.getByTestId("confirm-dialog-confirm"));
@@ -167,7 +311,7 @@ describe("WeeklyPlanPage confirmation dialogs", () => {
 
     it("dismisses dialog when cancel is clicked", () => {
       mockPlan = makePlan({ state: PlanState.DRAFT });
-      render(<WeeklyPlanPage />);
+      renderWeeklyPlanPage();
 
       fireEvent.click(screen.getByTestId("lock-btn"));
       expect(screen.getByTestId("confirm-dialog")).toBeInTheDocument();
@@ -180,7 +324,7 @@ describe("WeeklyPlanPage confirmation dialogs", () => {
     it("keeps the normal lock label during commit loading", () => {
       mockPlan = makePlan({ state: PlanState.DRAFT });
       mockCommitsLoading = true;
-      render(<WeeklyPlanPage />);
+      renderWeeklyPlanPage();
 
       expect(screen.getByTestId("lock-btn")).toHaveTextContent("Lock Plan");
       expect(screen.getByTestId("lock-btn")).not.toHaveTextContent("Locking");
@@ -224,6 +368,57 @@ describe("WeeklyPlanPage confirmation dialogs", () => {
       fireEvent.click(screen.getByTestId("confirm-dialog-cancel"));
       expect(screen.queryByTestId("confirm-dialog")).not.toBeInTheDocument();
       expect(mockSubmitReconciliation).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Next-work suggestions", () => {
+    it("renders the AI-suggested work panel and fetches suggestions when enabled", async () => {
+      mockPlan = makePlan({ state: PlanState.DRAFT });
+      mockNextWorkSuggestions = [makeNextWorkSuggestion()];
+      mockNextWorkStatus = "ok";
+
+      renderWeeklyPlanPage({ suggestNextWork: true });
+
+      expect(screen.getByText("AI-Suggested Work")).toBeInTheDocument();
+      expect(screen.getByText("Follow up on activation fixes")).toBeInTheDocument();
+
+      await waitFor(() => {
+        expect(mockFetchNextWorkSuggestions).toHaveBeenCalledWith(expect.any(String));
+      });
+    });
+
+    it("accepts a next-work suggestion into the draft plan and records feedback", async () => {
+      const suggestion = makeNextWorkSuggestion();
+      mockPlan = makePlan({ state: PlanState.DRAFT });
+      mockNextWorkSuggestions = [suggestion];
+      mockNextWorkStatus = "ok";
+      mockCreateCommit.mockResolvedValue(makeCommit({ id: "new-commit" }));
+      mockSubmitNextWorkFeedback.mockResolvedValue(true);
+
+      renderWeeklyPlanPage({ suggestNextWork: true });
+
+      fireEvent.click(screen.getByTestId(`next-work-accept-${suggestion.suggestionId}`));
+
+      await waitFor(() => {
+        expect(mockCreateCommit).toHaveBeenCalledWith(
+          "plan-1",
+          expect.objectContaining({
+            title: suggestion.title,
+            chessPriority: suggestion.suggestedChessPriority,
+            outcomeId: suggestion.suggestedOutcomeId,
+            tags: ["draft_source:CARRIED_FORWARD"],
+          }),
+        );
+      });
+
+      await waitFor(() => {
+        expect(mockSubmitNextWorkFeedback).toHaveBeenCalledWith({
+          suggestionId: suggestion.suggestionId,
+          action: "ACCEPT",
+          sourceType: suggestion.source,
+          sourceDetail: suggestion.sourceDetail,
+        });
+      });
     });
   });
 

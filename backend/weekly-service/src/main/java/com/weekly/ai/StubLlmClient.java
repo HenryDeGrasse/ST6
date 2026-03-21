@@ -31,6 +31,14 @@ public class StubLlmClient implements LlmClient {
             }
         }
 
+        // Next-work suggestion re-ranking request
+        for (Message msg : messages) {
+            if (msg.role() == Role.ASSISTANT
+                    && msg.content().contains("Candidate suggestions to re-rank")) {
+                return buildDefaultNextWorkResponse(msg.content());
+            }
+        }
+
         // Extract the candidate outcomes from the ASSISTANT context message
         // and return a response suggesting the first one
         for (Message msg : messages) {
@@ -47,6 +55,33 @@ public class StubLlmClient implements LlmClient {
         }
 
         return "{\"suggestions\": []}";
+    }
+
+    private String buildDefaultNextWorkResponse(String candidateContext) {
+        // Parse all suggestionId values from the context and return them ranked
+        java.util.regex.Pattern idPattern =
+                java.util.regex.Pattern.compile("suggestionId:\\s*(\\S+)\\s*\\|");
+        java.util.regex.Matcher m = idPattern.matcher(candidateContext);
+        StringBuilder sb = new StringBuilder("{\"rankedSuggestions\": [");
+        boolean first = true;
+        double confidence = 0.90;
+        while (m.find()) {
+            String id = m.group(1);
+            if (!first) {
+                sb.append(",");
+            }
+            sb.append(String.format("""
+                    {
+                      "suggestionId": "%s",
+                      "confidence": %.2f,
+                      "suggestedChessPriority": "QUEEN",
+                      "rationale": "High-impact item identified by strategic analysis"
+                    }""", id, confidence));
+            first = false;
+            confidence = Math.max(0.50, confidence - 0.05);
+        }
+        sb.append("]}");
+        return sb.toString();
     }
 
     private String buildDefaultSuggestResponse(String candidateContext) {

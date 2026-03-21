@@ -14,10 +14,7 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
  * Filter controls for the manager team dashboard.
  * Filters: state, outcomeId, priority, category, incomplete, nonStrategic.
  */
-export const TeamDashboardFiltersPanel: React.FC<TeamDashboardFiltersProps> = ({
-  filters,
-  onFiltersChange,
-}) => {
+export const TeamDashboardFiltersPanel: React.FC<TeamDashboardFiltersProps> = ({ filters, onFiltersChange }) => {
   const [outcomeInput, setOutcomeInput] = useState(filters.outcomeId ?? "");
 
   useEffect(() => {
@@ -51,18 +48,22 @@ export const TeamDashboardFiltersPanel: React.FC<TeamDashboardFiltersProps> = ({
     <div data-testid="team-filters" className={styles.filterRow}>
       <select
         data-testid="filter-state"
+        aria-label="Filter by plan state"
         value={filters.state ?? ""}
         onChange={(e) => update({ state: e.target.value || undefined })}
         className={styles.select}
       >
         <option value="">All States</option>
         {Object.values(PlanState).map((s) => (
-          <option key={s} value={s}>{s}</option>
+          <option key={s} value={s}>
+            {s}
+          </option>
         ))}
       </select>
 
       <input
         data-testid="filter-outcome-id"
+        aria-label="Filter by outcome ID"
         type="text"
         value={outcomeInput}
         onChange={(e) => handleOutcomeChange(e.target.value)}
@@ -73,25 +74,31 @@ export const TeamDashboardFiltersPanel: React.FC<TeamDashboardFiltersProps> = ({
 
       <select
         data-testid="filter-priority"
+        aria-label="Filter by chess priority"
         value={filters.priority ?? ""}
         onChange={(e) => update({ priority: e.target.value || undefined })}
         className={styles.select}
       >
         <option value="">All Priorities</option>
         {Object.values(ChessPriority).map((p) => (
-          <option key={p} value={p}>{p}</option>
+          <option key={p} value={p}>
+            {p}
+          </option>
         ))}
       </select>
 
       <select
         data-testid="filter-category"
+        aria-label="Filter by commit category"
         value={filters.category ?? ""}
         onChange={(e) => update({ category: e.target.value || undefined })}
         className={styles.select}
       >
         <option value="">All Categories</option>
         {Object.values(CommitCategory).map((c) => (
-          <option key={c} value={c}>{c}</option>
+          <option key={c} value={c}>
+            {c}
+          </option>
         ))}
       </select>
 

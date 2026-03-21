@@ -1,0 +1,689 @@
+openapi: 3.1.0
+info:
+  title: Agent C – RCDO Target-Date Awareness & Urgency Fragment
+  description: |
+    Standalone OpenAPI 3.1 fragment for Agent C (Phase 3 — RCDO Target Dates
+    + Urgency Modelling).
+
+    Defines:
+      - Six new API endpoints under the /api/v1 server base:
+        GET /outcomes/metadata, GET /outcomes/{outcomeId}/metadata,
+        PUT /outcomes/{outcomeId}/metadata, PATCH /outcomes/{outcomeId}/progress,
+        GET /outcomes/urgency-summary, and GET /team/strategic-slack.
+      - New schemas: OutcomeMetadataRequest, OutcomeMetadataResponse,
+        ProgressUpdateRequest, UrgencyInfo, SlackInfo, UrgencySummaryResponse,
+        StrategicSlackResponse, and Milestone.
+
+    All write endpoints (PUT, PATCH) require the ADMIN or MANAGER role.
+    Read endpoints are available to any authenticated user.
+    Write endpoints are gated by the `outcomeUrgency` feature flag.
+    The strategic-slack endpoint is gated by the `strategicSlack` feature flag.
+
+    This fragment follows the convention described in fragments/README.md.
+  version: 1.0.0
+  license:
+    name: Proprietary
+    identifier: LicenseRef-proprietary
+  contact:
+    name: ST6 Engineering – Agent C
+
+servers:
+  - url: /api/v1
+    description: API v1 base path
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Outcome Metadata
+    description: |
+      CRUD operations for RCDO outcome metadata — target dates, progress
+      tracking configuration, and computed urgency bands (Phase 3).
+  - name: Urgency
+    description: |
+      Urgency summary and strategic slack APIs for the RCDO outcome portfolio
+      (Phase 3).
+
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+paths:
+
+  # ── List all outcome metadata ─────────────────────────────────────────────
+  /outcomes/metadata:
+    get:
+      operationId: listOutcomeMetadata
+      summary: List all outcome metadata for the organisation
+      description: |
+        Returns all outcome metadata rows for the authenticated user's
+        organisation.
+
+        Each record includes the target date, progress configuration, and
+        computed urgency band (null when urgency has not been computed yet).
+
+        Available to any authenticated user.
+        Gated by the `outcomeUrgency` feature flag.
+      tags: [Outcome Metadata]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of outcome metadata records returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutcomeMetadataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ── Single outcome metadata ───────────────────────────────────────────────
+  /outcomes/{outcomeId}/metadata:
+    get:
+      operationId: getOutcomeMetadata
+      summary: Get metadata for a single outcome
+      description: |
+        Returns the outcome metadata record for the specified outcome in the
+        authenticated user's organisation. Returns 404 when no metadata row
+        exists for the given outcome.
+
+        Available to any authenticated user.
+        Gated by the `outcomeUrgency` feature flag.
+      tags: [Outcome Metadata]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OutcomeIdPath'
+      responses:
+        '200':
+          description: Outcome metadata returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutcomeMetadataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      operationId: upsertOutcomeMetadata
+      summary: Create or update outcome metadata
+      description: |
+        Creates or updates (upserts) the metadata for the given outcome. All
+        fields are optional — omitted fields leave the existing persisted value
+        unchanged on update.
+
+        Setting `targetDate` to null removes target-date tracking and causes
+        the urgency band to be set to `NO_TARGET` on the next recomputation.
+
+        After persisting, urgency recomputation is triggered immediately for
+        the updated outcome.
+
+        Requires ADMIN or MANAGER role.
+        Gated by the `outcomeUrgency` feature flag.
+      tags: [Outcome Metadata]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OutcomeIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OutcomeMetadataRequest'
+      responses:
+        '200':
+          description: Outcome metadata created or updated; urgency recomputed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutcomeMetadataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  # ── Progress update ───────────────────────────────────────────────────────
+  /outcomes/{outcomeId}/progress:
+    patch:
+      operationId: updateOutcomeProgress
+      summary: Update progress fields of an existing outcome metadata record
+      description: |
+        Lightweight update that modifies only the `currentValue` and/or
+        `milestones` fields of an existing outcome metadata record. Both
+        fields are optional — supply only the ones that need updating.
+
+        Returns 404 when no metadata row exists for the given outcome
+        (use PUT /outcomes/{outcomeId}/metadata to create one first).
+
+        After persisting the update, urgency recomputation is triggered
+        immediately so that urgency bands reflect the new progress values.
+
+        Requires ADMIN or MANAGER role.
+        Gated by the `outcomeUrgency` feature flag.
+      tags: [Outcome Metadata]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OutcomeIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgressUpdateRequest'
+      responses:
+        '200':
+          description: Progress updated; urgency recomputed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutcomeMetadataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  # ── Urgency summary ───────────────────────────────────────────────────────
+  /outcomes/urgency-summary:
+    get:
+      operationId: getUrgencySummary
+      summary: Get urgency summary for all tracked outcomes
+      description: |
+        Returns all RCDO outcomes with their computed urgency bands for the
+        authenticated user's organisation.
+
+        Only outcomes that have a metadata row with a configured `targetDate`
+        appear in this list. Outcomes with no metadata row or no target date
+        are omitted.
+
+        Available to any authenticated user.
+        Gated by the `outcomeUrgency` feature flag.
+      tags: [Urgency]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Urgency summary returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UrgencySummaryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ── Strategic slack ───────────────────────────────────────────────────────
+  /team/strategic-slack:
+    get:
+      operationId: getStrategicSlack
+      summary: Get strategic slack band and focus floor for the team
+      description: |
+        Returns the current slack band and recommended strategic focus floor
+        for the authenticated user's organisation, derived from the distribution
+        of urgency bands across the outcome portfolio.
+
+        The `strategicFocusFloor` is a value in the range 0.50–0.95 indicating
+        the recommended minimum fraction of weekly commits that should target
+        strategic outcomes.
+
+        | slackBand         | strategicFocusFloor range |
+        |-------------------|---------------------------|
+        | `HIGH_SLACK`      | ≤ 0.55                    |
+        | `MODERATE_SLACK`  | 0.56 – 0.70               |
+        | `LOW_SLACK`       | 0.71 – 0.85               |
+        | `NO_SLACK`        | 0.86 – 0.95               |
+
+        Available to any authenticated user.
+        Gated by the `strategicSlack` feature flag.
+      tags: [Urgency]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Strategic slack returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StrategicSlackResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+# ---------------------------------------------------------------------------
+# Components
+# ---------------------------------------------------------------------------
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  # -------------------------------------------------------------------------
+  # Path parameters
+  # -------------------------------------------------------------------------
+  parameters:
+    OutcomeIdPath:
+      name: outcomeId
+      in: path
+      required: true
+      description: UUID of the RCDO outcome
+      schema:
+        type: string
+        format: uuid
+
+  # -------------------------------------------------------------------------
+  # New schemas introduced by Agent C
+  # -------------------------------------------------------------------------
+  schemas:
+    ApiError:
+      type: object
+      required: [code, message, details]
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: array
+          description: Optional list of field-level validation details
+          items:
+            type: object
+
+    ApiErrorResponse:
+      type: object
+      required: [error]
+      description: Standard API error envelope used by all non-2xx responses.
+      properties:
+        error:
+          $ref: '#/components/schemas/ApiError'
+
+    # -----------------------------------------------------------------------
+    # Milestone
+    # A single milestone entry within the milestones JSONB array.
+    # -----------------------------------------------------------------------
+    Milestone:
+      type: object
+      required:
+        - name
+        - status
+      description: |
+        A single milestone within an outcome's milestone-based progress tracking.
+        Milestone objects are stored as a JSONB array in the `milestones` field
+        of OutcomeMetadataRequest/OutcomeMetadataResponse.
+      properties:
+        name:
+          type: string
+          description: Human-readable name of the milestone (e.g. "Alpha release")
+        weight:
+          type: number
+          default: 1.0
+          description: |
+            Relative weight of this milestone when computing overall progress.
+            Defaults to 1.0 if omitted. Higher-weight milestones contribute
+            proportionally more to the overall progress percentage.
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, DONE]
+          description: |
+            Current completion status of the milestone:
+            - `PENDING`     — not yet started
+            - `IN_PROGRESS` — work is in progress
+            - `DONE`        — milestone has been completed
+
+    # -----------------------------------------------------------------------
+    # OutcomeMetadataRequest
+    # Request body for PUT /outcomes/{outcomeId}/metadata.
+    # -----------------------------------------------------------------------
+    OutcomeMetadataRequest:
+      type: object
+      description: |
+        Request body for creating or updating outcome metadata.
+
+        All fields are optional — omitted fields leave the existing persisted
+        value unchanged on update. Set `targetDate` to null explicitly to
+        remove target-date tracking.
+      properties:
+        targetDate:
+          type: ['string', 'null']
+          format: date
+          description: |
+            Target completion date for the outcome (ISO-8601 date, e.g. 2026-12-31).
+            Set to null to remove target-date tracking; the urgency band will be
+            set to `NO_TARGET` on the next recomputation.
+        progressType:
+          type: string
+          enum: [ACTIVITY, METRIC, MILESTONE]
+          description: |
+            Progress tracking model:
+            - `ACTIVITY`  — progress is derived from linked weekly commit activity (default)
+            - `METRIC`    — progress is tracked via a numeric metric (`currentValue` / `targetValue`)
+            - `MILESTONE` — progress is derived from milestone completion (`milestones` array)
+        metricName:
+          type: ['string', 'null']
+          maxLength: 200
+          description: Descriptive name of the tracked metric (METRIC type only, e.g. "ARR" or "NPS")
+        targetValue:
+          type: ['number', 'null']
+          description: Numeric goal value for the metric (METRIC type only)
+        currentValue:
+          type: ['number', 'null']
+          description: Current metric value (METRIC type only)
+        unit:
+          type: ['string', 'null']
+          maxLength: 50
+          description: Unit of measurement, e.g. "%" or "USD" (METRIC type only)
+        milestones:
+          type: ['string', 'null']
+          contentMediaType: application/json
+          contentSchema:
+            type: array
+            description: Array of milestone objects (MILESTONE type only)
+            items:
+              $ref: '#/components/schemas/Milestone'
+          description: |
+            JSON-encoded array of milestone objects (stored as JSONB). Each
+            object conforms to the `Milestone` schema. Example:
+            `[{"name":"Alpha","weight":1.0,"status":"DONE"},{"name":"Beta","weight":2.0,"status":"PENDING"}]`
+            (MILESTONE type only)
+
+    # -----------------------------------------------------------------------
+    # OutcomeMetadataResponse
+    # Response DTO for all outcome metadata endpoints.
+    # -----------------------------------------------------------------------
+    OutcomeMetadataResponse:
+      type: object
+      required:
+        - orgId
+        - outcomeId
+        - progressType
+        - createdAt
+        - updatedAt
+      description: |
+        Full outcome metadata record including computed urgency fields.
+
+        The `urgencyBand`, `progressPct`, and `lastComputedAt` fields are null
+        when urgency has not been computed yet (i.e., immediately after creation
+        before the first scheduled or on-demand recomputation).
+      properties:
+        orgId:
+          type: string
+          format: uuid
+          description: UUID of the organisation this record belongs to
+        outcomeId:
+          type: string
+          format: uuid
+          description: UUID of the RCDO outcome
+        targetDate:
+          type: ['string', 'null']
+          format: date
+          description: Target completion date for the outcome; null if not set
+        progressType:
+          type: string
+          enum: [ACTIVITY, METRIC, MILESTONE]
+          description: Progress tracking model in use for this outcome
+        metricName:
+          type: ['string', 'null']
+          description: Descriptive name of the tracked metric; null when not applicable
+        targetValue:
+          type: ['number', 'null']
+          description: Numeric goal value; null when not applicable
+        currentValue:
+          type: ['number', 'null']
+          description: Current metric value; null when not applicable
+        unit:
+          type: ['string', 'null']
+          description: Unit of measurement; null when not applicable
+        milestones:
+          type: ['string', 'null']
+          contentMediaType: application/json
+          contentSchema:
+            type: array
+            description: Array of milestone objects
+            items:
+              $ref: '#/components/schemas/Milestone'
+          description: Raw JSON-encoded array of milestone objects; null when not applicable
+        progressPct:
+          type: ['number', 'null']
+          minimum: 0
+          maximum: 100
+          description: |
+            Computed progress percentage (0–100). Null when urgency has not been
+            computed yet.
+        urgencyBand:
+          type: ['string', 'null']
+          enum: [NO_TARGET, ON_TRACK, NEEDS_ATTENTION, AT_RISK, CRITICAL, null]
+          description: |
+            Computed urgency classification. Null when urgency has not been
+            computed yet.
+
+            | Band              | Meaning                                                           |
+            |-------------------|-------------------------------------------------------------------|
+            | `NO_TARGET`       | No target date is set for this outcome                           |
+            | `ON_TRACK`        | Progress gap (expected − actual) is < 10%                        |
+            | `NEEDS_ATTENTION` | Progress gap is 10%–25%                                          |
+            | `AT_RISK`         | Progress gap is > 25%                                            |
+            | `CRITICAL`        | Due today or overdue, OR ≤ 30 days remaining with < 50% progress |
+        lastComputedAt:
+          type: ['string', 'null']
+          format: date-time
+          description: ISO-8601 UTC timestamp of the last urgency computation; null if not yet computed
+        createdAt:
+          type: string
+          format: date-time
+          description: ISO-8601 UTC timestamp when this metadata record was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: ISO-8601 UTC timestamp of the last update to this record
+
+    # -----------------------------------------------------------------------
+    # ProgressUpdateRequest
+    # Request body for PATCH /outcomes/{outcomeId}/progress.
+    # -----------------------------------------------------------------------
+    ProgressUpdateRequest:
+      type: object
+      description: |
+        Lightweight progress update request. Both fields are optional — supply
+        only the ones that need updating.
+      properties:
+        currentValue:
+          type: ['number', 'null']
+          description: Updated current value of the tracked metric; null if unchanged
+        milestones:
+          type: ['string', 'null']
+          contentMediaType: application/json
+          contentSchema:
+            type: array
+            description: Array of milestone objects
+            items:
+              $ref: '#/components/schemas/Milestone'
+          description: |
+            Updated JSON-encoded array of milestone objects. Replaces the
+            entire existing milestones array; null if unchanged.
+
+    # -----------------------------------------------------------------------
+    # UrgencyInfo
+    # Urgency snapshot for a single RCDO outcome.
+    # -----------------------------------------------------------------------
+    UrgencyInfo:
+      type: object
+      required:
+        - outcomeId
+        - outcomeName
+        - urgencyBand
+        - daysRemaining
+      description: |
+        Urgency snapshot for a single RCDO outcome.
+
+        Produced by the urgency computation pipeline and consumed by downstream
+        phases without depending on outcome metadata internals.
+      properties:
+        outcomeId:
+          type: string
+          format: uuid
+          description: UUID of the RCDO outcome
+        outcomeName:
+          type: string
+          description: Display name of the outcome
+        targetDate:
+          type: ['string', 'null']
+          format: date
+          description: Target completion date; null if no target date is set
+        progressPct:
+          type: ['number', 'null']
+          minimum: 0
+          maximum: 100
+          description: Current progress percentage (0–100); null if not yet computed
+        expectedProgressPct:
+          type: ['number', 'null']
+          minimum: 0
+          maximum: 100
+          description: |
+            Expected progress percentage at today's date assuming linear
+            progression from start to target date. Null when no target date
+            is set.
+        urgencyBand:
+          type: string
+          enum: [NO_TARGET, ON_TRACK, NEEDS_ATTENTION, AT_RISK, CRITICAL]
+          description: Computed urgency classification for this outcome
+        daysRemaining:
+          type: integer
+          description: |
+            Calendar days from today to the target date. Negative when the
+            target date is in the past (overdue). Set to the minimum integer
+            value (`Long.MIN_VALUE`) when no target date is set.
+
+    # -----------------------------------------------------------------------
+    # SlackInfo
+    # Strategic slack summary for an organisation's outcome portfolio.
+    # -----------------------------------------------------------------------
+    SlackInfo:
+      type: object
+      required:
+        - slackBand
+        - strategicFocusFloor
+        - atRiskCount
+        - criticalCount
+      description: |
+        Strategic slack summary derived from the distribution of urgency bands
+        across the organisation's RCDO outcome portfolio.
+
+        The `strategicFocusFloor` is the recommended minimum fraction of weekly
+        commits that should target strategic outcomes, computed from the ratio
+        of at-risk and critical outcomes.
+      properties:
+        slackBand:
+          type: string
+          enum: [HIGH_SLACK, MODERATE_SLACK, LOW_SLACK, NO_SLACK]
+          description: |
+            High-level slack classification:
+            - `HIGH_SLACK`     — low urgency pressure; floor ≤ 0.55
+            - `MODERATE_SLACK` — moderate urgency pressure; 0.56 ≤ floor ≤ 0.70
+            - `LOW_SLACK`      — high urgency pressure; 0.71 ≤ floor ≤ 0.85
+            - `NO_SLACK`       — critical urgency pressure; 0.86 ≤ floor ≤ 0.95
+        strategicFocusFloor:
+          type: number
+          minimum: 0.50
+          maximum: 0.95
+          description: |
+            Computed strategic focus floor in the range 0.50–0.95. Represents
+            the recommended minimum fraction of commits that should be linked
+            to strategic RCDO outcomes given the current urgency landscape.
+        atRiskCount:
+          type: integer
+          minimum: 0
+          description: Number of outcomes currently in the AT_RISK urgency band
+        criticalCount:
+          type: integer
+          minimum: 0
+          description: Number of outcomes currently in the CRITICAL urgency band
+
+    # -----------------------------------------------------------------------
+    # UrgencySummaryResponse
+    # Response wrapper for GET /outcomes/urgency-summary.
+    # -----------------------------------------------------------------------
+    UrgencySummaryResponse:
+      type: object
+      required:
+        - outcomes
+      description: |
+        Response payload for the urgency summary endpoint.
+        Contains a list of urgency snapshots for all tracked RCDO outcomes in
+        the authenticated user's organisation.
+      properties:
+        outcomes:
+          type: array
+          description: |
+            Urgency snapshots for all outcomes that have a configured target date.
+            Ordered by urgency severity (CRITICAL first) then by days remaining
+            ascending.
+          items:
+            $ref: '#/components/schemas/UrgencyInfo'
+
+    # -----------------------------------------------------------------------
+    # StrategicSlackResponse
+    # Response wrapper for GET /team/strategic-slack.
+    # -----------------------------------------------------------------------
+    StrategicSlackResponse:
+      type: object
+      required:
+        - slack
+      description: Response payload for the strategic slack endpoint.
+      properties:
+        slack:
+          $ref: '#/components/schemas/SlackInfo'
+
+  # -------------------------------------------------------------------------
+  # Shared response definitions (mirror the main spec for standalone validity)
+  # -------------------------------------------------------------------------
+  responses:
+    Unauthorized:
+      description: Missing or invalid JWT
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+
+    Forbidden:
+      description: |
+        Valid JWT but insufficient access. Write operations (PUT, PATCH) on
+        outcome metadata require the ADMIN or MANAGER role.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+
+    NotFound:
+      description: |
+        Resource not found. Returned when no outcome metadata row exists for
+        the given `outcomeId` in the authenticated user's organisation.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+
+    ValidationError:
+      description: |
+        Validation failed. Common causes:
+        - `outcomeId` path parameter is not a valid UUID
+        - `targetDate` is not a valid ISO-8601 date
+        - `progressType` is not one of ACTIVITY, METRIC, MILESTONE
+        - `metricName` exceeds 200 characters
+        - `unit` exceeds 50 characters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'

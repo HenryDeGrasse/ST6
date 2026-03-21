@@ -210,11 +210,7 @@ function IconPaths({ icon }: { icon: StatusIconName }): React.ReactElement {
  *   <StatusIcon icon="lock" size={16} />
  * </span>
  */
-export const StatusIcon: React.FC<StatusIconProps> = ({
-  icon,
-  size = 20,
-  className,
-}) => (
+export const StatusIcon: React.FC<StatusIconProps> = ({ icon, size = 20, className }) => (
   <svg
     data-testid={`status-icon-${icon}`}
     xmlns="http://www.w3.org/2000/svg"

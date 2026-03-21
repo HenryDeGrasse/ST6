@@ -4,13 +4,8 @@ import { AiManagerInsightsPanel } from "../components/AiManagerInsightsPanel.js"
 import { FeatureFlagProvider } from "../context/FeatureFlagContext.js";
 import type { ManagerInsightItem } from "@weekly-commitments/contracts";
 
-function renderWithFlags(
-  ui: React.ReactElement,
-  flags: { managerInsights: boolean } = { managerInsights: true },
-) {
-  return render(
-    <FeatureFlagProvider flags={flags}>{ui}</FeatureFlagProvider>,
-  );
+function renderWithFlags(ui: React.ReactElement, flags: { managerInsights: boolean } = { managerInsights: true }) {
+  return render(<FeatureFlagProvider flags={flags}>{ui}</FeatureFlagProvider>);
 }
 
 function makeInsight(overrides: Partial<ManagerInsightItem> = {}): ManagerInsightItem {
@@ -50,26 +45,20 @@ describe("AiManagerInsightsPanel", () => {
 
   it("calls onRefresh when refresh is clicked", () => {
     const onRefresh = vi.fn();
-    renderWithFlags(
-      <AiManagerInsightsPanel {...defaultProps} onRefresh={onRefresh} />,
-    );
+    renderWithFlags(<AiManagerInsightsPanel {...defaultProps} onRefresh={onRefresh} />);
 
     fireEvent.click(screen.getByTestId("ai-manager-insights-refresh"));
     expect(onRefresh).toHaveBeenCalled();
   });
 
   it("renders loading state", () => {
-    renderWithFlags(
-      <AiManagerInsightsPanel {...defaultProps} status="loading" />,
-    );
+    renderWithFlags(<AiManagerInsightsPanel {...defaultProps} status="loading" />);
 
     expect(screen.getByTestId("ai-manager-insights-loading")).toBeInTheDocument();
   });
 
   it("renders unavailable state", () => {
-    renderWithFlags(
-      <AiManagerInsightsPanel {...defaultProps} status="unavailable" />,
-    );
+    renderWithFlags(<AiManagerInsightsPanel {...defaultProps} status="unavailable" />);
 
     expect(screen.getByTestId("ai-manager-insights-unavailable")).toBeInTheDocument();
   });

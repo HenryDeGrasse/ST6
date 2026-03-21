@@ -34,9 +34,7 @@ export const CarryForwardDialog: React.FC<CarryForwardDialogProps> = ({
   const incompleteCommits = commits;
 
   // Pre-select commits that aren't DONE (heuristic for the dialog)
-  const [selected, setSelected] = useState<Set<string>>(
-    () => new Set(incompleteCommits.map((c) => c.id)),
-  );
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(incompleteCommits.map((c) => c.id)));
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -102,16 +100,13 @@ export const CarryForwardDialog: React.FC<CarryForwardDialogProps> = ({
       onKeyDown={handleKeyDown}
       className={styles.overlay}
     >
-      <div
-        ref={dialogRef}
-        className={styles.dialog}
-      >
+      <div ref={dialogRef} className={styles.dialog}>
         <h3 id="carry-forward-dialog-title" className={styles.title}>
           Carry Forward to Next Week
         </h3>
         <p className={styles.description}>
-          Select commitments to carry into next week&apos;s plan. They will appear as new
-          draft items with a carry-forward reference.
+          Select commitments to carry into next week&apos;s plan. They will appear as new draft items with a
+          carry-forward reference.
         </p>
 
         {incompleteCommits.length === 0 ? (
@@ -121,11 +116,7 @@ export const CarryForwardDialog: React.FC<CarryForwardDialogProps> = ({
             {incompleteCommits.map((commit) => {
               const piece = priorityToPiece(commit.chessPriority);
               return (
-                <label
-                  key={commit.id}
-                  data-testid={`carry-option-${commit.id}`}
-                  className={styles.commitRow}
-                >
+                <label key={commit.id} data-testid={`carry-option-${commit.id}`} className={styles.commitRow}>
                   <input
                     type="checkbox"
                     className={styles.checkbox}
@@ -141,9 +132,7 @@ export const CarryForwardDialog: React.FC<CarryForwardDialogProps> = ({
                           {commit.chessPriority}
                         </span>
                       )}
-                      {commit.category && (
-                        <span className={styles.categoryBadge}>{commit.category}</span>
-                      )}
+                      {commit.category && <span className={styles.categoryBadge}>{commit.category}</span>}
                     </div>
                   </div>
                 </label>
@@ -153,12 +142,7 @@ export const CarryForwardDialog: React.FC<CarryForwardDialogProps> = ({
         )}
 
         <div className={styles.buttonRow}>
-          <button
-            data-testid="carry-cancel"
-            className={styles.cancelButton}
-            onClick={onCancel}
-            disabled={loading}
-          >
+          <button data-testid="carry-cancel" className={styles.cancelButton} onClick={onCancel} disabled={loading}>
             Cancel
           </button>
           <button

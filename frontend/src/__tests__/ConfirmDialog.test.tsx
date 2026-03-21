@@ -94,13 +94,7 @@ describe("ConfirmDialog", () => {
   });
 
   it("uses custom confirm and cancel labels", () => {
-    render(
-      <ConfirmDialog
-        {...defaultProps}
-        confirmLabel="Delete"
-        cancelLabel="Keep"
-      />,
-    );
+    render(<ConfirmDialog {...defaultProps} confirmLabel="Delete" cancelLabel="Keep" />);
 
     expect(screen.getByTestId("confirm-dialog-confirm")).toHaveTextContent("Delete");
     expect(screen.getByTestId("confirm-dialog-cancel")).toHaveTextContent("Keep");

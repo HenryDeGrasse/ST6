@@ -24,8 +24,8 @@ const TOAST_DURATION_MS = 3000;
 /** Map toast type to the corresponding CSS module class. */
 const TYPE_CLASS: Record<ToastMessage["type"], string> = {
   success: styles.toastSuccess,
-  error:   styles.toastError,
-  info:    styles.toastInfo,
+  error: styles.toastError,
+  info: styles.toastInfo,
 };
 
 /**
@@ -46,16 +46,19 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const showToast = useCallback((text: string, type: ToastMessage["type"] = "success") => {
-    const id = nextId.current++;
-    setToasts((prev) => [...prev, { id, text, type }]);
-    dismissTimers.current.set(
-      id,
-      setTimeout(() => {
-        dismiss(id);
-      }, TOAST_DURATION_MS),
-    );
-  }, [dismiss]);
+  const showToast = useCallback(
+    (text: string, type: ToastMessage["type"] = "success") => {
+      const id = nextId.current++;
+      setToasts((prev) => [...prev, { id, text, type }]);
+      dismissTimers.current.set(
+        id,
+        setTimeout(() => {
+          dismiss(id);
+        }, TOAST_DURATION_MS),
+      );
+    },
+    [dismiss],
+  );
 
   useEffect(() => {
     const timers = dismissTimers.current;
@@ -71,12 +74,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <ToastContext.Provider value={{ toasts, showToast }}>
       {children}
       {toasts.length > 0 && (
-        <div
-          data-testid="toast-container"
-          role="status"
-          aria-live="polite"
-          className={styles.container}
-        >
+        <div data-testid="toast-container" role="status" aria-live="polite" className={styles.container}>
           {toasts.map((toast) => (
             <div
               key={toast.id}

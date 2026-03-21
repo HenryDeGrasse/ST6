@@ -1,0 +1,179 @@
+{
+  "dashboard": {
+    "title": "WC Outbox & Events",
+    "description": "Weekly Commitments – Outbox pipeline, event delivery, and queue metrics (PRD §14.3)",
+    "tags": ["weekly-commitments", "outbox-events"],
+    "timezone": "utc",
+    "refresh": "30s",
+    "panels": [
+      {
+        "title": "Outbox – Unpublished Count",
+        "type": "gauge",
+        "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "outbox_unpublished_count{application=\"weekly-service\"}",
+            "legendFormat": "unpublished"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "min": 0,
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": 0 },
+                { "color": "yellow", "value": 50 },
+                { "color": "red", "value": 100 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Outbox Publish Rate",
+        "type": "timeseries",
+        "gridPos": { "x": 6, "y": 0, "w": 8, "h": 4 },
+        "targets": [
+          {
+            "expr": "sum(rate(outbox_published_total{application=\"weekly-service\"}[1m]))",
+            "legendFormat": "published/s"
+          }
+        ]
+      },
+      {
+        "title": "SQS Consumer Lag (Approximate Message Age)",
+        "type": "timeseries",
+        "gridPos": { "x": 14, "y": 0, "w": 10, "h": 4 },
+        "targets": [
+          {
+            "expr": "aws_sqs_approximate_age_of_oldest_message_maximum{queue_name=~\"weekly-.*\"}",
+            "legendFormat": "{{ queue_name }} age (s)"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": 0 },
+                { "color": "yellow", "value": 60 },
+                { "color": "red", "value": 300 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "DLQ Depth",
+        "type": "stat",
+        "gridPos": { "x": 0, "y": 4, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "sum(aws_sqs_approximate_number_of_messages_visible_maximum{queue_name=~\"weekly-.*-dlq\"})",
+            "legendFormat": "DLQ messages"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": 0 },
+                { "color": "yellow", "value": 1 },
+                { "color": "red", "value": 10 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "SQS Queue Depth by Queue",
+        "type": "timeseries",
+        "gridPos": { "x": 6, "y": 4, "w": 12, "h": 4 },
+        "targets": [
+          {
+            "expr": "aws_sqs_approximate_number_of_messages_visible_maximum{queue_name=~\"weekly-.*\"}",
+            "legendFormat": "{{ queue_name }}"
+          }
+        ]
+      },
+      {
+        "title": "Notification Delivery Delay",
+        "type": "timeseries",
+        "gridPos": { "x": 18, "y": 4, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(notification_delivery_delay_seconds_bucket{application=\"weekly-service\"}[5m])) by (le))",
+            "legendFormat": "p50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(notification_delivery_delay_seconds_bucket{application=\"weekly-service\"}[5m])) by (le))",
+            "legendFormat": "p95"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(notification_delivery_delay_seconds_bucket{application=\"weekly-service\"}[5m])) by (le))",
+            "legendFormat": "p99"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "s" }
+        }
+      },
+      {
+        "title": "Events by Type (Rate)",
+        "type": "timeseries",
+        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 5 },
+        "targets": [
+          {
+            "expr": "sum by (event_type) (rate(outbox_published_total{application=\"weekly-service\"}[5m]))",
+            "legendFormat": "{{ event_type }}"
+          }
+        ]
+      },
+      {
+        "title": "Events by Type (24h Total)",
+        "type": "bargauge",
+        "gridPos": { "x": 12, "y": 8, "w": 12, "h": 5 },
+        "targets": [
+          {
+            "expr": "sum by (event_type) (increase(outbox_published_total{application=\"weekly-service\"}[24h]))",
+            "legendFormat": "{{ event_type }}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "short" }
+        }
+      },
+      {
+        "title": "Outbox Relay Batch Processing Time",
+        "type": "timeseries",
+        "gridPos": { "x": 0, "y": 13, "w": 12, "h": 5 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(outbox_relay_batch_duration_seconds_bucket{application=\"weekly-service\"}[5m])) by (le))",
+            "legendFormat": "p50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(outbox_relay_batch_duration_seconds_bucket{application=\"weekly-service\"}[5m])) by (le))",
+            "legendFormat": "p95"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "s" }
+        }
+      },
+      {
+        "title": "Notification Delivery Status",
+        "type": "timeseries",
+        "gridPos": { "x": 12, "y": 13, "w": 12, "h": 5 },
+        "targets": [
+          {
+            "expr": "sum by (status) (rate(notification_delivery_total{application=\"weekly-service\"}[5m]))",
+            "legendFormat": "{{ status }}"
+          }
+        ]
+      }
+    ]
+  }
+}

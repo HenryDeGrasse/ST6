@@ -50,14 +50,11 @@ export function useCommits(): UseCommitsResult {
     setCommits([]);
   }, []);
 
-  const extractError = useCallback(
-    (resp: { error?: unknown; response: Response }): string => {
-      const err = resp.error as ApiErrorResponse | undefined;
-      if (err?.error?.message) return err.error.message;
-      return `Request failed (${String(resp.response.status)})`;
-    },
-    [],
-  );
+  const extractError = useCallback((resp: { error?: unknown; response: Response }): string => {
+    const err = resp.error as ApiErrorResponse | undefined;
+    if (err?.error?.message) return err.error.message;
+    return `Request failed (${String(resp.response.status)})`;
+  }, []);
 
   const fetchCommits = useCallback(
     async (planId: string) => {
@@ -96,6 +93,7 @@ export function useCommits(): UseCommitsResult {
           expectedResult: req.expectedResult ?? "",
           confidence: req.confidence ?? undefined,
           tags: req.tags ?? [],
+          estimatedHours: req.estimatedHours ?? undefined,
         };
         const resp = await client.POST("/plans/{planId}/commits", {
           params: { path: { planId } },
@@ -135,6 +133,7 @@ export function useCommits(): UseCommitsResult {
         if (req.confidence !== undefined) body.confidence = req.confidence ?? undefined;
         if (req.tags !== undefined) body.tags = req.tags;
         if (req.progressNotes !== undefined) body.progressNotes = req.progressNotes;
+        if (req.estimatedHours !== undefined) body.estimatedHours = req.estimatedHours ?? undefined;
         const resp = await client.PATCH("/commits/{commitId}", {
           params: {
             path: { commitId },

@@ -1,31 +1,5 @@
 package com.weekly.plan.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.weekly.auth.InMemoryOrgGraphClient;
-import com.weekly.notification.NotificationEntity;
-import com.weekly.notification.NotificationRepository;
-import com.weekly.plan.dto.CarryForwardRequest;
-import com.weekly.plan.dto.CreateCommitRequest;
-import com.weekly.plan.dto.CreateReviewRequest;
-import com.weekly.plan.dto.UpdateActualRequest;
-import com.weekly.plan.dto.UpdateCommitRequest;
-import com.weekly.rcdo.InMemoryRcdoClient;
-import com.weekly.rcdo.RcdoTree;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.UUID;
-
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -36,6 +10,32 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.weekly.auth.InMemoryOrgGraphClient;
+import com.weekly.notification.NotificationEntity;
+import com.weekly.notification.NotificationRepository;
+import com.weekly.plan.dto.CarryForwardRequest;
+import com.weekly.plan.dto.CreateCommitRequest;
+import com.weekly.plan.dto.CreateReviewRequest;
+import com.weekly.plan.dto.DraftFromHistoryRequest;
+import com.weekly.plan.dto.UpdateActualRequest;
+import com.weekly.plan.dto.UpdateCommitRequest;
+import com.weekly.rcdo.InMemoryRcdoClient;
+import com.weekly.rcdo.RcdoTree;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 /**
  * Integration tests for the Plan, Commit, and Review controllers.
@@ -115,7 +115,7 @@ class PlanControllerTest {
         // Add commits
         CreateCommitRequest king = new CreateCommitRequest(
                 "Ship feature", null, "KING", "DELIVERY",
-                outcomeId.toString(), null, "Feature live", 0.9, null
+                outcomeId.toString(), null, "Feature live", 0.9, null, null
         );
         MvcResult kingResult = mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)
@@ -129,7 +129,7 @@ class PlanControllerTest {
 
         CreateCommitRequest queen = new CreateCommitRequest(
                 "Support work", null, "QUEEN", "OPERATIONS",
-                null, "Admin support", null, null, null
+                null, "Admin support", null, null, null, null
         );
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)
@@ -166,7 +166,7 @@ class PlanControllerTest {
             int cVersion = commit.get("version").asInt();
             UpdateActualRequest actual = new UpdateActualRequest(
                     "Completed this task", "DONE", null, 120
-            );
+            , null);
             mockMvc.perform(patch("/api/v1/commits/{commitId}/actual", cId)
                             .header("X-Org-Id", ORG_ID)
                             .header("X-User-Id", userId)
@@ -245,6 +245,21 @@ class PlanControllerTest {
                         .header("X-Org-Id", ORG_ID))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.error.code", is("INVALID_WEEK_START")));
+    }
+
+    @Test
+    void draftFromHistoryCreatesDraftPlanWhenNoHistoryExists() throws Exception {
+        UUID userId = UUID.randomUUID();
+        DraftFromHistoryRequest request = new DraftFromHistoryRequest(currentMonday());
+
+        mockMvc.perform(post("/api/v1/plans/draft-from-history")
+                        .header("X-User-Id", userId)
+                        .header("X-Org-Id", ORG_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.planId", notNullValue()))
+                .andExpect(jsonPath("$.suggestedCommits", hasSize(0)));
     }
 
     @Test
@@ -372,7 +387,7 @@ class PlanControllerTest {
                 "Build API", "Implement REST endpoints",
                 "KING", "DELIVERY",
                 null, "Non-strategic",
-                "API ready", 0.85, new String[]{"api"}
+                "API ready", 0.85, null, new String[]{"api"}
         );
 
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
@@ -407,7 +422,7 @@ class PlanControllerTest {
                 .get("id").asText();
 
         CreateCommitRequest commitReq = new CreateCommitRequest(
-                "Task", null, null, null, null, null, null, null, null
+                "Task", null, null, null, null, null, null, null, null, null
         );
         MvcResult commitResult = mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)
@@ -424,7 +439,7 @@ class PlanControllerTest {
         // Update commit
         UpdateCommitRequest updateReq = new UpdateCommitRequest(
                 "Updated Task", "Now with description",
-                "QUEEN", null, null, null, null, null, null, null
+                "QUEEN", null, null, null, null, null, null, null, null
         );
 
         mockMvc.perform(patch("/api/v1/commits/{commitId}", commitId)
@@ -454,7 +469,7 @@ class PlanControllerTest {
                 .get("id").asText();
 
         CreateCommitRequest commitReq = new CreateCommitRequest(
-                "Delete me", null, null, null, null, null, null, null, null
+                "Delete me", null, null, null, null, null, null, null, null, null
         );
         MvcResult commitResult = mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)
@@ -493,7 +508,7 @@ class PlanControllerTest {
                 .get("id").asText();
 
         CreateCommitRequest commitReq = new CreateCommitRequest(
-                "Incomplete commit", null, null, null, null, null, null, null, null
+                "Incomplete commit", null, null, null, null, null, null, null, null, null
         );
 
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
@@ -523,7 +538,7 @@ class PlanControllerTest {
         CreateCommitRequest strategicCommit = new CreateCommitRequest(
                 "Ship API", "Implement the planning endpoints",
                 "KING", "DELIVERY", outcomeId.toString(), null,
-                "API available", 0.9, new String[]{"api", "backend"}
+                "API available", 0.9, null, new String[]{"api", "backend"}
         );
         MvcResult strategicCommitResult = mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)
@@ -538,7 +553,7 @@ class PlanControllerTest {
         CreateCommitRequest supportCommit = new CreateCommitRequest(
                 "Support team", null,
                 "QUEEN", "OPERATIONS", null, "Operational support",
-                null, null, null
+                null, null, null, null
         );
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)
@@ -573,7 +588,7 @@ class PlanControllerTest {
         );
 
         UpdateCommitRequest frozenFieldUpdate = new UpdateCommitRequest(
-                "Renamed after lock", null, null, null, null, null, null, null, null, null
+                "Renamed after lock", null, null, null, null, null, null, null, null, null, null
         );
         mockMvc.perform(patch("/api/v1/commits/{commitId}", strategicCommitId)
                         .header("X-User-Id", userId)
@@ -585,7 +600,7 @@ class PlanControllerTest {
                 .andExpect(jsonPath("$.error.code", is("FIELD_FROZEN")));
 
         UpdateCommitRequest progressUpdate = new UpdateCommitRequest(
-                null, null, null, null, null, null, null, null, null, "Still on track"
+                null, null, null, null, null, null, null, null, null, null, "Still on track"
         );
         mockMvc.perform(patch("/api/v1/commits/{commitId}", strategicCommitId)
                         .header("X-User-Id", userId)
@@ -613,7 +628,7 @@ class PlanControllerTest {
         CreateCommitRequest unresolvedCommit = new CreateCommitRequest(
                 "Ship API", null,
                 "KING", "DELIVERY", UUID.randomUUID().toString(), null,
-                null, null, null
+                null, null, null, null
         );
         MvcResult commitResult = mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)
@@ -656,7 +671,7 @@ class PlanControllerTest {
 
         CreateCommitRequest commit = new CreateCommitRequest(
                 "Task", null, "KING", "DELIVERY",
-                outcomeId.toString(), null, "Result", null, null
+                outcomeId.toString(), null, "Result", null, null, null
         );
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)
@@ -699,7 +714,7 @@ class PlanControllerTest {
 
         CreateCommitRequest commit = new CreateCommitRequest(
                 "Task", null, "KING", "DELIVERY",
-                outcomeId.toString(), null, "Result", null, null
+                outcomeId.toString(), null, "Result", null, null, null
         );
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)
@@ -736,7 +751,7 @@ class PlanControllerTest {
 
         CreateCommitRequest commitReq = new CreateCommitRequest(
                 "Task", null, "KING", "DELIVERY",
-                outcomeId.toString(), null, "Result", null, null
+                outcomeId.toString(), null, "Result", null, null, null
         );
         MvcResult commitResult = mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)
@@ -773,7 +788,7 @@ class PlanControllerTest {
 
         UpdateActualRequest actualReq = new UpdateActualRequest(
                 "Feature was shipped", "DONE", null, 480
-        );
+        , null);
         mockMvc.perform(patch("/api/v1/commits/{commitId}/actual", commitId)
                         .header("X-User-Id", userId)
                         .header("X-Org-Id", ORG_ID)
@@ -802,7 +817,7 @@ class PlanControllerTest {
 
         CreateCommitRequest commitReq = new CreateCommitRequest(
                 "Task", null, "KING", "DELIVERY",
-                outcomeId.toString(), null, "Result", null, null
+                outcomeId.toString(), null, "Result", null, null, null
         );
         MvcResult commitResult = mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)
@@ -841,7 +856,7 @@ class PlanControllerTest {
 
         UpdateActualRequest actualReq = new UpdateActualRequest(
                 "Could not complete", "DROPPED", null, 60
-        );
+        , null);
         mockMvc.perform(patch("/api/v1/commits/{commitId}/actual", commitId)
                         .header("X-User-Id", userId)
                         .header("X-Org-Id", ORG_ID)
@@ -989,7 +1004,7 @@ class PlanControllerTest {
 
         CreateCommitRequest req = new CreateCommitRequest(
                 "Injected commit", null, "KING", "DELIVERY",
-                null, "Non-strategic", null, null, null
+                null, "Non-strategic", null, null, null, null
         );
 
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
@@ -1019,7 +1034,7 @@ class PlanControllerTest {
 
         CreateCommitRequest king = new CreateCommitRequest(
                 "Legit commit", null, "KING", "DELIVERY",
-                outcomeId.toString(), null, "Result", 0.9, null
+                outcomeId.toString(), null, "Result", 0.9, null, null
         );
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", owner)
@@ -1057,7 +1072,7 @@ class PlanControllerTest {
 
         CreateCommitRequest king = new CreateCommitRequest(
                 "Legit commit", null, "KING", "DELIVERY",
-                outcomeId.toString(), null, "Result", 0.9, null
+                outcomeId.toString(), null, "Result", 0.9, null, null
         );
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", owner)
@@ -1083,7 +1098,7 @@ class PlanControllerTest {
 
         // Owner adds a commit
         CreateCommitRequest req = new CreateCommitRequest(
-                "Owner task", null, null, null, null, null, null, null, null
+                "Owner task", null, null, null, null, null, null, null, null, null
         );
         MvcResult commitResult = mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", owner)
@@ -1099,7 +1114,7 @@ class PlanControllerTest {
 
         // Attacker tries to update
         UpdateCommitRequest updateReq = new UpdateCommitRequest(
-                "Hijacked title", null, null, null, null, null, null, null, null, null
+                "Hijacked title", null, null, null, null, null, null, null, null, null, null
         );
         mockMvc.perform(patch("/api/v1/commits/{commitId}", commitId)
                         .header("X-User-Id", attacker)
@@ -1119,7 +1134,7 @@ class PlanControllerTest {
 
         // Owner adds a commit
         CreateCommitRequest req = new CreateCommitRequest(
-                "Owner task", null, null, null, null, null, null, null, null
+                "Owner task", null, null, null, null, null, null, null, null, null
         );
         MvcResult commitResult = mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", owner)
@@ -1156,7 +1171,7 @@ class PlanControllerTest {
 
         CreateCommitRequest king = new CreateCommitRequest(
                 "Task", null, "KING", "DELIVERY",
-                outcomeId.toString(), null, "Result", null, null
+                outcomeId.toString(), null, "Result", null, null, null
         );
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", owner)
@@ -1206,7 +1221,7 @@ class PlanControllerTest {
 
         CreateCommitRequest king = new CreateCommitRequest(
                 "Task", null, "KING", "DELIVERY",
-                outcomeId.toString(), null, "Result", null, null
+                outcomeId.toString(), null, "Result", null, null, null
         );
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", owner)
@@ -1350,7 +1365,7 @@ class PlanControllerTest {
                 .get("id").asText();
 
         CreateCommitRequest req = new CreateCommitRequest(
-                "Original title", null, null, null, null, null, null, null, null
+                "Original title", null, null, null, null, null, null, null, null, null
         );
         MvcResult commitResult = mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)
@@ -1393,7 +1408,7 @@ class PlanControllerTest {
                 .get("id").asText();
 
         CreateCommitRequest req = new CreateCommitRequest(
-                "Original title", null, null, null, null, null, null, null, null
+                "Original title", null, null, null, null, null, null, null, null, null
         );
         MvcResult commitResult = mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)
@@ -1458,7 +1473,7 @@ class PlanControllerTest {
         // Add valid commits (KING + QUEEN)
         CreateCommitRequest king = new CreateCommitRequest(
                 "Concurrent feature", null, "KING", "DELIVERY",
-                outcomeId.toString(), null, "Feature live", 0.9, null
+                outcomeId.toString(), null, "Feature live", 0.9, null, null
         );
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)
@@ -1469,7 +1484,7 @@ class PlanControllerTest {
 
         CreateCommitRequest queen = new CreateCommitRequest(
                 "Support work", null, "QUEEN", "OPERATIONS",
-                null, "Admin support", null, null, null
+                null, "Admin support", null, null, null, null
         );
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)
@@ -1542,7 +1557,7 @@ class PlanControllerTest {
                 .get("id").asText();
 
         CreateCommitRequest req = new CreateCommitRequest(
-                "Org-A task", null, null, null, null, null, null, null, null
+                "Org-A task", null, null, null, null, null, null, null, null, null
         );
         MvcResult commitResult = mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userInOrgA)
@@ -1558,7 +1573,7 @@ class PlanControllerTest {
 
         // User from org B attempts to update the commit — plan is not found in org B scope → 404
         UpdateCommitRequest update = new UpdateCommitRequest(
-                "Hijacked title", null, null, null, null, null, null, null, null, null
+                "Hijacked title", null, null, null, null, null, null, null, null, null, null
         );
         mockMvc.perform(patch("/api/v1/commits/{commitId}", commitId)
                         .header("X-User-Id", userInOrgB)
@@ -1672,7 +1687,7 @@ class PlanControllerTest {
         // Add valid commits (KING + QUEEN) so chess rules pass
         CreateCommitRequest king = new CreateCommitRequest(
                 "Ship API", null, "KING", "DELIVERY",
-                outcomeId.toString(), null, "API ready", 0.9, null
+                outcomeId.toString(), null, "API ready", 0.9, null, null
         );
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)
@@ -1683,7 +1698,7 @@ class PlanControllerTest {
 
         CreateCommitRequest queen = new CreateCommitRequest(
                 "Support work", null, "QUEEN", "OPERATIONS",
-                null, "Admin support", null, null, null
+                null, "Admin support", null, null, null, null
         );
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)
@@ -1753,7 +1768,7 @@ class PlanControllerTest {
 
         CreateCommitRequest king = new CreateCommitRequest(
                 "Lock task", null, "KING", "DELIVERY",
-                outcomeId.toString(), null, "Done", 0.9, null
+                outcomeId.toString(), null, "Done", 0.9, null, null
         );
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", owner)
@@ -1764,7 +1779,7 @@ class PlanControllerTest {
 
         CreateCommitRequest queen = new CreateCommitRequest(
                 "Support work", null, "QUEEN", "OPERATIONS",
-                null, "Admin support", null, null, null
+                null, "Admin support", null, null, null, null
         );
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", owner)
@@ -1858,7 +1873,7 @@ class PlanControllerTest {
 
         CreateCommitRequest commitReq = new CreateCommitRequest(
                 "Task", null, "KING", "DELIVERY",
-                outcomeId.toString(), null, "Result", null, null
+                outcomeId.toString(), null, "Result", null, null, null
         );
         MvcResult commitResult = mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)

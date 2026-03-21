@@ -14,7 +14,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run unit",
     "unit": "npm run test --workspaces --if-present && npm run unit:backend",
-    "unit:backend": "cd backend/weekly-service && ./gradlew test --no-daemon",
+    "unit:backend": "cd backend/weekly-service && ./gradlew test propertyTest jacocoTestReport jacocoTestCoverageVerification",
+    "property:backend": "cd backend/weekly-service && ./gradlew propertyTest --no-daemon",
     "build": "npm run build --workspaces --if-present && npm run build:backend",
     "build:backend": "cd backend/weekly-service && ./gradlew build --no-daemon -x test",
     "migration:check": "cd backend/weekly-service && ./gradlew test --no-daemon --tests com.weekly.PostgresSchemaCompatibilityTest",
@@ -22,14 +23,25 @@
     "audit:e2e": "cd e2e && npm audit --audit-level=high",
     "e2e:smoke": "cd e2e && npm run test:smoke",
     "e2e:full": "cd e2e && npm run test:full",
+    "e2e:nightly": "cd e2e && npm run test:nightly",
     "dev": "./scripts/dev.sh --seed",
     "dev:up": "./scripts/dev.sh",
     "dev:stop": "./scripts/dev.sh --stop",
     "dev:frontend": "npm run dev --workspace=frontend",
     "dev:host": "npm run dev --workspace=pa-host-stub",
-    "clean": "npm run clean --workspaces --if-present && cd backend/weekly-service && ./gradlew clean --no-daemon"
+    "clean": "npm run clean --workspaces --if-present && cd backend/weekly-service && ./gradlew clean --no-daemon",
+    "openapi:diff": "./scripts/openapi-diff.sh",
+    "sbom:frontend": "cyclonedx-npm --output-file frontend-sbom.json",
+    "format:check": "prettier --check \"frontend/src/**/*.{ts,tsx}\" \"contracts/src/**/*.ts\" \"pa-host-stub/src/**/*.ts\"",
+    "format:fix": "prettier --write \"frontend/src/**/*.{ts,tsx}\" \"contracts/src/**/*.ts\" \"pa-host-stub/src/**/*.ts\"",
+    "format:backend": "cd backend/weekly-service && ./gradlew spotlessCheck --no-daemon"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@cyclonedx/cyclonedx-npm": "^1.19.3",
+    "openapi-diff": "^0.24.1",
+    "prettier": "^3.5.3"
   }
 }

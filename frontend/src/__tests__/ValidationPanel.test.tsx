@@ -82,9 +82,7 @@ describe("ValidationPanel", () => {
     const commits = [
       makeCommit({
         title: "Bad commit",
-        validationErrors: [
-          { code: "MISSING_CHESS_PRIORITY", message: "Chess priority is required" },
-        ],
+        validationErrors: [{ code: "MISSING_CHESS_PRIORITY", message: "Chess priority is required" }],
       }),
     ];
     render(<ValidationPanel commits={commits} />);

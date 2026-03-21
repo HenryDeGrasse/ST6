@@ -1,5 +1,16 @@
 package com.weekly.plan.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.weekly.audit.AuditService;
@@ -17,28 +28,17 @@ import com.weekly.plan.repository.WeeklyCommitRepository;
 import com.weekly.plan.repository.WeeklyPlanRepository;
 import com.weekly.shared.ErrorCode;
 import com.weekly.shared.EventType;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /**
  * Unit tests for {@link CommitService}: CRUD, state enforcement, and field freezing.
@@ -110,7 +110,7 @@ class CommitServiceTest {
                     "Deliver feature X", "Build the thing",
                     "KING", "DELIVERY",
                     UUID.randomUUID().toString(), null,
-                    "Feature shipped", 0.9, new String[]{"feature", "sprint1"}
+                    "Feature shipped", 0.9, null, new String[]{"feature", "sprint1"}
             );
 
             WeeklyCommitResponse result = commitService.createCommit(ORG_ID, plan.getId(), request, USER_ID);
@@ -126,13 +126,34 @@ class CommitServiceTest {
         }
 
         @Test
+        void createsCommitWithEstimatedHours() {
+            WeeklyPlanEntity plan = draftPlan();
+            when(commitRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(planRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            CreateCommitRequest request = new CreateCommitRequest(
+                    "Capacity-aware task", null,
+                    "KING", "DELIVERY",
+                    UUID.randomUUID().toString(), null,
+                    null, 0.8, 12.5, null
+            );
+
+            WeeklyCommitResponse result = commitService.createCommit(ORG_ID, plan.getId(), request, USER_ID);
+
+            assertEquals(12.5, result.estimatedHours());
+            ArgumentCaptor<WeeklyCommitEntity> commitCaptor = ArgumentCaptor.forClass(WeeklyCommitEntity.class);
+            verify(commitRepository).save(commitCaptor.capture());
+            assertEquals(0, BigDecimal.valueOf(12.5).compareTo(commitCaptor.getValue().getEstimatedHours()));
+        }
+
+        @Test
         void createsMinimalCommit() {
             WeeklyPlanEntity plan = draftPlan();
             when(commitRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(planRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             CreateCommitRequest request = new CreateCommitRequest(
-                    "Quick task", null, null, null, null, null, null, null, null
+                    "Quick task", null, null, null, null, null, null, null, null, null
             );
 
             WeeklyCommitResponse result = commitService.createCommit(ORG_ID, plan.getId(), request, USER_ID);
@@ -147,7 +168,7 @@ class CommitServiceTest {
             WeeklyPlanEntity plan = lockedPlan();
 
             CreateCommitRequest request = new CreateCommitRequest(
-                    "New task", null, null, null, null, null, null, null, null
+                    "New task", null, null, null, null, null, null, null, null, null
             );
 
             PlanStateException ex = assertThrows(
@@ -163,7 +184,7 @@ class CommitServiceTest {
 
             CreateCommitRequest request = new CreateCommitRequest(
                     "Task", null, "KING", "DELIVERY",
-                    "out-010", null, null, null, null
+                    "out-010", null, null, null, null, null
             );
 
             PlanValidationException ex = assertThrows(
@@ -280,7 +301,7 @@ class CommitServiceTest {
                     "Updated title", "New description",
                     "QUEEN", "OPERATIONS",
                     UUID.randomUUID().toString(), null,
-                    "New expected", 0.8, new String[]{"tag1"},
+                    "New expected", 0.8, null, new String[]{"tag1"},
                     "Some notes"
             );
 
@@ -294,6 +315,30 @@ class CommitServiceTest {
         }
 
         @Test
+        void updatesEstimatedHoursInDraftState() {
+            WeeklyPlanEntity plan = draftPlan();
+            WeeklyCommitEntity commit = new WeeklyCommitEntity(
+                    UUID.randomUUID(), ORG_ID, plan.getId(), "Original"
+            );
+            commit.setEstimatedHours(BigDecimal.valueOf(4.0));
+            when(commitRepository.findById(commit.getId())).thenReturn(Optional.of(commit));
+            when(commitRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            UpdateCommitRequest request = new UpdateCommitRequest(
+                    null, null, null, null, null, null, null, null, 7.5, null, null
+            );
+
+            WeeklyCommitResponse result = commitService.updateCommit(
+                    ORG_ID, commit.getId(), commit.getVersion(), request, USER_ID
+            );
+
+            assertEquals(7.5, result.estimatedHours());
+            ArgumentCaptor<WeeklyCommitEntity> commitCaptor = ArgumentCaptor.forClass(WeeklyCommitEntity.class);
+            verify(commitRepository).save(commitCaptor.capture());
+            assertEquals(0, BigDecimal.valueOf(7.5).compareTo(commitCaptor.getValue().getEstimatedHours()));
+        }
+
+        @Test
         void allowsProgressNotesUpdateInLockedState() {
             WeeklyPlanEntity plan = lockedPlan();
             WeeklyCommitEntity commit = new WeeklyCommitEntity(
@@ -303,7 +348,7 @@ class CommitServiceTest {
             when(commitRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             UpdateCommitRequest request = new UpdateCommitRequest(
-                    null, null, null, null, null, null, null, null, null,
+                    null, null, null, null, null, null, null, null, null, null,
                     "Mid-week update: on track"
             );
 
@@ -323,7 +368,26 @@ class CommitServiceTest {
             when(commitRepository.findById(commit.getId())).thenReturn(Optional.of(commit));
 
             UpdateCommitRequest request = new UpdateCommitRequest(
-                    "Changed title", null, null, null, null, null, null, null, null, null
+                    "Changed title", null, null, null, null, null, null, null, null, null, null
+            );
+
+            PlanStateException ex = assertThrows(
+                    PlanStateException.class,
+                    () -> commitService.updateCommit(ORG_ID, commit.getId(), commit.getVersion(), request, USER_ID)
+            );
+            assertEquals(ErrorCode.FIELD_FROZEN, ex.getErrorCode());
+        }
+
+        @Test
+        void rejectsEstimatedHoursUpdateInLockedState() {
+            WeeklyPlanEntity plan = lockedPlan();
+            WeeklyCommitEntity commit = new WeeklyCommitEntity(
+                    UUID.randomUUID(), ORG_ID, plan.getId(), "Task"
+            );
+            when(commitRepository.findById(commit.getId())).thenReturn(Optional.of(commit));
+
+            UpdateCommitRequest request = new UpdateCommitRequest(
+                    null, null, null, null, null, null, null, null, 6.0, null, null
             );
 
             PlanStateException ex = assertThrows(
@@ -342,7 +406,7 @@ class CommitServiceTest {
             when(commitRepository.findById(commit.getId())).thenReturn(Optional.of(commit));
 
             UpdateCommitRequest request = new UpdateCommitRequest(
-                    "Changed", null, null, null, null, null, null, null, null, null
+                    "Changed", null, null, null, null, null, null, null, null, null, null
             );
 
             OptimisticLockException ex = assertThrows(
@@ -365,7 +429,7 @@ class CommitServiceTest {
             when(commitRepository.findById(commit.getId())).thenReturn(Optional.of(commit));
 
             UpdateCommitRequest request = new UpdateCommitRequest(
-                    null, null, null, null, null, null, null, null, null,
+                    null, null, null, null, null, null, null, null, null, null,
                     "Notes"
             );
 
@@ -440,7 +504,7 @@ class CommitServiceTest {
 
             CreateCommitRequest request = new CreateCommitRequest(
                     "Audit test commit", null, "KING", "DELIVERY",
-                    UUID.randomUUID().toString(), null, null, null, null
+                    UUID.randomUUID().toString(), null, null, null, null, null
             );
 
             WeeklyCommitResponse result = commitService.createCommit(ORG_ID, plan.getId(), request, USER_ID);
@@ -477,7 +541,7 @@ class CommitServiceTest {
             when(commitRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             UpdateCommitRequest request = new UpdateCommitRequest(
-                    "Updated title", null, null, null, null, null, null, null, null,
+                    "Updated title", null, null, null, null, null, null, null, null, null,
                     "Some notes"
             );
 
@@ -512,6 +576,35 @@ class CommitServiceTest {
         }
 
         @Test
+        void updateCommitAuditIncludesEstimatedHoursWhenChanged() {
+            WeeklyPlanEntity plan = draftPlan();
+            WeeklyCommitEntity commit = new WeeklyCommitEntity(
+                    UUID.randomUUID(), ORG_ID, plan.getId(), "Original"
+            );
+            commit.setEstimatedHours(BigDecimal.valueOf(5.0));
+            when(commitRepository.findById(commit.getId())).thenReturn(Optional.of(commit));
+            when(commitRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            UpdateCommitRequest request = new UpdateCommitRequest(
+                    null, null, null, null, null, null, null, null, 8.0, null, null
+            );
+
+            commitService.updateCommit(ORG_ID, commit.getId(), commit.getVersion(), request, USER_ID);
+
+            ArgumentCaptor<String> reasonCaptor = ArgumentCaptor.forClass(String.class);
+            verify(auditService).record(
+                    eq(ORG_ID), eq(USER_ID),
+                    eq(EventType.COMMIT_UPDATED.getValue()),
+                    eq("WeeklyCommit"), eq(commit.getId()),
+                    eq(null), eq(null), reasonCaptor.capture(), eq(null), eq(null)
+            );
+            Map<String, Object> auditReason = parseAuditReason(reasonCaptor.getValue());
+            @SuppressWarnings("unchecked")
+            List<String> changedFields = (List<String>) auditReason.get("changedFields");
+            assertTrue(changedFields.contains("estimatedHours"));
+        }
+
+        @Test
         void updateCommitAuditOnlyIncludesFieldsThatActuallyChanged() {
             WeeklyPlanEntity plan = draftPlan();
             WeeklyCommitEntity commit = new WeeklyCommitEntity(
@@ -521,7 +614,7 @@ class CommitServiceTest {
             when(commitRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             UpdateCommitRequest request = new UpdateCommitRequest(
-                    "Original", null, null, null, null, null, null, null, null, ""
+                    "Original", null, null, null, null, null, null, null, null, null, ""
             );
 
             commitService.updateCommit(ORG_ID, commit.getId(), commit.getVersion(), request, USER_ID);
@@ -578,7 +671,7 @@ class CommitServiceTest {
             WeeklyPlanEntity plan = lockedPlan();
 
             CreateCommitRequest request = new CreateCommitRequest(
-                    "New task", null, null, null, null, null, null, null, null
+                    "New task", null, null, null, null, null, null, null, null, null
             );
 
             assertThrows(PlanStateException.class,
@@ -617,7 +710,7 @@ class CommitServiceTest {
             plan.lock(LockType.ON_TIME);
 
             CreateCommitRequest request = new CreateCommitRequest(
-                    "New task", null, null, null, null, null, null, null, null
+                    "New task", null, null, null, null, null, null, null, null, null
             );
 
             assertThrows(
@@ -635,7 +728,7 @@ class CommitServiceTest {
             when(commitRepository.findById(commit.getId())).thenReturn(Optional.of(commit));
 
             UpdateCommitRequest request = new UpdateCommitRequest(
-                    "Changed", null, null, null, null, null, null, null, null, null
+                    "Changed", null, null, null, null, null, null, null, null, null, null
             );
 
             assertThrows(

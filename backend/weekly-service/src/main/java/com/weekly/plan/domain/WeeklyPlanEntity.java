@@ -7,19 +7,23 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
+import org.hibernate.annotations.SQLRestriction;
 
 /**
  * JPA entity for the {@code weekly_plans} table.
  *
  * <p>Represents a single user's plan for a given week. The plan follows
  * a lifecycle state machine: DRAFT → LOCKED → RECONCILING → RECONCILED → CARRY_FORWARD.
+ *
+ * <p>Soft-deleted plans ({@code deleted_at IS NOT NULL}) are hidden from all
+ * normal queries via the {@link SQLRestriction} filter (PRD §14.7).
  */
 @Entity
 @Table(name = "weekly_plans")
+@SQLRestriction("deleted_at IS NULL")
 public class WeeklyPlanEntity {
 
     @Id
@@ -62,6 +66,10 @@ public class WeeklyPlanEntity {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    /** Set by {@link com.weekly.plan.service.PlanRetentionJob} when the plan is soft-deleted. */
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 
     protected WeeklyPlanEntity() {
         // JPA
@@ -128,6 +136,10 @@ public class WeeklyPlanEntity {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
     }
 
     // ── State transitions ────────────────────────────────────

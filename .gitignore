@@ -11,6 +11,7 @@ out/
 
 # Java / Gradle
 backend/weekly-service/.gradle/
+backend/weekly-service/.jqwik-database
 backend/weekly-service/build/
 backend/weekly-service/bin/
 *.class
@@ -54,3 +55,6 @@ tmp/
 
 # Dev script state
 .dev-pids
+
+# Generated SBOMs (uploaded as CI artifacts)
+frontend-sbom.json

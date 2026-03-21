@@ -2,11 +2,7 @@
  * Hook for RCDO hierarchy data (tree browsing + search).
  */
 import { useState, useCallback } from "react";
-import type {
-  RcdoCry,
-  RcdoSearchResult,
-  ApiErrorResponse,
-} from "@weekly-commitments/contracts";
+import type { RcdoCry, RcdoSearchResult, ApiErrorResponse } from "@weekly-commitments/contracts";
 import { useApiClient } from "../api/ApiContext.js";
 
 export interface UseRcdoResult {
@@ -31,14 +27,11 @@ export function useRcdo(): UseRcdoResult {
     setError(null);
   }, []);
 
-  const extractError = useCallback(
-    (resp: { error?: unknown; response: Response }): string => {
-      const err = resp.error as ApiErrorResponse | undefined;
-      if (err?.error?.message) return err.error.message;
-      return `Request failed (${String(resp.response.status)})`;
-    },
-    [],
-  );
+  const extractError = useCallback((resp: { error?: unknown; response: Response }): string => {
+    const err = resp.error as ApiErrorResponse | undefined;
+    if (err?.error?.message) return err.error.message;
+    return `Request failed (${String(resp.response.status)})`;
+  }, []);
 
   const fetchTree = useCallback(async () => {
     setLoading(true);

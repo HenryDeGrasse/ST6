@@ -7,13 +7,13 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.type.SqlTypes;
 
 /**
  * JPA entity for the {@code weekly_commits} table.
@@ -21,9 +21,13 @@ import java.util.UUID;
  * <p>Represents a single commitment within a weekly plan. During DRAFT,
  * all planning fields are mutable. After LOCK, only {@code progressNotes}
  * may be updated.
+ *
+ * <p>Soft-deleted commits ({@code deleted_at IS NOT NULL}) are hidden from all
+ * normal queries via the {@link SQLRestriction} filter (PRD §14.7).
  */
 @Entity
 @Table(name = "weekly_commits")
+@SQLRestriction("deleted_at IS NULL")
 public class WeeklyCommitEntity {
 
     @Id
@@ -61,6 +65,9 @@ public class WeeklyCommitEntity {
 
     @Column(name = "confidence", precision = 3, scale = 2)
     private BigDecimal confidence;
+
+    @Column(name = "estimated_hours", precision = 5, scale = 1)
+    private BigDecimal estimatedHours;
 
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(name = "tags", nullable = false)
@@ -103,6 +110,10 @@ public class WeeklyCommitEntity {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    /** Set by {@link com.weekly.plan.service.PlanRetentionJob} when the commit is soft-deleted. */
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 
     protected WeeklyCommitEntity() {
         // JPA
@@ -167,6 +178,10 @@ public class WeeklyCommitEntity {
 
     public BigDecimal getConfidence() {
         return confidence;
+    }
+
+    public BigDecimal getEstimatedHours() {
+        return estimatedHours;
     }
 
     public String[] getTags() {
@@ -259,6 +274,11 @@ public class WeeklyCommitEntity {
         this.updatedAt = Instant.now();
     }
 
+    public void setEstimatedHours(BigDecimal estimatedHours) {
+        this.estimatedHours = estimatedHours;
+        this.updatedAt = Instant.now();
+    }
+
     public void setTagsFromArray(String[] tags) {
         this.tags = tags == null ? new String[0] : Arrays.copyOf(tags, tags.length);
         this.updatedAt = Instant.now();
@@ -275,6 +295,10 @@ public class WeeklyCommitEntity {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
     }
 
     // ── RCDO snapshot population ────────────────────────────

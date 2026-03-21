@@ -1,10 +1,9 @@
 package com.weekly.outbox;
 
 import com.weekly.shared.EventType;
-import org.springframework.stereotype.Service;
-
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.stereotype.Service;
 
 /**
  * JPA-backed implementation of {@link OutboxService}.

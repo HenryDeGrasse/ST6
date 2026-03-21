@@ -31,9 +31,7 @@ export interface ChessIconProps {
  */
 function PiecePaths({ piece }: { piece: ChessPiece }): React.ReactElement {
   /* shared base: wide rounded rectangle at the bottom of every piece */
-  const Base = (
-    <path d="M5.5 15 L5.5 17 Q5.5 19 8 19 L16 19 Q18.5 19 18.5 17 L18.5 15 Z" />
-  );
+  const Base = <path d="M5.5 15 L5.5 17 Q5.5 19 8 19 L16 19 Q18.5 19 18.5 17 L18.5 15 Z" />;
 
   switch (piece) {
     case "KING":
@@ -90,7 +88,8 @@ function PiecePaths({ piece }: { piece: ChessPiece }): React.ReactElement {
       return (
         <>
           {/* horse-head silhouette profile */}
-          <path d="
+          <path
+            d="
             M9 20 L9 15
             C 8 14  7 12  7.5 10
             C 7.5 8  9 6  11 5.5
@@ -102,7 +101,8 @@ function PiecePaths({ piece }: { piece: ChessPiece }): React.ReactElement {
             L 15 13.5
             C 15 13.5  14 14.5  13 15
             L 14 20 Z
-          " />
+          "
+          />
         </>
       );
 
@@ -127,11 +127,7 @@ function PiecePaths({ piece }: { piece: ChessPiece }): React.ReactElement {
  * @example
  * <ChessIcon piece="QUEEN" size={24} className={styles.pieceIcon} />
  */
-export const ChessIcon: React.FC<ChessIconProps> = ({
-  piece,
-  size = 20,
-  className,
-}) => {
+export const ChessIcon: React.FC<ChessIconProps> = ({ piece, size = 20, className }) => {
   const fillColor = `var(--wc-chess-${piece.toLowerCase()})`;
 
   return (

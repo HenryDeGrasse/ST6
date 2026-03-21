@@ -50,9 +50,7 @@ describe("createApiClient", () => {
 
     expect(fetchMock).toHaveBeenCalledOnce();
     const request = fetchMock.mock.calls[0]?.[0] as Request;
-    expect(request.headers.get("Authorization")).toBe(
-      "Bearer dev:user-123:org-456:IC,MANAGER",
-    );
+    expect(request.headers.get("Authorization")).toBe("Bearer dev:user-123:org-456:IC,MANAGER");
     // No X- headers should be sent
     expect(request.headers.get("X-User-Id")).toBeNull();
     expect(request.headers.get("X-Org-Id")).toBeNull();
@@ -82,9 +80,7 @@ describe("createApiClient", () => {
 
     expect(fetchMock).toHaveBeenCalledOnce();
     const request = fetchMock.mock.calls[0]?.[0] as Request;
-    expect(request.headers.get("Authorization")).toBe(
-      "Bearer dev:user-abc:org-def:IC",
-    );
+    expect(request.headers.get("Authorization")).toBe("Bearer dev:user-abc:org-def:IC");
     expect(request.headers.get("X-User-Id")).toBeNull();
     expect(request.headers.get("X-Org-Id")).toBeNull();
     expect(request.headers.get("X-Roles")).toBeNull();

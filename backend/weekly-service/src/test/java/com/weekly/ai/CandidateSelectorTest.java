@@ -1,13 +1,13 @@
 package com.weekly.ai;
 
-import com.weekly.rcdo.RcdoTree;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.weekly.rcdo.RcdoTree;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link CandidateSelector}.
@@ -96,5 +96,25 @@ class CandidateSelectorTest {
         );
 
         assertTrue(candidates.isEmpty());
+    }
+
+    @Test
+    void ranksBoostedCandidatesFirstEvenWhenAllOutcomesFit() {
+        RcdoTree tree = new RcdoTree(List.of(
+                new RcdoTree.RallyCry("rc1", "Revenue", List.of(
+                        new RcdoTree.Objective("obj1", "Sales", "rc1", List.of(
+                                new RcdoTree.Outcome("o1", "Alpha Outcome", "obj1"),
+                                new RcdoTree.Outcome("o2", "Beta Outcome", "obj1")
+                        ))
+                ))
+        ));
+
+        List<PromptBuilder.CandidateOutcome> candidates = CandidateSelector.select(
+                tree, "zzz yyy xxx", null, 50, Set.of("o2")
+        );
+
+        assertEquals(2, candidates.size());
+        assertEquals("o2", candidates.get(0).outcomeId(),
+                "Boosted outcomes should move to the front of the ranked candidate list");
     }
 }

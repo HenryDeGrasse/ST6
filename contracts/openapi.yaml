@@ -26,6 +26,14 @@ tags:
     description: Rally Cry / Defining Objective / Outcome read-through
   - name: AI
     description: AI-assisted suggestion endpoints
+  - name: Trends
+    description: Cross-week planning trend analytics (Wave 1)
+  - name: Admin
+    description: Administrative configuration endpoints (ADMIN role required)
+  - name: Integrations
+    description: External issue-tracker integrations (Jira, Linear) — Wave 4
+  - name: Capacity
+    description: Capacity planning and estimation coaching (Phase 4)
 
 paths:
   /weeks/{weekStart}/plans:
@@ -402,6 +410,62 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
 
+  /commits/{commitId}/check-in:
+    post:
+      operationId: addCheckIn
+      summary: Append a daily check-in to a commit
+      description: |
+        Appends a structured progress micro-update to the given commit.
+        Check-in history is append-only — entries are never modified or deleted.
+      tags: [Commits]
+      parameters:
+        - $ref: '#/components/parameters/CommitIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+      responses:
+        '201':
+          description: Check-in entry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckInEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /commits/{commitId}/check-ins:
+    get:
+      operationId: getCheckIns
+      summary: Get check-in history for a commit
+      description: |
+        Returns the complete append-only check-in history for the given commit,
+        ordered oldest-first.
+      tags: [Commits]
+      parameters:
+        - $ref: '#/components/parameters/CommitIdPath'
+      responses:
+        '200':
+          description: Check-in history returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckInHistoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /weeks/{weekStart}/team/summary:
     get:
       operationId: getTeamSummary
@@ -681,6 +745,485 @@ paths:
         '429':
           description: Rate limit exceeded
 
+  /ai/plan-quality-check:
+    post:
+      operationId: planQualityCheck
+      summary: Lock-time AI plan quality nudge (Wave 1)
+      description: |
+        Runs data-driven quality checks on the given plan and returns a list of
+        nudge items covering: RCDO coverage gaps, category imbalance, chess
+        distribution balance, and RCDO alignment vs team average.
+        No LLM is required — all checks are computed from existing plan data.
+        Returns 200 with status "unavailable" and empty nudges when the
+        planQualityNudge feature flag is disabled.
+      tags: [AI]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanQualityCheckRequest'
+      responses:
+        '200':
+          description: Quality nudges returned (may be empty)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanQualityCheckResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          description: Rate limit exceeded
+
+  /ai/suggest-next-work:
+    post:
+      operationId: suggestNextWork
+      summary: AI next-work suggestions — Phase 1 (Wave 2)
+      description: |
+        Returns data-driven next-work suggestions for the authenticated user.
+        Phase 1 is pure data queries — no LLM required.
+
+        Suggestion sources:
+        - CARRY_FORWARD — commits not completed in the user's last 2 weeks
+        - COVERAGE_GAP — RCDO outcomes with zero team commits in the last 2–4 weeks
+          that had prior team activity
+
+        Results are filtered by recent DECLINE feedback (within 4 weeks) to avoid
+        re-surfacing dismissed items.
+
+        Returns 200 with status "unavailable" and empty suggestions when the
+        suggestNextWork feature flag is disabled.
+      tags: [AI]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuggestNextWorkRequest'
+      responses:
+        '200':
+          description: Suggestions returned (may be empty)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuggestNextWorkResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          description: Rate limit exceeded
+
+  /ai/suggestion-feedback:
+    post:
+      operationId: recordSuggestionFeedback
+      summary: Record user feedback on a next-work suggestion
+      description: |
+        Records a user action (ACCEPT, DEFER, DECLINE) on an AI-generated
+        next-work suggestion.
+
+        Upsert semantics: submitting feedback for a suggestion the user has already
+        acted on updates the previous record.
+
+        DECLINE actions suppress the suggestion from re-surfacing for 4 weeks.
+        Returns 200 with status "unavailable" when the suggestNextWork flag is disabled.
+      tags: [AI]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuggestionFeedbackRequest'
+      responses:
+        '200':
+          description: Feedback recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuggestionFeedbackResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /plans/draft-from-history:
+    post:
+      operationId: draftFromHistory
+      summary: '"Start My Week" — create a draft plan pre-filled from history'
+      description: |
+        Creates (or updates) a DRAFT plan for the requested week, pre-filled with
+        AI-suggested commits derived from the user's last 4 weeks of planning history.
+
+        Suggestion sources:
+        - CARRIED_FORWARD — commits not completed (status != DONE) in the most recent
+          reconciled plan
+        - RECURRING — commit titles or outcome IDs appearing in 2+ consecutive historical weeks
+        - COVERAGE_GAP — reserved for future NextWorkService integration
+
+        Each suggested commit is persisted in the new/existing DRAFT plan with its source
+        stored in the tags[] array as "draft_source:<SOURCE>".
+
+        Returns 409 if the target week already has a plan in a non-DRAFT state.
+      tags: [Plans, AI]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DraftFromHistoryRequest'
+      responses:
+        '200':
+          description: Draft plan created or updated with suggestions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftFromHistoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /users/me/trends:
+    get:
+      operationId: getMyTrends
+      summary: Get cross-week trend analytics for the authenticated user
+      description: |
+        Returns rolling-window planning metrics for the last N weeks:
+        strategic alignment rate, carry-forward velocity, completion accuracy,
+        priority/category distributions, per-week breakdown, and structured insights.
+      tags: [Trends]
+      parameters:
+        - name: weeks
+          in: query
+          required: false
+          description: Size of the rolling window in weeks (1–26, default 8)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 26
+            default: 8
+      responses:
+        '200':
+          description: Trend data returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrendsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /admin/org-policy:
+    get:
+      operationId: getOrgPolicy
+      summary: Get org policy configuration (admin only)
+      description: |
+        Returns the current org policy including chess rules, cadence schedule,
+        and weekly digest configuration. Requires the ADMIN role.
+      tags: [Admin]
+      responses:
+        '200':
+          description: Org policy returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgPolicy'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/org-policy/digest:
+    patch:
+      operationId: updateDigestConfig
+      summary: Update the weekly digest schedule (admin only)
+      description: |
+        Updates the digest_day and digest_time fields of the org's policy record.
+        Evicts the policy cache so the next digest job run picks up the change.
+        Requires the ADMIN role.
+      tags: [Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDigestConfigRequest'
+      responses:
+        '200':
+          description: Digest configuration updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgPolicy'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /admin/adoption-metrics:
+    get:
+      operationId: getAdoptionMetrics
+      summary: Get weekly adoption funnel metrics (admin only)
+      description: |
+        Returns per-week breakdowns of the planning lifecycle funnel:
+        plans created, locked, reconciled, and reviewed, plus total active
+        users and cadence-compliance rate over a rolling window.
+        Requires the ADMIN role.
+      tags: [Admin]
+      parameters:
+        - name: weeks
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 26
+            default: 8
+          description: Rolling-window size in weeks (1–26)
+      responses:
+        '200':
+          description: Adoption metrics returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdoptionMetrics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /admin/ai-usage:
+    get:
+      operationId: getAiUsage
+      summary: Get AI feature usage metrics (admin only)
+      description: |
+        Returns suggestion acceptance/defer/decline rates from
+        ai_suggestion_feedback and in-process cache hit/miss statistics.
+        Requires the ADMIN role.
+      tags: [Admin]
+      parameters:
+        - name: weeks
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 26
+            default: 8
+          description: Rolling-window size in weeks (1–26)
+      responses:
+        '200':
+          description: AI usage metrics returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiUsageMetrics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /admin/rcdo-health:
+    get:
+      operationId: getRcdoHealth
+      summary: Get RCDO health report (admin only)
+      description: |
+        Examines locked commits from the last 8 weeks and produces a ranked
+        list of RCDO outcomes by commit coverage. Outcomes with zero commits
+        are listed as stale/uncovered. Requires the ADMIN role.
+      tags: [Admin]
+      responses:
+        '200':
+          description: RCDO health report returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RcdoHealthReport'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /integrations/link-ticket:
+    post:
+      operationId: linkTicket
+      summary: Link a commit to an external ticket
+      description: |
+        Links a weekly commit to a ticket in an external issue-tracker (Jira or Linear).
+        When the commit's title or description is empty, the values are auto-populated
+        from the fetched ticket data.
+
+        Idempotent: if the link already exists, returns the existing record with 201.
+      tags: [Integrations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkTicketRequest'
+      responses:
+        '201':
+          description: Ticket linked (or already linked — idempotent)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalTicketLink'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /commits/{commitId}/linked-tickets:
+    get:
+      operationId: getLinkedTickets
+      summary: Get external ticket links for a commit
+      description: Returns all external ticket links associated with the given weekly commit.
+      tags: [Integrations, Commits]
+      parameters:
+        - name: commitId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The weekly commit UUID
+      responses:
+        '200':
+          description: List of linked tickets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkedTicketsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /integrations/webhook/{provider}:
+    post:
+      operationId: handleIntegrationWebhook
+      summary: Handle an external ticket status webhook
+      description: |
+        Receives a provider webhook payload and fan-outs any mapped ticket status
+        change to linked internal check-in entries. This endpoint is unauthenticated
+        because external providers cannot present a user session; provider-specific
+        signature verification is handled separately.
+      security: []
+      tags: [Integrations]
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+          description: External issue-tracker provider (case-insensitive; e.g. jira or linear)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: Provider-specific webhook payload
+      responses:
+        '200':
+          description: Webhook accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookResponse'
+
+  /users/me/capacity:
+    get:
+      operationId: getMyCapacity
+      summary: Get my capacity profile
+      description: |
+        Returns the authenticated user's most recently computed capacity profile.
+        Returns 404 when no profile has been computed yet (the profile is
+        generated by the weekly CapacityComputeJob).
+      tags: [Capacity]
+      responses:
+        '200':
+          description: Capacity profile returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapacityProfileResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /team/capacity:
+    get:
+      operationId: getTeamCapacity
+      summary: Get team capacity for a week (manager only)
+      description: |
+        Returns the capacity posture of every direct report of the authenticated
+        manager for the requested week. Requires the MANAGER role.
+      tags: [Capacity]
+      parameters:
+        - name: weekStart
+          in: query
+          required: true
+          description: ISO-8601 Monday date (e.g. 2026-03-16)
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Team capacity returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamCapacityResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /users/me/estimation-coaching:
+    get:
+      operationId: getEstimationCoaching
+      summary: Get estimation coaching feedback for a plan
+      description: |
+        Returns post-reconciliation estimation coaching insights for the
+        authenticated user's specified plan. Gated by the estimationCoaching
+        feature flag on the backend.
+      tags: [Capacity]
+      parameters:
+        - name: planId
+          in: query
+          required: true
+          description: UUID of the weekly plan to generate coaching for
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Estimation coaching returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstimationCoachingResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
   /health:
     get:
       operationId: healthCheck
@@ -849,6 +1392,11 @@ components:
             type: string
         progressNotes:
           type: string
+        estimatedHours:
+          type: number
+          minimum: 0
+          maximum: 100
+          nullable: true
         snapshotRallyCryId:
           type: string
           format: uuid
@@ -976,6 +1524,11 @@ components:
           items:
             type: string
           default: []
+        estimatedHours:
+          type: number
+          minimum: 0
+          maximum: 100
+          nullable: true
 
     UpdateCommitRequest:
       type: object
@@ -1010,6 +1563,11 @@ components:
             type: string
         progressNotes:
           type: string
+        estimatedHours:
+          type: number
+          minimum: 0
+          maximum: 100
+          nullable: true
 
     UpdateActualRequest:
       type: object
@@ -1372,6 +1930,1006 @@ components:
         severity:
           type: string
           enum: [INFO, WARNING, POSITIVE]
+
+    PlanQualityCheckRequest:
+      type: object
+      required: [planId]
+      properties:
+        planId:
+          type: string
+          format: uuid
+          description: The plan to assess for quality nudges
+
+    PlanQualityCheckResponse:
+      type: object
+      required: [status, nudges]
+      properties:
+        status:
+          type: string
+          enum: [ok, unavailable]
+          description: ok when checks ran successfully; unavailable when flag is disabled
+        nudges:
+          type: array
+          items:
+            $ref: '#/components/schemas/QualityNudge'
+
+    QualityNudge:
+      type: object
+      required: [type, message, severity]
+      properties:
+        type:
+          type: string
+          description: |
+            Machine-readable nudge type identifier. Known values:
+            COVERAGE_GAP, CATEGORY_IMBALANCE, CHESS_NO_KING, CHESS_PAWN_HEAVY,
+            CHESS_BALANCED, ZERO_RCDO_ALIGNMENT, BELOW_TEAM_RCDO_ALIGNMENT,
+            HIGH_RCDO_ALIGNMENT
+          example: COVERAGE_GAP
+        message:
+          type: string
+          description: Human-readable explanation shown in the UI
+        severity:
+          type: string
+          enum: [INFO, WARNING, POSITIVE]
+          description: Visual treatment — INFO is neutral, WARNING is amber, POSITIVE is green
+
+    SuggestNextWorkRequest:
+      type: object
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: |
+            ISO date of the Monday to use as the reference week (e.g. 2026-03-16).
+            Defaults to the current Monday if omitted.
+
+    SuggestNextWorkResponse:
+      type: object
+      required: [status, suggestions]
+      properties:
+        status:
+          type: string
+          enum: [ok, unavailable]
+          description: ok when suggestions were computed; unavailable when flag is disabled
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/NextWorkSuggestion'
+
+    NextWorkSuggestion:
+      type: object
+      required: [suggestionId, title, confidence, source, sourceDetail, rationale]
+      properties:
+        suggestionId:
+          type: string
+          format: uuid
+          description: Stable deterministic ID for feedback correlation
+        title:
+          type: string
+          description: Suggested commit title
+        suggestedOutcomeId:
+          type: string
+          format: uuid
+          nullable: true
+          description: RCDO outcome UUID (null for non-strategic carry-forward items)
+        suggestedChessPriority:
+          allOf:
+            - $ref: '#/components/schemas/ChessPriority'
+          nullable: true
+          description: Recommended chess priority (null when no recommendation available)
+        confidence:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Confidence score for this suggestion
+        source:
+          type: string
+          enum: [CARRY_FORWARD, COVERAGE_GAP, EXTERNAL_TICKET]
+          description: How this suggestion was generated
+        sourceDetail:
+          type: string
+          description: Human-readable detail about the suggestion source
+        rationale:
+          type: string
+          description: Human-readable explanation of why this item is suggested
+        externalTicketUrl:
+          type: string
+          nullable: true
+          description: |
+            URL to the ticket in the provider's web UI.
+            Only present when source is EXTERNAL_TICKET.
+        externalTicketStatus:
+          type: string
+          nullable: true
+          description: |
+            Last-synced status label from the external provider (e.g. "In Progress").
+            Only present when source is EXTERNAL_TICKET.
+
+    SuggestionFeedbackRequest:
+      type: object
+      required: [suggestionId, action]
+      properties:
+        suggestionId:
+          type: string
+          format: uuid
+          description: ID of the suggestion being acted upon
+        action:
+          type: string
+          enum: [ACCEPT, DEFER, DECLINE]
+          description: |
+            User action on the suggestion.
+            DECLINE suppresses the suggestion for 4 weeks.
+        reason:
+          type: string
+          nullable: true
+          description: Optional free-text reason for the action
+        sourceType:
+          type: string
+          nullable: true
+          description: Source type for traceability (e.g. CARRY_FORWARD, COVERAGE_GAP)
+        sourceDetail:
+          type: string
+          nullable: true
+          description: Additional source context for traceability
+
+    SuggestionFeedbackResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok, unavailable]
+          description: ok when feedback was recorded; unavailable when flag is disabled
+
+    CommitSource:
+      type: string
+      enum: [CARRIED_FORWARD, RECURRING, COVERAGE_GAP]
+      description: |
+        Source classification for AI-suggested commits produced by the
+        draft-from-history service:
+        - CARRIED_FORWARD: not completed in the most recent reconciled plan
+        - RECURRING: similar title or outcome ID appeared in 2+ consecutive weeks
+        - COVERAGE_GAP: coverage gap (future NextWorkService integration)
+
+    SuggestedCommit:
+      type: object
+      required: [commitId, title, source]
+      properties:
+        commitId:
+          type: string
+          format: uuid
+          description: ID of the newly created DRAFT commit
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        chessPriority:
+          allOf:
+            - $ref: '#/components/schemas/ChessPriority'
+          nullable: true
+        category:
+          allOf:
+            - $ref: '#/components/schemas/CommitCategory'
+          nullable: true
+        outcomeId:
+          type: string
+          format: uuid
+          nullable: true
+        nonStrategicReason:
+          type: string
+          nullable: true
+        expectedResult:
+          type: string
+          nullable: true
+        source:
+          $ref: '#/components/schemas/CommitSource'
+
+    DraftFromHistoryRequest:
+      type: object
+      required: [weekStart]
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: |
+            ISO date of the Monday that starts the target week (e.g. 2026-03-16).
+            Must be a Monday; returns 422 otherwise.
+
+    DraftFromHistoryResponse:
+      type: object
+      required: [planId, suggestedCommits]
+      properties:
+        planId:
+          type: string
+          format: uuid
+          description: ID of the created or updated DRAFT plan
+        suggestedCommits:
+          type: array
+          items:
+            $ref: '#/components/schemas/SuggestedCommit'
+          description: Ordered list of suggested commits added to the draft plan
+
+    CheckInRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [ON_TRACK, AT_RISK, BLOCKED, DONE_EARLY]
+          description: Current progress status of the commit
+        note:
+          type: string
+          description: Optional free-text note (stored as empty string if omitted)
+
+    CheckInEntry:
+      type: object
+      required:
+        - id
+        - commitId
+        - status
+        - note
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        commitId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [ON_TRACK, AT_RISK, BLOCKED, DONE_EARLY]
+        note:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CheckInHistoryResponse:
+      type: object
+      required:
+        - commitId
+        - entries
+      properties:
+        commitId:
+          type: string
+          format: uuid
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckInEntry'
+          description: Append-only history ordered oldest-first
+
+    TrendsResponse:
+      type: object
+      required:
+        - weeksAnalyzed
+        - windowStart
+        - windowEnd
+        - strategicAlignmentRate
+        - teamStrategicAlignmentRate
+        - avgCarryForwardPerWeek
+        - carryForwardStreak
+        - avgConfidence
+        - completionAccuracy
+        - confidenceAccuracyGap
+        - priorityDistribution
+        - categoryDistribution
+        - weekPoints
+        - insights
+      properties:
+        weeksAnalyzed:
+          type: integer
+          description: Number of weeks with at least one commit
+        windowStart:
+          type: string
+          format: date
+          description: Earliest Monday in the rolling window
+        windowEnd:
+          type: string
+          format: date
+          description: Most recent Monday in the rolling window
+        strategicAlignmentRate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Fraction of commits linked to an RCDO outcome
+        teamStrategicAlignmentRate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Org-wide strategic alignment rate for comparison
+        avgCarryForwardPerWeek:
+          type: number
+          format: double
+          description: Average carry-forward commits per active week
+        carryForwardStreak:
+          type: integer
+          description: Consecutive recent weeks with at least one carry-forward commit
+        avgConfidence:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Mean confidence across all commits in the window
+        completionAccuracy:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Mean completion rate across reconciled weeks
+        confidenceAccuracyGap:
+          type: number
+          format: double
+          description: avgConfidence minus completionAccuracy (positive = overconfident)
+        priorityDistribution:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+          description: Fraction of commits per ChessPriority (KING, QUEEN, …)
+        categoryDistribution:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+          description: Fraction of commits per CommitCategory (DELIVERY, OPERATIONS, …)
+        weekPoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeekTrendPoint'
+          description: Per-week breakdown, oldest to newest
+        insights:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrendInsight'
+          description: Structured insights for notable patterns
+
+    WeekTrendPoint:
+      type: object
+      required:
+        - weekStart
+        - totalCommits
+        - strategicCommits
+        - carryForwardCommits
+        - avgConfidence
+        - completionRate
+        - hasActuals
+        - priorityCounts
+        - categoryCounts
+      properties:
+        weekStart:
+          type: string
+          format: date
+        totalCommits:
+          type: integer
+        strategicCommits:
+          type: integer
+        carryForwardCommits:
+          type: integer
+        avgConfidence:
+          type: number
+          format: double
+        completionRate:
+          type: number
+          format: double
+        hasActuals:
+          type: boolean
+        priorityCounts:
+          type: object
+          additionalProperties:
+            type: integer
+        categoryCounts:
+          type: object
+          additionalProperties:
+            type: integer
+
+    TrendInsight:
+      type: object
+      required: [type, message, severity]
+      properties:
+        type:
+          type: string
+          description: Machine-readable insight type identifier
+          example: CARRY_FORWARD_STREAK
+        message:
+          type: string
+          description: Human-readable explanation
+        severity:
+          type: string
+          enum: [INFO, WARNING, POSITIVE]
+
+    OrgPolicy:
+      type: object
+      required:
+        - chessKingRequired
+        - chessMaxKing
+        - chessMaxQueen
+        - lockDay
+        - lockTime
+        - reconcileDay
+        - reconcileTime
+        - blockLockOnStaleRcdo
+        - rcdoStalenessThresholdMinutes
+        - digestDay
+        - digestTime
+      description: |
+        Immutable snapshot of an org's configuration. Returned by the admin org-policy endpoints.
+      properties:
+        chessKingRequired:
+          type: boolean
+          description: Whether at least one KING commit is required to lock a plan
+        chessMaxKing:
+          type: integer
+          description: Maximum KING commits allowed per plan
+        chessMaxQueen:
+          type: integer
+          description: Maximum QUEEN commits allowed per plan
+        lockDay:
+          type: string
+          description: Day-of-week for the plan lock reminder (e.g. "MONDAY")
+        lockTime:
+          type: string
+          description: Wall-clock time for the plan lock reminder in HH:mm format (e.g. "10:00")
+        reconcileDay:
+          type: string
+          description: Day-of-week for the reconciliation reminder (e.g. "FRIDAY")
+        reconcileTime:
+          type: string
+          description: Wall-clock time for the reconciliation reminder in HH:mm format (e.g. "16:00")
+        blockLockOnStaleRcdo:
+          type: boolean
+          description: Whether locking is blocked when RCDO data is stale
+        rcdoStalenessThresholdMinutes:
+          type: integer
+          description: How many minutes before RCDO data is considered stale
+        digestDay:
+          type: string
+          description: |
+            Day-of-week for the weekly digest notification (e.g. "FRIDAY").
+            The DigestJob fires once the current time is on or after digestTime on this day.
+        digestTime:
+          type: string
+          pattern: '^(?:[01]\\d|2[0-3]):[0-5]\\d$'
+          description: Wall-clock time for the weekly digest in valid 24-hour HH:mm format (e.g. "17:00")
+
+    UpdateDigestConfigRequest:
+      type: object
+      required: [digestDay, digestTime]
+      description: Request body for updating the org's weekly digest schedule.
+      properties:
+        digestDay:
+          type: string
+          description: |
+            Day-of-week for the weekly digest (e.g. "FRIDAY", "MONDAY").
+            Must be a valid Java DayOfWeek name in any case.
+          example: FRIDAY
+        digestTime:
+          type: string
+          pattern: '^(?:[01]\\d|2[0-3]):[0-5]\\d$'
+          description: Wall-clock time for the weekly digest in valid 24-hour HH:mm format (e.g. "17:00")
+          example: '17:00'
+
+    AdoptionMetrics:
+      type: object
+      required:
+        - weeks
+        - windowStart
+        - windowEnd
+        - totalActiveUsers
+        - cadenceComplianceRate
+        - weeklyPoints
+      description: |
+        Weekly adoption funnel metrics produced by the admin dashboard.
+        Each week in the rolling window is broken down into funnel stages.
+      properties:
+        weeks:
+          type: integer
+          description: Number of weeks in the rolling window
+        windowStart:
+          type: string
+          format: date
+          description: Monday at the start of the rolling window
+        windowEnd:
+          type: string
+          format: date
+          description: Monday at the end of the rolling window (current week)
+        totalActiveUsers:
+          type: integer
+          description: Distinct users with any plan in the rolling window
+        cadenceComplianceRate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Fraction of locked plans that were locked ON_TIME (not LATE_LOCK)
+        weeklyPoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeeklyAdoptionPoint'
+          description: Per-week funnel breakdown, oldest to newest
+
+    WeeklyAdoptionPoint:
+      type: object
+      required:
+        - weekStart
+        - activeUsers
+        - plansCreated
+        - plansLocked
+        - plansReconciled
+        - plansReviewed
+      description: Adoption funnel counts for a single week.
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: Monday of this week
+        activeUsers:
+          type: integer
+          description: Distinct users with any plan this week
+        plansCreated:
+          type: integer
+          description: Total plans in any state this week
+        plansLocked:
+          type: integer
+          description: Plans that reached LOCKED state or beyond
+        plansReconciled:
+          type: integer
+          description: Plans that reached RECONCILED or CARRY_FORWARD state
+        plansReviewed:
+          type: integer
+          description: Plans where a manager review was submitted (APPROVED or CHANGES_REQUESTED)
+
+    AiUsageMetrics:
+      type: object
+      required:
+        - weeks
+        - windowStart
+        - windowEnd
+        - totalFeedbackCount
+        - acceptedCount
+        - deferredCount
+        - declinedCount
+        - acceptanceRate
+        - cacheHits
+        - cacheMisses
+        - cacheHitRate
+        - approximateTokensSpent
+        - approximateTokensSaved
+      description: AI feature usage metrics over a rolling window.
+      properties:
+        weeks:
+          type: integer
+          description: Number of weeks in the rolling window
+        windowStart:
+          type: string
+          format: date
+          description: Start of the rolling window
+        windowEnd:
+          type: string
+          format: date
+          description: End of the rolling window
+        totalFeedbackCount:
+          type: integer
+          format: int64
+          description: Total suggestion feedback records in the window
+        acceptedCount:
+          type: integer
+          format: int64
+          description: Count of ACCEPT actions
+        deferredCount:
+          type: integer
+          format: int64
+          description: Count of DEFER actions
+        declinedCount:
+          type: integer
+          format: int64
+          description: Count of DECLINE actions
+        acceptanceRate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: acceptedCount / totalFeedbackCount (0 if no feedback)
+        cacheHits:
+          type: integer
+          format: int64
+          description: |
+            Cumulative AI cache hits attributed to this org since the last service restart.
+        cacheMisses:
+          type: integer
+          format: int64
+          description: Cumulative AI cache misses attributed to this org since the last service restart
+        cacheHitRate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: cacheHits / (cacheHits + cacheMisses) (0 if no cache activity)
+        approximateTokensSpent:
+          type: integer
+          format: int64
+          description: |
+            Coarse estimate of AI tokens spent for this org since the last service restart.
+            Computed as cacheMisses × 1000 tokens/request.
+        approximateTokensSaved:
+          type: integer
+          format: int64
+          description: |
+            Coarse estimate of AI tokens avoided by cache hits for this org since the last
+            service restart. Computed as cacheHits × 1000 tokens/request.
+
+    RcdoHealthReport:
+      type: object
+      required:
+        - generatedAt
+        - windowWeeks
+        - totalOutcomes
+        - coveredOutcomes
+        - topOutcomes
+        - staleOutcomes
+      description: |
+        RCDO health report ranking outcomes by commit coverage over a recent window.
+        Helps leadership identify strategic objectives that are being neglected.
+      properties:
+        generatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the report was generated
+        windowWeeks:
+          type: integer
+          description: Number of weeks examined
+        totalOutcomes:
+          type: integer
+          description: Total outcomes in the RCDO tree
+        coveredOutcomes:
+          type: integer
+          description: Outcomes with at least one commit in the window
+        topOutcomes:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutcomeHealthItem'
+          description: Covered outcomes ranked by commitCount descending
+        staleOutcomes:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutcomeHealthItem'
+          description: Outcomes with zero commits in the window, sorted by outcomeName
+
+    OutcomeHealthItem:
+      type: object
+      required:
+        - outcomeId
+        - outcomeName
+        - objectiveId
+        - objectiveName
+        - rallyCryId
+        - rallyCryName
+        - commitCount
+      description: Commit coverage data for a single RCDO outcome.
+      properties:
+        outcomeId:
+          type: string
+          description: UUID string of the outcome
+        outcomeName:
+          type: string
+          description: Display name of the outcome
+        objectiveId:
+          type: string
+          description: UUID string of the parent objective
+        objectiveName:
+          type: string
+          description: Display name of the parent objective
+        rallyCryId:
+          type: string
+          description: UUID string of the parent rally cry
+        rallyCryName:
+          type: string
+          description: Display name of the parent rally cry
+        commitCount:
+          type: integer
+          description: Number of commits linked to this outcome in the analysis window
+
+    LinkTicketRequest:
+      type: object
+      required:
+        - commitId
+        - provider
+        - externalTicketId
+      description: |
+        Request body for linking a weekly commit to an external issue-tracker ticket.
+      properties:
+        commitId:
+          type: string
+          format: uuid
+          description: ID of the weekly commit to link
+        provider:
+          type: string
+          enum: [JIRA, LINEAR]
+          description: External issue-tracker provider
+        externalTicketId:
+          type: string
+          description: Provider-specific ticket identifier (e.g. "PROJ-42" for Jira)
+
+    ExternalTicketLink:
+      type: object
+      required:
+        - id
+        - orgId
+        - commitId
+        - provider
+        - externalTicketId
+        - createdAt
+      description: A link between a weekly commit and an external issue-tracker ticket.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Link record UUID
+        orgId:
+          type: string
+          format: uuid
+          description: Organisation ID
+        commitId:
+          type: string
+          format: uuid
+          description: Weekly commit UUID
+        provider:
+          type: string
+          enum: [JIRA, LINEAR]
+          description: External issue-tracker provider
+        externalTicketId:
+          type: string
+          description: Provider-specific ticket identifier
+        externalTicketUrl:
+          type: string
+          nullable: true
+          description: URL to the ticket in the provider's web UI
+        externalStatus:
+          type: string
+          nullable: true
+          description: Current ticket status as returned by the provider
+        lastSyncedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp of the most recent status sync
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the link was created
+
+    LinkedTicketsResponse:
+      type: object
+      required:
+        - commitId
+        - links
+      description: All external ticket links for a weekly commit.
+      properties:
+        commitId:
+          type: string
+          format: uuid
+          description: The weekly commit UUID
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalTicketLink'
+          description: List of linked external tickets
+
+    WebhookResponse:
+      type: object
+      required:
+        - provider
+        - checkInsCreated
+      description: Result of accepting an integration webhook.
+      properties:
+        provider:
+          type: string
+          enum: [JIRA, LINEAR]
+          description: External issue-tracker provider that sent the webhook
+        checkInsCreated:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Number of check-in entries auto-created from the webhook
+
+    CapacityProfileResponse:
+      type: object
+      required:
+        - orgId
+        - userId
+        - weeksAnalyzed
+        - confidenceLevel
+      properties:
+        orgId:
+          type: string
+          format: uuid
+          description: Organisation ID
+        userId:
+          type: string
+          format: uuid
+          description: User ID
+        weeksAnalyzed:
+          type: integer
+          description: Number of weeks of history included in the profile
+        avgEstimatedHours:
+          type: number
+          format: double
+          nullable: true
+          description: Mean estimated hours per week (1 d.p.)
+        avgActualHours:
+          type: number
+          format: double
+          nullable: true
+          description: Mean actual hours per week (1 d.p.)
+        estimationBias:
+          type: number
+          format: double
+          nullable: true
+          description: Ratio of avgActual / avgEstimated; null when no estimated hours recorded
+        realisticWeeklyCap:
+          type: number
+          format: double
+          nullable: true
+          description: p50 of actual weekly totals — the sustainable cap
+        categoryBiasJson:
+          type: string
+          nullable: true
+          description: JSON array of per-category bias breakdowns
+        priorityCompletionJson:
+          type: string
+          nullable: true
+          description: JSON array of per-priority completion statistics
+        confidenceLevel:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+          description: Data quality tier
+        computedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: ISO-8601 timestamp of the most recent profile computation
+
+    TeamCapacityResponse:
+      type: object
+      required:
+        - weekStart
+        - members
+      description: Manager team-capacity view for a given week.
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: ISO-8601 date (Monday) for the week being queried
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamMemberCapacity'
+          description: Capacity summary for each direct report
+
+    TeamMemberCapacity:
+      type: object
+      required:
+        - userId
+        - name
+        - estimatedHours
+        - adjustedEstimate
+        - overcommitLevel
+      description: Capacity summary for a single team member in a given week.
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: Team member user ID
+        name:
+          type: string
+          nullable: true
+          description: Human-readable display name
+        estimatedHours:
+          type: number
+          format: double
+          description: Sum of raw estimated_hours across all commits for the week
+        adjustedEstimate:
+          type: number
+          format: double
+          description: Bias-adjusted estimated total
+        realisticCap:
+          type: number
+          format: double
+          nullable: true
+          description: p50 realistic weekly capacity cap, or null if no profile
+        overcommitLevel:
+          type: string
+          enum: [NONE, MODERATE, HIGH]
+          description: Overcommitment severity level
+
+    EstimationCoachingResponse:
+      type: object
+      required:
+        - thisWeekEstimated
+        - thisWeekActual
+        - confidenceLevel
+        - categoryInsights
+        - priorityInsights
+      description: Post-reconciliation estimation coaching for a plan.
+      properties:
+        thisWeekEstimated:
+          type: number
+          format: double
+          description: Sum of estimated hours for all commits in the plan
+        thisWeekActual:
+          type: number
+          format: double
+          description: Sum of actual hours for all actuals in the plan
+        accuracyRatio:
+          type: number
+          format: double
+          nullable: true
+          description: thisWeekActual / thisWeekEstimated ratio; null when thisWeekEstimated is zero
+        overallBias:
+          type: number
+          format: double
+          nullable: true
+          description: Historical avgActual / avgEstimated from capacity profile; null if no profile
+        confidenceLevel:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+          description: Profile data quality tier
+        categoryInsights:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryInsight'
+          description: Per-category bias breakdown with optional coaching tips
+        priorityInsights:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriorityInsight'
+          description: Per-priority completion-rate statistics
+
+    CategoryInsight:
+      type: object
+      required:
+        - category
+      description: Per-category estimation insight.
+      properties:
+        category:
+          type: string
+          description: Commit category name (e.g. DELIVERY)
+        bias:
+          type: number
+          format: double
+          nullable: true
+          description: Historical actual/estimated ratio for this category
+        tip:
+          type: string
+          nullable: true
+          description: Human-readable coaching tip when bias deviates from 1.0 by ≥15%
+
+    PriorityInsight:
+      type: object
+      required:
+        - priority
+        - completionRate
+        - sampleSize
+      description: Per-priority completion insight.
+      properties:
+        priority:
+          type: string
+          description: Chess priority name (e.g. KING)
+        completionRate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Fraction of commits with status DONE
+        sampleSize:
+          type: integer
+          description: Number of historical commits in this priority tier
 
     ApiError:
       type: object

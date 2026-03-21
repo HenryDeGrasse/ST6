@@ -1,0 +1,225 @@
+{
+  "dashboard": {
+    "title": "WC Business Metrics",
+    "description": "Weekly Commitments – Business metrics and product KPIs (PRD §14.3)",
+    "tags": ["weekly-commitments", "business-metrics"],
+    "timezone": "utc",
+    "refresh": "5m",
+    "panels": [
+      {
+        "title": "Weekly Active Users (WAU)",
+        "type": "stat",
+        "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "count(count by (user_id) (increase(plan_events_total{application=\"weekly-service\"}[7d])))",
+            "legendFormat": "WAU"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                { "color": "red", "value": 0 },
+                { "color": "yellow", "value": 50 },
+                { "color": "green", "value": 100 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Plans Created (7d)",
+        "type": "stat",
+        "gridPos": { "x": 6, "y": 0, "w": 4, "h": 4 },
+        "targets": [
+          {
+            "expr": "sum(increase(plan_transitions_total{to=\"draft\",application=\"weekly-service\"}[7d]))",
+            "legendFormat": "created"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "short" }
+        }
+      },
+      {
+        "title": "Plans Locked (7d)",
+        "type": "stat",
+        "gridPos": { "x": 10, "y": 0, "w": 4, "h": 4 },
+        "targets": [
+          {
+            "expr": "sum(increase(plan_transitions_total{to=\"locked\",application=\"weekly-service\"}[7d]))",
+            "legendFormat": "locked"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "short" }
+        }
+      },
+      {
+        "title": "Plans Reconciled (7d)",
+        "type": "stat",
+        "gridPos": { "x": 14, "y": 0, "w": 4, "h": 4 },
+        "targets": [
+          {
+            "expr": "sum(increase(plan_transitions_total{to=\"reconciled\",application=\"weekly-service\"}[7d]))",
+            "legendFormat": "reconciled"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "short" }
+        }
+      },
+      {
+        "title": "Plan Lifecycle Funnel (Created → Locked → Reconciled)",
+        "type": "timeseries",
+        "gridPos": { "x": 0, "y": 4, "w": 12, "h": 6 },
+        "targets": [
+          {
+            "expr": "sum(rate(plan_transitions_total{to=\"draft\",application=\"weekly-service\"}[5m]))",
+            "legendFormat": "created/s"
+          },
+          {
+            "expr": "sum(rate(plan_transitions_total{to=\"locked\",application=\"weekly-service\"}[5m]))",
+            "legendFormat": "locked/s"
+          },
+          {
+            "expr": "sum(rate(plan_transitions_total{to=\"reconciled\",application=\"weekly-service\"}[5m]))",
+            "legendFormat": "reconciled/s"
+          }
+        ]
+      },
+      {
+        "title": "RCDO Link Rate",
+        "type": "gauge",
+        "gridPos": { "x": 12, "y": 4, "w": 6, "h": 6 },
+        "targets": [
+          {
+            "expr": "sum(rate(plan_events_total{event=\"rcdo_linked\",application=\"weekly-service\"}[1h])) / sum(rate(plan_events_total{event=\"plan_created\",application=\"weekly-service\"}[1h]))",
+            "legendFormat": "rcdo_link_rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "steps": [
+                { "color": "red", "value": 0 },
+                { "color": "yellow", "value": 0.5 },
+                { "color": "green", "value": 0.7 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Reconciliation Completion Rate",
+        "type": "gauge",
+        "gridPos": { "x": 18, "y": 4, "w": 6, "h": 6 },
+        "targets": [
+          {
+            "expr": "sum(rate(plan_transitions_total{to=\"reconciled\",application=\"weekly-service\"}[7d])) / sum(rate(plan_transitions_total{to=\"locked\",application=\"weekly-service\"}[7d]))",
+            "legendFormat": "reconciliation_rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "steps": [
+                { "color": "red", "value": 0 },
+                { "color": "yellow", "value": 0.6 },
+                { "color": "green", "value": 0.8 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Carry-Forward Rate",
+        "type": "timeseries",
+        "gridPos": { "x": 0, "y": 10, "w": 8, "h": 5 },
+        "targets": [
+          {
+            "expr": "sum(rate(commitment_carry_forward_total{application=\"weekly-service\"}[1d])) / sum(rate(commitment_closed_total{application=\"weekly-service\"}[1d]))",
+            "legendFormat": "carry_forward_rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "percentunit" }
+        }
+      },
+      {
+        "title": "Manager Review Latency (p50 / p95)",
+        "type": "timeseries",
+        "gridPos": { "x": 8, "y": 10, "w": 8, "h": 5 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(manager_review_latency_seconds_bucket{application=\"weekly-service\"}[1h])) by (le))",
+            "legendFormat": "p50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(manager_review_latency_seconds_bucket{application=\"weekly-service\"}[1h])) by (le))",
+            "legendFormat": "p95"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "s" }
+        }
+      },
+      {
+        "title": "AI Suggestion Acceptance Rate",
+        "type": "gauge",
+        "gridPos": { "x": 16, "y": 10, "w": 4, "h": 5 },
+        "targets": [
+          {
+            "expr": "sum(rate(ai_suggestion_outcome_total{outcome=\"accepted\",application=\"weekly-service\"}[7d])) / (sum(rate(ai_suggestion_outcome_total{outcome=\"accepted\",application=\"weekly-service\"}[7d])) + sum(rate(ai_suggestion_outcome_total{outcome=\"rejected\",application=\"weekly-service\"}[7d])))",
+            "legendFormat": "acceptance_rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "steps": [
+                { "color": "red", "value": 0 },
+                { "color": "yellow", "value": 0.5 },
+                { "color": "green", "value": 0.6 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Non-Strategic Commit Percentage",
+        "type": "timeseries",
+        "gridPos": { "x": 20, "y": 10, "w": 4, "h": 5 },
+        "targets": [
+          {
+            "expr": "sum(rate(commitment_events_total{strategic=\"false\",application=\"weekly-service\"}[1d])) / sum(rate(commitment_events_total{application=\"weekly-service\"}[1d]))",
+            "legendFormat": "non_strategic_%"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": 0 },
+                { "color": "yellow", "value": 0.3 },
+                { "color": "red", "value": 0.5 }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  }
+}

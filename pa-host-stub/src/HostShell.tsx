@@ -265,6 +265,7 @@ export const HostShell: React.FC = () => {
         }}
       >
         <button
+          data-testid="host-nav-weekly"
           onClick={() => setActiveTab("weekly")}
           style={{
             fontFamily: "'Cinzel', serif",
@@ -285,6 +286,7 @@ export const HostShell: React.FC = () => {
         </button>
         {isManager && (
           <button
+            data-testid="host-nav-dashboard"
             onClick={() => setActiveTab("dashboard")}
             style={{
               fontFamily: "'Cinzel', serif",
@@ -311,7 +313,7 @@ export const HostShell: React.FC = () => {
             marginLeft: "auto",
             fontFamily: "'Crimson Pro', serif",
             fontSize: "0.8rem",
-            color: "#7A6E62",
+            color: "#C0B09F",
             fontStyle: "italic",
           }}
         >
@@ -373,7 +375,7 @@ export const HostShell: React.FC = () => {
           padding: "0.625rem 1.5rem",
           borderTop: "1px solid #4A3F35",
           fontSize: "0.75rem",
-          color: "#7A6E62",
+          color: "#C0B09F",
           textAlign: "center" as const,
           fontFamily: "'Cinzel', serif",
           letterSpacing: "0.15em",

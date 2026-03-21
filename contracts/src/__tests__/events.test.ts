@@ -15,8 +15,12 @@ describe("EventType enum", () => {
     expect(EventType.COMMIT_ACTUAL_UPDATED).toBe("commit.actual_updated");
   });
 
-  it("has 10 event types total", () => {
-    expect(Object.values(EventType)).toHaveLength(10);
+  it("has 11 event types total (including Wave 3 WEEKLY_DIGEST)", () => {
+    expect(Object.values(EventType)).toHaveLength(11);
+  });
+
+  it("contains WEEKLY_DIGEST with correct value", () => {
+    expect(EventType.WEEKLY_DIGEST).toBe("notification.weekly_digest");
   });
 
   it("uses dot-delimited naming convention", () => {
@@ -47,7 +51,11 @@ describe("NotificationType enum", () => {
     expect(NotificationType.CHANGES_REQUESTED).toBe("CHANGES_REQUESTED");
   });
 
-  it("has 5 notification types", () => {
-    expect(Object.values(NotificationType)).toHaveLength(5);
+  it("contains WEEKLY_DIGEST added in Wave 3", () => {
+    expect(NotificationType.WEEKLY_DIGEST).toBe("WEEKLY_DIGEST");
+  });
+
+  it("has 6 notification types", () => {
+    expect(Object.values(NotificationType)).toHaveLength(6);
   });
 });

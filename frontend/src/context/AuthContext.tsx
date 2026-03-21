@@ -22,7 +22,7 @@ export interface AuthContextValue {
   getToken: () => string;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 export interface AuthProviderProps {
   user: AuthUser;
@@ -30,11 +30,7 @@ export interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({
-  user,
-  token,
-  children,
-}) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ user, token, children }) => {
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -47,8 +43,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+export function useOptionalAuth(): AuthContextValue | null {
+  return useContext(AuthContext);
+}
+
 export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext);
+  const ctx = useOptionalAuth();
   if (!ctx) {
     throw new Error("useAuth must be used within an AuthProvider");
   }

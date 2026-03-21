@@ -14,7 +14,8 @@ public enum EventType {
     COMMIT_CREATED("commit.created"),
     COMMIT_UPDATED("commit.updated"),
     COMMIT_DELETED("commit.deleted"),
-    COMMIT_ACTUAL_UPDATED("commit.actual_updated");
+    COMMIT_ACTUAL_UPDATED("commit.actual_updated"),
+    WEEKLY_DIGEST("notification.weekly_digest");
 
     private final String value;
 

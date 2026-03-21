@@ -11,10 +11,7 @@
  * that {@link DevRequestAuthenticator} can decode. In production, it is a
  * real JWT that {@link JwksRequestAuthenticator} validates via JWKS.
  */
-import {
-  createWeeklyCommitmentsClient,
-  type WeeklyCommitmentsClient,
-} from "@weekly-commitments/contracts";
+import { createWeeklyCommitmentsClient, type WeeklyCommitmentsClient } from "@weekly-commitments/contracts";
 import type { Middleware } from "openapi-fetch";
 
 export interface ApiClientUser {

@@ -15,5 +15,6 @@ public record CreateCommitRequest(
         String nonStrategicReason,
         String expectedResult,
         Double confidence,
+        Double estimatedHours,
         String[] tags
 ) {}

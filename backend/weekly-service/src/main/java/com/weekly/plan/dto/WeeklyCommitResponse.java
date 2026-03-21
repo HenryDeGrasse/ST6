@@ -3,7 +3,6 @@ package com.weekly.plan.dto;
 import com.weekly.plan.domain.WeeklyCommitActualEntity;
 import com.weekly.plan.domain.WeeklyCommitEntity;
 import com.weekly.plan.service.CommitValidationError;
-
 import java.util.List;
 
 /**
@@ -20,6 +19,7 @@ public record WeeklyCommitResponse(
         String nonStrategicReason,
         String expectedResult,
         Double confidence,
+        Double estimatedHours,
         String[] tags,
         String progressNotes,
         String snapshotRallyCryId,
@@ -71,6 +71,7 @@ public record WeeklyCommitResponse(
                 entity.getNonStrategicReason(),
                 entity.getExpectedResult(),
                 entity.getConfidence() != null ? entity.getConfidence().doubleValue() : null,
+                entity.getEstimatedHours() != null ? entity.getEstimatedHours().doubleValue() : null,
                 entity.getTags(),
                 entity.getProgressNotes(),
                 entity.getSnapshotRallyCryId() != null

@@ -68,24 +68,14 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
   padding,
   as: Tag = "div",
 }) => {
-  const panelClasses = [
-    styles.panel,
-    variant === "elevated" ? styles.elevated : undefined,
-    className,
-  ]
+  const panelClasses = [styles.panel, variant === "elevated" ? styles.elevated : undefined, className]
     .filter(Boolean)
     .join(" ");
 
-  const inlineStyle: React.CSSProperties | undefined =
-    padding !== undefined ? { padding } : undefined;
+  const inlineStyle: React.CSSProperties | undefined = padding !== undefined ? { padding } : undefined;
 
   return (
-    <Tag
-      data-testid="glass-panel"
-      data-variant={variant}
-      className={panelClasses}
-      style={inlineStyle}
-    >
+    <Tag data-testid="glass-panel" data-variant={variant} className={panelClasses} style={inlineStyle}>
       {children}
     </Tag>
   );

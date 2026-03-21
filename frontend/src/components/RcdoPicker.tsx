@@ -124,10 +124,7 @@ export const RcdoPicker: React.FC<RcdoPickerProps> = ({
               data-testid="rcdo-mode-search"
               onClick={() => setMode("search")}
               aria-pressed={mode === "search"}
-              className={[
-                styles.modeButton,
-                mode === "search" ? styles.modeButtonActive : "",
-              ].join(" ").trim()}
+              className={[styles.modeButton, mode === "search" ? styles.modeButtonActive : ""].join(" ").trim()}
             >
               Search
             </button>
@@ -136,10 +133,7 @@ export const RcdoPicker: React.FC<RcdoPickerProps> = ({
               data-testid="rcdo-mode-browse"
               onClick={() => setMode("browse")}
               aria-pressed={mode === "browse"}
-              className={[
-                styles.modeButton,
-                mode === "browse" ? styles.modeButtonActive : "",
-              ].join(" ").trim()}
+              className={[styles.modeButton, mode === "browse" ? styles.modeButtonActive : ""].join(" ").trim()}
             >
               Browse
             </button>
@@ -152,15 +146,13 @@ export const RcdoPicker: React.FC<RcdoPickerProps> = ({
                 data-testid="rcdo-search-input"
                 type="text"
                 placeholder="Search outcomes…"
+                aria-label="Search outcomes"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className={styles.searchInput}
               />
               {searchResults.length > 0 && (
-                <ul
-                  data-testid="rcdo-search-results"
-                  className={styles.resultsList}
-                >
+                <ul data-testid="rcdo-search-results" className={styles.resultsList}>
                   {searchResults.map((r) => (
                     <li key={r.id} className={styles.resultsItem}>
                       <button
@@ -192,9 +184,7 @@ export const RcdoPicker: React.FC<RcdoPickerProps> = ({
                     aria-expanded={expandedCries.has(cry.id)}
                     className={styles.cryToggle}
                   >
-                    <span className={styles.chevron}>
-                      {expandedCries.has(cry.id) ? "▾" : "▸"}
-                    </span>
+                    <span className={styles.chevron}>{expandedCries.has(cry.id) ? "▾" : "▸"}</span>
                     {cry.name}
                   </button>
                   {expandedCries.has(cry.id) && (
@@ -207,9 +197,7 @@ export const RcdoPicker: React.FC<RcdoPickerProps> = ({
                             aria-expanded={expandedObjectives.has(obj.id)}
                             className={styles.objectiveToggle}
                           >
-                            <span className={styles.chevron}>
-                              {expandedObjectives.has(obj.id) ? "▾" : "▸"}
-                            </span>
+                            <span className={styles.chevron}>{expandedObjectives.has(obj.id) ? "▾" : "▸"}</span>
                             {obj.name}
                           </button>
                           {expandedObjectives.has(obj.id) && (
@@ -230,10 +218,10 @@ export const RcdoPicker: React.FC<RcdoPickerProps> = ({
                                   }
                                   className={[
                                     styles.outcomeButton,
-                                    value === outcome.id
-                                      ? styles.outcomeButtonSelected
-                                      : "",
-                                  ].join(" ").trim()}
+                                    value === outcome.id ? styles.outcomeButtonSelected : "",
+                                  ]
+                                    .join(" ")
+                                    .trim()}
                                   data-testid={`rcdo-outcome-${outcome.id}`}
                                 >
                                   {outcome.name}

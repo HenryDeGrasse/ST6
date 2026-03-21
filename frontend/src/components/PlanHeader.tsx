@@ -87,10 +87,7 @@ export const PlanHeader: React.FC<PlanHeaderProps> = ({
     <div data-testid="plan-header" className={styles.header}>
       {/* ── Left: status info ── */}
       <div className={styles.info}>
-        <span
-          data-testid="plan-state"
-          className={[styles.stateBadge, stateConfig.badgeClass].join(" ")}
-        >
+        <span data-testid="plan-state" className={[styles.stateBadge, stateConfig.badgeClass].join(" ")}>
           <StatusIcon icon={stateConfig.icon} size={14} />
           {stateConfig.text}
         </span>
@@ -112,12 +109,7 @@ export const PlanHeader: React.FC<PlanHeaderProps> = ({
       {/* ── Right: action buttons ── */}
       <div className={styles.actions}>
         {plan.state === PlanState.DRAFT && (
-          <button
-            data-testid="lock-btn"
-            className={styles.ctaButton}
-            onClick={onLock}
-            disabled={loading}
-          >
+          <button data-testid="lock-btn" className={styles.ctaButton} onClick={onLock} disabled={loading}>
             {loading ? (
               <>
                 <StatusIcon icon="loading" size={14} className={styles.loadingIcon} />

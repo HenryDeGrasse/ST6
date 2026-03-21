@@ -4,6 +4,7 @@ import { ApiProvider } from "./api/ApiContext.js";
 import { FeatureFlagProvider, type FeatureFlags } from "./context/FeatureFlagContext.js";
 import { WeeklyPlanPage } from "./pages/WeeklyPlanPage.js";
 import { TeamDashboardPage } from "./pages/TeamDashboardPage.js";
+import { AdminDashboardPage } from "./pages/AdminDashboardPage.js";
 import { ErrorBoundary } from "./components/ErrorBoundary.js";
 import { ToastProvider } from "./context/ToastContext.js";
 import { ThemeProvider } from "./theme/ThemeContext.js";
@@ -29,8 +30,8 @@ export interface AppProps {
   /** API base URL */
   apiBaseUrl?: string;
   /** Initial route override. In production the PA host controls routing. */
-  initialRoute?: "weekly" | "weekly/team";
-  /** Feature flag overrides (for beta features). */
+  initialRoute?: "weekly" | "weekly/team" | "admin";
+  /** Feature flag overrides. */
   featureFlags?: Partial<FeatureFlags>;
 }
 
@@ -52,8 +53,9 @@ export const App: React.FC<AppProps> = ({
   initialRoute = "weekly",
   featureFlags,
 }) => {
-  const [route, setRoute] = useState<"weekly" | "weekly/team">(initialRoute);
+  const [route, setRoute] = useState<"weekly" | "weekly/team" | "admin">(initialRoute);
   const isManager = user.roles.includes("MANAGER");
+  const isAdmin = user.roles.includes("ADMIN");
 
   return (
     <ThemeProvider>
@@ -65,7 +67,7 @@ export const App: React.FC<AppProps> = ({
               <ErrorBoundary>
                 <ToastProvider>
                   <div data-testid="weekly-commitments-app">
-                    {isManager && (
+                    {(isManager || isAdmin) && (
                       <nav
                         data-testid="main-nav"
                         style={{
@@ -97,30 +99,57 @@ export const App: React.FC<AppProps> = ({
                         >
                           My Plan
                         </button>
-                        <button
-                          data-testid="nav-team-dashboard"
-                          onClick={() => setRoute("weekly/team")}
-                          style={{
-                            fontFamily: "'Cinzel', serif",
-                            fontSize: "0.7rem",
-                            fontWeight: route === "weekly/team" ? 700 : 500,
-                            textTransform: "uppercase" as const,
-                            letterSpacing: "0.2em",
-                            color: route === "weekly/team" ? "#C9A962" : "#9C8B7A",
-                            background: "none",
-                            border: "none",
-                            borderBottom: route === "weekly/team" ? "2px solid #C9A962" : "2px solid transparent",
-                            paddingBottom: "0.5rem",
-                            cursor: "pointer",
-                            transition: "color 300ms ease-out, border-color 300ms ease-out",
-                          }}
-                        >
-                          Team Dashboard
-                        </button>
+                        {isManager && (
+                          <button
+                            data-testid="nav-team-dashboard"
+                            onClick={() => setRoute("weekly/team")}
+                            style={{
+                              fontFamily: "'Cinzel', serif",
+                              fontSize: "0.7rem",
+                              fontWeight: route === "weekly/team" ? 700 : 500,
+                              textTransform: "uppercase" as const,
+                              letterSpacing: "0.2em",
+                              color: route === "weekly/team" ? "#C9A962" : "#9C8B7A",
+                              background: "none",
+                              border: "none",
+                              borderBottom:
+                                route === "weekly/team" ? "2px solid #C9A962" : "2px solid transparent",
+                              paddingBottom: "0.5rem",
+                              cursor: "pointer",
+                              transition: "color 300ms ease-out, border-color 300ms ease-out",
+                            }}
+                          >
+                            Team Dashboard
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <button
+                            data-testid="nav-admin"
+                            onClick={() => setRoute("admin")}
+                            style={{
+                              fontFamily: "'Cinzel', serif",
+                              fontSize: "0.7rem",
+                              fontWeight: route === "admin" ? 700 : 500,
+                              textTransform: "uppercase" as const,
+                              letterSpacing: "0.2em",
+                              color: route === "admin" ? "#C9A962" : "#9C8B7A",
+                              background: "none",
+                              border: "none",
+                              borderBottom:
+                                route === "admin" ? "2px solid #C9A962" : "2px solid transparent",
+                              paddingBottom: "0.5rem",
+                              cursor: "pointer",
+                              transition: "color 300ms ease-out, border-color 300ms ease-out",
+                            }}
+                          >
+                            Admin
+                          </button>
+                        )}
                       </nav>
                     )}
                     {route === "weekly" && <WeeklyPlanPage />}
                     {route === "weekly/team" && isManager && <TeamDashboardPage />}
+                    {route === "admin" && isAdmin && <AdminDashboardPage />}
                   </div>
                 </ToastProvider>
               </ErrorBoundary>

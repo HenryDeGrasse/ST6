@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { NotificationBell } from "../components/NotificationBell.js";
+import { NotificationBell, formatDigestMessage } from "../components/NotificationBell.js";
 import type { NotificationItem } from "@weekly-commitments/contracts";
 
 describe("NotificationBell", () => {
@@ -28,13 +28,7 @@ describe("NotificationBell", () => {
   });
 
   it("does not show count badge when no unread", () => {
-    render(
-      <NotificationBell
-        {...defaultProps}
-        notifications={[]}
-        unreadCount={0}
-      />,
-    );
+    render(<NotificationBell {...defaultProps} notifications={[]} unreadCount={0} />);
     expect(screen.queryByTestId("notification-count")).not.toBeInTheDocument();
   });
 
@@ -95,5 +89,110 @@ describe("NotificationBell", () => {
 
     expect(screen.queryByTestId("notification-dropdown")).not.toBeInTheDocument();
     expect(document.activeElement).toBe(btn);
+  });
+});
+
+// ─── WEEKLY_DIGEST notification rendering ──────────────────────────────────────
+
+describe("WEEKLY_DIGEST notification rendering", () => {
+  const digestNotification: NotificationItem = {
+    id: "digest-1",
+    type: "WEEKLY_DIGEST",
+    payload: {
+      weekStart: "2026-03-16",
+      totalMemberCount: 5,
+      reconciledCount: 4,
+      reviewQueueSize: 2,
+      staleCount: 0,
+      rcdoAlignmentRate: 0.85,
+      previousRcdoAlignmentRate: 0.78,
+      doneEarlyCount: 1,
+      message:
+        "Weekly digest (w/c 2026-03-16): 4/5 reconciled, 2 pending review, 85% RCDO aligned (vs 78% last week), 1 done early.",
+    },
+    read: false,
+    createdAt: "2026-03-20T17:00:00Z",
+  };
+
+  const digestProps = {
+    notifications: [digestNotification],
+    unreadCount: 1,
+    onMarkRead: vi.fn().mockResolvedValue(undefined),
+    onMarkAllRead: vi.fn().mockResolvedValue(undefined),
+    onFetchUnread: vi.fn().mockResolvedValue(undefined),
+  };
+
+  it("renders WEEKLY_DIGEST label in the dropdown", async () => {
+    render(<NotificationBell {...digestProps} />);
+    await userEvent.click(screen.getByTestId("notification-bell-btn"));
+
+    expect(screen.getByText("Weekly team digest")).toBeInTheDocument();
+  });
+
+  it("renders the digest summary message from the payload", async () => {
+    render(<NotificationBell {...digestProps} />);
+    await userEvent.click(screen.getByTestId("notification-bell-btn"));
+
+    expect(screen.getByTestId("digest-summary-digest-1")).toBeInTheDocument();
+    expect(screen.getByTestId("digest-summary-digest-1")).toHaveTextContent("4/5 reconciled");
+  });
+
+  it("does not render a digest-summary element for non-digest notifications", async () => {
+    const regularNotification: NotificationItem = {
+      id: "n-regular",
+      type: "CHANGES_REQUESTED",
+      payload: { message: "Changes needed" },
+      read: false,
+      createdAt: "2026-03-18T10:00:00Z",
+    };
+    render(
+      <NotificationBell
+        {...digestProps}
+        notifications={[regularNotification]}
+      />,
+    );
+    await userEvent.click(screen.getByTestId("notification-bell-btn"));
+
+    expect(screen.queryByTestId("digest-summary-n-regular")).not.toBeInTheDocument();
+  });
+});
+
+// ─── formatDigestMessage unit tests ────────────────────────────────────────────
+
+describe("formatDigestMessage", () => {
+  it("returns the message field when present and non-empty", () => {
+    const result = formatDigestMessage({ message: "Team is 80% on track." });
+    expect(result).toBe("Team is 80% on track.");
+  });
+
+  it("builds a digest summary from structured payload fields when message is absent", () => {
+    const result = formatDigestMessage({
+      weekStart: "2026-03-16",
+      totalMemberCount: 5,
+      reconciledCount: 4,
+      reviewQueueSize: 2,
+      staleCount: 1,
+      rcdoAlignmentRate: 0.85,
+      previousRcdoAlignmentRate: 0.78,
+      doneEarlyCount: 1,
+    });
+    expect(result).toBe(
+      "Weekly digest (w/c 2026-03-16): 4/5 reconciled, 2 pending review, 1 stale, 85% RCDO aligned (vs 78% last week), 1 done early.",
+    );
+  });
+
+  it("returns fallback when message field is absent and payload lacks summary metrics", () => {
+    const result = formatDigestMessage({ weekStart: "2026-03-16" });
+    expect(result).toBe("Weekly team digest available");
+  });
+
+  it("returns fallback when message field is an empty string", () => {
+    const result = formatDigestMessage({ message: "" });
+    expect(result).toBe("Weekly team digest available");
+  });
+
+  it("returns fallback when payload is empty", () => {
+    const result = formatDigestMessage({});
+    expect(result).toBe("Weekly team digest available");
   });
 });

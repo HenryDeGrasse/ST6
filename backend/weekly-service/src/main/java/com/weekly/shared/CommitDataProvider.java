@@ -27,12 +27,35 @@ public interface CommitDataProvider {
     boolean planExists(UUID orgId, UUID planId);
 
     /**
-     * Summary of a commit for AI context.
+     * Enriched summary of a commit for AI reconciliation context.
+     *
+     * @param commitId                     the commit UUID as a string
+     * @param title                        the commit title
+     * @param expectedResult               the expected result defined at planning time
+     * @param progressNotes                free-form progress notes updated during the week
+     * @param checkInHistory               structured daily check-in entries from the
+     *                                     {@code progress_entries} table (empty if none)
+     * @param priorCompletionStatuses      completion statuses from carry-forward ancestor commits,
+     *                                     most-recent first (empty if this commit was not carried)
+     * @param categoryCompletionRateContext pre-formatted team category completion rate, e.g.
+     *                                      "OPERATIONS: 85% DONE (team, last 4 wks)", or
+     *                                      {@code null} if insufficient historical data
      */
     record CommitSummary(
             String commitId,
             String title,
             String expectedResult,
-            String progressNotes
+            String progressNotes,
+            List<CheckInEntry> checkInHistory,
+            List<String> priorCompletionStatuses,
+            String categoryCompletionRateContext
     ) {}
+
+    /**
+     * A single structured check-in entry from the {@code progress_entries} table.
+     *
+     * @param status the progress status (e.g. "ON_TRACK", "AT_RISK", "BLOCKED", "DONE_EARLY")
+     * @param note   the free-form note entered during check-in (may be empty)
+     */
+    record CheckInEntry(String status, String note) {}
 }

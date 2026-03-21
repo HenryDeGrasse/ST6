@@ -125,6 +125,7 @@
   border-radius:    var(--wc-radius-sm);
   background-color: var(--wc-color-bg-tertiary);
   border:           1px solid var(--wc-color-border-muted);
+  color:            var(--wc-color-text-primary);
   font-family:      var(--wc-font-display);
   font-size:        0.625rem;
   font-weight:      600;
@@ -167,7 +168,7 @@
 
 .rcdoBreadcrumb {
   font-size:  0.75rem;
-  color:      var(--wc-color-text-muted);
+  color:      var(--wc-color-text-secondary);
   font-style: italic;
 }
 
@@ -209,6 +210,85 @@
   display:     inline-flex;
   align-items: center;
   gap:         0.25rem;
+}
+
+/* ─── Draft source badge ─────────────────────────────────────────────────── */
+.draftSourceBadge {
+  display:          inline-flex;
+  align-items:      center;
+  gap:              0.25rem;
+  padding:          0.1rem 0.5rem;
+  border-radius:    var(--wc-radius-sm);
+  font-family:      var(--wc-font-display);
+  font-size:        0.625rem;
+  font-weight:      600;
+  text-transform:   uppercase;
+  letter-spacing:   0.06em;
+  /* Default (RECURRING / COVERAGE_GAP) */
+  background-color: var(--wc-color-bg-tertiary);
+  border:           1px solid var(--wc-color-border-muted);
+  color:            var(--wc-color-text-secondary);
+}
+
+/* CARRIED_FORWARD — reuse the existing carried-forward visual treatment */
+.draftSourceBadge[data-source="CARRIED_FORWARD"] {
+  color:            var(--wc-state-draft-text);
+  background-color: var(--wc-state-draft-bg);
+  border-color:     var(--wc-state-draft-border);
+}
+
+/* RECURRING — soft violet tint */
+.draftSourceBadge[data-source="RECURRING"] {
+  color:            var(--wc-color-accent);
+  background-color: rgba(128, 90, 213, 0.12);
+  border-color:     rgba(128, 90, 213, 0.3);
+}
+
+/* COVERAGE_GAP — warm amber tint */
+.draftSourceBadge[data-source="COVERAGE_GAP"] {
+  color:            var(--wc-color-warning, #b7791f);
+  background-color: rgba(183, 121, 31, 0.1);
+  border-color:     rgba(183, 121, 31, 0.3);
+}
+
+/* NEW — neutral/gold tint for manually-added commits */
+.draftSourceBadge[data-source="NEW"] {
+  color:            var(--wc-color-text-primary);
+  background-color: rgba(201, 169, 98, 0.1);
+  border-color:     rgba(201, 169, 98, 0.28);
+}
+
+/* ─── Check-in button (inline on commit card) ────────────────────────────── */
+
+.checkInButton {
+  display:          inline-flex;
+  align-items:      center;
+  gap:              0.1875rem;
+  padding:          0.1rem 0.5rem;
+  border-radius:    var(--wc-radius-sm);
+  border:           1px solid var(--wc-ai-insight-border);
+  background-color: var(--wc-ai-insight-bg);
+  color:            var(--wc-ai-insight-text);
+  font-family:      var(--wc-font-display);
+  font-size:        0.625rem;
+  font-weight:      600;
+  text-transform:   uppercase;
+  letter-spacing:   0.06em;
+  cursor:           pointer;
+  white-space:      nowrap;
+  transition:
+    background-color var(--wc-transition-base),
+    border-color     var(--wc-transition-base);
+}
+
+.checkInButton:hover {
+  background-color: rgba(201, 169, 98, 0.18);
+  border-color:     var(--wc-color-accent);
+}
+
+.checkInButton:focus-visible {
+  outline:        2px solid var(--wc-color-accent);
+  outline-offset: 2px;
 }
 
 /* ─── Empty state ────────────────────────────────────────────────────────── */

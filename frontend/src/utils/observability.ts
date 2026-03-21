@@ -9,7 +9,7 @@
  * Records a performance mark for measuring user-perceived latency.
  */
 export function markPerformance(name: string): void {
-  if (typeof performance !== 'undefined') {
+  if (typeof performance !== "undefined") {
     performance.mark(name);
   }
 }
@@ -18,7 +18,7 @@ export function markPerformance(name: string): void {
  * Measures the duration between two performance marks.
  */
 export function measurePerformance(name: string, startMark: string, endMark: string): number | null {
-  if (typeof performance === 'undefined') {
+  if (typeof performance === "undefined") {
     return null;
   }
   try {
@@ -35,7 +35,7 @@ export function measurePerformance(name: string, startMark: string, endMark: str
  */
 export function reportError(error: Error, context?: Record<string, string>): void {
   // In production: Sentry.captureException(error, { extra: context })
-  console.error('[WC Error]', error.message, context);
+  console.error("[WC Error]", error.message, context);
 }
 
 /**
@@ -43,7 +43,7 @@ export function reportError(error: Error, context?: Record<string, string>): voi
  */
 export function trackMetric(name: string, value: number, tags?: Record<string, string>): void {
   // In production: integrate with the PA host's analytics system
-  console.debug('[WC Metric]', name, value, tags);
+  console.debug("[WC Metric]", name, value, tags);
 }
 
 /**
@@ -64,7 +64,7 @@ export async function withTiming<T>(
  * Web Vitals observer for LCP and CLS (PRD §14.3).
  */
 export function observeWebVitals(): void {
-  if (typeof PerformanceObserver === 'undefined') {
+  if (typeof PerformanceObserver === "undefined") {
     return;
   }
 
@@ -74,10 +74,10 @@ export function observeWebVitals(): void {
       const entries = list.getEntries();
       const lastEntry = entries[entries.length - 1];
       if (lastEntry) {
-        trackMetric('web_vitals.lcp_ms', lastEntry.startTime);
+        trackMetric("web_vitals.lcp_ms", lastEntry.startTime);
       }
     });
-    lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });
+    lcpObserver.observe({ type: "largest-contentful-paint", buffered: true });
   } catch {
     // Not supported in all browsers
   }
@@ -93,9 +93,9 @@ export function observeWebVitals(): void {
           clsValue += layoutShiftEntry.value;
         }
       }
-      trackMetric('web_vitals.cls', clsValue);
+      trackMetric("web_vitals.cls", clsValue);
     });
-    clsObserver.observe({ type: 'layout-shift', buffered: true });
+    clsObserver.observe({ type: "layout-shift", buffered: true });
   } catch {
     // Not supported in all browsers
   }

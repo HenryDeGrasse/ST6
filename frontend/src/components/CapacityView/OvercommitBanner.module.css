@@ -1,0 +1,85 @@
+/**
+ * OvercommitBanner – CSS Module (Academia / Classical)
+ *
+ * Banner card with border-left accent color indicating overcommitment severity.
+ * Follows the project's GlassPanel-like styling conventions with warm, dark tones.
+ */
+
+/* ─── Base banner ────────────────────────────────────────────────────────── */
+
+.banner {
+  display:          flex;
+  align-items:      flex-start;
+  gap:              var(--wc-space-sm);
+  padding:          var(--wc-space-sm) var(--wc-space-md);
+  margin-bottom:    var(--wc-space-sm);
+  border-radius:    var(--wc-radius-md);
+  border:           1px solid var(--wc-color-border);
+  border-left-width: 4px;
+  background-color: var(--wc-color-bg-secondary);
+  box-shadow:       var(--wc-shadow-sm);
+  font-family:      var(--wc-font-body);
+  font-size:        0.9375rem;
+  line-height:      1.5;
+  position:         relative;
+}
+
+/* ─── Severity variants ──────────────────────────────────────────────────── */
+
+.moderate {
+  border-left-color: var(--wc-color-warning);
+  background-color:  var(--wc-color-warning-bg);
+  border-color:      var(--wc-color-warning-border);
+  border-left-color: var(--wc-color-warning);
+  color:             var(--wc-color-text-primary);
+}
+
+.high {
+  border-left-color: var(--wc-color-error);
+  background-color:  var(--wc-color-error-bg);
+  border-color:      var(--wc-color-error-border);
+  border-left-color: var(--wc-color-error);
+  color:             var(--wc-color-text-primary);
+}
+
+/* ─── Icon ───────────────────────────────────────────────────────────────── */
+
+.icon {
+  flex-shrink:  0;
+  font-size:    1.125rem;
+  line-height:  1.5;
+  margin-top:   0.05rem;
+}
+
+/* ─── Content ────────────────────────────────────────────────────────────── */
+
+.content {
+  flex:           1;
+  display:        flex;
+  flex-direction: column;
+  gap:            0.125rem;
+}
+
+.message {
+  color:       var(--wc-color-text-primary);
+  font-weight: 500;
+}
+
+.stats {
+  font-size:  0.8125rem;
+  color:      var(--wc-color-text-muted);
+  font-style: italic;
+}
+
+/* ─── Level tag (visually hidden; present for test queries) ──────────────── */
+
+.levelTag {
+  position: absolute;
+  width:    1px;
+  height:   1px;
+  padding:  0;
+  margin:   -1px;
+  overflow: hidden;
+  clip:     rect(0, 0, 0, 0);
+  border:   0;
+}

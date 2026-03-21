@@ -1,12 +1,11 @@
 package com.weekly.auth;
 
+import java.util.Set;
+import java.util.UUID;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
-
-import java.util.Set;
-import java.util.UUID;
 
 /**
  * Request-scoped view of the authenticated user for the current request.

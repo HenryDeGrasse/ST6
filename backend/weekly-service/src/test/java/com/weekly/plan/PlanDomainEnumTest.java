@@ -1,5 +1,8 @@
 package com.weekly.plan;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.weekly.plan.domain.ChessPriority;
 import com.weekly.plan.domain.CommitCategory;
 import com.weekly.plan.domain.CompletionStatus;
@@ -7,9 +10,6 @@ import com.weekly.plan.domain.LockType;
 import com.weekly.plan.domain.PlanState;
 import com.weekly.plan.domain.ReviewStatus;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Verifies that domain enums match the PRD definitions and stay

@@ -83,13 +83,7 @@ describe("CommitList", () => {
     const commit = makeCommit();
     const onUpdate = vi.fn().mockResolvedValue(false);
 
-    render(
-      <CommitList
-        {...defaultProps}
-        commits={[commit]}
-        onUpdate={onUpdate}
-      />,
-    );
+    render(<CommitList {...defaultProps} commits={[commit]} onUpdate={onUpdate} />);
 
     fireEvent.click(screen.getByTestId(`commit-row-${commit.id}`));
     fireEvent.click(screen.getByTestId("commit-save"));
@@ -101,13 +95,7 @@ describe("CommitList", () => {
   it("prevents default scroll on Space key for commit rows", async () => {
     const commit = makeCommit();
     const onUpdate = vi.fn().mockResolvedValue(true);
-    render(
-      <CommitList
-        {...defaultProps}
-        commits={[commit]}
-        onUpdate={onUpdate}
-      />,
-    );
+    render(<CommitList {...defaultProps} commits={[commit]} onUpdate={onUpdate} />);
 
     const row = screen.getByTestId(`commit-row-${commit.id}`);
     // Use fireEvent to check that Space opens editor (proving preventDefault + handler fire)
@@ -119,17 +107,81 @@ describe("CommitList", () => {
   it("does not expose read-only commit rows as interactive buttons", () => {
     const commit = makeCommit();
 
-    render(
-      <CommitList
-        {...defaultProps}
-        commits={[commit]}
-        planState={PlanState.RECONCILED}
-      />,
-    );
+    render(<CommitList {...defaultProps} commits={[commit]} planState={PlanState.RECONCILED} />);
 
     const row = screen.getByTestId(`commit-row-${commit.id}`);
     expect(row).not.toHaveAttribute("role");
     expect(row).not.toHaveAttribute("tabindex");
     expect(row).toHaveAttribute("aria-disabled", "true");
+  });
+
+  // ── Draft source tags ───────────────────────────────────────────────────
+
+  it("shows '✏️ New' badge for a commit without a draft_source tag", () => {
+    const commit = makeCommit({ tags: [] });
+    render(<CommitList {...defaultProps} commits={[commit]} />);
+
+    const badge = screen.getByTestId("commit-draft-source-new");
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveTextContent("✏️ New");
+  });
+
+  it("does not label carry-forward copies as '✏️ New'", () => {
+    const commit = makeCommit({ tags: [], carriedFromCommitId: "commit-previous" });
+    render(<CommitList {...defaultProps} commits={[commit]} />);
+
+    expect(screen.queryByTestId("commit-draft-source-new")).not.toBeInTheDocument();
+    expect(screen.getByTestId("commit-carried")).toHaveTextContent("Carried forward");
+  });
+
+  it("shows '🔄 Carried forward' badge for CARRIED_FORWARD source tag", () => {
+    const commit = makeCommit({ tags: ["draft_source:CARRIED_FORWARD"] });
+    render(<CommitList {...defaultProps} commits={[commit]} />);
+
+    const badge = screen.getByTestId("commit-draft-source-carried_forward");
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveTextContent("🔄 Carried forward");
+  });
+
+  it("shows '📋 Recurring' badge for RECURRING source tag", () => {
+    const commit = makeCommit({ tags: ["draft_source:RECURRING"] });
+    render(<CommitList {...defaultProps} commits={[commit]} />);
+
+    const badge = screen.getByTestId("commit-draft-source-recurring");
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveTextContent("📋 Recurring");
+  });
+
+  it("shows '🎯 Coverage gap' badge for COVERAGE_GAP source tag", () => {
+    const commit = makeCommit({ tags: ["draft_source:COVERAGE_GAP"] });
+    render(<CommitList {...defaultProps} commits={[commit]} />);
+
+    const badge = screen.getByTestId("commit-draft-source-coverage_gap");
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveTextContent("🎯 Coverage gap");
+  });
+
+  it("ignores unknown draft_source tag values gracefully", () => {
+    const commit = makeCommit({ tags: ["draft_source:UNKNOWN_SOURCE"] });
+    render(<CommitList {...defaultProps} commits={[commit]} />);
+
+    expect(screen.queryByTestId("commit-draft-source-carried_forward")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("commit-draft-source-recurring")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("commit-draft-source-coverage_gap")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("commit-draft-source-new")).not.toBeInTheDocument();
+  });
+
+  it("renders source badge alongside other tags without conflict", () => {
+    const commit = makeCommit({ tags: ["custom-tag", "draft_source:RECURRING", "another-tag"] });
+    render(<CommitList {...defaultProps} commits={[commit]} />);
+
+    expect(screen.getByTestId("commit-draft-source-recurring")).toBeInTheDocument();
+  });
+
+  it("source badges are still visible in read-only plan states", () => {
+    const commit = makeCommit({ tags: ["draft_source:CARRIED_FORWARD"] });
+    render(<CommitList {...defaultProps} commits={[commit]} planState={PlanState.LOCKED} />);
+
+    expect(screen.getByTestId("commit-draft-source-carried_forward")).toBeInTheDocument();
   });
 });

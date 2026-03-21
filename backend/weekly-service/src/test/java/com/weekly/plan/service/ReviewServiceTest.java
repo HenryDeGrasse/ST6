@@ -1,5 +1,12 @@
 package com.weekly.plan.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.weekly.audit.AuditService;
 import com.weekly.auth.InMemoryOrgGraphClient;
 import com.weekly.outbox.OutboxService;
@@ -12,21 +19,13 @@ import com.weekly.plan.dto.ManagerReviewResponse;
 import com.weekly.plan.repository.ManagerReviewRepository;
 import com.weekly.plan.repository.WeeklyPlanRepository;
 import com.weekly.shared.ErrorCode;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link ReviewService}: manager review with carry-forward restrictions.

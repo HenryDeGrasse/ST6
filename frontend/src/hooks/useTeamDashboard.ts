@@ -2,11 +2,7 @@
  * Hook for manager team dashboard data.
  */
 import { useState, useCallback } from "react";
-import type {
-  TeamSummaryResponse,
-  RcdoRollupResponse,
-  ApiErrorResponse,
-} from "@weekly-commitments/contracts";
+import type { TeamSummaryResponse, RcdoRollupResponse, ApiErrorResponse } from "@weekly-commitments/contracts";
 import { useApiClient } from "../api/ApiContext.js";
 
 export interface TeamDashboardFilters {
@@ -37,14 +33,11 @@ export function useTeamDashboard(): UseTeamDashboardResult {
 
   const clearError = useCallback(() => setError(null), []);
 
-  const extractError = useCallback(
-    (resp: { error?: unknown; response: Response }): string => {
-      const err = resp.error as ApiErrorResponse | undefined;
-      if (err?.error?.message) return err.error.message;
-      return `Request failed (${String(resp.response.status)})`;
-    },
-    [],
-  );
+  const extractError = useCallback((resp: { error?: unknown; response: Response }): string => {
+    const err = resp.error as ApiErrorResponse | undefined;
+    if (err?.error?.message) return err.error.message;
+    return `Request failed (${String(resp.response.status)})`;
+  }, []);
 
   const fetchSummary = useCallback(
     async (weekStart: string, page = 0, size = 20, filters: TeamDashboardFilters = {}) => {

@@ -37,12 +37,7 @@ export const PlanSummaryStrip: React.FC<PlanSummaryStripProps> = ({ commits }) =
   const m = computeMetrics(commits);
 
   return (
-    <div
-      data-testid="plan-summary-strip"
-      role="region"
-      aria-label="Plan summary metrics"
-      className={styles.strip}
-    >
+    <div data-testid="plan-summary-strip" role="region" aria-label="Plan summary metrics" className={styles.strip}>
       {/* Total commitments */}
       <div className={styles.metricCard} data-testid="metric-total">
         <span className={styles.metricValue} aria-label="Total commitments">
@@ -68,10 +63,7 @@ export const PlanSummaryStrip: React.FC<PlanSummaryStripProps> = ({ commits }) =
       </div>
 
       {/* KING count – gold border card */}
-      <div
-        className={[styles.metricCard, styles.metricCardKing].join(" ")}
-        data-testid="metric-king"
-      >
+      <div className={[styles.metricCard, styles.metricCardKing].join(" ")} data-testid="metric-king">
         <span className={styles.metricValue} aria-label="KING priority commitments">
           <ChessIcon piece="KING" size={16} />
           {m.kingCount}
@@ -80,10 +72,7 @@ export const PlanSummaryStrip: React.FC<PlanSummaryStripProps> = ({ commits }) =
       </div>
 
       {/* QUEEN count – gold border card */}
-      <div
-        className={[styles.metricCard, styles.metricCardQueen].join(" ")}
-        data-testid="metric-queen"
-      >
+      <div className={[styles.metricCard, styles.metricCardQueen].join(" ")} data-testid="metric-queen">
         <span className={styles.metricValue} aria-label="QUEEN priority commitments">
           <ChessIcon piece="QUEEN" size={16} />
           {m.queenCount}

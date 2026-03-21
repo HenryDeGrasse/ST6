@@ -1,0 +1,643 @@
+openapi: 3.1.0
+info:
+  title: Agent B – Multi-Week Strategic Intelligence Fragment
+  description: |
+    Standalone OpenAPI 3.1 fragment for Agent B (Phase 2 — Multi-Week
+    Strategic Intelligence).
+
+    Defines:
+      - Five new analytics endpoints under the /api/v1 server base:
+        GET /analytics/outcome-coverage, GET /analytics/carry-forward-heatmap,
+        GET /analytics/category-shifts, GET /analytics/estimation-accuracy,
+        and GET /analytics/predictions/{userId}.
+      - New schemas: OutcomeCoverageTimeline, OutcomeCoverageWeek,
+        CarryForwardHeatmap, HeatmapUser, HeatmapCell, UserCategoryShift,
+        CategoryShift, UserEstimationAccuracy, and Prediction.
+
+    All analytics endpoints require the MANAGER role and are gated by feature
+    flags (see individual endpoint descriptions). The predictions endpoint
+    additionally supports self-service access (a user requesting their own
+    predictions).
+
+    This fragment follows the convention described in fragments/README.md.
+  version: 1.0.0
+  contact:
+    name: ST6 Engineering – Agent B
+
+servers:
+  - url: /api/v1
+    description: API v1 base path
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Analytics
+    description: |
+      Multi-week descriptive and diagnostic analytics for the manager
+      dashboard (Phase 2 — Strategic Intelligence).
+
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+paths:
+
+  # ── Outcome Coverage Timeline ─────────────────────────────────────────────
+  /analytics/outcome-coverage:
+    get:
+      operationId: getOutcomeCoverage
+      summary: Get outcome coverage timeline
+      description: |
+        Returns per-week commit activity for a specific RCDO outcome over the
+        last `weeks` weeks.
+
+        Each week shows:
+        - `commitCount`       — total strategic commits linked to the outcome
+        - `contributorCount`  — distinct contributors who made those commits
+        - `highPriorityCount` — commits with chess priority KING or QUEEN
+
+        A `trendDirection` compares the two most recent weeks: `RISING` when
+        the latest week has more commits than the prior week, `FALLING` when
+        it has fewer, or `STABLE` when equal.
+
+        Requires MANAGER role.
+        Gated by the `strategicIntelligence` feature flag.
+      tags: [Analytics]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: outcomeId
+          in: query
+          required: true
+          description: UUID of the RCDO outcome to analyse
+          schema:
+            type: string
+            format: uuid
+        - name: weeks
+          in: query
+          required: false
+          description: Rolling-window size in weeks (1–26, default 8)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 26
+            default: 8
+      responses:
+        '200':
+          description: Outcome coverage timeline returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutcomeCoverageTimeline'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  # ── Carry-Forward Heatmap ─────────────────────────────────────────────────
+  /analytics/carry-forward-heatmap:
+    get:
+      operationId: getCarryForwardHeatmap
+      summary: Get team carry-forward heatmap
+      description: |
+        Returns a carry-forward heatmap for the authenticated manager's direct
+        reports over the last `weeks` weeks.
+
+        Each user row contains an ordered list of per-week cells (oldest first).
+        Weeks with no data for a user produce a cell with `carriedCount: 0`.
+
+        High carry-forward counts may indicate scope creep, estimation problems,
+        or capacity constraints.
+
+        Requires MANAGER role.
+        Gated by the `strategicIntelligence` feature flag.
+      tags: [Analytics]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: weeks
+          in: query
+          required: false
+          description: Rolling-window size in weeks (1–26, default 8)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 26
+            default: 8
+      responses:
+        '200':
+          description: Carry-forward heatmap returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarryForwardHeatmap'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  # ── Category Shifts ───────────────────────────────────────────────────────
+  /analytics/category-shifts:
+    get:
+      operationId: getCategoryShifts
+      summary: Get commit category shift analysis
+      description: |
+        Returns per-user commit category distribution shifts between the prior
+        and recent halves of the analysis window for the authenticated manager's
+        direct reports.
+
+        Each user entry includes:
+        - `currentDistribution` — category → proportion for the recent half
+        - `priorDistribution`   — category → proportion for the prior half
+        - `biggestShift`        — the category with the largest absolute change
+          in proportion (positive delta = increased, negative = decreased)
+
+        Requires MANAGER role.
+        Gated by the `strategicIntelligence` feature flag.
+      tags: [Analytics]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: weeks
+          in: query
+          required: false
+          description: Rolling-window size in weeks (1–26, default 8)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 26
+            default: 8
+      responses:
+        '200':
+          description: Category shift analysis returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserCategoryShift'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  # ── Estimation Accuracy ───────────────────────────────────────────────────
+  /analytics/estimation-accuracy:
+    get:
+      operationId: getEstimationAccuracy
+      summary: Get team estimation accuracy distribution
+      description: |
+        Returns per-user confidence-vs-actual-completion-rate accuracy metrics
+        for the authenticated manager's direct reports over the last `weeks`
+        weeks.
+
+        A positive `calibrationGap` indicates systematic over-confidence:
+        the user's stated confidence exceeds their actual completion rate.
+
+        Requires MANAGER role.
+        Gated by the `strategicIntelligence` feature flag.
+      tags: [Analytics]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: weeks
+          in: query
+          required: false
+          description: Rolling-window size in weeks (1–26, default 8)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 26
+            default: 8
+      responses:
+        '200':
+          description: Estimation accuracy distribution returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserEstimationAccuracy'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  # ── Predictions ───────────────────────────────────────────────────────────
+  /analytics/predictions/{userId}:
+    get:
+      operationId: getUserPredictions
+      summary: Get rule-based predictions for a user
+      description: |
+        Returns all likely (actionable) predictions for the given user.
+        Only predictions where `likely: true` are included.
+
+        Three prediction types are evaluated:
+
+        | type               | description                                                                 |
+        |--------------------|-----------------------------------------------------------------------------|
+        | `CARRY_FORWARD`    | User has a pattern of carrying ≥ 3 items forward in ≥ 2 of the last 3 weeks AND current week already has ≥ 5 commits |
+        | `LATE_LOCK`        | User late-locked in ≥ 3 of the last 4 weeks AND current plan is still DRAFT on lock day |
+        | `COVERAGE_DECLINE` | Strategic outcome coverage declined for 3 or more consecutive weeks AND no new commits this week |
+
+        **Access control:** the caller must have the MANAGER role **or** be
+        requesting predictions for themselves (self-service, `userId` must equal
+        the authenticated user's ID).
+
+        Gated by the `predictions` feature flag.
+      tags: [Analytics]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: UUID of the user to generate predictions for
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: |
+            Predictions returned. An empty array is returned when no prediction
+            rules fire for the given user.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Prediction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+# ---------------------------------------------------------------------------
+# Components
+# ---------------------------------------------------------------------------
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  # -------------------------------------------------------------------------
+  # New schemas introduced by Agent B
+  # -------------------------------------------------------------------------
+  schemas:
+    ApiError:
+      type: object
+      required: [code, message, details]
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: array
+          description: Optional list of field-level validation details
+          items:
+            type: object
+
+    # -----------------------------------------------------------------------
+    # OutcomeCoverageTimeline
+    # Multi-week outcome coverage timeline for the manager dashboard.
+    # Sourced from the mv_outcome_coverage_weekly materialized view.
+    # -----------------------------------------------------------------------
+    OutcomeCoverageTimeline:
+      type: object
+      required:
+        - weeks
+        - trendDirection
+      description: |
+        Multi-week commit activity for a single RCDO outcome.
+
+        Contains an ordered list of per-week data points (oldest first) and
+        a derived `trendDirection` comparing the two most recent weeks.
+      properties:
+        weeks:
+          type: array
+          description: Ordered per-week data points, oldest first
+          items:
+            $ref: '#/components/schemas/OutcomeCoverageWeek'
+        trendDirection:
+          type: string
+          enum: [RISING, FALLING, STABLE]
+          description: |
+            Derived trend from the most recent two weeks.
+            `RISING` when the latest week commit count exceeds the prior week;
+            `FALLING` when it is lower; `STABLE` when equal or fewer than two
+            data points are available.
+
+    # -----------------------------------------------------------------------
+    # OutcomeCoverageWeek
+    # A single week's commit activity within an OutcomeCoverageTimeline.
+    # -----------------------------------------------------------------------
+    OutcomeCoverageWeek:
+      type: object
+      required:
+        - weekStart
+        - commitCount
+        - contributorCount
+        - highPriorityCount
+      description: |
+        A single week's commit activity for a specific RCDO outcome.
+
+        Sourced from the `mv_outcome_coverage_weekly` materialized view.
+        Weeks with no data produce a row with zero counts.
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: ISO-8601 Monday date for this week (e.g. 2026-03-16)
+        commitCount:
+          type: integer
+          minimum: 0
+          description: Total strategic commits linked to the outcome this week
+        contributorCount:
+          type: integer
+          minimum: 0
+          description: Distinct contributors who made commits linked to the outcome this week
+        highPriorityCount:
+          type: integer
+          minimum: 0
+          description: Commits with chess priority KING or QUEEN this week
+
+    # -----------------------------------------------------------------------
+    # CarryForwardHeatmap
+    # Team-level carry-forward heatmap for the manager dashboard.
+    # -----------------------------------------------------------------------
+    CarryForwardHeatmap:
+      type: object
+      required:
+        - users
+      description: |
+        Team-level carry-forward heatmap showing how many commits each direct
+        report carried forward each week over the analysis window.
+
+        Users are ordered by userId; weeks within each user row are ordered
+        oldest first.
+      properties:
+        users:
+          type: array
+          description: Team member rows, one per direct report
+          items:
+            $ref: '#/components/schemas/HeatmapUser'
+
+    # -----------------------------------------------------------------------
+    # HeatmapUser
+    # A row in the carry-forward heatmap representing one team member.
+    # -----------------------------------------------------------------------
+    HeatmapUser:
+      type: object
+      required:
+        - userId
+        - displayName
+        - weekCells
+      description: |
+        A row in the carry-forward heatmap representing one team member.
+
+        `weekCells` contains an ordered list of per-week carry-forward counts
+        (oldest first). Weeks with no data produce a cell with `carriedCount: 0`.
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: The team member's user ID
+        displayName:
+          type: string
+          description: Human-readable name from the org-graph / HRIS
+        weekCells:
+          type: array
+          description: Ordered per-week carry-forward counts, oldest first
+          items:
+            $ref: '#/components/schemas/HeatmapCell'
+
+    # -----------------------------------------------------------------------
+    # HeatmapCell
+    # A single cell in the carry-forward heatmap (one user, one week).
+    # -----------------------------------------------------------------------
+    HeatmapCell:
+      type: object
+      required:
+        - weekStart
+        - carriedCount
+      description: |
+        A single cell in the carry-forward heatmap, representing one user's
+        carry-forward count for one week.
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: ISO-8601 Monday date for this cell's week (e.g. 2026-03-16)
+        carriedCount:
+          type: integer
+          minimum: 0
+          description: Number of commits the user carried forward into this week
+
+    # -----------------------------------------------------------------------
+    # UserCategoryShift
+    # Per-user category distribution shift between the prior and recent
+    # half-windows of the analysis window.
+    # -----------------------------------------------------------------------
+    UserCategoryShift:
+      type: object
+      required:
+        - userId
+        - currentDistribution
+        - priorDistribution
+        - biggestShift
+      description: |
+        Per-user commit category distribution shift between the prior and
+        recent halves of the analysis window.
+
+        Proportions in `currentDistribution` and `priorDistribution` sum to
+        approximately 1.0 per user.
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: The team member's user ID
+        currentDistribution:
+          type: object
+          description: Category → proportion mapping for the recent half-window
+          additionalProperties:
+            type: number
+            format: double
+        priorDistribution:
+          type: object
+          description: Category → proportion mapping for the prior half-window
+          additionalProperties:
+            type: number
+            format: double
+        biggestShift:
+          $ref: '#/components/schemas/CategoryShift'
+
+    # -----------------------------------------------------------------------
+    # CategoryShift
+    # The single largest shift in commit category proportion for a user.
+    # -----------------------------------------------------------------------
+    CategoryShift:
+      type: object
+      required:
+        - category
+        - delta
+      description: |
+        The single largest shift in commit category distribution for a user
+        between the prior half-window and the recent half-window.
+      properties:
+        category:
+          type: string
+          description: |
+            The commit category name that changed the most (e.g. `DELIVERY`,
+            `OPERATIONS`, `ENABLEMENT`, `LEARNING`)
+        delta:
+          type: number
+          format: double
+          description: |
+            Signed change in proportion (recent − prior).
+            Positive values indicate the category increased; negative values
+            indicate it decreased.
+
+    # -----------------------------------------------------------------------
+    # UserEstimationAccuracy
+    # Per-user estimation accuracy metrics derived from reconciled weeks.
+    # -----------------------------------------------------------------------
+    UserEstimationAccuracy:
+      type: object
+      required:
+        - userId
+        - avgConfidence
+        - completionRate
+        - calibrationGap
+      description: |
+        Per-user estimation accuracy metrics. Compares a team member's stated
+        confidence against their actual completion rate across reconciled
+        planning weeks.
+
+        Sourced from the `mv_user_weekly_summary` materialized view.
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: The team member's user ID
+        avgConfidence:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: |
+            Average confidence score across reconciled weeks. Values are in
+            [0, 1] where 1.0 represents full confidence.
+        completionRate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: |
+            Ratio of DONE commits to total commits across reconciled weeks.
+            Values are in [0, 1].
+        calibrationGap:
+          type: number
+          format: double
+          description: |
+            `avgConfidence − completionRate`. Positive values indicate
+            systematic over-confidence; negative values indicate
+            under-confidence.
+
+    # -----------------------------------------------------------------------
+    # Prediction
+    # A single rule-based prediction produced by the PredictionService.
+    # -----------------------------------------------------------------------
+    Prediction:
+      type: object
+      required:
+        - type
+        - likely
+        - confidence
+        - reason
+      description: |
+        A single rule-based prediction produced by evaluating historical
+        patterns from the analytics materialized views and current plan state.
+
+        Only predictions where `likely: true` are returned by the API
+        (actionable alerts only).
+      properties:
+        type:
+          type: string
+          enum: [CARRY_FORWARD, LATE_LOCK, COVERAGE_DECLINE]
+          description: |
+            The prediction type identifier:
+            - `CARRY_FORWARD`    — pattern of carrying too many items forward
+            - `LATE_LOCK`        — habitual late plan submission on lock day
+            - `COVERAGE_DECLINE` — strategic outcome coverage declining 3+ consecutive weeks
+        likely:
+          type: boolean
+          description: |
+            `true` when the rule conditions are met (this prediction is
+            actionable). The API only returns predictions where `likely` is
+            `true`.
+        confidence:
+          type: string
+          enum: [HIGH, MEDIUM, LOW]
+          description: |
+            Confidence level of the prediction:
+            - `HIGH`   — strong rule signal based on clear historical pattern
+            - `MEDIUM` — moderate signal; context may vary
+            - `LOW`    — weak signal; informational only
+        reason:
+          type: string
+          description: Human-readable explanation of why the prediction was made
+
+  # -------------------------------------------------------------------------
+  # Shared response definitions (mirror the main spec for standalone validity)
+  # -------------------------------------------------------------------------
+  responses:
+    Unauthorized:
+      description: Missing or invalid JWT
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                $ref: '#/components/schemas/ApiError'
+
+    Forbidden:
+      description: |
+        Valid JWT but insufficient access. Analytics endpoints require the
+        MANAGER role; the predictions endpoint additionally allows self-service
+        access when `userId` matches the authenticated user's ID.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                $ref: '#/components/schemas/ApiError'
+
+    ValidationError:
+      description: |
+        Validation failed. Common causes:
+        - `weeks` parameter is outside the range [1, 26]
+        - `outcomeId` or `userId` is not a valid UUID
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                $ref: '#/components/schemas/ApiError'

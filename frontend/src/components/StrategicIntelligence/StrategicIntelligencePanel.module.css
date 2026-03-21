@@ -1,0 +1,126 @@
+/**
+ * StrategicIntelligencePanel – CSS Module (Academia / Classical)
+ *
+ * Container panel orchestrating Carry-Forward Heatmap, Prediction Alerts,
+ * and per-outcome Coverage Timelines.  Uses the ai-insight token set shared
+ * by all analytics panels.
+ */
+
+/* ─── Outer panel ─────────────────────────────────────────────────────────── */
+
+.panel {
+  padding:          var(--wc-space-sm) var(--wc-space-md);
+  border:           1.5px dashed var(--wc-ai-insight-border);
+  border-radius:    var(--wc-radius-md);
+  background-color: var(--wc-ai-insight-bg);
+  margin-bottom:    var(--wc-space-md);
+}
+
+/* ─── Panel header row ────────────────────────────────────────────────────── */
+
+.panelHeader {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  gap:             var(--wc-space-sm);
+  flex-wrap:       wrap;
+  margin-bottom:   var(--wc-space-sm);
+}
+
+.panelTitle {
+  font-family:    var(--wc-font-display);
+  font-size:      0.6875rem;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color:          var(--wc-ai-insight-text);
+  white-space:    nowrap;
+}
+
+/* ─── Collapsible section ─────────────────────────────────────────────────── */
+
+.section {
+  margin-top: var(--wc-space-sm);
+  border-top: 1px solid var(--wc-ai-insight-border);
+  padding-top: var(--wc-space-sm);
+}
+
+.sectionHeader {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  gap:             var(--wc-space-sm);
+  flex-wrap:       wrap;
+  margin-bottom:   var(--wc-space-xs);
+}
+
+.sectionTitle {
+  font-family:    var(--wc-font-display);
+  font-size:      0.625rem;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color:          var(--wc-color-text-muted);
+  white-space:    nowrap;
+}
+
+/* ─── Section toggle button ───────────────────────────────────────────────── */
+
+.toggleButton {
+  display:          inline-flex;
+  align-items:      center;
+  gap:              var(--wc-space-xs);
+  padding:          0.2rem 0.6rem;
+  border-radius:    var(--wc-radius-sm);
+  border:           1px solid var(--wc-ai-insight-border);
+  background-color: var(--wc-color-bg-secondary);
+  color:            var(--wc-ai-insight-text);
+  font-family:      var(--wc-font-body);
+  font-size:        0.75rem;
+  font-weight:      500;
+  cursor:           pointer;
+  transition:       background-color var(--wc-transition-fast),
+                    border-color var(--wc-transition-fast);
+}
+
+.toggleButton:hover {
+  background-color: var(--wc-ai-insight-bg);
+  border-color:     var(--wc-color-accent);
+}
+
+.toggleButton:focus-visible {
+  outline:        2px solid var(--wc-color-accent);
+  outline-offset: 2px;
+}
+
+/* ─── Section content area ────────────────────────────────────────────────── */
+
+.sectionContent {
+  margin-top: var(--wc-space-sm);
+}
+
+/* ─── Outcome error ───────────────────────────────────────────────────────── */
+
+.outcomeError {
+  font-size:  0.75rem;
+  color:      var(--wc-color-error);
+  font-style: italic;
+  padding:    var(--wc-space-xs) 0;
+}
+
+/* ─── Outcome grid (multiple timelines stacked) ───────────────────────────── */
+
+.outcomesGrid {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--wc-space-sm);
+}
+
+/* ─── Empty outcomes hint ─────────────────────────────────────────────────── */
+
+.emptyOutcomes {
+  font-size:  0.875rem;
+  color:      var(--wc-color-text-muted);
+  font-style: italic;
+  padding:    var(--wc-space-xs) 0 var(--wc-space-sm);
+}

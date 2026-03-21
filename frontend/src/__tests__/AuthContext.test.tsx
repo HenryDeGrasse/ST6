@@ -40,9 +40,7 @@ describe("AuthContext", () => {
     // Suppress React error boundary console output
     const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-    expect(() => render(<TestConsumer />)).toThrow(
-      "useAuth must be used within an AuthProvider",
-    );
+    expect(() => render(<TestConsumer />)).toThrow("useAuth must be used within an AuthProvider");
 
     spy.mockRestore();
   });

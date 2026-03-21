@@ -1,0 +1,186 @@
+/**
+ * OutcomeProgressCard – CSS Module (Academia / Classical)
+ *
+ * Card displaying RCDO outcome progress details.
+ * Follows the GlassPanel / wood-panel aesthetic.
+ */
+
+/* ─── Card wrapper ───────────────────────────────────────────────────────── */
+
+.card {
+  position:         relative;
+  padding:          var(--wc-space-md);
+  border-radius:    var(--wc-radius-lg);
+  border:           1px solid var(--wc-color-border);
+  background-color: var(--wc-color-bg-secondary);
+  box-shadow:       var(--wc-shadow-md);
+  display:          flex;
+  flex-direction:   column;
+  gap:              var(--wc-space-sm);
+}
+
+/* Corner flourishes — brass L-brackets (mirrors GlassPanel) */
+.card::before,
+.card::after {
+  content:        '';
+  position:       absolute;
+  width:          16px;
+  height:         16px;
+  border:         2px solid var(--wc-color-accent);
+  opacity:        0.35;
+  pointer-events: none;
+  transition:     opacity var(--wc-transition-slow);
+}
+
+.card::before {
+  top:           -1px;
+  left:          -1px;
+  border-right:  none;
+  border-bottom: none;
+}
+
+.card::after {
+  bottom:     -1px;
+  right:      -1px;
+  border-left: none;
+  border-top:  none;
+}
+
+.card:hover::before,
+.card:hover::after {
+  opacity: 0.7;
+}
+
+/* ─── Header row ─────────────────────────────────────────────────────────── */
+
+.header {
+  display:         flex;
+  align-items:     flex-start;
+  justify-content: space-between;
+  gap:             var(--wc-space-sm);
+  flex-wrap:       wrap;
+}
+
+.heading {
+  margin:      0;
+  font-family: var(--wc-font-heading);
+  font-size:   1rem;
+  font-weight: 500;
+  color:       var(--wc-color-text-primary);
+  line-height: 1.35;
+  flex:        1;
+}
+
+/* ─── Progress bar ───────────────────────────────────────────────────────── */
+
+.progressBarWrap {
+  position:         relative;
+  height:           8px;
+  background-color: var(--wc-color-bg-tertiary);
+  border-radius:    var(--wc-radius-full);
+  border:           1px solid var(--wc-color-border-muted);
+  overflow:         visible;
+}
+
+.progressBarFill {
+  position:      absolute;
+  top:           0;
+  left:          0;
+  height:        100%;
+  border-radius: var(--wc-radius-full);
+  transition:    width var(--wc-transition-base);
+}
+
+/* Fill colour variants — keyed to gap between actual and expected progress */
+
+.fillOnTrack {
+  background-color: var(--wc-color-success, #4CAF82);
+}
+
+.fillNeedsAttention {
+  background-color: var(--wc-color-warning, #C8A040);
+}
+
+.fillAtRisk {
+  background-color: #D2823C;
+}
+
+.fillCritical {
+  background-color: var(--wc-color-error, #C84040);
+}
+
+/* Expected-progress tick marker */
+
+.expectedMarker {
+  position:         absolute;
+  top:              -3px;
+  width:            2px;
+  height:           14px;
+  background-color: var(--wc-color-text-muted);
+  border-radius:    1px;
+  transform:        translateX(-50%);
+  opacity:          0.75;
+  pointer-events:   none;
+}
+
+/* ─── Progress text ──────────────────────────────────────────────────────── */
+
+.progressText {
+  margin:      0;
+  font-family: var(--wc-font-body);
+  font-size:   0.875rem;
+  color:       var(--wc-color-text-secondary);
+  line-height: 1.4;
+}
+
+.progressActual {
+  font-weight: 600;
+  color:       var(--wc-color-text-primary);
+}
+
+.progressExpected {
+  color: var(--wc-color-text-muted);
+}
+
+/* ─── Meta row ───────────────────────────────────────────────────────────── */
+
+.metaRow {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             var(--wc-space-sm);
+  flex-wrap:       wrap;
+  margin-top:      var(--wc-space-xs);
+}
+
+.targetDate {
+  font-family: var(--wc-font-display);
+  font-size:   0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color:       var(--wc-color-text-muted);
+}
+
+.noTarget {
+  font-style: italic;
+}
+
+.daysRemaining {
+  font-family: var(--wc-font-body);
+  font-size:   0.8125rem;
+  color:       var(--wc-color-text-secondary);
+}
+
+.overdue {
+  font-family:      var(--wc-font-display);
+  font-size:        0.6875rem;
+  font-weight:      600;
+  letter-spacing:   0.08em;
+  text-transform:   uppercase;
+  color:            var(--wc-color-error, #C84040);
+  background-color: var(--wc-color-error-bg, rgba(200, 64, 64, 0.12));
+  border:           1px solid var(--wc-color-error-border, rgba(200, 64, 64, 0.3));
+  border-radius:    var(--wc-radius-sm);
+  padding:          0.1rem 0.4rem;
+}

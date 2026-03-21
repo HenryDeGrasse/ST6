@@ -1,7 +1,18 @@
 package com.weekly.acceptance;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.weekly.audit.AuditService;
 import com.weekly.auth.OrgGraphClient;
+import com.weekly.config.OrgPolicyService;
 import com.weekly.outbox.OutboxService;
 import com.weekly.plan.domain.ChessPriority;
 import com.weekly.plan.domain.CompletionStatus;
@@ -29,26 +40,15 @@ import com.weekly.plan.service.ReviewService;
 import com.weekly.rcdo.InMemoryRcdoClient;
 import com.weekly.rcdo.RcdoTree;
 import com.weekly.shared.ErrorCode;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 /**
  * Acceptance criteria tests mapped directly to PRD §18.
@@ -92,11 +92,14 @@ class AcceptanceCriteriaTest {
         orgGraphClient = mock(OrgGraphClient.class);
 
         CommitValidator commitValidator = new CommitValidator();
+        OrgPolicyService orgPolicyService = mock(OrgPolicyService.class);
+        when(orgPolicyService.getPolicy(any())).thenReturn(OrgPolicyService.defaultPolicy());
 
         planService = new PlanService(
                 planRepository, commitRepository, actualRepository,
                 commitValidator, rcdoClient, auditService, outboxService,
-                orgGraphClient
+                orgGraphClient, orgPolicyService,
+                mock(org.springframework.context.ApplicationEventPublisher.class)
         );
         commitService = new CommitService(
                 planRepository, commitRepository, actualRepository,
@@ -343,7 +346,7 @@ class AcceptanceCriteriaTest {
             when(planRepository.findByOrgIdAndId(ORG_ID, planId)).thenReturn(Optional.of(plan));
 
             UpdateCommitRequest request = new UpdateCommitRequest(
-                    null, null, "QUEEN", null, null, null, null, null, null, null
+                    null, null, "QUEEN", null, null, null, null, null, null, null, null
             );
 
             PlanStateException ex = assertThrows(
@@ -372,7 +375,7 @@ class AcceptanceCriteriaTest {
             when(commitRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             UpdateCommitRequest request = new UpdateCommitRequest(
-                    null, null, null, null, null, null, null, null, null,
+                    null, null, null, null, null, null, null, null, null, null,
                     "Making progress"
             );
 

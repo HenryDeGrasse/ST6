@@ -118,6 +118,7 @@ describe("ReconciliationView", () => {
               completionStatus: CompletionStatus.PARTIALLY,
               deltaReason: "Blocked on dependency",
               timeSpent: null,
+              actualHours: 5.5,
             },
           }),
         ]}
@@ -130,12 +131,97 @@ describe("ReconciliationView", () => {
     expect(screen.getByTestId("reconcile-status-commit-1")).toHaveValue(CompletionStatus.PARTIALLY);
     expect(screen.getByTestId("reconcile-actual-commit-1")).toHaveValue("Shipped to production");
     expect(screen.getByTestId("reconcile-delta-commit-1")).toHaveValue("Blocked on dependency");
+    expect(screen.getByTestId("reconcile-actual-hours-commit-1")).toHaveValue(5.5);
+  });
+
+  it("includes actualHours in save requests when provided", async () => {
+    const onUpdateActual = vi.fn();
+    render(
+      <ReconciliationView
+        commits={[makeCommit()]}
+        planState={PlanState.RECONCILING}
+        onUpdateActual={onUpdateActual}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByTestId("reconcile-actual-hours-commit-1"), {
+      target: { value: "6.5" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("reconcile-save-commit-1"));
+    });
+
+    expect(onUpdateActual).toHaveBeenCalledWith(
+      "commit-1",
+      1,
+      expect.objectContaining({
+        actualResult: "",
+        completionStatus: CompletionStatus.DONE,
+        actualHours: 6.5,
+      }),
+    );
+  });
+
+  it("rehydrates actual hours when server payload changes", () => {
+    const { rerender } = render(
+      <ReconciliationView
+        commits={[
+          makeCommit({
+            actual: {
+              commitId: "commit-1",
+              actualResult: "Saved actual",
+              completionStatus: CompletionStatus.DONE,
+              deltaReason: null,
+              timeSpent: null,
+              actualHours: 3,
+            },
+          }),
+        ]}
+        planState={PlanState.RECONCILING}
+        onUpdateActual={vi.fn()}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("reconcile-actual-hours-commit-1")).toHaveValue(3);
+
+    fireEvent.change(screen.getByTestId("reconcile-actual-hours-commit-1"), {
+      target: { value: "4" },
+    });
+    expect(screen.getByTestId("reconcile-actual-hours-commit-1")).toHaveValue(4);
+
+    rerender(
+      <ReconciliationView
+        commits={[
+          makeCommit({
+            actual: {
+              commitId: "commit-1",
+              actualResult: "Saved actual",
+              completionStatus: CompletionStatus.DONE,
+              deltaReason: null,
+              timeSpent: null,
+              actualHours: 7.5,
+            },
+          }),
+        ]}
+        planState={PlanState.RECONCILING}
+        onUpdateActual={vi.fn()}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("reconcile-actual-hours-commit-1")).toHaveValue(7.5);
   });
 
   it("shows Saving text and disables save button while saving", async () => {
     let resolveUpdate: () => void = () => {};
     const onUpdateActual = vi.fn(
-      () => new Promise<void>((resolve) => { resolveUpdate = resolve; }),
+      () =>
+        new Promise<void>((resolve) => {
+          resolveUpdate = resolve;
+        }),
     );
 
     render(
@@ -184,12 +270,7 @@ describe("ReconciliationView", () => {
 
   it("hydrates actuals when commits arrive after initial render", () => {
     const { rerender } = render(
-      <ReconciliationView
-        commits={[]}
-        planState={PlanState.RECONCILING}
-        onUpdateActual={vi.fn()}
-        onSubmit={vi.fn()}
-      />,
+      <ReconciliationView commits={[]} planState={PlanState.RECONCILING} onUpdateActual={vi.fn()} onSubmit={vi.fn()} />,
     );
 
     rerender(

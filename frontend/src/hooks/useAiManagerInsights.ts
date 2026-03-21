@@ -1,8 +1,5 @@
 import { useCallback, useState } from "react";
-import type {
-  ManagerInsightItem,
-  ManagerInsightsResponse,
-} from "@weekly-commitments/contracts";
+import type { ManagerInsightItem, ManagerInsightsResponse } from "@weekly-commitments/contracts";
 import { useApiClient } from "../api/ApiContext.js";
 import { useFeatureFlags } from "../context/FeatureFlagContext.js";
 import type { AiRequestStatus } from "./useAiSuggestions.js";

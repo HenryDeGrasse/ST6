@@ -2,6 +2,7 @@ package com.weekly.plan.service;
 
 import com.weekly.audit.AuditService;
 import com.weekly.auth.OrgGraphClient;
+import com.weekly.config.OrgPolicyService;
 import com.weekly.outbox.OutboxService;
 import com.weekly.plan.domain.ChessPriority;
 import com.weekly.plan.domain.CompletionStatus;
@@ -18,9 +19,6 @@ import com.weekly.rcdo.RcdoClient;
 import com.weekly.rcdo.RcdoOutcomeDetail;
 import com.weekly.shared.ErrorCode;
 import com.weekly.shared.EventType;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -31,6 +29,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service for weekly plan lifecycle operations: create, get, lock,
@@ -38,10 +38,6 @@ import java.util.stream.Collectors;
  */
 @Service
 public class PlanService {
-
-    private static final int DEFAULT_STALENESS_THRESHOLD_MIN = 60;
-    private static final int DEFAULT_MAX_KING = 1;
-    private static final int DEFAULT_MAX_QUEEN = 2;
 
     private final WeeklyPlanRepository planRepository;
     private final WeeklyCommitRepository commitRepository;
@@ -51,6 +47,8 @@ public class PlanService {
     private final AuditService auditService;
     private final OutboxService outboxService;
     private final OrgGraphClient orgGraphClient;
+    private final OrgPolicyService orgPolicyService;
+    private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     public PlanService(
             WeeklyPlanRepository planRepository,
@@ -60,7 +58,9 @@ public class PlanService {
             RcdoClient rcdoClient,
             AuditService auditService,
             OutboxService outboxService,
-            OrgGraphClient orgGraphClient
+            OrgGraphClient orgGraphClient,
+            OrgPolicyService orgPolicyService,
+            org.springframework.context.ApplicationEventPublisher eventPublisher
     ) {
         this.planRepository = planRepository;
         this.commitRepository = commitRepository;
@@ -70,6 +70,8 @@ public class PlanService {
         this.auditService = auditService;
         this.outboxService = outboxService;
         this.orgGraphClient = orgGraphClient;
+        this.orgPolicyService = orgPolicyService;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -384,6 +386,15 @@ public class PlanService {
                         "partialCount", partialCount,
                         "droppedCount", droppedCount));
 
+        // Publish application event so the integration layer can post outbound comments
+        // on linked external tickets (ADR-010 Wave 4). Uses Spring's event bus to avoid
+        // a cyclic dependency between the plan and integration packages.
+        String summary = String.format(
+                "Reconciliation submitted for week of %s — %d done, %d partial, %d dropped.",
+                plan.getWeekStartDate(), doneCount, partialCount, droppedCount);
+        eventPublisher.publishEvent(
+                new ReconciliationSubmittedEvent(this, orgId, planId, summary));
+
         return WeeklyPlanResponse.from(plan);
     }
 
@@ -516,6 +527,8 @@ public class PlanService {
      * and RCDO snapshot population). Shared between lockPlan and late-lock path.
      */
     void performLockValidationAndSnapshots(UUID orgId, List<WeeklyCommitEntity> commits) {
+        OrgPolicyService.OrgPolicy policy = orgPolicyService.getPolicy(orgId);
+
         // Validate all commits
         LockValidationResult validation = validateForLock(commits);
         if (!validation.valid()) {
@@ -526,8 +539,8 @@ public class PlanService {
             );
         }
 
-        // Validate chess rules
-        LockValidationResult chessValidation = validateChessRules(commits);
+        // Validate chess rules using org-specific policy
+        LockValidationResult chessValidation = validateChessRules(commits, policy);
         if (!chessValidation.valid()) {
             throw new PlanValidationException(
                     ErrorCode.CHESS_RULE_VIOLATION,
@@ -536,15 +549,16 @@ public class PlanService {
             );
         }
 
-        // Validate RCDO freshness
-        if (!rcdoClient.isCacheFresh(orgId, DEFAULT_STALENESS_THRESHOLD_MIN)) {
+        // Validate RCDO freshness using org-specific policy settings
+        if (policy.blockLockOnStaleRcdo()
+                && !rcdoClient.isCacheFresh(orgId, policy.rcdoStalenessThresholdMinutes())) {
             java.time.Instant lastRefreshedAt = rcdoClient.getLastRefreshedAt(orgId);
             throw new PlanValidationException(
                     ErrorCode.RCDO_VALIDATION_STALE,
                     "RCDO data is stale; cannot lock plan",
                     List.of(Map.of(
                             "lastRefreshedAt", lastRefreshedAt != null ? lastRefreshedAt.toString() : "never",
-                            "stalenessThresholdMinutes", DEFAULT_STALENESS_THRESHOLD_MIN
+                            "stalenessThresholdMinutes", policy.rcdoStalenessThresholdMinutes()
                     ))
             );
         }
@@ -578,7 +592,8 @@ public class PlanService {
         return LockValidationResult.failure(details);
     }
 
-    LockValidationResult validateChessRules(List<WeeklyCommitEntity> commits) {
+    LockValidationResult validateChessRules(
+            List<WeeklyCommitEntity> commits, OrgPolicyService.OrgPolicy policy) {
         List<Map<String, Object>> details = new ArrayList<>();
 
         long kingCount = commits.stream()
@@ -588,22 +603,32 @@ public class PlanService {
                 .filter(c -> c.getChessPriority() == ChessPriority.QUEEN)
                 .count();
 
-        if (kingCount != DEFAULT_MAX_KING) {
+        if (policy.chessKingRequired() && kingCount == 0) {
             details.add(LockValidationResult.planError(
                     "CHESS_RULE_VIOLATION",
-                    "Exactly " + DEFAULT_MAX_KING + " KING required",
-                    "exactlyOneKing",
-                    DEFAULT_MAX_KING,
+                    "At least 1 KING required",
+                    "kingRequired",
+                    1,
+                    0
+            ));
+        }
+
+        if (kingCount > policy.chessMaxKing()) {
+            details.add(LockValidationResult.planError(
+                    "CHESS_RULE_VIOLATION",
+                    "At most " + policy.chessMaxKing() + " KING allowed",
+                    "maxKing",
+                    policy.chessMaxKing(),
                     (int) kingCount
             ));
         }
 
-        if (queenCount > DEFAULT_MAX_QUEEN) {
+        if (queenCount > policy.chessMaxQueen()) {
             details.add(LockValidationResult.planError(
                     "CHESS_RULE_VIOLATION",
-                    "At most " + DEFAULT_MAX_QUEEN + " QUEEN allowed",
+                    "At most " + policy.chessMaxQueen() + " QUEEN allowed",
                     "maxQueen",
-                    DEFAULT_MAX_QUEEN,
+                    policy.chessMaxQueen(),
                     (int) queenCount
             ));
         }

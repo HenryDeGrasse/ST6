@@ -34,17 +34,23 @@ export function usePlan(): UsePlanResult {
     setConflictVersion(null);
   }, []);
 
-  const extractError = useCallback(
-    (resp: { error?: unknown; response: Response }): string => {
-      const err = resp.error as ApiErrorResponse | undefined;
-      if (err?.error?.message) return err.error.message;
-      return `Request failed (${String(resp.response.status)})`;
-    },
-    [],
-  );
+  const extractError = useCallback((resp: { error?: unknown; response: Response }): string => {
+    const err = resp.error as ApiErrorResponse | undefined;
+    if (err?.error?.message) return err.error.message;
+    return `Request failed (${String(resp.response.status)})`;
+  }, []);
 
   const postPlanLifecycleWithRetry = useCallback(
-    async (path: "/plans/{planId}/lock" | "/plans/{planId}/start-reconciliation" | "/plans/{planId}/submit-reconciliation" | "/plans/{planId}/carry-forward", planId: string, version: number, body?: { commitIds: string[] }) => {
+    async (
+      path:
+        | "/plans/{planId}/lock"
+        | "/plans/{planId}/start-reconciliation"
+        | "/plans/{planId}/submit-reconciliation"
+        | "/plans/{planId}/carry-forward",
+      planId: string,
+      version: number,
+      body?: { commitIds: string[] },
+    ) => {
       const firstResp = await client.POST(path, {
         params: {
           path: { planId },
@@ -167,11 +173,7 @@ export function usePlan(): UsePlanResult {
       setError(null);
       setConflictVersion(null);
       try {
-        const { resp } = await postPlanLifecycleWithRetry(
-          "/plans/{planId}/start-reconciliation",
-          planId,
-          version,
-        );
+        const { resp } = await postPlanLifecycleWithRetry("/plans/{planId}/start-reconciliation", planId, version);
         if (resp.data) {
           const updated = resp.data as WeeklyPlan;
           setPlan(updated);
@@ -199,11 +201,7 @@ export function usePlan(): UsePlanResult {
       setError(null);
       setConflictVersion(null);
       try {
-        const { resp } = await postPlanLifecycleWithRetry(
-          "/plans/{planId}/submit-reconciliation",
-          planId,
-          version,
-        );
+        const { resp } = await postPlanLifecycleWithRetry("/plans/{planId}/submit-reconciliation", planId, version);
         if (resp.data) {
           const updated = resp.data as WeeklyPlan;
           setPlan(updated);
@@ -231,12 +229,9 @@ export function usePlan(): UsePlanResult {
       setError(null);
       setConflictVersion(null);
       try {
-        const { resp } = await postPlanLifecycleWithRetry(
-          "/plans/{planId}/carry-forward",
-          planId,
-          version,
-          { commitIds },
-        );
+        const { resp } = await postPlanLifecycleWithRetry("/plans/{planId}/carry-forward", planId, version, {
+          commitIds,
+        });
         if (resp.data) {
           const updated = resp.data as WeeklyPlan;
           setPlan(updated);

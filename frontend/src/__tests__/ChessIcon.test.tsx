@@ -6,22 +6,17 @@ import type { ChessPiece } from "../components/icons/ChessIcon.js";
 const PIECES: ChessPiece[] = ["KING", "QUEEN", "ROOK", "BISHOP", "KNIGHT", "PAWN"];
 
 describe("ChessIcon", () => {
-  it.each(PIECES)(
-    "renders an SVG element for piece %s with the correct data-testid",
-    (piece) => {
-      render(<ChessIcon piece={piece} />);
-      const svg = screen.getByTestId(`chess-icon-${piece.toLowerCase()}`);
-      expect(svg).toBeInTheDocument();
-      expect(svg.tagName.toLowerCase()).toBe("svg");
-    },
-  );
+  it.each(PIECES)("renders an SVG element for piece %s with the correct data-testid", (piece) => {
+    render(<ChessIcon piece={piece} />);
+    const svg = screen.getByTestId(`chess-icon-${piece.toLowerCase()}`);
+    expect(svg).toBeInTheDocument();
+    expect(svg.tagName.toLowerCase()).toBe("svg");
+  });
 
   it("renders all 6 pieces without throwing", () => {
     for (const piece of PIECES) {
       const { unmount } = render(<ChessIcon piece={piece} />);
-      expect(
-        screen.getByTestId(`chess-icon-${piece.toLowerCase()}`),
-      ).toBeInTheDocument();
+      expect(screen.getByTestId(`chess-icon-${piece.toLowerCase()}`)).toBeInTheDocument();
       unmount();
     }
   });
@@ -50,10 +45,7 @@ describe("ChessIcon", () => {
     for (const piece of PIECES) {
       const { unmount } = render(<ChessIcon piece={piece} />);
       const svg = screen.getByTestId(`chess-icon-${piece.toLowerCase()}`);
-      expect(svg).toHaveAttribute(
-        "fill",
-        `var(--wc-chess-${piece.toLowerCase()})`,
-      );
+      expect(svg).toHaveAttribute("fill", `var(--wc-chess-${piece.toLowerCase()})`);
       unmount();
     }
   });

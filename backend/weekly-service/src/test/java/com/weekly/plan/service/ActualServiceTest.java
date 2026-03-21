@@ -1,5 +1,12 @@
 package com.weekly.plan.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.weekly.audit.AuditService;
 import com.weekly.outbox.OutboxService;
 import com.weekly.plan.domain.ChessPriority;
@@ -14,21 +21,15 @@ import com.weekly.plan.repository.WeeklyCommitActualRepository;
 import com.weekly.plan.repository.WeeklyCommitRepository;
 import com.weekly.plan.repository.WeeklyPlanRepository;
 import com.weekly.shared.ErrorCode;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /**
  * Unit tests for {@link ActualService}: actuals editing with state enforcement.
@@ -83,7 +84,7 @@ class ActualServiceTest {
             when(commitRepository.findById(commit.getId())).thenReturn(Optional.of(commit));
 
             UpdateActualRequest request = new UpdateActualRequest(
-                    "Done", "DONE", null, null
+                    "Done", "DONE", null, null, null
             );
 
             assertThrows(
@@ -106,7 +107,7 @@ class ActualServiceTest {
             when(actualRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             UpdateActualRequest request = new UpdateActualRequest(
-                    "Feature shipped", "DONE", null, 120
+                    "Feature shipped", "DONE", null, 120, null
             );
 
             WeeklyCommitActualResponse result = actualService.updateActual(
@@ -136,7 +137,7 @@ class ActualServiceTest {
             when(actualRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             UpdateActualRequest request = new UpdateActualRequest(
-                    "Partially done", "PARTIALLY", "Blocked by dependency", 60
+                    "Partially done", "PARTIALLY", "Blocked by dependency", 60, null
             );
 
             WeeklyCommitActualResponse result = actualService.updateActual(
@@ -145,6 +146,35 @@ class ActualServiceTest {
 
             assertEquals("PARTIALLY", result.completionStatus());
             assertEquals("Blocked by dependency", result.deltaReason());
+        }
+
+        @Test
+        void storesActualHoursWhenProvided() {
+            UUID planId = UUID.randomUUID();
+            WeeklyPlanEntity plan = reconcilingPlan(planId);
+            when(planRepository.findByOrgIdAndId(ORG_ID, planId)).thenReturn(Optional.of(plan));
+
+            WeeklyCommitEntity commit = new WeeklyCommitEntity(UUID.randomUUID(), ORG_ID, planId, "Task");
+            commit.setChessPriority(ChessPriority.KING);
+            when(commitRepository.findById(commit.getId())).thenReturn(Optional.of(commit));
+            when(commitRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(actualRepository.findById(commit.getId())).thenReturn(Optional.empty());
+            when(actualRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            UpdateActualRequest request = new UpdateActualRequest(
+                    "Feature shipped", "DONE", null, 120, 6.5
+            );
+
+            WeeklyCommitActualResponse result = actualService.updateActual(
+                    ORG_ID, commit.getId(), commit.getVersion(), request, USER_ID
+            );
+
+            assertEquals(6.5, result.actualHours());
+            ArgumentCaptor<WeeklyCommitActualEntity> actualCaptor = ArgumentCaptor.forClass(
+                    WeeklyCommitActualEntity.class
+            );
+            verify(actualRepository).save(actualCaptor.capture());
+            assertEquals(0, BigDecimal.valueOf(6.5).compareTo(actualCaptor.getValue().getActualHours()));
         }
 
         @Test
@@ -158,7 +188,7 @@ class ActualServiceTest {
             when(commitRepository.findById(commit.getId())).thenReturn(Optional.of(commit));
 
             UpdateActualRequest request = new UpdateActualRequest(
-                    "Done", "DONE", null, null
+                    "Done", "DONE", null, null, null
             );
 
             PlanStateException ex = assertThrows(
@@ -178,7 +208,7 @@ class ActualServiceTest {
             when(commitRepository.findById(commit.getId())).thenReturn(Optional.of(commit));
 
             UpdateActualRequest request = new UpdateActualRequest(
-                    "Done", "DONE", null, null
+                    "Done", "DONE", null, null, null
             );
 
             PlanStateException ex = assertThrows(
@@ -198,7 +228,7 @@ class ActualServiceTest {
             when(commitRepository.findById(commit.getId())).thenReturn(Optional.of(commit));
 
             UpdateActualRequest request = new UpdateActualRequest(
-                    "Done", "DONE", null, null
+                    "Done", "DONE", null, null, null
             );
 
             assertThrows(OptimisticLockException.class,

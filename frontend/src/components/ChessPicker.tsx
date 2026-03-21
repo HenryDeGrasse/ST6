@@ -31,11 +31,7 @@ function priorityToPiece(priority: ChessPriority | null): ChessPiece | null {
  * Chess priority selector for a single commitment.
  * Shows a prominent chess piece icon when a priority is selected.
  */
-export const ChessPicker: React.FC<ChessPickerProps> = ({
-  value,
-  onChange,
-  disabled = false,
-}) => {
+export const ChessPicker: React.FC<ChessPickerProps> = ({ value, onChange, disabled = false }) => {
   const piece = priorityToPiece(value);
 
   return (

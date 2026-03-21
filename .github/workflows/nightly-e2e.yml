@@ -1,0 +1,148 @@
+# ---------------------------------------------------------------------------
+# Weekly Commitments – Nightly Full E2E Suite
+# PRD §13.2: Nightly run captures all spec files (not just SMOKE-tagged tests).
+#
+# Runs daily at 06:00 UTC and on manual dispatch.
+# On failure: uploads Playwright HTML report artifact and creates a GitHub issue
+# labelled `nightly-e2e-failure` for triage. If the repository variable
+# NIGHTLY_E2E_ONCALL_ASSIGNEES is configured, the issue is assigned to the
+# current on-call engineer(s) as a GitHub-native stand-in for team assignment.
+# ---------------------------------------------------------------------------
+name: Nightly E2E
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # 06:00 UTC daily
+  workflow_dispatch: {}
+
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '20'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  nightly-e2e:
+    name: 'Nightly Full E2E Suite'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install E2E dependencies
+        run: cd e2e && npm ci
+
+      - name: Start seeded local stack
+        run: |
+          ./scripts/dev.sh --seed > nightly-dev-stack.log 2>&1 &
+
+          for attempt in {1..120}; do
+            if curl -sf http://localhost:8080/actuator/health/liveness > /dev/null \
+              && curl -sf http://localhost:3000 > /dev/null; then
+              echo 'Seeded local stack is ready.'
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo 'Seeded local stack did not become ready in time.'
+          tail -n 200 nightly-dev-stack.log || true
+          exit 1
+
+      - name: Install Playwright browsers
+        # Install all browser families so all projects run in the nightly suite.
+        run: cd e2e && npx playwright install --with-deps
+
+      - name: Run full E2E suite
+        id: e2e
+        # Run all spec files (no --grep filter).
+        # e2e:nightly → test:nightly → `playwright test --reporter=html,github`
+        # Generates both the uploadable HTML report and GitHub Actions annotations.
+        run: npm run e2e:nightly
+
+      - name: Upload Playwright HTML report
+        # Always upload so the report is available even when tests pass.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: e2e/playwright-report/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Dump stack logs on failure
+        if: failure()
+        run: |
+          echo '=== nightly-dev-stack.log (last 200 lines) ==='
+          tail -n 200 nightly-dev-stack.log || true
+          echo '=== backend bootRun.log (last 200 lines) ==='
+          tail -n 200 backend/weekly-service/logs/bootRun.log || true
+          echo '=== docker compose logs (last 200 lines) ==='
+          docker compose logs --tail=200 || true
+
+      - name: Write issue body on failure
+        if: failure()
+        run: |
+          cat > /tmp/nightly-e2e-issue.md << 'ISSUE_EOF'
+          ## 🔴 Nightly E2E Suite Failed
+
+          The nightly full E2E test suite failed. All spec files are run (not just SMOKE-tagged tests), so this may indicate a regression in API behaviour, browser rendering, or the local stack startup.
+
+          | Field | Value |
+          |-------|-------|
+          | **Workflow run** | [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
+          | **Branch** | `${{ github.ref_name }}` |
+          | **Commit** | `${{ github.sha }}` |
+          | **Triggered by** | `${{ github.event_name }}` |
+          | **On-call assignees** | `${{ vars.NIGHTLY_E2E_ONCALL_ASSIGNEES || 'not configured' }}` |
+
+          ### Playwright HTML Report
+
+          Download the `playwright-report-${{ github.run_id }}` artifact from the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) and open `index.html` to inspect failed tests, traces, and screenshots.
+
+          ### Triage Steps
+
+          1. Download and open the Playwright HTML report artifact.
+          2. Review failed test names and error messages.
+          3. Check whether the failure is flaky (re-run manually with `npm run e2e:full`) or a genuine regression.
+          4. Fix the root cause and verify the nightly passes before closing this issue.
+
+          ---
+          *This issue was created automatically by the [Nightly E2E workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).*
+          ISSUE_EOF
+
+      - name: Create GitHub issue on failure (with on-call assignee)
+        if: failure() && vars.NIGHTLY_E2E_ONCALL_ASSIGNEES != ''
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "🔴 Nightly E2E Failure – Run #${{ github.run_id }}"
+          content-filepath: /tmp/nightly-e2e-issue.md
+          labels: nightly-e2e-failure, bug
+          assignees: ${{ vars.NIGHTLY_E2E_ONCALL_ASSIGNEES }}
+
+      - name: Create GitHub issue on failure (unassigned fallback)
+        if: failure() && vars.NIGHTLY_E2E_ONCALL_ASSIGNEES == ''
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "🔴 Nightly E2E Failure – Run #${{ github.run_id }}"
+          content-filepath: /tmp/nightly-e2e-issue.md
+          labels: nightly-e2e-failure, bug
+
+      - name: Stop local stack
+        if: always()
+        run: ./scripts/dev.sh --stop || true

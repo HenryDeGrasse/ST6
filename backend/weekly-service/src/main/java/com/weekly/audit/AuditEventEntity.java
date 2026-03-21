@@ -4,8 +4,12 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 
 /**
@@ -14,6 +18,10 @@ import java.util.UUID;
  * <p>Append-only audit trail. Every state transition and every write
  * to a locked plan produces an audit event with actor, action, timestamp,
  * previous/new state, and reason.
+ *
+ * <p>Each row carries a {@code hash} field: SHA-256(previousHash + payload),
+ * where payload is a deterministic JSON serialisation of the event's key fields.
+ * This forms a tamper-detection hash chain (§14.7).
  */
 @Entity
 @Table(name = "audit_events")
@@ -53,6 +61,9 @@ public class AuditEventEntity {
     @Column(name = "correlation_id", updatable = false, length = 100)
     private String correlationId;
 
+    @Column(name = "hash", updatable = false, length = 128)
+    private String hash;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -78,6 +89,111 @@ public class AuditEventEntity {
         this.ipAddress = ipAddress;
         this.correlationId = correlationId;
         this.createdAt = Instant.now();
+    }
+
+    /**
+     * Computes SHA-256(previousHash + payload) and returns the lowercase hex string.
+     *
+     * @param previousHash the hash from the preceding event in the chain;
+     *                     use an empty string for the very first event
+     * @param payload      a deterministic serialisation of the event's key fields
+     * @return 64-character lowercase hexadecimal SHA-256 digest
+     */
+    public static String computeHash(String previousHash, String payload) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] bytes = digest.digest(
+                    (previousHash + payload).getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(bytes.length * 2);
+            for (byte b : bytes) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 algorithm not available", e);
+        }
+    }
+
+    /**
+     * Builds the deterministic canonical JSON payload used for hash computation.
+     *
+     * <p>Keys are ordered alphabetically (via {@link TreeMap}) so that the same
+     * event always produces the same payload string regardless of insertion order.
+     * Nullable fields are serialised as JSON {@code null}.
+     *
+     * @return JSON string representation of the event's key fields
+     */
+    String buildPayload() {
+        Map<String, String> fields = new TreeMap<>();
+        fields.put("action", action);
+        fields.put("actorUserId", actorUserId != null ? actorUserId.toString() : null);
+        fields.put("aggregateId", aggregateId != null ? aggregateId.toString() : null);
+        fields.put("aggregateType", aggregateType);
+        fields.put("createdAt", createdAt != null ? createdAt.toString() : null);
+        fields.put("newState", newState);
+        fields.put("orgId", orgId != null ? orgId.toString() : null);
+        fields.put("previousState", previousState);
+        fields.put("reason", reason);
+
+        StringBuilder sb = new StringBuilder("{");
+        boolean first = true;
+        for (Map.Entry<String, String> entry : fields.entrySet()) {
+            if (!first) {
+                sb.append(",");
+            }
+            first = false;
+            sb.append("\"").append(entry.getKey()).append("\":");
+            if (entry.getValue() == null) {
+                sb.append("null");
+            } else {
+                sb.append("\"").append(jsonEscape(entry.getValue())).append("\"");
+            }
+        }
+        sb.append("}");
+        return sb.toString();
+    }
+
+    /**
+     * Recomputes this event's chained hash using its current payload.
+     *
+     * <p>This is used by the GDPR anonymisation flow, which intentionally updates
+     * {@code actor_user_id} while preserving audit-chain integrity by rewriting the
+     * affected hashes inside the same transaction.
+     *
+     * @param previousHash the previous event's hash in the chain
+     * @return the recomputed chained hash for this event
+     */
+    public String computeChainedHash(String previousHash) {
+        return computeHash(previousHash, buildPayload());
+    }
+
+    private static String jsonEscape(String s) {
+        StringBuilder escaped = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            char ch = s.charAt(i);
+            switch (ch) {
+                case '\\' -> escaped.append("\\\\");
+                case '"' -> escaped.append("\\\"");
+                case '\b' -> escaped.append("\\b");
+                case '\f' -> escaped.append("\\f");
+                case '\n' -> escaped.append("\\n");
+                case '\r' -> escaped.append("\\r");
+                case '\t' -> escaped.append("\\t");
+                default -> {
+                    if (ch < 0x20) {
+                        escaped.append(String.format("\\u%04x", (int) ch));
+                    } else {
+                        escaped.append(ch);
+                    }
+                }
+            }
+        }
+        return escaped.toString();
+    }
+
+    /** Sets the hash field. Package-private; called by {@link JpaAuditService}. */
+    void setHash(String newHash) {
+        this.hash = newHash;
     }
 
     // ── Getters ──────────────────────────────────────────────
@@ -124,6 +240,10 @@ public class AuditEventEntity {
 
     public String getCorrelationId() {
         return correlationId;
+    }
+
+    public String getHash() {
+        return hash;
     }
 
     public Instant getCreatedAt() {

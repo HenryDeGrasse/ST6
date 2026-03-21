@@ -6,6 +6,7 @@ import com.weekly.auth.RequestAuthenticator;
 import com.weekly.idempotency.IdempotencyKeyFilter;
 import com.weekly.idempotency.IdempotencyKeyService;
 import jakarta.servlet.http.HttpServletResponse;
+import java.nio.charset.StandardCharsets;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,14 +18,13 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import java.nio.charset.StandardCharsets;
-
 /**
  * Spring Security configuration for the weekly-service.
  *
  * <p>Filter chain rules:
  * <ul>
  *   <li>{@code GET /api/v1/health} — permitted without authentication</li>
+ *   <li>{@code POST /api/v1/integrations/webhook/**} — permitted without authentication</li>
  *   <li>{@code /actuator/**}       — permitted without authentication</li>
  *   <li>All other {@code /api/v1/**} endpoints — require a valid principal</li>
  * </ul>
@@ -116,6 +116,7 @@ public class SecurityConfiguration {
             .formLogin(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/v1/health").permitAll()
+                .requestMatchers("/api/v1/integrations/webhook/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/api/v1/**").authenticated()
                 .anyRequest().permitAll()

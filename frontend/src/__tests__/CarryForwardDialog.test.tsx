@@ -37,17 +37,8 @@ function makeCommit(overrides: Partial<WeeklyCommit> = {}): WeeklyCommit {
 
 describe("CarryForwardDialog", () => {
   it("renders commits with checkboxes", () => {
-    const commits = [
-      makeCommit({ id: "c1", title: "Task A" }),
-      makeCommit({ id: "c2", title: "Task B" }),
-    ];
-    render(
-      <CarryForwardDialog
-        commits={commits}
-        onCarryForward={vi.fn()}
-        onCancel={vi.fn()}
-      />,
-    );
+    const commits = [makeCommit({ id: "c1", title: "Task A" }), makeCommit({ id: "c2", title: "Task B" })];
+    render(<CarryForwardDialog commits={commits} onCarryForward={vi.fn()} onCancel={vi.fn()} />);
     expect(screen.getByTestId("carry-forward-dialog")).toBeInTheDocument();
     expect(screen.getByTestId("carry-option-c1")).toBeInTheDocument();
     expect(screen.getByTestId("carry-option-c2")).toBeInTheDocument();
@@ -55,30 +46,15 @@ describe("CarryForwardDialog", () => {
 
   it("pre-selects all commits", () => {
     const commits = [makeCommit({ id: "c1" })];
-    render(
-      <CarryForwardDialog
-        commits={commits}
-        onCarryForward={vi.fn()}
-        onCancel={vi.fn()}
-      />,
-    );
+    render(<CarryForwardDialog commits={commits} onCarryForward={vi.fn()} onCancel={vi.fn()} />);
     const checkbox = screen.getByTestId("carry-option-c1").querySelector("input");
     expect(checkbox).toBeChecked();
   });
 
   it("calls onCarryForward with selected commit IDs", () => {
     const onCarryForward = vi.fn();
-    const commits = [
-      makeCommit({ id: "c1" }),
-      makeCommit({ id: "c2" }),
-    ];
-    render(
-      <CarryForwardDialog
-        commits={commits}
-        onCarryForward={onCarryForward}
-        onCancel={vi.fn()}
-      />,
-    );
+    const commits = [makeCommit({ id: "c1" }), makeCommit({ id: "c2" })];
+    render(<CarryForwardDialog commits={commits} onCarryForward={onCarryForward} onCancel={vi.fn()} />);
     // Uncheck c2
     const c2Checkbox = screen.getByTestId("carry-option-c2").querySelector("input");
     expect(c2Checkbox).not.toBeNull();
@@ -90,26 +66,14 @@ describe("CarryForwardDialog", () => {
 
   it("calls onCancel when cancel button is clicked", () => {
     const onCancel = vi.fn();
-    render(
-      <CarryForwardDialog
-        commits={[makeCommit()]}
-        onCarryForward={vi.fn()}
-        onCancel={onCancel}
-      />,
-    );
+    render(<CarryForwardDialog commits={[makeCommit()]} onCarryForward={vi.fn()} onCancel={onCancel} />);
     fireEvent.click(screen.getByTestId("carry-cancel"));
     expect(onCancel).toHaveBeenCalledOnce();
   });
 
   it("disables confirm when no commits are selected", () => {
     const commits = [makeCommit({ id: "c1" })];
-    render(
-      <CarryForwardDialog
-        commits={commits}
-        onCarryForward={vi.fn()}
-        onCancel={vi.fn()}
-      />,
-    );
+    render(<CarryForwardDialog commits={commits} onCarryForward={vi.fn()} onCancel={vi.fn()} />);
     // Uncheck the only commit
     const checkbox = screen.getByTestId("carry-option-c1").querySelector("input");
     expect(checkbox).not.toBeNull();
@@ -121,43 +85,23 @@ describe("CarryForwardDialog", () => {
   // --- Accessibility tests ---
 
   it("has role=dialog, aria-modal, and aria-labelledby", () => {
-    render(
-      <CarryForwardDialog
-        commits={[makeCommit()]}
-        onCarryForward={vi.fn()}
-        onCancel={vi.fn()}
-      />,
-    );
+    render(<CarryForwardDialog commits={[makeCommit()]} onCarryForward={vi.fn()} onCancel={vi.fn()} />);
     const dialog = screen.getByTestId("carry-forward-dialog");
     expect(dialog).toHaveAttribute("role", "dialog");
     expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(dialog).toHaveAttribute("aria-labelledby", "carry-forward-dialog-title");
-    expect(document.getElementById("carry-forward-dialog-title")).toHaveTextContent(
-      "Carry Forward to Next Week",
-    );
+    expect(document.getElementById("carry-forward-dialog-title")).toHaveTextContent("Carry Forward to Next Week");
   });
 
   it("calls onCancel when Escape is pressed", async () => {
     const onCancel = vi.fn();
-    render(
-      <CarryForwardDialog
-        commits={[makeCommit()]}
-        onCarryForward={vi.fn()}
-        onCancel={onCancel}
-      />,
-    );
+    render(<CarryForwardDialog commits={[makeCommit()]} onCarryForward={vi.fn()} onCancel={onCancel} />);
     await userEvent.keyboard("{Escape}");
     expect(onCancel).toHaveBeenCalledOnce();
   });
 
   it("traps focus within the dialog", () => {
-    render(
-      <CarryForwardDialog
-        commits={[makeCommit({ id: "c1" })]}
-        onCarryForward={vi.fn()}
-        onCancel={vi.fn()}
-      />,
-    );
+    render(<CarryForwardDialog commits={[makeCommit({ id: "c1" })]} onCarryForward={vi.fn()} onCancel={vi.fn()} />);
     // The first focusable element should receive focus on mount
     const dialog = screen.getByTestId("carry-forward-dialog");
     const focusable = dialog.querySelectorAll<HTMLElement>(

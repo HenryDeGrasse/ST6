@@ -11,5 +11,6 @@ public record UpdateActualRequest(
         @NotBlank String actualResult,
         @NotBlank @ValueOfEnum(enumClass = CompletionStatus.class) String completionStatus,
         String deltaReason,
-        Integer timeSpent
+        Integer timeSpent,
+        Double actualHours
 ) {}

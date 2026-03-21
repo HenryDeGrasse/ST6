@@ -1,0 +1,490 @@
+/**
+ * AdminDashboardPage – CSS Module (Academia / Classical)
+ */
+
+/* ─── Page wrapper ───────────────────────────────────────────────────────── */
+.page {
+  position:   relative;
+  max-width:  1080px;
+  margin:     0 auto;
+  padding:    var(--wc-space-lg) var(--wc-space-md);
+}
+
+/* ─── Main content panel ─────────────────────────────────────────────────── */
+.contentPanel {
+  padding: var(--wc-space-lg) var(--wc-space-xl);
+}
+
+/* ─── Page header ────────────────────────────────────────────────────────── */
+.header {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     flex-start;
+  flex-wrap:       wrap;
+  gap:             var(--wc-space-sm);
+  margin-bottom:   var(--wc-space-lg);
+}
+
+.heading {
+  margin:         0;
+  font-family:    var(--wc-font-heading);
+  font-size:      2rem;
+  font-weight:    500;
+  color:          var(--wc-color-text-primary);
+  letter-spacing: -0.02em;
+  line-height:    1.1;
+}
+
+.subheading {
+  margin:      0.25rem 0 0;
+  font-family: var(--wc-font-body);
+  font-size:   0.875rem;
+  color:       var(--wc-color-text-muted);
+}
+
+/* ─── Tab bar ────────────────────────────────────────────────────────────── */
+.tabBar {
+  display:       flex;
+  gap:           0;
+  border-bottom: 1px solid var(--wc-glass-border, rgba(255,255,255,0.12));
+  margin-bottom: var(--wc-space-lg);
+  overflow-x:    auto;
+  scrollbar-width: none;
+}
+
+.tabBar::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  font-family:    var(--wc-font-display, 'Cinzel', serif);
+  font-size:      0.7rem;
+  font-weight:    500;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color:          var(--wc-color-text-muted, #9C8B7A);
+  background:     none;
+  border:         none;
+  border-bottom:  2px solid transparent;
+  padding:        0.625rem 1rem 0.5rem;
+  cursor:         pointer;
+  white-space:    nowrap;
+  transition:     color 200ms ease-out, border-color 200ms ease-out;
+}
+
+.tab:hover {
+  color: var(--wc-color-text-secondary, #BFB29A);
+}
+
+.tabActive {
+  color:        var(--wc-color-accent, #C9A962) !important;
+  border-color: var(--wc-color-accent, #C9A962);
+  font-weight:  700;
+}
+
+/* ─── Tab panel ──────────────────────────────────────────────────────────── */
+.tabPanel {
+  min-height: 200px;
+}
+
+/* ─── Loading indicator ──────────────────────────────────────────────────── */
+.loading {
+  padding:    var(--wc-space-2xl);
+  text-align: center;
+  color:      var(--wc-color-text-muted);
+  font-size:  1rem;
+  font-style: italic;
+}
+
+/* ─── Error state ────────────────────────────────────────────────────────── */
+.errorBox {
+  padding:       var(--wc-space-md);
+  border:        1px solid rgba(230, 100, 80, 0.35);
+  border-radius: var(--wc-radius-md, 0.5rem);
+  background:    rgba(230, 100, 80, 0.08);
+  color:         var(--wc-color-error, #E66450);
+  font-size:     0.9rem;
+  margin-bottom: var(--wc-space-md);
+}
+
+/* ─── Section header within a tab panel ─────────────────────────────────── */
+.sectionTitle {
+  margin:         0 0 var(--wc-space-md);
+  font-family:    var(--wc-font-heading);
+  font-size:      1.25rem;
+  font-weight:    500;
+  color:          var(--wc-color-text-primary);
+}
+
+.sectionDescription {
+  margin:        0 0 var(--wc-space-lg);
+  font-family:   var(--wc-font-body);
+  font-size:     0.875rem;
+  color:         var(--wc-color-text-muted);
+  line-height:   1.6;
+}
+
+/* ─── Metric summary strip ───────────────────────────────────────────────── */
+.metricStrip {
+  display:               grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap:                   var(--wc-space-md);
+  margin-bottom:         var(--wc-space-lg);
+}
+
+.metricCard {
+  padding:       var(--wc-space-md);
+  border:        1px solid var(--wc-glass-border, rgba(255,255,255,0.12));
+  border-radius: var(--wc-radius-md, 0.5rem);
+  background:    rgba(255,255,255,0.03);
+}
+
+.metricLabel {
+  display:     block;
+  font-family: var(--wc-font-display);
+  font-size:   0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color:       var(--wc-color-text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.metricValue {
+  display:     block;
+  font-family: var(--wc-font-heading);
+  font-size:   1.75rem;
+  font-weight: 500;
+  color:       var(--wc-color-text-primary);
+  line-height: 1;
+}
+
+.metricSub {
+  display:     block;
+  font-size:   0.75rem;
+  color:       var(--wc-color-text-muted);
+  margin-top:  0.25rem;
+}
+
+/* ─── Funnel table ───────────────────────────────────────────────────────── */
+.table {
+  width:           100%;
+  border-collapse: collapse;
+  font-family:     var(--wc-font-body);
+  font-size:       0.875rem;
+}
+
+.table th {
+  text-align:     left;
+  font-family:    var(--wc-font-display);
+  font-size:      0.65rem;
+  font-weight:    600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color:          var(--wc-color-text-muted);
+  padding:        0.5rem 0.75rem;
+  border-bottom:  1px solid var(--wc-glass-border, rgba(255,255,255,0.12));
+}
+
+.table td {
+  padding:       0.5rem 0.75rem;
+  color:         var(--wc-color-text-secondary);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tr:hover td {
+  background: rgba(255,255,255,0.025);
+}
+
+/* ─── Policy form fields ─────────────────────────────────────────────────── */
+.fieldGrid {
+  display:               grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap:                   var(--wc-space-md);
+  margin-bottom:         var(--wc-space-lg);
+}
+
+.field {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.25rem;
+}
+
+.fieldLabel {
+  font-family:    var(--wc-font-display);
+  font-size:      0.65rem;
+  font-weight:    600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color:          var(--wc-color-text-muted);
+}
+
+.fieldValue {
+  font-family:  var(--wc-font-body);
+  font-size:    0.9375rem;
+  color:        var(--wc-color-text-primary);
+  padding:      0.375rem 0;
+}
+
+.select,
+.input {
+  font-family:   var(--wc-font-body);
+  font-size:     0.875rem;
+  color:         var(--wc-color-text-primary);
+  background:    rgba(255,255,255,0.05);
+  border:        1px solid var(--wc-glass-border, rgba(255,255,255,0.12));
+  border-radius: var(--wc-radius-sm, 0.25rem);
+  padding:       0.375rem 0.5rem;
+  width:         100%;
+}
+
+.select:focus,
+.input:focus {
+  outline:      none;
+  border-color: var(--wc-color-accent, #C9A962);
+}
+
+/* ─── Feature flag toggles ───────────────────────────────────────────────── */
+.flagList {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--wc-space-sm);
+}
+
+.flagRow {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             var(--wc-space-md);
+  padding:         0.625rem 0.75rem;
+  border:          1px solid var(--wc-glass-border, rgba(255,255,255,0.12));
+  border-radius:   var(--wc-radius-md, 0.5rem);
+  background:      rgba(255,255,255,0.02);
+}
+
+.flagInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.flagName {
+  font-family: var(--wc-font-display);
+  font-size:   0.8rem;
+  font-weight: 600;
+  color:       var(--wc-color-text-primary);
+}
+
+.flagDesc {
+  font-size:  0.75rem;
+  color:      var(--wc-color-text-muted);
+  margin-top: 0.125rem;
+}
+
+.toggle {
+  position:     relative;
+  display:      inline-block;
+  width:        2.5rem;
+  height:       1.375rem;
+  flex-shrink:  0;
+}
+
+.toggle input {
+  opacity: 0;
+  width:   0;
+  height:  0;
+}
+
+.toggleSlider {
+  position:      absolute;
+  inset:         0;
+  background:    rgba(255,255,255,0.12);
+  border-radius: 1rem;
+  cursor:        pointer;
+  transition:    background 200ms ease-out;
+}
+
+.toggleSlider::before {
+  content:       '';
+  position:      absolute;
+  left:          0.1875rem;
+  top:           50%;
+  transform:     translateY(-50%);
+  width:         1rem;
+  height:        1rem;
+  background:    #fff;
+  border-radius: 50%;
+  transition:    left 200ms ease-out;
+}
+
+.toggle input:checked + .toggleSlider {
+  background: var(--wc-color-accent, #C9A962);
+}
+
+.toggle input:checked + .toggleSlider::before {
+  left: 1.375rem;
+}
+
+/* ─── RCDO health items ──────────────────────────────────────────────────── */
+.rcdoItemStale {
+  color: var(--wc-color-warning, #E6A050) !important;
+}
+
+.staleTag {
+  display:       inline-block;
+  font-size:     0.65rem;
+  font-weight:   600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background:    rgba(230, 160, 80, 0.15);
+  color:         var(--wc-color-warning, #E6A050);
+  border-radius: 0.25rem;
+  padding:       0.125rem 0.375rem;
+  margin-left:   0.5rem;
+  vertical-align: middle;
+}
+
+/* ─── Actions row ────────────────────────────────────────────────────────── */
+.actions {
+  display:     flex;
+  gap:         var(--wc-space-sm);
+  align-items: center;
+  margin-top:  var(--wc-space-md);
+  flex-wrap:   wrap;
+}
+
+.saveButton {
+  font-family:    var(--wc-font-display);
+  font-size:      0.7rem;
+  font-weight:    700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  background:     var(--wc-color-accent, #C9A962);
+  color:          #1a1510;
+  border:         none;
+  border-radius:  var(--wc-radius-sm, 0.25rem);
+  padding:        0.5rem 1.25rem;
+  cursor:         pointer;
+  transition:     opacity 150ms ease-out;
+}
+
+.saveButton:disabled {
+  opacity: 0.4;
+  cursor:  not-allowed;
+}
+
+.secondaryButton {
+  font-family:    var(--wc-font-display);
+  font-size:      0.7rem;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  background:     transparent;
+  color:          var(--wc-color-text-secondary);
+  border:         1px solid var(--wc-glass-border, rgba(255,255,255,0.12));
+  border-radius:  var(--wc-radius-sm, 0.25rem);
+  padding:        0.5rem 1.25rem;
+  cursor:         pointer;
+  transition:     border-color 150ms ease-out, color 150ms ease-out;
+}
+
+.secondaryButton:hover {
+  border-color: var(--wc-color-text-secondary);
+  color:        var(--wc-color-text-primary);
+}
+
+.successMsg {
+  font-size:  0.875rem;
+  color:      var(--wc-color-positive, #6BBF59);
+  font-style: italic;
+}
+
+/* ─── Empty state ────────────────────────────────────────────────────────── */
+.emptyState {
+  padding:    var(--wc-space-2xl);
+  text-align: center;
+  color:      var(--wc-color-text-muted);
+  font-size:  0.9rem;
+  font-style: italic;
+}
+
+/* ─── Access-denied state ────────────────────────────────────────────────── */
+.accessDenied {
+  padding:    var(--wc-space-2xl);
+  text-align: center;
+}
+
+.accessDeniedTitle {
+  font-family:   var(--wc-font-heading);
+  font-size:     1.5rem;
+  color:         var(--wc-color-text-primary);
+  margin-bottom: var(--wc-space-sm);
+}
+
+.accessDeniedDesc {
+  color:     var(--wc-color-text-muted);
+  font-size: 0.9rem;
+}
+
+/* ─── Window selector row ────────────────────────────────────────────────── */
+.windowRow {
+  display:     flex;
+  align-items: center;
+  gap:         var(--wc-space-sm);
+  margin-bottom: var(--wc-space-md);
+  flex-wrap:   wrap;
+}
+
+.windowLabel {
+  font-family:    var(--wc-font-display);
+  font-size:      0.7rem;
+  font-weight:    600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color:          var(--wc-color-text-muted);
+}
+
+.windowButton {
+  font-family:    var(--wc-font-display);
+  font-size:      0.65rem;
+  font-weight:    500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background:     transparent;
+  color:          var(--wc-color-text-secondary);
+  border:         1px solid var(--wc-glass-border, rgba(255,255,255,0.12));
+  border-radius:  var(--wc-radius-sm, 0.25rem);
+  padding:        0.25rem 0.625rem;
+  cursor:         pointer;
+  transition:     border-color 150ms ease-out, color 150ms ease-out, background 150ms ease-out;
+}
+
+.windowButton:hover {
+  border-color: var(--wc-color-accent, #C9A962);
+  color:        var(--wc-color-accent, #C9A962);
+}
+
+.windowButtonActive {
+  background:   rgba(201, 169, 98, 0.12);
+  border-color: var(--wc-color-accent, #C9A962);
+  color:        var(--wc-color-accent, #C9A962) !important;
+}
+
+/* ─── Readonly badge ─────────────────────────────────────────────────────── */
+.readonlyBadge {
+  display:        inline-flex;
+  align-items:    center;
+  font-size:      0.65rem;
+  font-weight:    600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background:     rgba(255,255,255,0.05);
+  color:          var(--wc-color-text-muted);
+  border-radius:  0.25rem;
+  padding:        0.125rem 0.375rem;
+  vertical-align: middle;
+  margin-left:    0.5rem;
+}

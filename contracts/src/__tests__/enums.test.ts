@@ -1,22 +1,9 @@
 import { describe, it, expect } from "vitest";
-import {
-  PlanState,
-  ReviewStatus,
-  ChessPriority,
-  CompletionStatus,
-  LockType,
-  CommitCategory,
-} from "../enums.js";
+import { PlanState, ReviewStatus, ChessPriority, CompletionStatus, LockType, CommitCategory } from "../enums.js";
 
 describe("PlanState enum", () => {
   it("contains all lifecycle states", () => {
-    expect(Object.values(PlanState)).toEqual([
-      "DRAFT",
-      "LOCKED",
-      "RECONCILING",
-      "RECONCILED",
-      "CARRY_FORWARD",
-    ]);
+    expect(Object.values(PlanState)).toEqual(["DRAFT", "LOCKED", "RECONCILING", "RECONCILED", "CARRY_FORWARD"]);
   });
 });
 
@@ -41,12 +28,7 @@ describe("ChessPriority enum", () => {
 
 describe("CompletionStatus enum", () => {
   it("contains reconciliation statuses", () => {
-    expect(Object.values(CompletionStatus)).toEqual([
-      "DONE",
-      "PARTIALLY",
-      "NOT_DONE",
-      "DROPPED",
-    ]);
+    expect(Object.values(CompletionStatus)).toEqual(["DONE", "PARTIALLY", "NOT_DONE", "DROPPED"]);
   });
 });
 

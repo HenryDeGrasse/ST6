@@ -18,6 +18,7 @@ public record UpdateCommitRequest(
         String nonStrategicReason,
         String expectedResult,
         Double confidence,
+        Double estimatedHours,
         String[] tags,
         String progressNotes
 ) {}

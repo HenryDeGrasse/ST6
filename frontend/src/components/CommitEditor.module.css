@@ -51,6 +51,53 @@
   gap:         0.25rem;
 }
 
+/* ─── Draft source badge ─────────────────────────────────────────────────── */
+.sourceBadgeRow {
+  display:       flex;
+  align-items:   center;
+  margin-bottom: var(--wc-space-sm);
+}
+
+.sourceBadge {
+  display:          inline-flex;
+  align-items:      center;
+  gap:              0.25rem;
+  padding:          0.1rem 0.5rem;
+  border-radius:    var(--wc-radius-sm);
+  font-family:      var(--wc-font-display);
+  font-size:        0.625rem;
+  font-weight:      600;
+  text-transform:   uppercase;
+  letter-spacing:   0.06em;
+  background-color: var(--wc-color-bg-tertiary);
+  border:           1px solid var(--wc-color-border-muted);
+  color:            var(--wc-color-text-secondary);
+}
+
+.sourceBadge[data-source="CARRIED_FORWARD"] {
+  color:            var(--wc-state-draft-text);
+  background-color: var(--wc-state-draft-bg);
+  border-color:     var(--wc-state-draft-border);
+}
+
+.sourceBadge[data-source="RECURRING"] {
+  color:            var(--wc-color-accent);
+  background-color: rgba(128, 90, 213, 0.12);
+  border-color:     rgba(128, 90, 213, 0.3);
+}
+
+.sourceBadge[data-source="COVERAGE_GAP"] {
+  color:            var(--wc-color-warning, #b7791f);
+  background-color: rgba(183, 121, 31, 0.1);
+  border-color:     rgba(183, 121, 31, 0.3);
+}
+
+.sourceBadge[data-source="NEW"] {
+  color:            var(--wc-color-text-primary);
+  background-color: rgba(201, 169, 98, 0.1);
+  border-color:     rgba(201, 169, 98, 0.28);
+}
+
 /* ─── Field groups ───────────────────────────────────────────────────────── */
 .fieldGroup {
   margin-bottom: var(--wc-space-sm);

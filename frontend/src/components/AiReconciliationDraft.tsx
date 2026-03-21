@@ -42,12 +42,7 @@ export const AiReconciliationDraft: React.FC<AiReconciliationDraftProps> = ({
           <span className={styles.betaHint}>review before submitting</span>
         </div>
         {draftStatus === "idle" && (
-          <button
-            type="button"
-            data-testid="ai-draft-fetch"
-            onClick={onFetchDraft}
-            className={styles.generateButton}
-          >
+          <button type="button" data-testid="ai-draft-fetch" onClick={onFetchDraft} className={styles.generateButton}>
             Generate Draft
           </button>
         )}
@@ -74,16 +69,10 @@ export const AiReconciliationDraft: React.FC<AiReconciliationDraftProps> = ({
       {draftStatus === "ok" && draftItems.length > 0 && (
         <div data-testid="ai-draft-items" className={styles.draftItems}>
           {draftItems.map((item, index) => (
-            <div
-              key={item.commitId}
-              data-testid={`ai-draft-item-${index}`}
-              className={styles.draftItem}
-            >
+            <div key={item.commitId} data-testid={`ai-draft-item-${index}`} className={styles.draftItem}>
               <div className={styles.draftItemContent}>
                 <span className={styles.draftStatus}>{item.suggestedStatus}</span>
-                <span className={styles.draftResult}>
-                  {item.suggestedActualResult}
-                </span>
+                <span className={styles.draftResult}>{item.suggestedActualResult}</span>
               </div>
               <button
                 type="button"

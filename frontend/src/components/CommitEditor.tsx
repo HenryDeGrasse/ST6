@@ -12,6 +12,7 @@ import { ChessPicker } from "./ChessPicker.js";
 import { CategoryPicker } from "./CategoryPicker.js";
 import { RcdoPicker, type RcdoSelection } from "./RcdoPicker.js";
 import { AiSuggestionPanel } from "./AiSuggestionPanel.js";
+import { COMMIT_DRAFT_SOURCE_LABELS, getCommitDraftSource } from "./commitDraftSource.js";
 import { ChessIcon, StatusIcon } from "./icons/index.js";
 import type { ChessPiece } from "./icons/index.js";
 import type { AiRequestStatus } from "../hooks/useAiSuggestions.js";
@@ -66,10 +67,8 @@ export const CommitEditor: React.FC<CommitEditorProps> = ({
 }) => {
   const isNew = !commit;
   const isDraft = planState === PlanState.DRAFT;
-  const isLockedOrReconciling =
-    planState === PlanState.LOCKED || planState === PlanState.RECONCILING;
-  const isReadOnly =
-    planState === PlanState.RECONCILED || planState === PlanState.CARRY_FORWARD;
+  const isLockedOrReconciling = planState === PlanState.LOCKED || planState === PlanState.RECONCILING;
+  const isReadOnly = planState === PlanState.RECONCILED || planState === PlanState.CARRY_FORWARD;
 
   const [title, setTitle] = useState(commit?.title ?? "");
   const [description, setDescription] = useState(commit?.description ?? "");
@@ -79,9 +78,8 @@ export const CommitEditor: React.FC<CommitEditorProps> = ({
   const [nonStrategicReason, setNonStrategicReason] = useState(commit?.nonStrategicReason ?? "");
   const [expectedResult, setExpectedResult] = useState(commit?.expectedResult ?? "");
   const [progressNotes, setProgressNotes] = useState(commit?.progressNotes ?? "");
-  const [isNonStrategic, setIsNonStrategic] = useState(
-    !!commit?.nonStrategicReason && !commit?.outcomeId,
-  );
+  const [isNonStrategic, setIsNonStrategic] = useState(!!commit?.nonStrategicReason && !commit?.outcomeId);
+  const [estimatedHours, setEstimatedHours] = useState<number | null>(commit?.estimatedHours ?? null);
 
   // Keep a stable ref to the AI suggest callback so it doesn't re-trigger the effect
   const suggestRef = useRef(onAiSuggestRequest);
@@ -93,6 +91,8 @@ export const CommitEditor: React.FC<CommitEditorProps> = ({
       suggestRef.current(title, description || undefined);
     }
   }, [title, description, isDraft, isNew, isNonStrategic]);
+
+  const draftSource = commit ? getCommitDraftSource(commit.tags, commit.carriedFromCommitId) : "NEW";
 
   const handleAcceptAiSuggestion = (suggestion: RcdoSuggestion) => {
     setOutcomeId(suggestion.outcomeId);
@@ -128,6 +128,7 @@ export const CommitEditor: React.FC<CommitEditorProps> = ({
         ...(category && { category }),
         ...(outcomeId && { outcomeId }),
         ...(isNonStrategic && nonStrategicReason ? { nonStrategicReason } : {}),
+        ...(estimatedHours !== null ? { estimatedHours } : {}),
       };
       onSave(req);
     } else if (isDraft) {
@@ -140,6 +141,7 @@ export const CommitEditor: React.FC<CommitEditorProps> = ({
         nonStrategicReason: isNonStrategic ? nonStrategicReason : null,
         expectedResult,
         progressNotes,
+        ...(estimatedHours !== null ? { estimatedHours } : {}),
       };
       onSave(req);
     } else if (isLockedOrReconciling) {
@@ -153,14 +155,20 @@ export const CommitEditor: React.FC<CommitEditorProps> = ({
   if (isReadOnly && !isNew) {
     const chessPiece = chessStringToPiece(commit.chessPriority);
     return (
-      <div
-        data-testid={`commit-readonly-${commit.id}`}
-        className={styles.readonlyCard}
-      >
-        <span className={styles.readonlyTitle}>{commit.title}</span>
-        {commit.description && (
-          <p className={styles.readonlyDescription}>{commit.description}</p>
+      <div data-testid={`commit-readonly-${commit.id}`} className={styles.readonlyCard}>
+        {draftSource && (
+          <div className={styles.sourceBadgeRow}>
+            <span
+              data-testid={`commit-editor-draft-source-${draftSource.toLowerCase()}`}
+              className={styles.sourceBadge}
+              data-source={draftSource}
+            >
+              {COMMIT_DRAFT_SOURCE_LABELS[draftSource]}
+            </span>
+          </div>
         )}
+        <span className={styles.readonlyTitle}>{commit.title}</span>
+        {commit.description && <p className={styles.readonlyDescription}>{commit.description}</p>}
         <div className={styles.readonlyMeta}>
           {chessPiece && (
             <span className={styles.readonlyMetaItem}>
@@ -196,16 +204,26 @@ export const CommitEditor: React.FC<CommitEditorProps> = ({
 
   // ── Edit / create form ────────────────────────────────────────────────────
   return (
-    <div
-      data-testid={isNew ? "commit-editor-new" : `commit-editor-${commit.id}`}
-      className={styles.editorCard}
-    >
+    <div data-testid={isNew ? "commit-editor-new" : `commit-editor-${commit.id}`} className={styles.editorCard}>
+      {draftSource && (
+        <div className={styles.sourceBadgeRow}>
+          <span
+            data-testid={`commit-editor-draft-source-${draftSource.toLowerCase()}`}
+            className={styles.sourceBadge}
+            data-source={draftSource}
+          >
+            {COMMIT_DRAFT_SOURCE_LABELS[draftSource]}
+          </span>
+        </div>
+      )}
+
       {/* ── Title ── */}
       <div className={styles.fieldGroup}>
         <input
           data-testid="commit-title"
           type="text"
           placeholder="Commitment title"
+          aria-label="Commitment title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           disabled={!isDraft && !isNew}
@@ -219,6 +237,7 @@ export const CommitEditor: React.FC<CommitEditorProps> = ({
           <textarea
             data-testid="commit-description"
             placeholder="Description (optional)"
+            aria-label="Description (optional)"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
@@ -237,11 +256,7 @@ export const CommitEditor: React.FC<CommitEditorProps> = ({
 
       {/* ── AI RCDO Suggestions (non-blocking) ── */}
       {(isDraft || isNew) && !isNonStrategic && (
-        <AiSuggestionPanel
-          suggestions={aiSuggestions}
-          status={aiSuggestStatus}
-          onAccept={handleAcceptAiSuggestion}
-        />
+        <AiSuggestionPanel suggestions={aiSuggestions} status={aiSuggestStatus} onAccept={handleAcceptAiSuggestion} />
       )}
 
       {/* ── RCDO picker or non-strategic toggle ── */}
@@ -261,6 +276,7 @@ export const CommitEditor: React.FC<CommitEditorProps> = ({
               data-testid="non-strategic-reason"
               type="text"
               placeholder="Reason this work is non-strategic"
+              aria-label="Reason this work is non-strategic"
               value={nonStrategicReason}
               onChange={(e) => setNonStrategicReason(e.target.value)}
               className={styles.input}
@@ -285,8 +301,27 @@ export const CommitEditor: React.FC<CommitEditorProps> = ({
             data-testid="commit-expected-result"
             type="text"
             placeholder="Expected result"
+            aria-label="Expected result"
             value={expectedResult}
             onChange={(e) => setExpectedResult(e.target.value)}
+            className={styles.input}
+          />
+        </div>
+      )}
+
+      {/* ── Estimated hours (DRAFT / new only) ── */}
+      {(isDraft || isNew) && (
+        <div className={styles.fieldGroup}>
+          <input
+            data-testid="commit-estimated-hours"
+            type="number"
+            step="0.5"
+            min="0"
+            max="100"
+            placeholder="Estimated hours (optional)"
+            aria-label="Estimated hours (optional)"
+            value={estimatedHours ?? ""}
+            onChange={(e) => setEstimatedHours(e.target.value ? Number(e.target.value) : null)}
             className={styles.input}
           />
         </div>
@@ -295,8 +330,11 @@ export const CommitEditor: React.FC<CommitEditorProps> = ({
       {/* ── Progress notes (editable in LOCKED and RECONCILING) ── */}
       {!isNew && isLockedOrReconciling && (
         <div className={styles.fieldGroup}>
-          <label className={styles.fieldLabel}>Progress Notes</label>
+          <label htmlFor="commit-progress-notes-input" className={styles.fieldLabel}>
+            Progress Notes
+          </label>
           <textarea
+            id="commit-progress-notes-input"
             data-testid="commit-progress-notes"
             value={progressNotes}
             onChange={(e) => setProgressNotes(e.target.value)}
@@ -308,10 +346,7 @@ export const CommitEditor: React.FC<CommitEditorProps> = ({
 
       {/* ── Validation errors from server ── */}
       {commit && commit.validationErrors.length > 0 && (
-        <div
-          data-testid="commit-validation-errors"
-          className={styles.validationErrors}
-        >
+        <div data-testid="commit-validation-errors" className={styles.validationErrors}>
           {commit.validationErrors.map((ve, i) => (
             <div key={i} className={styles.validationError}>
               <StatusIcon icon="warning" size={14} />
@@ -333,22 +368,12 @@ export const CommitEditor: React.FC<CommitEditorProps> = ({
           {isNew ? "Add Commitment" : "Save"}
         </button>
         {onCancel && (
-          <button
-            data-testid="commit-cancel"
-            type="button"
-            className={styles.cancelButton}
-            onClick={onCancel}
-          >
+          <button data-testid="commit-cancel" type="button" className={styles.cancelButton} onClick={onCancel}>
             Cancel
           </button>
         )}
         {onDelete && isDraft && !isNew && (
-          <button
-            data-testid="commit-delete"
-            type="button"
-            className={styles.deleteButton}
-            onClick={onDelete}
-          >
+          <button data-testid="commit-delete" type="button" className={styles.deleteButton} onClick={onDelete}>
             Delete
           </button>
         )}

@@ -1,7 +1,10 @@
 package com.weekly.ai;
 
+import com.weekly.integration.IntegrationService.UserTicketContext;
+import com.weekly.shared.CommitDataProvider;
 import com.weekly.shared.ManagerInsightDataProvider;
-
+import com.weekly.shared.NextWorkDataProvider;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,10 +20,10 @@ public final class PromptBuilder {
     private PromptBuilder() {}
 
     /**
-     * Builds messages for RCDO auto-suggest.
+     * Builds messages for RCDO auto-suggest (no team context).
      *
-     * @param title           the commitment title (user input)
-     * @param description     the commitment description (user input)
+     * @param title             the commitment title (user input)
+     * @param description       the commitment description (user input)
      * @param candidateOutcomes the narrowed candidate set of RCDO outcomes
      * @return ordered messages for the LLM
      */
@@ -28,6 +31,30 @@ public final class PromptBuilder {
             String title,
             String description,
             List<CandidateOutcome> candidateOutcomes
+    ) {
+        return buildRcdoSuggestMessages(title, description, candidateOutcomes, List.of(), List.of());
+    }
+
+    /**
+     * Builds messages for RCDO auto-suggest enriched with team-context signals.
+     *
+     * <p>Team-context lines are appended to the ASSISTANT context message (not the
+     * USER message) so that user-authored text remains isolated in the USER role,
+     * mitigating prompt-injection risk per PRD §4.
+     *
+     * @param title                    the commitment title (user input)
+     * @param description              the commitment description (user input)
+     * @param candidateOutcomes        the narrowed candidate set of RCDO outcomes
+     * @param topTeamOutcomes          top outcomes the team linked to this week (may be empty)
+     * @param zeroCoverageOutcomeNames RCDO outcome names with zero team commits this quarter (may be empty)
+     * @return ordered messages for the LLM
+     */
+    public static List<LlmClient.Message> buildRcdoSuggestMessages(
+            String title,
+            String description,
+            List<CandidateOutcome> candidateOutcomes,
+            List<TeamOutcomeUsage> topTeamOutcomes,
+            List<String> zeroCoverageOutcomeNames
     ) {
         List<LlmClient.Message> messages = new ArrayList<>();
 
@@ -38,18 +65,20 @@ public final class PromptBuilder {
                 You are an AI assistant that maps weekly commitments to strategic outcomes.
                 Given a commitment title and description, suggest the most relevant RCDO \
                 (Rally Cry → Defining Objective → Outcome) mappings from the provided candidate list.
-                
+
                 Rules:
                 1. ONLY suggest outcomes from the candidate list provided. Never invent IDs.
                 2. Return between 1 and 5 suggestions, ranked by confidence (highest first).
                 3. Each suggestion must include outcomeId, rallyCryName, objectiveName, outcomeName, \
                 confidence (0.0-1.0), and a brief rationale.
                 4. If no candidates are relevant, return an empty suggestions array.
-                5. Respond ONLY with valid JSON matching the required schema.
+                5. Use the team context (if provided) to bias towards outcomes the team is actively \
+                working toward or outcomes that need more coverage.
+                6. Respond ONLY with valid JSON matching the required schema.
                 """
         ));
 
-        // Context message — RCDO candidate set (not user-authored)
+        // Context message — RCDO candidate set and team context (not user-authored)
         StringBuilder candidateContext = new StringBuilder("Available RCDO outcomes:\n");
         for (CandidateOutcome c : candidateOutcomes) {
             candidateContext.append(String.format(
@@ -57,6 +86,24 @@ public final class PromptBuilder {
                     c.outcomeId(), c.outcomeName(), c.objectiveName(), c.rallyCryName()
             ));
         }
+
+        // Append team context when available
+        if (!topTeamOutcomes.isEmpty()) {
+            candidateContext.append("\nTeam usage context:\n");
+            candidateContext.append("Top 5 outcomes your team linked to this week:\n");
+            topTeamOutcomes.stream().limit(5).forEach(o ->
+                    candidateContext.append(String.format(
+                            "- %s (%d commits)%n", o.outcomeName(), o.commitCount()
+                    ))
+            );
+        }
+        if (!zeroCoverageOutcomeNames.isEmpty()) {
+            candidateContext.append("\nOutcomes with 0 commits from your team this quarter:\n");
+            zeroCoverageOutcomeNames.stream().limit(10).forEach(name ->
+                    candidateContext.append(String.format("- %s%n", name))
+            );
+        }
+
         messages.add(new LlmClient.Message(LlmClient.Role.ASSISTANT, candidateContext.toString()));
 
         // User message — the actual commitment (untrusted input, separate role)
@@ -71,7 +118,21 @@ public final class PromptBuilder {
     }
 
     /**
-     * Builds messages for reconciliation draft suggestions.
+     * Builds messages for reconciliation draft suggestions with enriched context.
+     *
+     * <p>In addition to the basic commit fields (title, expectedResult, progressNotes)
+     * each commit block includes:
+     * <ul>
+     *   <li><b>Check-in history</b> — structured daily progress entries (ON_TRACK, AT_RISK,
+     *       BLOCKED, DONE_EARLY) that give the LLM visibility into mid-week signals.</li>
+     *   <li><b>Carry-forward context</b> — prior completion statuses from ancestor commits
+     *       so the LLM can detect "this item was partially done last week too".</li>
+     *   <li><b>Team category completion rate</b> — statistical baseline, e.g.
+     *       "OPERATIONS: 85% DONE (team, last 4 wks)".</li>
+     * </ul>
+     *
+     * <p>Security: all user-authored text is placed in the USER message role,
+     * never concatenated into the SYSTEM prompt.
      */
     public static List<LlmClient.Message> buildReconciliationDraftMessages(
             List<CommitContext> commits
@@ -82,15 +143,23 @@ public final class PromptBuilder {
                 LlmClient.Role.SYSTEM,
                 """
                 You are an AI assistant that helps with weekly reconciliation.
-                Given a list of weekly commitments with their titles, descriptions, expected results, \
-                and progress notes, suggest a completion status and actual result for each.
-                
+                Given a list of weekly commitments enriched with mid-week check-in history, \
+                carry-forward context, and team category completion rates, suggest a completion \
+                status and actual result for each.
+
                 Rules:
                 1. For each commit, suggest one of: DONE, PARTIALLY, NOT_DONE, DROPPED.
                 2. If not DONE, provide a brief suggestedDeltaReason.
                 3. Provide a suggestedActualResult summarizing what was accomplished.
-                4. Be conservative — if progress notes are ambiguous, suggest PARTIALLY.
-                5. Respond ONLY with valid JSON matching the required schema.
+                4. Use check-in history signals (AT_RISK, BLOCKED) as strong indicators of \
+                   PARTIALLY or NOT_DONE.
+                5. Use DONE_EARLY check-in signals as indicators of DONE.
+                6. When a commit has prior carry-forward statuses (e.g. PARTIALLY twice), \
+                   treat that as evidence of a chronic blocker and explain in the delta reason.
+                7. Use team category completion rates as calibration context; do not override \
+                   direct progress signals with statistical baselines.
+                8. Be conservative — if progress notes are ambiguous, suggest PARTIALLY.
+                9. Respond ONLY with valid JSON matching the required schema.
                 """
         ));
 
@@ -100,6 +169,34 @@ public final class PromptBuilder {
                     "- commitId: %s | title: %s | expectedResult: %s | progressNotes: %s%n",
                     c.commitId(), c.title(), c.expectedResult(), c.progressNotes()
             ));
+            // Check-in history — only append section when entries are present
+            if (c.checkInHistory() != null && !c.checkInHistory().isEmpty()) {
+                commitContext.append("  check-ins:");
+                for (CommitDataProvider.CheckInEntry entry : c.checkInHistory()) {
+                    if (entry.note() != null && !entry.note().isBlank()) {
+                        commitContext.append(String.format(
+                                " [%s: \"%s\"]", entry.status(), entry.note()));
+                    } else {
+                        commitContext.append(String.format(" [%s]", entry.status()));
+                    }
+                }
+                commitContext.append('\n');
+            }
+            // Carry-forward context — only append when this is a carried item
+            if (c.priorCompletionStatuses() != null && !c.priorCompletionStatuses().isEmpty()) {
+                commitContext.append(String.format(
+                        "  carry-forward: carried %d time(s); prior statuses: %s%n",
+                        c.priorCompletionStatuses().size(),
+                        String.join(", ", c.priorCompletionStatuses())
+                ));
+            }
+            // Category completion rate — only append when data is available
+            if (c.categoryCompletionRateContext() != null
+                    && !c.categoryCompletionRateContext().isBlank()) {
+                commitContext.append(String.format(
+                        "  team rate: %s%n", c.categoryCompletionRateContext()
+                ));
+            }
         }
         messages.add(new LlmClient.Message(LlmClient.Role.USER, commitContext.toString()));
 
@@ -108,6 +205,10 @@ public final class PromptBuilder {
 
     /**
      * Builds messages for manager insight summaries.
+     *
+     * <p>Includes the current-week snapshot as well as the multi-week historical
+     * context (carry-forward streaks, outcome coverage trends, late-lock patterns,
+     * and review-turnaround stats) when that data is present in {@code context}.
      */
     public static List<LlmClient.Message> buildManagerInsightsMessages(
             ManagerInsightDataProvider.ManagerWeekContext context
@@ -118,15 +219,17 @@ public final class PromptBuilder {
                 LlmClient.Role.SYSTEM,
                 """
                 You are an AI assistant that summarizes a manager dashboard for weekly commitments.
-                Given team summary metrics and strategic-focus rollups, draft a concise headline and
-                2 to 4 insights about alignment gaps, review risk, capacity strain, or execution patterns.
-                
+                Given team summary metrics, strategic-focus rollups, and multi-week historical patterns,
+                draft a concise headline and 2 to 4 insights about alignment gaps, review risk,
+                capacity strain, carry-forward patterns, or declining outcome coverage.
+
                 Rules:
                 1. Only use the data provided in the dashboard context.
-                2. Prefer concrete statements over vague advice.
+                2. Prefer concrete statements over vague advice (e.g. name specific people or outcomes).
                 3. Each insight must include a short title, a detail sentence, and a severity of INFO, WARNING, or POSITIVE.
-                4. Do not mention unavailable or missing data unless it materially affects the summary.
-                5. Respond ONLY with valid JSON matching the required schema.
+                4. Prioritise multi-week patterns (carry streaks, declining coverage) over single-week anomalies.
+                5. Do not mention unavailable or missing data unless it materially affects the summary.
+                6. Respond ONLY with valid JSON matching the required schema.
                 """
         ));
 
@@ -162,8 +265,76 @@ public final class PromptBuilder {
             ));
         }
 
+        // ── Multi-week historical context ────────────────────────────────────
+        appendHistoricalContext(dashboardContext, context);
+
         messages.add(new LlmClient.Message(LlmClient.Role.ASSISTANT, dashboardContext.toString()));
         return messages;
+    }
+
+    /**
+     * Appends the multi-week historical context section to {@code sb} when any
+     * historical signals are present in {@code context}.
+     */
+    private static void appendHistoricalContext(
+            StringBuilder sb, ManagerInsightDataProvider.ManagerWeekContext context) {
+
+        boolean hasStreaks = context.carryForwardStreaks() != null
+                && !context.carryForwardStreaks().isEmpty();
+        boolean hasTrends = context.outcomeCoverageTrends() != null
+                && !context.outcomeCoverageTrends().isEmpty();
+        boolean hasLateLock = context.lateLockPatterns() != null
+                && !context.lateLockPatterns().isEmpty();
+        boolean hasTurnaround = context.reviewTurnaroundStats() != null;
+
+        if (!hasStreaks && !hasTrends && !hasLateLock && !hasTurnaround) {
+            return;
+        }
+
+        sb.append("\nMulti-week historical context:\n");
+
+        if (hasStreaks) {
+            sb.append("Carry-forward streaks (consecutive weeks with 2+ carried items):\n");
+            for (ManagerInsightDataProvider.CarryForwardStreak streak : context.carryForwardStreaks()) {
+                sb.append(String.format(
+                        "- userId: %s | streakWeeks: %d | carriedItems: [%s]%n",
+                        streak.userId(),
+                        streak.streakWeeks(),
+                        String.join(", ", streak.carriedItemTitles())
+                ));
+            }
+        }
+
+        if (hasTrends) {
+            sb.append("Outcome coverage trends (commit counts per week, oldest→newest):\n");
+            for (ManagerInsightDataProvider.OutcomeCoverageTrend trend : context.outcomeCoverageTrends()) {
+                String weekData = trend.weekCounts().stream()
+                        .map(wc -> wc.weekStart() + ":" + wc.commitCount())
+                        .collect(java.util.stream.Collectors.joining(", "));
+                sb.append(String.format(
+                        "- outcomeName: %s | %s%n",
+                        trend.outcomeName(), weekData
+                ));
+            }
+        }
+
+        if (hasLateLock) {
+            sb.append("Late-lock frequency (over rolling window):\n");
+            for (ManagerInsightDataProvider.LateLockPattern pattern : context.lateLockPatterns()) {
+                sb.append(String.format(
+                        "- userId: %s | lateLockWeeks: %d out of %d%n",
+                        pattern.userId(), pattern.lateLockWeeks(), pattern.windowWeeks()
+                ));
+            }
+        }
+
+        if (hasTurnaround) {
+            ManagerInsightDataProvider.ReviewTurnaroundStats stats = context.reviewTurnaroundStats();
+            sb.append(String.format(
+                    "Review turnaround: avg %.1f days from lock to first review (based on %d plans)%n",
+                    stats.avgDaysToReview(), stats.sampleSize()
+            ));
+        }
     }
 
     /**
@@ -177,13 +348,37 @@ public final class PromptBuilder {
     ) {}
 
     /**
-     * Context for a single commit in reconciliation draft.
+     * Team-level outcome usage entry used for prompt enrichment.
+     *
+     * @param outcomeName the snapshot outcome name
+     * @param commitCount number of team commits linked to this outcome in the week
+     */
+    public record TeamOutcomeUsage(
+            String outcomeName,
+            int commitCount
+    ) {}
+
+    /**
+     * Enriched context for a single commit in reconciliation draft.
+     *
+     * @param commitId                     the commit UUID string
+     * @param title                        the commit title
+     * @param expectedResult               the expected result defined at plan time
+     * @param progressNotes                free-form progress notes for the week
+     * @param checkInHistory               structured daily check-in entries (may be empty)
+     * @param priorCompletionStatuses      completion statuses from carry-forward ancestors,
+     *                                     most-recent first (empty if not a carried item)
+     * @param categoryCompletionRateContext pre-formatted team category rate context, or
+     *                                      {@code null} if unavailable
      */
     public record CommitContext(
             String commitId,
             String title,
             String expectedResult,
-            String progressNotes
+            String progressNotes,
+            List<CommitDataProvider.CheckInEntry> checkInHistory,
+            List<String> priorCompletionStatuses,
+            String categoryCompletionRateContext
     ) {}
 
     /**
@@ -261,6 +456,236 @@ public final class PromptBuilder {
                           "title": { "type": "string" },
                           "detail": { "type": "string" },
                           "severity": { "type": "string", "enum": ["INFO", "WARNING", "POSITIVE"] }
+                        }
+                      }
+                    }
+                  }
+                }
+                """;
+    }
+
+    // ── Next-Work Suggestion Phase 2 ─────────────────────────────────────────
+
+    /**
+     * Builds messages for LLM-based next-work suggestion re-ranking (Phase 2/3).
+     *
+     * <p>Convenience overload without external ticket context — delegates to the
+     * full overload with an empty ticket list.
+     *
+     * @param candidates         Phase-1/Phase-3 data-driven suggestions as the candidate set
+     * @param recentCommitHistory user's recent 4-week commit history with outcomes/statuses
+     * @param carriedForwardItems user's active carry-forward items for urgency context
+     * @param teamCoverageGaps    team-level outcome coverage gaps for strategic context
+     * @param weekStart          the Monday being planned for
+     * @return ordered messages for the LLM
+     */
+    public static List<LlmClient.Message> buildNextWorkSuggestMessages(
+            List<NextWorkSuggestionService.NextWorkSuggestion> candidates,
+            List<NextWorkDataProvider.RecentCommitContext> recentCommitHistory,
+            List<NextWorkDataProvider.CarryForwardItem> carriedForwardItems,
+            List<NextWorkDataProvider.RcdoCoverageGap> teamCoverageGaps,
+            LocalDate weekStart
+    ) {
+        return buildNextWorkSuggestMessages(
+                candidates, recentCommitHistory, carriedForwardItems,
+                teamCoverageGaps, List.of(), weekStart);
+    }
+
+    /**
+     * Builds messages for LLM-based next-work suggestion re-ranking (Phase 2/3).
+     *
+     * <p>The system prompt instructs the LLM to re-rank the provided candidate
+     * suggestions by strategic impact and generate precise rationales.  When
+     * {@code linkedTickets} is non-empty, a "Linked external tickets" section is
+     * appended to the ASSISTANT context so the LLM can account for ticket state.
+     *
+     * <p>Security: all user-authored text (commit titles) is placed in the ASSISTANT
+     * context message, not the system prompt, mitigating injection per PRD §4.
+     *
+     * @param candidates         Phase-1/Phase-3 data-driven suggestions as the candidate set
+     * @param recentCommitHistory user's recent 4-week commit history with outcomes/statuses
+     * @param carriedForwardItems user's active carry-forward items for urgency context
+     * @param teamCoverageGaps    team-level outcome coverage gaps for strategic context
+     * @param linkedTickets       unresolved external tickets linked to strategic commits (may be empty)
+     * @param weekStart          the Monday being planned for
+     * @return ordered messages for the LLM
+     */
+    public static List<LlmClient.Message> buildNextWorkSuggestMessages(
+            List<NextWorkSuggestionService.NextWorkSuggestion> candidates,
+            List<NextWorkDataProvider.RecentCommitContext> recentCommitHistory,
+            List<NextWorkDataProvider.CarryForwardItem> carriedForwardItems,
+            List<NextWorkDataProvider.RcdoCoverageGap> teamCoverageGaps,
+            List<UserTicketContext> linkedTickets,
+            LocalDate weekStart
+    ) {
+        List<LlmClient.Message> messages = new ArrayList<>();
+
+        // System prompt — role, rules, and security constraints
+        messages.add(new LlmClient.Message(
+                LlmClient.Role.SYSTEM,
+                """
+                You are a strategic work advisor that helps users identify their highest-impact \
+                weekly commitments.
+                Given a candidate set of suggested commitments derived from the user's work history \
+                and team coverage patterns, re-rank them by strategic impact and generate a specific \
+                rationale for each.
+
+                Rules:
+                1. ONLY rank suggestions whose suggestionId appears in the candidate list. \
+                   Never invent or modify IDs.
+                2. Rank ALL candidates from highest to lowest strategic impact.
+                3. Respect declined-history suppression already reflected in the candidate set: \
+                   do not infer or re-introduce work that is not present in the provided list.
+                4. suggestedChessPriority must be one of: KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN \
+                   (omit the field if you have no strong recommendation).
+                5. confidence must be in range [0.0, 1.0].
+                6. Generate a specific, actionable rationale (1–2 sentences) explaining WHY this \
+                   item is high-impact for this particular week.
+                7. Consider: team outcome coverage gaps, carry-forward urgency, strategic alignment, \
+                   and recency of the underlying data.
+                8. Respond ONLY with valid JSON matching the required schema.
+                """
+        ));
+
+        // ASSISTANT context block — candidate set, recent history, and team gaps
+        // (not user-authored; safe to include in ASSISTANT role)
+        StringBuilder ctx = new StringBuilder();
+        ctx.append("Next-work planning context for week of ").append(weekStart).append(":\n\n");
+
+        // ── Candidate suggestions (Phase-1 output) ────────────────────────────
+        ctx.append("Candidate suggestions to re-rank (").append(candidates.size()).append(" items):\n");
+        for (NextWorkSuggestionService.NextWorkSuggestion s : candidates) {
+            ctx.append(String.format(
+                    "- suggestionId: %s | type: %s | title: %s",
+                    s.suggestionId(), s.source(), s.title()
+            ));
+            if (s.suggestedOutcomeId() != null) {
+                ctx.append(String.format(" | outcomeId: %s", s.suggestedOutcomeId()));
+            }
+            if (s.sourceDetail() != null) {
+                ctx.append(String.format(" | context: %s", s.sourceDetail()));
+            }
+            if (s.suggestedChessPriority() != null) {
+                ctx.append(String.format(" | currentPriority: %s", s.suggestedChessPriority()));
+            }
+            ctx.append(String.format(" | dataConfidence: %.2f", s.confidence()));
+            ctx.append("\n");
+        }
+
+        // ── User's recent commit history ───────────────────────────────────────
+        if (!recentCommitHistory.isEmpty()) {
+            ctx.append("\nUser's last 4 weeks of commits:\n");
+            recentCommitHistory.stream().limit(12).forEach(item -> {
+                ctx.append(String.format(
+                        "- week: %s | title: %s | status: %s",
+                        item.weekStart(),
+                        item.title(),
+                        item.completionStatus()
+                ));
+                if (item.outcomeName() != null) {
+                    ctx.append(" | outcome: ").append(item.outcomeName());
+                } else if (item.outcomeId() != null) {
+                    ctx.append(" | outcomeId: ").append(item.outcomeId());
+                }
+                if (item.objectiveName() != null) {
+                    ctx.append(" | objective: ").append(item.objectiveName());
+                }
+                if (item.rallyCryName() != null) {
+                    ctx.append(" | rallyCry: ").append(item.rallyCryName());
+                }
+                ctx.append('\n');
+            });
+        }
+
+        // ── Active carry-forward items ────────────────────────────────────────
+        if (!carriedForwardItems.isEmpty()) {
+            ctx.append("\nCarried-forward items needing attention:\n");
+            carriedForwardItems.stream().limit(10).forEach(item ->
+                    ctx.append(String.format(
+                            "- week: %s | title: %s | carryForwardWeeks: %d%s%n",
+                            item.sourceWeekStart(),
+                            item.title(),
+                            item.carryForwardWeeks(),
+                            item.outcomeName() != null
+                                    ? " | outcome: " + item.outcomeName() : ""
+                    ))
+            );
+        }
+
+        // ── Team outcome coverage gaps ─────────────────────────────────────────
+        if (!teamCoverageGaps.isEmpty()) {
+            ctx.append("\nTeam outcome coverage gaps (outcomes not worked on recently):\n");
+            teamCoverageGaps.stream().limit(8).forEach(gap ->
+                    ctx.append(String.format(
+                            "- outcomeId: %s | outcomeName: %s | rallyCry: %s | weeksMissing: %d | prevCommits: %d%n",
+                            gap.outcomeId(), gap.outcomeName(), gap.rallyCryName(),
+                            gap.weeksMissing(), gap.teamCommitsPrevWindow()
+                    ))
+            );
+        }
+
+        // ── Linked external tickets (Phase 3) ─────────────────────────────────
+        if (!linkedTickets.isEmpty()) {
+            ctx.append("\nLinked external tickets (unresolved, tied to strategic outcomes):\n");
+            linkedTickets.stream().limit(10).forEach(ticket -> {
+                ctx.append(String.format(
+                        "- ticketId: %s | provider: %s",
+                        ticket.externalTicketId(), ticket.provider()
+                ));
+                if (ticket.externalStatus() != null && !ticket.externalStatus().isBlank()) {
+                    ctx.append(String.format(" | status: %s", ticket.externalStatus()));
+                }
+                if (ticket.lastSyncedAt() != null) {
+                    ctx.append(String.format(" | lastSynced: %s",
+                            ticket.lastSyncedAt().toString().substring(0, 10)));
+                }
+                if (ticket.outcomeName() != null) {
+                    ctx.append(String.format(" | outcome: %s", ticket.outcomeName()));
+                }
+                if (ticket.rallyCryName() != null) {
+                    ctx.append(String.format(" | rallyCry: %s", ticket.rallyCryName()));
+                }
+                ctx.append('\n');
+            });
+        }
+
+        messages.add(new LlmClient.Message(LlmClient.Role.ASSISTANT, ctx.toString()));
+
+        // User message — the actual planning request
+        messages.add(new LlmClient.Message(
+                LlmClient.Role.USER,
+                "Suggest highest-impact commitments for this user for week of " + weekStart + "."
+        ));
+
+        return messages;
+    }
+
+    /**
+     * The JSON schema for next-work LLM re-ranking responses.
+     *
+     * <p>Each item in {@code rankedSuggestions} must reference a {@code suggestionId}
+     * from the candidate set. The validator rejects items whose IDs are not in the
+     * candidate set to prevent hallucinated suggestions.
+     */
+    public static String nextWorkSuggestResponseSchema() {
+        return """
+                {
+                  "type": "object",
+                  "required": ["rankedSuggestions"],
+                  "properties": {
+                    "rankedSuggestions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["suggestionId", "confidence", "rationale"],
+                        "properties": {
+                          "suggestionId": { "type": "string" },
+                          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+                          "suggestedChessPriority": {
+                            "type": "string",
+                            "enum": ["KING", "QUEEN", "ROOK", "BISHOP", "KNIGHT", "PAWN"]
+                          },
+                          "rationale": { "type": "string" }
                         }
                       }
                     }

@@ -17,11 +17,7 @@ export interface AiSuggestionPanelProps {
  * the work maps to), with the full Rally Cry → Objective breadcrumb
  * expandable on hover/click for context.
  */
-export const AiSuggestionPanel: React.FC<AiSuggestionPanelProps> = ({
-  suggestions,
-  status,
-  onAccept,
-}) => {
+export const AiSuggestionPanel: React.FC<AiSuggestionPanelProps> = ({ suggestions, status, onAccept }) => {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   if (status === "idle") {
@@ -72,23 +68,21 @@ export const AiSuggestionPanel: React.FC<AiSuggestionPanelProps> = ({
           {/* Primary: Outcome name — the specific thing */}
           <div className={styles.suggestionRow}>
             <span className={styles.outcomeName}>{suggestion.outcomeName}</span>
-            <span className={styles.confidence}>
-              {Math.round(suggestion.confidence * 100)}%
-            </span>
+            <span className={styles.confidence}>{Math.round(suggestion.confidence * 100)}%</span>
           </div>
 
           {/* Breadcrumb: Rally Cry → Objective (always visible but subtle) */}
           <div className={styles.breadcrumb}>
             <span className={styles.breadcrumbSegment}>{suggestion.rallyCryName}</span>
-            <span className={styles.breadcrumbArrow} aria-hidden="true">›</span>
+            <span className={styles.breadcrumbArrow} aria-hidden="true">
+              ›
+            </span>
             <span className={styles.breadcrumbSegment}>{suggestion.objectiveName}</span>
           </div>
 
           {/* Rationale — shown on hover/expand */}
           {expandedIndex === index && suggestion.rationale && (
-            <div className={styles.rationale}>
-              {suggestion.rationale}
-            </div>
+            <div className={styles.rationale}>{suggestion.rationale}</div>
           )}
         </button>
       ))}

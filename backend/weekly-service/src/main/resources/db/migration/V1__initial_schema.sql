@@ -193,28 +193,28 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE org_policies ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY org_isolation_plans ON weekly_plans
-    USING (org_id = current_setting('app.current_org_id', true)::uuid);
+    USING (org_id = NULLIF(current_setting('app.current_org_id', true), '')::uuid);
 
 CREATE POLICY org_isolation_commits ON weekly_commits
-    USING (org_id = current_setting('app.current_org_id', true)::uuid);
+    USING (org_id = NULLIF(current_setting('app.current_org_id', true), '')::uuid);
 
 CREATE POLICY org_isolation_actuals ON weekly_commit_actuals
-    USING (org_id = current_setting('app.current_org_id', true)::uuid);
+    USING (org_id = NULLIF(current_setting('app.current_org_id', true), '')::uuid);
 
 CREATE POLICY org_isolation_reviews ON manager_reviews
-    USING (org_id = current_setting('app.current_org_id', true)::uuid);
+    USING (org_id = NULLIF(current_setting('app.current_org_id', true), '')::uuid);
 
 CREATE POLICY org_isolation_audit ON audit_events
-    USING (org_id = current_setting('app.current_org_id', true)::uuid);
+    USING (org_id = NULLIF(current_setting('app.current_org_id', true), '')::uuid);
 
 CREATE POLICY org_isolation_outbox ON outbox_events
-    USING (org_id = current_setting('app.current_org_id', true)::uuid);
+    USING (org_id = NULLIF(current_setting('app.current_org_id', true), '')::uuid);
 
 CREATE POLICY org_isolation_idempotency ON idempotency_keys
-    USING (org_id = current_setting('app.current_org_id', true)::uuid);
+    USING (org_id = NULLIF(current_setting('app.current_org_id', true), '')::uuid);
 
 CREATE POLICY org_isolation_notifications ON notifications
-    USING (org_id = current_setting('app.current_org_id', true)::uuid);
+    USING (org_id = NULLIF(current_setting('app.current_org_id', true), '')::uuid);
 
 CREATE POLICY org_isolation_policies ON org_policies
-    USING (org_id = current_setting('app.current_org_id', true)::uuid);
+    USING (org_id = NULLIF(current_setting('app.current_org_id', true), '')::uuid);

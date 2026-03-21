@@ -3,15 +3,14 @@ package com.weekly.notification;
 import com.weekly.outbox.OutboxEventEntity;
 import com.weekly.outbox.OutboxEventRepository;
 import com.weekly.shared.EventType;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Lightweight worker that polls unpublished outbox events and materializes
@@ -97,7 +96,108 @@ public class NotificationMaterializer {
                         )
                 ));
             }
+        } else if (EventType.WEEKLY_DIGEST.getValue().equals(eventType)) {
+            materializeWeeklyDigest(orgId, payload);
         }
+    }
+
+    /**
+     * Renders a {@code WEEKLY_DIGEST} outbox event into an in-app notification for
+     * the target manager.
+     *
+     * <p>Template: surfaces the key metrics in the notification payload so the
+     * frontend can render a rich digest card or fallback to the plain {@code message}
+     * field for simple display.
+     */
+    private void materializeWeeklyDigest(UUID orgId, Map<String, Object> payload) {
+        String managerId = extractString(payload, "managerId");
+        if (managerId == null) {
+            LOG.warn("NotificationMaterializer: WEEKLY_DIGEST event missing managerId");
+            return;
+        }
+
+        String weekStart = extractString(payload, "weekStart");
+        int totalMembers = extractInt(payload, "totalMemberCount");
+        int reconciledCount = extractInt(payload, "reconciledCount");
+        int reviewQueueSize = extractInt(payload, "reviewQueueSize");
+        int staleCount = extractInt(payload, "staleCount");
+        int doneEarlyCount = extractInt(payload, "doneEarlyCount");
+        double rcdoAlignmentRate = extractDouble(payload, "rcdoAlignmentRate");
+        Double previousRcdoAlignmentRate = extractNullableDouble(payload, "previousRcdoAlignmentRate");
+
+        // Build a human-readable summary message (fallback for simple renderers)
+        String message = buildDigestMessage(weekStart, totalMembers, reconciledCount,
+                reviewQueueSize, staleCount, rcdoAlignmentRate, previousRcdoAlignmentRate, doneEarlyCount);
+
+        // Include the full structured payload for rich frontend rendering
+        Map<String, Object> notificationPayload = new java.util.HashMap<>(payload);
+        notificationPayload.put("message", message);
+
+        notificationRepository.save(new NotificationEntity(
+                orgId,
+                UUID.fromString(managerId),
+                "WEEKLY_DIGEST",
+                notificationPayload
+        ));
+    }
+
+    private static String buildDigestMessage(
+            String weekStart,
+            int totalMembers,
+            int reconciledCount,
+            int reviewQueueSize,
+            int staleCount,
+            double rcdoAlignmentRate,
+            Double previousRcdoAlignmentRate,
+            int doneEarlyCount
+    ) {
+        StringBuilder sb = new StringBuilder("Weekly digest");
+        if (weekStart != null) {
+            sb.append(" (w/c ").append(weekStart).append(")");
+        }
+        sb.append(": ");
+        sb.append(reconciledCount).append("/").append(totalMembers).append(" reconciled");
+        if (reviewQueueSize > 0) {
+            sb.append(", ").append(reviewQueueSize).append(" pending review");
+        }
+        if (staleCount > 0) {
+            sb.append(", ").append(staleCount).append(" stale");
+        }
+        int alignmentPct = (int) Math.round(rcdoAlignmentRate * 100);
+        sb.append(", ").append(alignmentPct).append("% RCDO aligned");
+        if (previousRcdoAlignmentRate != null) {
+            int previousAlignmentPct = (int) Math.round(previousRcdoAlignmentRate * 100);
+            sb.append(" (vs ").append(previousAlignmentPct).append("% last week)");
+        }
+        if (doneEarlyCount > 0) {
+            sb.append(", ").append(doneEarlyCount).append(" done early");
+        }
+        sb.append(".");
+        return sb.toString();
+    }
+
+    private int extractInt(Map<String, Object> payload, String key) {
+        Object value = payload.get(key);
+        if (value instanceof Number n) {
+            return n.intValue();
+        }
+        return 0;
+    }
+
+    private double extractDouble(Map<String, Object> payload, String key) {
+        Object value = payload.get(key);
+        if (value instanceof Number n) {
+            return n.doubleValue();
+        }
+        return 0.0;
+    }
+
+    private Double extractNullableDouble(Map<String, Object> payload, String key) {
+        Object value = payload.get(key);
+        if (value instanceof Number n) {
+            return n.doubleValue();
+        }
+        return null;
     }
 
     private String extractString(Map<String, Object> payload, String key) {

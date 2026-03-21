@@ -1,0 +1,288 @@
+/**
+ * EstimationCoaching – CSS Module (Academia / Classical)
+ *
+ * Coaching card that presents post-reconciliation estimation insights.
+ * Uses the same design token system as other CapacityView components.
+ */
+
+/* ─── Card container ─────────────────────────────────────────────────────── */
+
+.card {
+  padding:          var(--wc-space-sm) var(--wc-space-md);
+  border:           1px solid var(--wc-color-border);
+  border-left:      4px solid var(--wc-color-accent);
+  border-radius:    var(--wc-radius-md);
+  background-color: var(--wc-color-bg-secondary);
+  box-shadow:       var(--wc-shadow-sm);
+  font-family:      var(--wc-font-body);
+  margin-bottom:    var(--wc-space-md);
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+
+.header {
+  display:     flex;
+  align-items: center;
+  gap:         var(--wc-space-sm);
+  margin-bottom: var(--wc-space-sm);
+  flex-wrap:   wrap;
+}
+
+.icon {
+  flex-shrink: 0;
+  font-size:   1.125rem;
+  line-height: 1;
+}
+
+.title {
+  font-family:    var(--wc-font-display);
+  font-size:      0.75rem;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color:          var(--wc-color-accent);
+  margin:         0;
+  flex:           1;
+}
+
+/* ─── Confidence badge ───────────────────────────────────────────────────── */
+
+.confidenceBadge {
+  display:        inline-flex;
+  align-items:    center;
+  padding:        0.1rem 0.45rem;
+  border-radius:  var(--wc-radius-sm);
+  font-family:    var(--wc-font-display);
+  font-size:      0.5625rem;
+  font-weight:    600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space:    nowrap;
+}
+
+.confidenceLOW {
+  background-color: var(--wc-color-error-bg);
+  color:            var(--wc-color-error);
+  border:           1px solid var(--wc-color-error-border);
+}
+
+.confidenceMEDIUM {
+  background-color: var(--wc-color-warning-bg);
+  color:            var(--wc-color-warning);
+  border:           1px solid var(--wc-color-warning-border);
+}
+
+.confidenceHIGH {
+  background-color: var(--wc-color-success-bg);
+  color:            var(--wc-color-success);
+  border:           1px solid var(--wc-color-success-border);
+}
+
+/* ─── Sections ───────────────────────────────────────────────────────────── */
+
+.section {
+  margin-top: var(--wc-space-sm);
+}
+
+.section + .section {
+  margin-top:  var(--wc-space-md);
+  padding-top: var(--wc-space-sm);
+  border-top:  1px solid var(--wc-color-border-muted);
+}
+
+.sectionTitle {
+  font-family:    var(--wc-font-display);
+  font-size:      0.5625rem;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color:          var(--wc-color-text-muted);
+  margin:         0 0 var(--wc-space-xs);
+}
+
+/* ─── Metrics row (this week summary) ───────────────────────────────────── */
+
+.metricsRow {
+  display:               grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap:                   var(--wc-space-sm);
+}
+
+.metricCard {
+  padding:          var(--wc-space-xs) var(--wc-space-sm);
+  border:           1px solid var(--wc-color-border);
+  border-radius:    var(--wc-radius-sm);
+  background-color: var(--wc-color-bg);
+}
+
+.metricLabel {
+  font-family:    var(--wc-font-display);
+  font-size:      0.5rem;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color:          var(--wc-color-text-muted);
+  margin-bottom:  0.15rem;
+}
+
+.metricValue {
+  font-family: var(--wc-font-body);
+  font-size:   1rem;
+  font-weight: 600;
+  color:       var(--wc-color-text-primary);
+  line-height: 1.3;
+}
+
+.metricSub {
+  margin-top:  0.15rem;
+  font-size:   0.75rem;
+  color:       var(--wc-color-text-muted);
+  line-height: 1.4;
+}
+
+/* ─── Bias color modifiers ───────────────────────────────────────────────── */
+
+.biasOver {
+  border-color: var(--wc-color-error-border);
+}
+
+.biasOver .metricValue,
+.biasOver .insightBias {
+  color: var(--wc-color-error);
+}
+
+.biasUnder {
+  border-color: var(--wc-color-warning-border);
+}
+
+.biasUnder .metricValue,
+.biasUnder .insightBias {
+  color: var(--wc-color-warning);
+}
+
+.biasOnTarget {
+  border-color: var(--wc-color-success-border);
+}
+
+.biasOnTarget .metricValue,
+.biasOnTarget .insightBias {
+  color: var(--wc-color-success);
+}
+
+/* ─── Category insight list ──────────────────────────────────────────────── */
+
+.insightList {
+  margin:     0;
+  padding:    0;
+  list-style: none;
+  display:    flex;
+  flex-direction: column;
+  gap:        var(--wc-space-sm);
+}
+
+.insightItem {
+  padding:          var(--wc-space-xs) var(--wc-space-sm);
+  border:           1px solid var(--wc-color-border-muted);
+  border-radius:    var(--wc-radius-sm);
+  background-color: var(--wc-color-bg);
+}
+
+.insightRow {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  gap:             var(--wc-space-sm);
+}
+
+.insightCategory {
+  font-family: var(--wc-font-body);
+  font-size:   0.9375rem;
+  font-weight: 500;
+  color:       var(--wc-color-text-primary);
+}
+
+.insightBias {
+  font-family:  var(--wc-font-body);
+  font-size:    0.875rem;
+  font-weight:  600;
+  color:        var(--wc-color-text-secondary);
+  white-space:  nowrap;
+}
+
+.insightTip {
+  margin:     0.25rem 0 0;
+  font-size:  0.8125rem;
+  color:      var(--wc-color-text-muted);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* ─── Priority completion list ───────────────────────────────────────────── */
+
+.priorityList {
+  margin:     0;
+  padding:    0;
+  list-style: none;
+  display:    flex;
+  flex-direction: column;
+  gap:        0.4rem;
+}
+
+.priorityItem {
+  display:     grid;
+  grid-template-columns: 6rem 1fr 3rem auto;
+  align-items: center;
+  gap:         var(--wc-space-sm);
+  font-size:   0.875rem;
+}
+
+.priorityLabel {
+  font-family: var(--wc-font-body);
+  font-weight: 500;
+  color:       var(--wc-color-text-primary);
+  white-space: nowrap;
+  overflow:    hidden;
+  text-overflow: ellipsis;
+}
+
+.priorityBar {
+  height:           6px;
+  background-color: var(--wc-color-bg-tertiary);
+  border-radius:    var(--wc-radius-full);
+  overflow:         hidden;
+}
+
+.priorityBarFill {
+  height:           100%;
+  background-color: var(--wc-color-accent);
+  border-radius:    var(--wc-radius-full);
+  transition:       width var(--wc-transition-base);
+}
+
+.priorityRate {
+  font-weight: 600;
+  color:       var(--wc-color-text-primary);
+  text-align:  right;
+  white-space: nowrap;
+}
+
+.prioritySample {
+  font-size:  0.75rem;
+  color:      var(--wc-color-text-muted);
+  white-space: nowrap;
+}
+
+/* ─── Loading / error states ─────────────────────────────────────────────── */
+
+.loading {
+  margin-top: var(--wc-space-xs);
+  font-size:  0.875rem;
+  color:      var(--wc-color-text-muted);
+  font-style: italic;
+}
+
+.errorMsg {
+  margin-top: var(--wc-space-xs);
+  font-size:  0.875rem;
+  color:      var(--wc-color-error);
+}

@@ -4,6 +4,9 @@ import type {
   UpdateCommitRequest,
   UpdateActualRequest,
   ReconciliationDraftItem,
+  NextWorkSuggestion,
+  SuggestionFeedbackRequest,
+  CheckInRequest,
 } from "@weekly-commitments/contracts";
 import { PlanState, CompletionStatus } from "@weekly-commitments/contracts";
 import { WeekSelector } from "../components/WeekSelector.js";
@@ -17,12 +20,26 @@ import { AiReconciliationDraft } from "../components/AiReconciliationDraft.js";
 import { ConfirmDialog } from "../components/ConfirmDialog.js";
 import { ErrorBanner } from "../components/ErrorBanner.js";
 import { GlassPanel } from "../components/GlassPanel.js";
+import { MyTrendsPanel } from "../components/MyTrendsPanel.js";
+import { PlanQualityNudge } from "../components/PlanQualityNudge.js";
+import { NextWorkSuggestionPanel } from "../components/NextWorkSuggestionPanel.js";
+import { DigestPreferencesSection } from "../components/DigestPreferencesSection.js";
+import { QuickUpdateFlow } from "../components/QuickUpdate/QuickUpdateFlow.js";
+import type { QuickUpdateCommitment } from "../components/QuickUpdate/QuickUpdateFlow.js";
+import { UserProfilePanel } from "../components/UserProfile/UserProfilePanel.js";
+import { useUserProfile } from "../hooks/useUserProfile.js";
 import { usePlan } from "../hooks/usePlan.js";
 import { useCommits } from "../hooks/useCommits.js";
 import { useRcdo } from "../hooks/useRcdo.js";
 import { useAiSuggestions } from "../hooks/useAiSuggestions.js";
+import { useTrends } from "../hooks/useTrends.js";
+import { usePlanQualityCheck } from "../hooks/usePlanQualityCheck.js";
+import { useDraftFromHistory } from "../hooks/useDraftFromHistory.js";
+import { useNextWorkSuggestions } from "../hooks/useNextWorkSuggestions.js";
+import { useCheckIn } from "../hooks/useCheckIn.js";
 import { getWeekStart, isPastWeek, isFutureWeek, isCreateAllowedForWeek } from "../utils/week.js";
 import { useToast } from "../context/ToastContext.js";
+import { useFeatureFlags } from "../context/FeatureFlagContext.js";
 import styles from "./WeeklyPlanPage.module.css";
 
 /** Which confirmation dialog is currently shown */
@@ -45,6 +62,8 @@ export const WeeklyPlanPage: React.FC = () => {
   const [showCarryForward, setShowCarryForward] = useState(false);
   const [pendingConfirm, setPendingConfirm] = useState<ConfirmAction>(null);
   const [lifecycleAction, setLifecycleAction] = useState<LifecycleAction>(null);
+  const [showQualityNudge, setShowQualityNudge] = useState(false);
+  const [showQuickUpdate, setShowQuickUpdate] = useState(false);
 
   const { showToast } = useToast();
 
@@ -94,10 +113,71 @@ export const WeeklyPlanPage: React.FC = () => {
     fetchDraft: fetchAiDraft,
   } = useAiSuggestions();
 
+  const {
+    trends,
+    loading: trendsLoading,
+    error: trendsError,
+    fetchTrends,
+  } = useTrends();
+
+  const { profile, loading: profileLoading, error: profileError, fetchProfile } = useUserProfile();
+
+  const {
+    nudges: qualityNudges,
+    status: qualityStatus,
+    checkQuality,
+    clearNudges: clearQualityNudges,
+  } = usePlanQualityCheck();
+
+  const {
+    status: draftFromHistoryStatus,
+    error: draftFromHistoryError,
+    draftFromHistory,
+    reset: resetDraftFromHistory,
+  } = useDraftFromHistory();
+
+  const {
+    suggestions: nextWorkSuggestions,
+    status: nextWorkStatus,
+    fetchSuggestions: fetchNextWorkSuggestions,
+    submitFeedback: submitNextWorkFeedback,
+    dismissSuggestion: dismissNextWorkSuggestion,
+    clearSuggestions: clearNextWorkSuggestions,
+  } = useNextWorkSuggestions();
+
+  const flags = useFeatureFlags();
+
+  const [checkInOpenForId, setCheckInOpenForId] = useState<string | null>(null);
+
+  const {
+    entries: checkInEntries,
+    loading: checkInLoading,
+    error: checkInError,
+    addCheckIn,
+    fetchCheckIns,
+    clearEntries: clearCheckInEntries,
+  } = useCheckIn();
+
   // Load plan when week changes
   useEffect(() => {
     void fetchPlan(selectedWeek);
   }, [selectedWeek, fetchPlan]);
+
+  // Load trends on mount when the flag is enabled
+  useEffect(() => {
+    if (flags.icTrends) {
+      void fetchTrends();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flags.icTrends]);
+
+  // Load user profile on mount when the flag is enabled
+  useEffect(() => {
+    if (flags.userProfile) {
+      void fetchProfile();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flags.userProfile]);
 
   // Load commits when plan is available
   useEffect(() => {
@@ -113,6 +193,23 @@ export const WeeklyPlanPage: React.FC = () => {
   useEffect(() => {
     void fetchRcdoTree();
   }, [fetchRcdoTree]);
+
+  // Load next-work suggestions when the panel is available on a DRAFT plan.
+  useEffect(() => {
+    if (flags.suggestNextWork && plan?.state === PlanState.DRAFT) {
+      void fetchNextWorkSuggestions(selectedWeek);
+      return;
+    }
+
+    clearNextWorkSuggestions();
+  }, [
+    clearNextWorkSuggestions,
+    fetchNextWorkSuggestions,
+    flags.suggestNextWork,
+    plan?.id,
+    plan?.state,
+    selectedWeek,
+  ]);
 
   const handleWeekChange = useCallback((week: string) => {
     setSelectedWeek(week);
@@ -141,14 +238,11 @@ export const WeeklyPlanPage: React.FC = () => {
     [updateCommit],
   );
 
-  const handleRequestDeleteCommit = useCallback(
-    async (commitId: string): Promise<boolean> => {
-      setPendingConfirm({ type: "delete-commit", commitId });
-      // Actual deletion happens via confirmation dialog; return false to keep editor open
-      return false;
-    },
-    [],
-  );
+  const handleRequestDeleteCommit = useCallback(async (commitId: string): Promise<boolean> => {
+    setPendingConfirm({ type: "delete-commit", commitId });
+    // Actual deletion happens via confirmation dialog; return false to keep editor open
+    return false;
+  }, []);
 
   const handleConfirmDeleteCommit = useCallback(
     async (commitId: string): Promise<boolean> => {
@@ -160,8 +254,13 @@ export const WeeklyPlanPage: React.FC = () => {
   );
 
   const handleRequestLock = useCallback(() => {
-    setPendingConfirm({ type: "lock-plan" });
-  }, []);
+    if (flags.planQualityNudge && plan) {
+      setShowQualityNudge(true);
+      void checkQuality(plan.id);
+    } else {
+      setPendingConfirm({ type: "lock-plan" });
+    }
+  }, [flags.planQualityNudge, plan, checkQuality]);
 
   const handleConfirmLock = useCallback(async () => {
     setLifecycleAction("lock-plan");
@@ -257,25 +356,140 @@ export const WeeklyPlanPage: React.FC = () => {
     [plan, carryForward, showToast],
   );
 
+  const handleStartFromLastWeek = useCallback(async () => {
+    const result = await draftFromHistory(selectedWeek);
+    if (result) {
+      // Refresh plan data now that the draft plan exists
+      await fetchPlan(selectedWeek);
+    }
+  }, [draftFromHistory, fetchPlan, selectedWeek]);
+
+  const resolveNextWorkOutcomeLabel = useCallback(
+    (outcomeId: string): string | null => {
+      for (const cry of rcdoTree) {
+        for (const objective of cry.objectives) {
+          for (const outcome of objective.outcomes) {
+            if (outcome.id === outcomeId) {
+              return `${cry.name} / ${objective.name} / ${outcome.name}`;
+            }
+          }
+        }
+      }
+      return null;
+    },
+    [rcdoTree],
+  );
+
+  const getNextWorkDraftSourceTag = useCallback((suggestion: NextWorkSuggestion) => {
+    switch (suggestion.source) {
+      case "CARRY_FORWARD":
+        return "draft_source:CARRIED_FORWARD";
+      case "COVERAGE_GAP":
+      default:
+        return "draft_source:COVERAGE_GAP";
+    }
+  }, []);
+
+  const handleNextWorkAccept = useCallback(
+    async (suggestion: NextWorkSuggestion): Promise<boolean> => {
+      if (!plan) {
+        return false;
+      }
+      const req: CreateCommitRequest = {
+        title: suggestion.title,
+        chessPriority: suggestion.suggestedChessPriority,
+        outcomeId: suggestion.suggestedOutcomeId ?? null,
+        tags: [getNextWorkDraftSourceTag(suggestion)],
+      };
+      const created = await createCommit(plan.id, req);
+      if (created) {
+        dismissNextWorkSuggestion(suggestion.suggestionId);
+      }
+      return created !== null;
+    },
+    [plan, createCommit, dismissNextWorkSuggestion, getNextWorkDraftSourceTag],
+  );
+
+  const handleNextWorkFeedback = useCallback(
+    async (req: SuggestionFeedbackRequest): Promise<boolean> => {
+      const ok = await submitNextWorkFeedback(req);
+      if (ok) {
+        dismissNextWorkSuggestion(req.suggestionId);
+        return true;
+      }
+
+      showToast("Couldn't save suggestion feedback. Please try again.", "error");
+      return false;
+    },
+    [submitNextWorkFeedback, dismissNextWorkSuggestion, showToast],
+  );
+
+  const handleNextWorkRefresh = useCallback(() => {
+    void fetchNextWorkSuggestions(selectedWeek);
+  }, [fetchNextWorkSuggestions, selectedWeek]);
+
+  const buildQuickUpdateCommitments = useCallback(
+    (): QuickUpdateCommitment[] =>
+      commits.map((commit) => ({
+        id: commit.id,
+        title: commit.title,
+        category: commit.category,
+        chessPriority: commit.chessPriority,
+        outcomeName: commit.snapshotOutcomeName,
+        lastCheckInStatus: null,
+        lastCheckInNote: null,
+        lastCheckInDaysAgo: 0,
+      })),
+    [commits],
+  );
+
+  const handleOpenCheckIn = useCallback(
+    (commitId: string) => {
+      setCheckInOpenForId(commitId);
+      clearCheckInEntries();
+      void fetchCheckIns(commitId);
+    },
+    [fetchCheckIns, clearCheckInEntries],
+  );
+
+  const handleCloseCheckIn = useCallback(() => {
+    setCheckInOpenForId(null);
+    clearCheckInEntries();
+  }, [clearCheckInEntries]);
+
+  const handleSubmitCheckIn = useCallback(
+    async (commitId: string, req: CheckInRequest): Promise<boolean> => {
+      const entry = await addCheckIn(commitId, req);
+      return entry !== null;
+    },
+    [addCheckIn],
+  );
+
   const loading = planLoading || commitsLoading;
   const lifecycleLoading = lifecycleAction !== null;
-  const error = planError ?? commitsError ?? rcdoError;
+  const draftLoading = draftFromHistoryStatus === "loading";
+  const error = planError ?? commitsError ?? rcdoError ?? draftFromHistoryError;
 
   const clearError = useCallback(() => {
     clearPlanError();
     clearCommitsError();
     clearRcdoError();
-  }, [clearPlanError, clearCommitsError, clearRcdoError]);
+    resetDraftFromHistory();
+  }, [clearPlanError, clearCommitsError, clearRcdoError, resetDraftFromHistory]);
 
   return (
     <div data-testid="weekly-plan-page" className={styles.page}>
-      <span className="wc-volume-label" aria-hidden="true">Volume I</span>
+      <span className="wc-volume-label" aria-hidden="true">
+        Volume I
+      </span>
       <h2 className={styles.heading}>Weekly Commitments</h2>
       <div className="wc-ornate-divider" role="separator" aria-hidden="true" />
 
       <WeekSelector selectedWeek={selectedWeek} onWeekChange={handleWeekChange} />
 
       <ErrorBanner message={error} onDismiss={clearError} />
+
+      <DigestPreferencesSection />
 
       {loading && !plan && (
         <div data-testid="loading-indicator" className={styles.loading}>
@@ -288,9 +502,26 @@ export const WeeklyPlanPage: React.FC = () => {
           {isCreateAllowedForWeek(selectedWeek) && (
             <>
               <p>No plan for this week yet.</p>
-              <button data-testid="create-plan-btn" onClick={handleCreatePlan}>
-                Create Weekly Plan
-              </button>
+              <div className={styles.noPlanActions}>
+                <button
+                  data-testid="create-plan-btn"
+                  className={styles.noPlanButton}
+                  onClick={handleCreatePlan}
+                  disabled={draftLoading}
+                >
+                  Create Empty Plan
+                </button>
+                {flags.startMyWeek && (
+                  <button
+                    data-testid="start-from-last-week-btn"
+                    className={styles.noPlanButtonPrimary}
+                    onClick={() => void handleStartFromLastWeek()}
+                    disabled={draftLoading}
+                  >
+                    {draftLoading ? "Building your plan…" : "✨ Start from Last Week"}
+                  </button>
+                )}
+              </div>
             </>
           )}
           {isPastWeek(selectedWeek) && (
@@ -318,9 +549,38 @@ export const WeeklyPlanPage: React.FC = () => {
             canSubmitReconciliation={commits.length > 0}
           />
 
+          {flags.quickUpdate && (plan.state === PlanState.LOCKED || plan.state === PlanState.RECONCILING) && (
+            <button
+              data-testid="quick-update-btn"
+              className={styles.quickUpdateButton}
+              onClick={() => setShowQuickUpdate(true)}
+            >
+              ⚡ Quick Update
+            </button>
+          )}
+
           <PlanSummaryStrip commits={commits} />
 
           {plan.state === PlanState.DRAFT && <ValidationPanel commits={commits} />}
+
+          <MyTrendsPanel
+            trends={trends}
+            loading={trendsLoading}
+            error={trendsError}
+          />
+
+          <UserProfilePanel profile={profile} loading={profileLoading} error={profileError} />
+
+          {flags.suggestNextWork && plan.state === PlanState.DRAFT && (
+            <NextWorkSuggestionPanel
+              suggestions={nextWorkSuggestions}
+              status={nextWorkStatus}
+              onAccept={handleNextWorkAccept}
+              onFeedback={handleNextWorkFeedback}
+              onRefresh={handleNextWorkRefresh}
+              resolveOutcomeLabel={resolveNextWorkOutcomeLabel}
+            />
+          )}
 
           <CommitList
             commits={commits}
@@ -336,6 +596,19 @@ export const WeeklyPlanPage: React.FC = () => {
             aiSuggestStatus={aiSuggestStatus}
             onAiSuggestRequest={fetchAiSuggestions}
             onAiSuggestClear={clearAiSuggestions}
+            checkIn={
+              flags.dailyCheckIn
+                ? {
+                    openForId: checkInOpenForId,
+                    entries: checkInEntries,
+                    loading: checkInLoading,
+                    error: checkInError,
+                    onOpen: handleOpenCheckIn,
+                    onClose: handleCloseCheckIn,
+                    onSubmit: handleSubmitCheckIn,
+                  }
+                : undefined
+            }
           />
 
           {plan.state === PlanState.RECONCILING && (
@@ -364,8 +637,37 @@ export const WeeklyPlanPage: React.FC = () => {
               loading={lifecycleAction === "carry-forward"}
             />
           )}
+
+          {showQuickUpdate && (
+            <QuickUpdateFlow
+              commitments={buildQuickUpdateCommitments()}
+              planId={plan.id}
+              onComplete={() => {
+                setShowQuickUpdate(false);
+                if (plan) void fetchCommits(plan.id);
+              }}
+              onClose={() => setShowQuickUpdate(false)}
+            />
+          )}
         </GlassPanel>
       )}
+      {/* Plan quality nudge — shown before lock confirm dialog when flag is enabled */}
+      {showQualityNudge && (
+        <PlanQualityNudge
+          nudges={qualityNudges}
+          status={qualityStatus}
+          onLockAnyway={() => {
+            setShowQualityNudge(false);
+            clearQualityNudges();
+            setPendingConfirm({ type: "lock-plan" });
+          }}
+          onReview={() => {
+            setShowQualityNudge(false);
+            clearQualityNudges();
+          }}
+        />
+      )}
+
       {/* Confirmation dialogs */}
       {pendingConfirm?.type === "delete-commit" && (
         <ConfirmDialog

@@ -1,6 +1,7 @@
 package com.weekly.ai;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -174,6 +175,169 @@ public final class ResponseValidator {
 
         return new AiSuggestionService.ManagerInsightsResult("ok", headline, insights);
     }
+
+    // ── Next-work suggestion ranking ─────────────────────────────────────────
+
+    private static final Set<String> VALID_CHESS_PRIORITIES =
+            Set.of("KING", "QUEEN", "ROOK", "BISHOP", "KNIGHT", "PAWN");
+
+    private static final Pattern RANKED_SUGGESTIONS_PATTERN =
+            Pattern.compile("\"rankedSuggestions\"\\s*:\\s*\\[", Pattern.DOTALL);
+    private static final Pattern SUGGESTION_ID_PATTERN =
+            Pattern.compile("\"suggestionId\"\\s*:\\s*\"([^\"]+)\"");
+    private static final Pattern CHESS_PRIORITY_PATTERN =
+            Pattern.compile("\"suggestedChessPriority\"\\s*:\\s*\"([^\"]+)\"");
+
+    /**
+     * Parses and validates LLM re-ranking responses for next-work suggestions.
+     *
+     * <p>Validation rules:
+     * <ul>
+     *   <li>Each {@code suggestionId} must be present in {@code validSuggestionIds}
+     *       (prevents hallucinated entries)</li>
+     *   <li>{@code confidence} must be in [0.0, 1.0]</li>
+     *   <li>{@code suggestedChessPriority} must be a valid enum value if present</li>
+     *   <li>{@code rationale} must be non-blank</li>
+     * </ul>
+     *
+     * @param rawResponse        raw LLM response text
+     * @param validSuggestionIds UUID strings from the Phase-1 candidate set
+     * @return validated ranked items; may be empty if validation fails or IDs are hallucinated
+     */
+    public static List<NextWorkRankedItem> validateNextWorkSuggestions(
+            String rawResponse,
+            Set<String> validSuggestionIds
+    ) {
+        List<NextWorkRankedItem> results = new ArrayList<>();
+
+        if (rawResponse == null || rawResponse.isBlank()) {
+            return results;
+        }
+
+        // Locate the rankedSuggestions array
+        Matcher startMatcher = RANKED_SUGGESTIONS_PATTERN.matcher(rawResponse);
+        if (!startMatcher.find()) {
+            return results;
+        }
+
+        // Extract everything after "rankedSuggestions": [
+        String afterBracket = rawResponse.substring(startMatcher.end());
+
+        // Find all individual suggestion objects using a brace-depth parser
+        List<String> objectStrings = extractJsonObjects(afterBracket);
+        Set<String> seenSuggestionIds = new HashSet<>();
+
+        for (String objStr : objectStrings) {
+            NextWorkRankedItem item = parseNextWorkRankedItem(objStr, validSuggestionIds);
+            if (item != null && seenSuggestionIds.add(item.suggestionId())) {
+                results.add(item);
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * Extracts JSON object strings from the beginning of a string that starts
+     * immediately after a {@code [} bracket. Stops at the matching {@code ]}.
+     */
+    private static List<String> extractJsonObjects(String content) {
+        List<String> objects = new ArrayList<>();
+        int i = 0;
+        int len = content.length();
+        while (i < len) {
+            // Skip whitespace and commas
+            while (i < len && (content.charAt(i) == ' ' || content.charAt(i) == '\n'
+                    || content.charAt(i) == '\r' || content.charAt(i) == '\t'
+                    || content.charAt(i) == ',')) {
+                i++;
+            }
+            if (i >= len || content.charAt(i) != '{') {
+                break; // No more objects (reached ] or end)
+            }
+            // Walk to end of this object
+            int depth = 0;
+            int start = i;
+            while (i < len) {
+                char c = content.charAt(i);
+                if (c == '{') {
+                    depth++;
+                } else if (c == '}') {
+                    depth--;
+                    if (depth == 0) {
+                        objects.add(content.substring(start, i + 1));
+                        i++;
+                        break;
+                    }
+                } else if (c == '"') {
+                    // Skip string literal to avoid counting braces inside strings
+                    i++;
+                    while (i < len && content.charAt(i) != '"') {
+                        if (content.charAt(i) == '\\') {
+                            i++; // skip escaped char
+                        }
+                        i++;
+                    }
+                }
+                i++;
+            }
+        }
+        return objects;
+    }
+
+    private static NextWorkRankedItem parseNextWorkRankedItem(
+            String objStr, Set<String> validSuggestionIds) {
+
+        String suggestionId = extractField(SUGGESTION_ID_PATTERN, objStr);
+        String confidenceStr = extractField(CONFIDENCE_PATTERN, objStr);
+        String chessPriority = extractField(CHESS_PRIORITY_PATTERN, objStr);
+        String rationale = extractField(RATIONALE_PATTERN, objStr);
+
+        // Required fields
+        if (suggestionId == null || confidenceStr == null || rationale == null
+                || rationale.isBlank()) {
+            return null;
+        }
+
+        // suggestionId must be in the valid candidate set
+        if (!validSuggestionIds.contains(suggestionId)) {
+            return null;
+        }
+
+        // confidence must be in [0.0, 1.0]
+        double confidence;
+        try {
+            confidence = Double.parseDouble(confidenceStr);
+            if (confidence < 0.0 || confidence > 1.0) {
+                return null;
+            }
+        } catch (NumberFormatException e) {
+            return null;
+        }
+
+        // chessPriority must be a valid enum value when present
+        if (chessPriority != null && !VALID_CHESS_PRIORITIES.contains(chessPriority)) {
+            chessPriority = null; // silently drop invalid value rather than reject the item
+        }
+
+        return new NextWorkRankedItem(suggestionId, confidence, chessPriority, rationale);
+    }
+
+    /**
+     * A single validated item from the LLM next-work re-ranking response.
+     *
+     * @param suggestionId          UUID string from the Phase-1 candidate set
+     * @param confidence            re-ranked confidence in [0.0, 1.0]
+     * @param suggestedChessPriority chess priority recommendation; {@code null} if not provided
+     *                               or the LLM returned an invalid value
+     * @param rationale             LLM-generated strategic rationale
+     */
+    public record NextWorkRankedItem(
+            String suggestionId,
+            double confidence,
+            String suggestedChessPriority,
+            String rationale
+    ) {}
 
     private static AiSuggestionService.RcdoSuggestion parseSuggestion(
             String objStr, Set<String> validOutcomeIds) {

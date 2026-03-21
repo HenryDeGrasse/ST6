@@ -13,8 +13,8 @@ export interface AiManagerInsightsPanelProps {
 }
 
 const SEVERITY_CLASS: Record<ManagerInsightItem["severity"], string> = {
-  INFO:     styles.insightTitleInfo,
-  WARNING:  styles.insightTitleWarning,
+  INFO: styles.insightTitleInfo,
+  WARNING: styles.insightTitleWarning,
   POSITIVE: styles.insightTitlePositive,
 };
 
@@ -45,9 +45,7 @@ export const AiManagerInsightsPanel: React.FC<AiManagerInsightsPanelProps> = ({
           </span>
           <span className={styles.title}>AI Manager Insights</span>
           <span className={styles.betaBadge}>Beta</span>
-          <span className={styles.betaHint}>
-            Beta — summary only, verify against the dashboard below
-          </span>
+          <span className={styles.betaHint}>Beta — summary only, verify against the dashboard below</span>
         </div>
         <button
           type="button"
@@ -88,9 +86,7 @@ export const AiManagerInsightsPanel: React.FC<AiManagerInsightsPanelProps> = ({
                   data-testid={`ai-manager-insight-${index}`}
                   className={styles.insightItem}
                 >
-                  <span className={SEVERITY_CLASS[insight.severity]}>
-                    {insight.title}
-                  </span>
+                  <span className={SEVERITY_CLASS[insight.severity]}>{insight.title}</span>
                   <span className={styles.insightDetail}> — {insight.detail}</span>
                 </li>
               ))}

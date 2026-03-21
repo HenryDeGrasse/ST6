@@ -1,9 +1,9 @@
 package com.weekly.shared;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Verifies EventType enum aligns with the PRD Appendix B
@@ -13,7 +13,8 @@ class EventTypeTest {
 
     @Test
     void hasExpectedNumberOfEventTypes() {
-        assertEquals(10, EventType.values().length);
+        // Wave 3 added WEEKLY_DIGEST (notification.weekly_digest); update when new types are added.
+        assertEquals(11, EventType.values().length);
     }
 
     @Test

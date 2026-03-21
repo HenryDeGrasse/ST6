@@ -1,0 +1,660 @@
+openapi: 3.1.0
+info:
+  title: Agent D – Capacity Planning Fragment
+  description: |
+    Standalone OpenAPI 3.1 fragment for Agent D (Phase 4 — Capacity Planning).
+
+    Defines:
+      - Three new capacity API endpoints under the /api/v1 server base:
+        /users/me/capacity, /team/capacity, and /users/me/estimation-coaching.
+      - New capacity-related schemas: CapacityProfile, TeamCapacityResponse,
+        TeamCapacityTotals, TeamMemberCapacity, EstimationCoachingResponse,
+        CategoryInsight, PriorityInsight, and OvercommitWarning.
+      - Additive field annotations for existing commit/actual schemas
+        (WeeklyCommit, WeeklyCommitActual, CreateCommitRequest,
+        UpdateCommitRequest, UpdateActualRequest) using the x-merge-into
+        extension; Wave 2 Agent E merges these into the main openapi.yaml.
+
+    This fragment follows the convention described in fragments/README.md.
+  version: 1.0.0
+  contact:
+    name: ST6 Engineering – Agent D
+
+servers:
+  - url: /api/v1
+    description: API v1 base path
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Capacity
+    description: Capacity planning and estimation coaching (Phase 4)
+
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+paths:
+  /users/me/capacity:
+    get:
+      operationId: getMyCapacity
+      summary: Get my capacity profile
+      description: |
+        Returns the authenticated user's most recently computed capacity profile.
+
+        The profile is generated asynchronously by the weekly CapacityComputeJob.
+        Returns 404 when no profile has been computed yet for the caller.
+
+        Gated by the `capacityTracking` feature flag: returns 404 when the flag
+        is disabled.
+      tags: [Capacity]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Capacity profile returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapacityProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /team/capacity:
+    get:
+      operationId: getTeamCapacity
+      summary: Get team capacity for a week (manager only)
+      description: |
+        Returns the capacity posture of every direct report of the authenticated
+        manager for the requested week.
+
+        Each member's `estimatedHours` is derived from the sum of
+        `estimated_hours` across their commits for the given week. The
+        `adjustedEstimate` applies the member's personal estimation bias from
+        their capacity profile (or defaults to 1.0 when no profile exists).
+
+        Requires the MANAGER role. Returns 403 for non-manager callers.
+      tags: [Capacity]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: weekStart
+          in: query
+          required: true
+          description: ISO-8601 Monday date for the week to inspect (e.g. 2026-03-16)
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Team capacity returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamCapacityResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /users/me/estimation-coaching:
+    get:
+      operationId: getEstimationCoaching
+      summary: Get estimation coaching feedback for a plan
+      description: |
+        Returns post-reconciliation estimation coaching insights comparing the
+        authenticated user's estimated vs actual hours for a completed plan.
+
+        The response includes:
+        - This-week accuracy ratio (actual / estimated)
+        - Historical estimation bias from the user's capacity profile
+        - Per-category bias breakdown with coaching tips
+        - Per-priority completion-rate statistics
+
+        Only meaningful for plans in RECONCILED or CARRY_FORWARD state.
+        Returns 404 when the planId does not exist or is not accessible.
+
+        Gated by the `estimationCoaching` feature flag: returns 404 when the
+        flag is disabled.
+      tags: [Capacity]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: planId
+          in: query
+          required: true
+          description: UUID of the reconciled weekly plan to generate coaching for
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Estimation coaching returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstimationCoachingResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+# ---------------------------------------------------------------------------
+# Components
+# ---------------------------------------------------------------------------
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  # -------------------------------------------------------------------------
+  # New schemas introduced by Agent D
+  # -------------------------------------------------------------------------
+  schemas:
+    # -----------------------------------------------------------------------
+    # CapacityProfile
+    # Represents the aggregated capacity statistics for a single user,
+    # computed by CapacityProfileService over a rolling window of reconciled
+    # weekly plans.
+    # -----------------------------------------------------------------------
+    CapacityProfile:
+      type: object
+      required:
+        - weeksAnalyzed
+        - confidenceLevel
+      description: |
+        Aggregated capacity statistics for a user, computed by the weekly
+        CapacityComputeJob over a rolling window of reconciled plans.
+
+        `confidenceLevel` reflects data quality:
+        - LOW    — fewer than 4 weeks of data
+        - MEDIUM — 4–7 weeks
+        - HIGH   — 8 or more weeks
+      properties:
+        weeksAnalyzed:
+          type: integer
+          minimum: 0
+          description: Number of reconciled weeks included in the computation
+        avgEstimatedHours:
+          type: number
+          format: double
+          nullable: true
+          description: Mean estimated hours per week across the analysis window (1 d.p.)
+        avgActualHours:
+          type: number
+          format: double
+          nullable: true
+          description: Mean actual hours per week across the analysis window (1 d.p.)
+        estimationBias:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            Ratio of avgActualHours / avgEstimatedHours. Values below 1.0 indicate
+            over-estimation; values above 1.0 indicate under-estimation.
+            Null when no estimated hours have been recorded.
+        realisticWeeklyCap:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            p50 (median) of the user's weekly actual-hour totals. Represents a
+            sustainable weekly capacity ceiling.
+        categoryBias:
+          type: object
+          description: |
+            Per-category estimation bias. Keys are CommitCategory enum values
+            (e.g. "DELIVERY", "OPERATIONS"). Values are actual/estimated ratios
+            for that category. Null when no category-level hour data is available.
+          additionalProperties:
+            type: number
+            format: double
+          nullable: true
+        priorityCompletion:
+          type: object
+          description: |
+            Per-priority completion rates. Keys are ChessPriority enum values
+            (e.g. "KING", "QUEEN"). Values are the fraction of commits in that
+            priority tier with completionStatus == DONE.
+            Null when no priority-level data is available.
+          additionalProperties:
+            type: number
+            format: double
+          nullable: true
+        confidenceLevel:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+          description: Data quality tier based on the number of weeks analysed
+        computedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: ISO-8601 timestamp of the most recent profile computation
+
+    # -----------------------------------------------------------------------
+    # TeamCapacityResponse
+    # Manager view of all direct reports' capacity for a given week.
+    # -----------------------------------------------------------------------
+    TeamCapacityResponse:
+      type: object
+      required:
+        - weekStart
+        - members
+      description: |
+        Manager team-capacity view for a given week. Each member entry contains
+        the raw estimated total, the bias-adjusted estimate, and an overcommit
+        severity classification. An aggregate `teamTotals` object summarises
+        the whole team.
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: ISO-8601 Monday date (e.g. 2026-03-16) for the queried week
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamMemberCapacity'
+          description: Capacity summary for each direct report, sorted by userId
+        teamTotals:
+          allOf:
+            - $ref: '#/components/schemas/TeamCapacityTotals'
+          nullable: true
+          description: |
+            Aggregate totals across all team members. Null when the team has no
+            members with commit data for the requested week.
+
+    # -----------------------------------------------------------------------
+    # TeamCapacityTotals
+    # Aggregated capacity metrics for the full manager team.
+    # -----------------------------------------------------------------------
+    TeamCapacityTotals:
+      type: object
+      required:
+        - totalEstimatedHours
+        - totalAdjustedEstimate
+        - memberCount
+        - overcommittedCount
+      description: Aggregated capacity metrics across all direct reports.
+      properties:
+        totalEstimatedHours:
+          type: number
+          format: double
+          description: Sum of raw estimated hours across all team members for the week
+        totalAdjustedEstimate:
+          type: number
+          format: double
+          description: Sum of bias-adjusted estimates across all team members
+        memberCount:
+          type: integer
+          minimum: 0
+          description: Number of direct reports included in the totals
+        overcommittedCount:
+          type: integer
+          minimum: 0
+          description: |
+            Number of team members with overcommitLevel of MODERATE or HIGH
+
+    # -----------------------------------------------------------------------
+    # TeamMemberCapacity
+    # Per-member capacity summary within a TeamCapacityResponse.
+    # -----------------------------------------------------------------------
+    TeamMemberCapacity:
+      type: object
+      required:
+        - userId
+        - estimatedHours
+        - adjustedEstimate
+        - overcommitLevel
+      description: |
+        Capacity summary for a single team member for the queried week.
+
+        `adjustedEstimate` = estimatedHours × (1 / estimationBias) when a
+        capacity profile exists; equals estimatedHours otherwise.
+
+        `overcommitLevel`:
+        - NONE     — adjustedEstimate ≤ realisticCap (or no cap available)
+        - MODERATE — adjustedEstimate > realisticCap by up to 20 %
+        - HIGH     — adjustedEstimate > realisticCap by more than 20 %
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: Team member user ID
+        name:
+          type: string
+          nullable: true
+          description: Human-readable display name
+        estimatedHours:
+          type: number
+          format: double
+          description: Sum of raw estimated_hours across all commits for the week
+        adjustedEstimate:
+          type: number
+          format: double
+          description: Bias-adjusted estimated total (accounts for personal estimation bias)
+        realisticCap:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            The member's p50 realistic weekly capacity cap derived from their
+            capacity profile. Null when no profile has been computed yet.
+        overcommitLevel:
+          type: string
+          enum: [NONE, MODERATE, HIGH]
+          description: Overcommitment severity classification for this member this week
+
+    # -----------------------------------------------------------------------
+    # EstimationCoachingResponse
+    # Post-reconciliation coaching payload returned by
+    # GET /users/me/estimation-coaching.
+    # -----------------------------------------------------------------------
+    EstimationCoachingResponse:
+      type: object
+      required:
+        - thisWeekEstimated
+        - thisWeekActual
+        - confidenceLevel
+        - categoryInsights
+        - priorityInsights
+      description: Post-reconciliation estimation coaching for a single plan.
+      properties:
+        thisWeekEstimated:
+          type: number
+          format: double
+          description: Sum of estimated_hours across all commits in the plan
+        thisWeekActual:
+          type: number
+          format: double
+          description: Sum of actual_hours across all actuals in the plan
+        accuracyRatio:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            thisWeekActual / thisWeekEstimated. Null when thisWeekEstimated is zero.
+            Values below 1.0 = over-estimated; above 1.0 = under-estimated.
+        overallBias:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            Historical avgActualHours / avgEstimatedHours from the user's capacity
+            profile for wider context. Null when no profile exists.
+        confidenceLevel:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+          description: Capacity profile data quality tier
+        categoryInsights:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryInsight'
+          description: Per-category bias breakdown with optional coaching tips
+        priorityInsights:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriorityInsight'
+          description: Per-priority completion-rate statistics
+
+    # -----------------------------------------------------------------------
+    # CategoryInsight
+    # Per-category estimation insight within EstimationCoachingResponse.
+    # -----------------------------------------------------------------------
+    CategoryInsight:
+      type: object
+      required:
+        - category
+      description: Per-category estimation insight.
+      properties:
+        category:
+          type: string
+          description: CommitCategory name (e.g. DELIVERY, OPERATIONS)
+        bias:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            Historical actual/estimated ratio for this category from the capacity
+            profile. Null when there is insufficient history for this category.
+        tip:
+          type: string
+          nullable: true
+          description: |
+            Human-readable coaching tip surfaced when the category bias deviates
+            from 1.0 by ≥ 15 %. Null otherwise.
+
+    # -----------------------------------------------------------------------
+    # PriorityInsight
+    # Per-priority completion insight within EstimationCoachingResponse.
+    # -----------------------------------------------------------------------
+    PriorityInsight:
+      type: object
+      required:
+        - priority
+        - completionRate
+        - sampleSize
+      description: Per-priority completion insight.
+      properties:
+        priority:
+          type: string
+          description: ChessPriority name (e.g. KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN)
+        completionRate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Fraction of historical commits in this priority tier with completionStatus DONE
+        sampleSize:
+          type: integer
+          minimum: 0
+          description: Number of historical commits in this priority tier used to compute the rate
+
+    # -----------------------------------------------------------------------
+    # OvercommitWarning
+    # Warning payload embedded in plan lock/draft responses when the
+    # OvercommitDetector flags a potential capacity breach.
+    # -----------------------------------------------------------------------
+    OvercommitWarning:
+      type: object
+      required:
+        - level
+        - message
+      description: |
+        Warning about a detected overcommitment in a user's plan.
+
+        Produced by OvercommitDetector when the bias-adjusted estimated total
+        exceeds the user's realistic weekly capacity cap.
+
+        `level` mirrors the TeamMemberCapacity overcommitLevel:
+        - NONE     — no overcommitment detected
+        - MODERATE — adjusted total exceeds realisticCap by up to 20 %
+        - HIGH     — adjusted total exceeds realisticCap by more than 20 %
+      properties:
+        level:
+          type: string
+          enum: [NONE, MODERATE, HIGH]
+          description: Overcommitment severity
+        message:
+          type: string
+          description: Human-readable overcommitment warning message shown in the UI
+        adjustedTotal:
+          type: number
+          format: double
+          nullable: true
+          description: Bias-adjusted total hour estimate for the plan
+        realisticCap:
+          type: number
+          format: double
+          nullable: true
+          description: The user's p50 realistic weekly capacity cap
+
+    # -----------------------------------------------------------------------
+    # Additive field patches for existing schemas
+    #
+    # The following schemas are NOT standalone definitions — they document the
+    # fields that Agent D adds to existing types already defined in the main
+    # openapi.yaml.  Wave 2 Agent E merges these properties into the
+    # corresponding parent schemas.
+    #
+    # x-merge-into: <target schema name in openapi.yaml>
+    # -----------------------------------------------------------------------
+
+    WeeklyCommit_CapacityAdditions:
+      x-merge-into: WeeklyCommit
+      description: |
+        Additive field patch for WeeklyCommit (Agent D — Phase 4).
+        Adds optional `estimatedHours` so users can specify their effort
+        estimate when creating or editing a commit.
+      type: object
+      properties:
+        estimatedHours:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: |
+            Optional estimated effort in hours for this commitment.
+            Recorded at plan-creation / edit time. Used by CapacityProfileService
+            to build the user's estimation-bias history.
+
+    WeeklyCommitActual_CapacityAdditions:
+      x-merge-into: WeeklyCommitActual
+      description: |
+        Additive field patch for WeeklyCommitActual (Agent D — Phase 4).
+        Adds optional `actualHours` so users can record actual effort during
+        reconciliation.
+      type: object
+      properties:
+        actualHours:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: |
+            Optional actual hours spent on this commitment, recorded during
+            reconciliation. Used by CapacityProfileService to compute
+            actual-vs-estimated bias.
+
+    CreateCommitRequest_CapacityAdditions:
+      x-merge-into: CreateCommitRequest
+      description: |
+        Additive field patch for CreateCommitRequest (Agent D — Phase 4).
+        Adds optional `estimatedHours` to the commit creation payload.
+      type: object
+      properties:
+        estimatedHours:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Optional estimated effort in hours
+
+    UpdateCommitRequest_CapacityAdditions:
+      x-merge-into: UpdateCommitRequest
+      description: |
+        Additive field patch for UpdateCommitRequest (Agent D — Phase 4).
+        Adds optional `estimatedHours` to the commit update (PATCH) payload.
+      type: object
+      properties:
+        estimatedHours:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Optional estimated effort in hours; omit to leave unchanged
+
+    UpdateActualRequest_CapacityAdditions:
+      x-merge-into: UpdateActualRequest
+      description: |
+        Additive field patch for UpdateActualRequest (Agent D — Phase 4).
+        Adds optional `actualHours` to the reconciliation PATCH payload
+        (PATCH /commits/{commitId}/actual).
+      type: object
+      properties:
+        actualHours:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Optional actual hours spent; omit to leave unchanged
+
+  # -------------------------------------------------------------------------
+  # Shared response definitions (mirror the main spec for standalone validity)
+  # -------------------------------------------------------------------------
+  responses:
+    Unauthorized:
+      description: Missing or invalid JWT
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+
+    Forbidden:
+      description: Valid JWT but insufficient access (MANAGER role required)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+
+    ValidationError:
+      description: Validation failed (e.g. invalid weekStart format)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  details:
+                    type: array
+                    items:
+                      type: object

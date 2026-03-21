@@ -6,7 +6,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -40,6 +40,9 @@ public class WeeklyCommitActualEntity {
 
     @Column(name = "time_spent")
     private Integer timeSpent;
+
+    @Column(name = "actual_hours", precision = 5, scale = 1)
+    private BigDecimal actualHours;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -87,6 +90,10 @@ public class WeeklyCommitActualEntity {
         return timeSpent;
     }
 
+    public BigDecimal getActualHours() {
+        return actualHours;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -114,6 +121,11 @@ public class WeeklyCommitActualEntity {
 
     public void setTimeSpent(Integer timeSpent) {
         this.timeSpent = timeSpent;
+        this.updatedAt = Instant.now();
+    }
+
+    public void setActualHours(BigDecimal actualHours) {
+        this.actualHours = actualHours;
         this.updatedAt = Instant.now();
     }
 }

@@ -6,12 +6,34 @@ import type {
   RcdoCry,
   RcdoSearchResult,
   RcdoSuggestion,
+  CheckInEntry,
+  CheckInRequest,
 } from "@weekly-commitments/contracts";
 import { PlanState } from "@weekly-commitments/contracts";
 import { CommitEditor } from "./CommitEditor.js";
+import { QuickCheckIn } from "./QuickCheckIn.js";
 import { StatusIcon } from "./icons/index.js";
+import { COMMIT_DRAFT_SOURCE_LABELS, getCommitDraftSource } from "./commitDraftSource.js";
 import type { AiRequestStatus } from "../hooks/useAiSuggestions.js";
 import styles from "./CommitList.module.css";
+
+/** Optional bundle of check-in affordance props (Wave 2 dailyCheckIn flag). */
+export interface CommitListCheckInProps {
+  /** Which commit's check-in panel is currently expanded, or null. */
+  openForId: string | null;
+  /** Pre-fetched check-in history for the currently open commit. */
+  entries: CheckInEntry[];
+  /** True while a check-in API call is in-flight. */
+  loading: boolean;
+  /** Latest error message, or null when idle. */
+  error: string | null;
+  /** Called when the user opens check-in for a commit. */
+  onOpen: (commitId: string) => void;
+  /** Called when the user closes the check-in panel. */
+  onClose: () => void;
+  /** Called when the user submits a new check-in entry. Returns true on success. */
+  onSubmit: (commitId: string, req: CheckInRequest) => Promise<boolean>;
+}
 
 export interface CommitListProps {
   commits: WeeklyCommit[];
@@ -31,6 +53,12 @@ export interface CommitListProps {
   onAiSuggestRequest?: (title: string, description?: string) => void;
   /** Clear AI suggestions (e.g. after accepting one). */
   onAiSuggestClear?: () => void;
+  /**
+   * Check-in affordance (Wave 2).
+   * When provided, a "Check in" button is shown on each card in LOCKED state.
+   * When omitted (or feature flag off), check-in UI is not rendered.
+   */
+  checkIn?: CommitListCheckInProps;
 }
 
 /**
@@ -75,12 +103,13 @@ export const CommitList: React.FC<CommitListProps> = ({
   aiSuggestStatus = "idle",
   onAiSuggestRequest,
   onAiSuggestClear,
+  checkIn,
 }) => {
   const [showNewForm, setShowNewForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const isDraft = planState === PlanState.DRAFT;
-  const isEditable =
-    isDraft || planState === PlanState.LOCKED || planState === PlanState.RECONCILING;
+  const isEditable = isDraft || planState === PlanState.LOCKED || planState === PlanState.RECONCILING;
+
 
   return (
     <div data-testid="commit-list" className={styles.container}>
@@ -115,7 +144,10 @@ export const CommitList: React.FC<CommitListProps> = ({
               }
             });
           }}
-          onCancel={() => { setShowNewForm(false); onAiSuggestClear?.(); }}
+          onCancel={() => {
+            setShowNewForm(false);
+            onAiSuggestClear?.();
+          }}
           aiSuggestions={aiSuggestions}
           aiSuggestStatus={aiSuggestStatus}
           onAiSuggestRequest={onAiSuggestRequest}
@@ -142,7 +174,10 @@ export const CommitList: React.FC<CommitListProps> = ({
                 }
               });
             }}
-            onCancel={() => { setEditingId(null); onAiSuggestClear?.(); }}
+            onCancel={() => {
+              setEditingId(null);
+              onAiSuggestClear?.();
+            }}
             onDelete={() => {
               void onDelete(commit.id).then((deleted) => {
                 if (deleted) {
@@ -156,114 +191,157 @@ export const CommitList: React.FC<CommitListProps> = ({
             onAiSuggestClear={onAiSuggestClear}
           />
         ) : (
-          <div
-            key={commit.id}
-            data-testid={`commit-row-${commit.id}`}
-            onClick={isEditable ? () => setEditingId(commit.id) : undefined}
-            className={[
-              styles.commitCard,
-              !isEditable ? styles.commitCardReadOnly : "",
-            ].join(" ")}
-            role={isEditable ? "button" : undefined}
-            tabIndex={isEditable ? 0 : undefined}
-            aria-disabled={!isEditable}
-            onKeyDown={
-              isEditable
-                ? (e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      setEditingId(commit.id);
+          <React.Fragment key={commit.id}>
+            <div
+              data-testid={`commit-row-${commit.id}`}
+              onClick={isEditable ? () => setEditingId(commit.id) : undefined}
+              className={[styles.commitCard, !isEditable ? styles.commitCardReadOnly : ""].join(" ")}
+              role={isEditable ? "button" : undefined}
+              tabIndex={isEditable ? 0 : undefined}
+              aria-disabled={!isEditable}
+              onKeyDown={
+                isEditable
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setEditingId(commit.id);
+                      }
                     }
-                  }
-                : undefined
-            }
-          >
-            {/* ── Card header ── */}
-            <div className={styles.cardHeader}>
-              <span className={styles.cardTitle}>{commit.title}</span>
-              <div className={styles.cardMeta}>
-                {commit.chessPriority && (
-                  <span data-testid="commit-chess" className={styles.metaBadge}>
-                    {commit.chessPriority}
-                  </span>
-                )}
-                {commit.category && (
-                  <span data-testid="commit-category" className={styles.metaBadge}>
-                    {commit.category}
-                  </span>
-                )}
+                  : undefined
+              }
+            >
+              {/* ── Card header ── */}
+              <div className={styles.cardHeader}>
+                <span className={styles.cardTitle}>{commit.title}</span>
+                <div className={styles.cardMeta}>
+                  {commit.chessPriority && (
+                    <span data-testid="commit-chess" className={styles.metaBadge}>
+                      {commit.chessPriority}
+                    </span>
+                  )}
+                  {commit.category && (
+                    <span data-testid="commit-category" className={styles.metaBadge}>
+                      {commit.category}
+                    </span>
+                  )}
+                  {/* ── Check-in button (LOCKED plans only) ── */}
+                  {checkIn && planState === PlanState.LOCKED && (
+                    <button
+                      type="button"
+                      data-testid={`check-in-btn-${commit.id}`}
+                      className={styles.checkInButton}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (checkIn.openForId === commit.id) {
+                          checkIn.onClose();
+                        } else {
+                          checkIn.onOpen(commit.id);
+                        }
+                      }}
+                      aria-expanded={checkIn.openForId === commit.id}
+                      aria-controls={`check-in-panel-${commit.id}`}
+                    >
+                      {checkIn.openForId === commit.id ? "✕ Close" : "📝 Check in"}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* ── Description ── */}
-            {commit.description && (
-              <p className={styles.cardDescription}>{commit.description}</p>
-            )}
+              {/* ── Description ── */}
+              {commit.description && <p className={styles.cardDescription}>{commit.description}</p>}
 
-            {/* ── Footer: RCDO / non-strategic / carried ── */}
-            <div className={styles.cardFooter}>
-              {commit.outcomeId && (() => {
-                // Use snapshot names if available (post-lock), otherwise look up from tree
-                const resolved = commit.snapshotOutcomeName
-                  ? {
-                      rallyCryName: commit.snapshotRallyCryName ?? '',
-                      objectiveName: commit.snapshotObjectiveName ?? '',
-                      outcomeName: commit.snapshotOutcomeName,
+              {/* ── Footer: RCDO / non-strategic / carried ── */}
+              <div className={styles.cardFooter}>
+                {commit.outcomeId &&
+                  (() => {
+                    // Use snapshot names if available (post-lock), otherwise look up from tree
+                    const resolved = commit.snapshotOutcomeName
+                      ? {
+                          rallyCryName: commit.snapshotRallyCryName ?? "",
+                          objectiveName: commit.snapshotObjectiveName ?? "",
+                          outcomeName: commit.snapshotOutcomeName,
+                        }
+                      : resolveOutcomeFromTree(commit.outcomeId, rcdoTree);
+
+                    if (resolved) {
+                      return (
+                        <span data-testid="commit-rcdo" className={styles.rcdoLink}>
+                          <StatusIcon icon="target" size={13} />
+                          <span className={styles.rcdoOutcome}>{resolved.outcomeName}</span>
+                          <span className={styles.rcdoBreadcrumb}>
+                            {resolved.rallyCryName} › {resolved.objectiveName}
+                          </span>
+                        </span>
+                      );
                     }
-                  : resolveOutcomeFromTree(commit.outcomeId, rcdoTree);
 
-                if (resolved) {
-                  return (
-                    <span data-testid="commit-rcdo" className={styles.rcdoLink}>
-                      <StatusIcon icon="target" size={13} />
-                      <span className={styles.rcdoOutcome}>{resolved.outcomeName}</span>
-                      <span className={styles.rcdoBreadcrumb}>
-                        {resolved.rallyCryName} › {resolved.objectiveName}
+                    return (
+                      <span data-testid="commit-rcdo" className={styles.rcdoLink}>
+                        <StatusIcon icon="target" size={13} />
+                        Linked to outcome
                       </span>
+                    );
+                  })()}
+                {commit.nonStrategicReason && (
+                  <span data-testid="commit-non-strategic" className={styles.nonStrategicLabel}>
+                    <StatusIcon icon="pin" size={13} />
+                    Non-strategic: {commit.nonStrategicReason}
+                  </span>
+                )}
+                {commit.carriedFromCommitId && (
+                  <span data-testid="commit-carried" className={styles.carriedBadge}>
+                    <StatusIcon icon="return-arrow" size={12} />
+                    Carried forward
+                  </span>
+                )}
+                {(() => {
+                  const src = getCommitDraftSource(commit.tags, commit.carriedFromCommitId);
+                  if (!src) return null;
+                  return (
+                    <span
+                      data-testid={`commit-draft-source-${src.toLowerCase()}`}
+                      className={styles.draftSourceBadge}
+                      data-source={src}
+                    >
+                      {COMMIT_DRAFT_SOURCE_LABELS[src]}
                     </span>
                   );
-                }
+                })()}
+              </div>
 
-                return (
-                  <span data-testid="commit-rcdo" className={styles.rcdoLink}>
-                    <StatusIcon icon="target" size={13} />
-                    Linked to outcome
-                  </span>
-                );
-              })()}
-              {commit.nonStrategicReason && (
-                <span data-testid="commit-non-strategic" className={styles.nonStrategicLabel}>
-                  <StatusIcon icon="pin" size={13} />
-                  Non-strategic: {commit.nonStrategicReason}
-                </span>
-              )}
-              {commit.carriedFromCommitId && (
-                <span data-testid="commit-carried" className={styles.carriedBadge}>
-                  <StatusIcon icon="return-arrow" size={12} />
-                  Carried forward
-                </span>
+              {/* ── Validation errors ── */}
+              {commit.validationErrors.length > 0 && (
+                <div className={styles.cardErrors}>
+                  {commit.validationErrors.map((ve, i) => (
+                    <span key={i} className={styles.cardErrorItem}>
+                      <StatusIcon icon="warning" size={13} />
+                      {ve.message}
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
 
-            {/* ── Validation errors ── */}
-            {commit.validationErrors.length > 0 && (
-              <div className={styles.cardErrors}>
-                {commit.validationErrors.map((ve, i) => (
-                  <span key={i} className={styles.cardErrorItem}>
-                    <StatusIcon icon="warning" size={13} />
-                    {ve.message}
-                  </span>
-                ))}
+            {/* ── Inline check-in panel (expandable) ── */}
+            {checkIn && planState === PlanState.LOCKED && checkIn.openForId === commit.id && (
+              <div id={`check-in-panel-${commit.id}`}>
+                <QuickCheckIn
+                  commitId={commit.id}
+                  commitTitle={commit.title}
+                  entries={checkIn.entries}
+                  loading={checkIn.loading}
+                  error={checkIn.error}
+                  onCheckIn={(req) => checkIn.onSubmit(commit.id, req)}
+                  onClose={checkIn.onClose}
+                />
               </div>
             )}
-          </div>
+          </React.Fragment>
         ),
       )}
 
       {/* ── Empty state ── */}
-      {commits.length === 0 && !showNewForm && (
-        <p className={styles.emptyState}>No commitments yet.</p>
-      )}
+      {commits.length === 0 && !showNewForm && <p className={styles.emptyState}>No commitments yet.</p>}
     </div>
   );
 };

@@ -34,22 +34,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   render() {
     if (this.state.hasError) {
       return (
-        <div
-          data-testid="wc-error-boundary"
-          role="alert"
-          className={styles.card}
-        >
-          <h2 className={styles.title}>
-            Weekly Commitments encountered an error
-          </h2>
-          <p className={styles.detail}>
-            {this.state.error?.message ?? "An unexpected error occurred."}
-          </p>
-          <button
-            data-testid="wc-error-boundary-reset"
-            onClick={this.handleReset}
-            className={styles.resetBtn}
-          >
+        <div data-testid="wc-error-boundary" role="alert" className={styles.card}>
+          <h2 className={styles.title}>Weekly Commitments encountered an error</h2>
+          <p className={styles.detail}>{this.state.error?.message ?? "An unexpected error occurred."}</p>
+          <button data-testid="wc-error-boundary-reset" onClick={this.handleReset} className={styles.resetBtn}>
             Try again
           </button>
         </div>

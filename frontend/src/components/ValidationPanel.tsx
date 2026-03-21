@@ -50,10 +50,7 @@ export const ValidationPanel: React.FC<ValidationPanelProps> = ({ commits }) => 
 
   if (issues.length === 0) {
     return (
-      <div
-        data-testid="validation-panel"
-        className={`${styles.panel} ${styles.panelSuccess}`}
-      >
+      <div data-testid="validation-panel" className={`${styles.panel} ${styles.panelSuccess}`}>
         <span className={styles.successMessage}>
           <StatusIcon icon="check" size={16} />
           All validations pass. Ready to lock.
@@ -63,19 +60,14 @@ export const ValidationPanel: React.FC<ValidationPanelProps> = ({ commits }) => 
   }
 
   return (
-    <div
-      data-testid="validation-panel"
-      className={`${styles.panel} ${styles.panelIssues}`}
-    >
+    <div data-testid="validation-panel" className={`${styles.panel} ${styles.panelIssues}`}>
       <strong className={styles.heading}>Validation Issues</strong>
       <ul className={styles.issueList}>
         {issues.map((issue, i) => (
           <li
             key={i}
             data-testid={`validation-issue-${String(i)}`}
-            className={`${styles.issueItem} ${
-              issue.level === "error" ? styles.issueError : styles.issueWarning
-            }`}
+            className={`${styles.issueItem} ${issue.level === "error" ? styles.issueError : styles.issueWarning}`}
           >
             {issue.level === "error" ? (
               <StatusIcon icon="error-x" size={14} />

@@ -1,0 +1,101 @@
+/**
+ * StrategicSlackBanner – CSS Module (Academia / Classical)
+ *
+ * Banner displaying the org's current strategic slack level.
+ * Follows the OvercommitBanner / ErrorBanner pattern: left-border accent,
+ * coloured background tint, warm dark panel aesthetic.
+ */
+
+/* ─── Base banner ────────────────────────────────────────────────────────── */
+
+.banner {
+  display:           flex;
+  align-items:       flex-start;
+  gap:               var(--wc-space-sm);
+  padding:           var(--wc-space-sm) var(--wc-space-md);
+  margin-bottom:     var(--wc-space-sm);
+  border-radius:     var(--wc-radius-md);
+  border:            1px solid var(--wc-color-border);
+  border-left-width: 4px;
+  background-color:  var(--wc-color-bg-secondary);
+  box-shadow:        var(--wc-shadow-sm);
+  font-family:       var(--wc-font-body);
+  font-size:         0.9375rem;
+  line-height:       1.5;
+}
+
+/* ─── Severity variants ──────────────────────────────────────────────────── */
+
+/* HIGH_SLACK — green (success: plenty of capacity for strategic work) */
+.highSlack {
+  border-left-color: var(--wc-color-success);
+  background-color:  var(--wc-color-success-bg);
+  border-color:      var(--wc-color-success-border);
+  border-left-color: var(--wc-color-success);
+  color:             var(--wc-color-text-primary);
+}
+
+/* MODERATE_SLACK — yellow/brass (warning: watch outcome progress) */
+.moderate {
+  border-left-color: var(--wc-color-warning);
+  background-color:  var(--wc-color-warning-bg);
+  border-color:      var(--wc-color-warning-border);
+  border-left-color: var(--wc-color-warning);
+  color:             var(--wc-color-text-primary);
+}
+
+/* LOW_SLACK — orange (between warning and error: attention needed soon) */
+.low {
+  border-left-color: #D2823C;
+  background-color:  rgba(210, 130, 60, 0.12);
+  border-color:      rgba(210, 130, 60, 0.35);
+  border-left-color: #D2823C;
+  color:             var(--wc-color-text-primary);
+}
+
+/* NO_SLACK — red (error: all outcomes need immediate action) */
+.noSlack {
+  border-left-color: var(--wc-color-error);
+  background-color:  var(--wc-color-error-bg);
+  border-color:      var(--wc-color-error-border);
+  border-left-color: var(--wc-color-error);
+  color:             var(--wc-color-text-primary);
+}
+
+/* ─── Icon ───────────────────────────────────────────────────────────────── */
+
+.icon {
+  flex-shrink: 0;
+  font-size:   1.125rem;
+  line-height: 1.5;
+  margin-top:  0.05rem;
+}
+
+/* ─── Content ────────────────────────────────────────────────────────────── */
+
+.content {
+  flex:           1;
+  display:        flex;
+  flex-direction: column;
+  gap:            0.125rem;
+}
+
+.headline {
+  color:       var(--wc-color-text-primary);
+  font-weight: 500;
+}
+
+.headline strong {
+  font-family:    var(--wc-font-display);
+  font-weight:    700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ─── Floor hint ─────────────────────────────────────────────────────────── */
+
+.floorHint {
+  font-size:  0.8125rem;
+  color:      var(--wc-color-text-muted);
+  font-style: italic;
+}

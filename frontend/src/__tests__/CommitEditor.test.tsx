@@ -48,6 +48,7 @@ describe("CommitEditor", () => {
     render(<CommitEditor {...defaultProps} />);
     expect(screen.getByTestId("commit-editor-new")).toBeInTheDocument();
     expect(screen.getByTestId("commit-title")).toHaveValue("");
+    expect(screen.getByTestId("commit-estimated-hours")).toHaveValue(null);
     expect(screen.getByTestId("commit-save")).toBeDisabled();
   });
 
@@ -62,16 +63,37 @@ describe("CommitEditor", () => {
     render(<CommitEditor {...defaultProps} onSave={onSave} />);
     fireEvent.change(screen.getByTestId("commit-title"), { target: { value: "New task" } });
     fireEvent.click(screen.getByTestId("commit-save"));
-    expect(onSave).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "New task" }),
-    );
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ title: "New task" }));
+  });
+
+  it("includes estimatedHours in create requests when provided", () => {
+    const onSave = vi.fn();
+    render(<CommitEditor {...defaultProps} onSave={onSave} />);
+
+    fireEvent.change(screen.getByTestId("commit-title"), { target: { value: "New task" } });
+    fireEvent.change(screen.getByTestId("commit-estimated-hours"), { target: { value: "6.5" } });
+    fireEvent.click(screen.getByTestId("commit-save"));
+
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ title: "New task", estimatedHours: 6.5 }));
   });
 
   it("renders existing commit with pre-filled fields", () => {
-    const commit = makeCommit();
+    const commit = makeCommit({ estimatedHours: 4 });
     render(<CommitEditor {...defaultProps} commit={commit} />);
     expect(screen.getByTestId("commit-editor-commit-1")).toBeInTheDocument();
     expect(screen.getByTestId("commit-title")).toHaveValue("Test task");
+    expect(screen.getByTestId("commit-estimated-hours")).toHaveValue(4);
+  });
+
+  it("includes estimatedHours in update requests when provided", () => {
+    const commit = makeCommit();
+    const onSave = vi.fn();
+    render(<CommitEditor {...defaultProps} commit={commit} onSave={onSave} />);
+
+    fireEvent.change(screen.getByTestId("commit-estimated-hours"), { target: { value: "7.5" } });
+    fireEvent.click(screen.getByTestId("commit-save"));
+
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ estimatedHours: 7.5 }));
   });
 
   it("shows delete button for existing commits in draft", () => {
@@ -100,12 +122,40 @@ describe("CommitEditor", () => {
 
   it("shows validation errors from server", () => {
     const commit = makeCommit({
-      validationErrors: [
-        { code: "MISSING_RCDO_OR_REASON", message: "RCDO link or reason required" },
-      ],
+      validationErrors: [{ code: "MISSING_RCDO_OR_REASON", message: "RCDO link or reason required" }],
     });
     render(<CommitEditor {...defaultProps} commit={commit} />);
     expect(screen.getByTestId("commit-validation-errors")).toHaveTextContent("RCDO link or reason required");
+  });
+
+  it("shows a draft source badge for AI-prefilled commits in the editor", () => {
+    const commit = makeCommit({ tags: ["draft_source:RECURRING"] });
+    render(<CommitEditor {...defaultProps} commit={commit} />);
+
+    expect(screen.getByTestId("commit-editor-draft-source-recurring")).toHaveTextContent("📋 Recurring");
+  });
+
+  it("shows a '✏️ New' badge for manually-added commits in the editor", () => {
+    const commit = makeCommit({ tags: [] });
+    render(<CommitEditor {...defaultProps} commit={commit} />);
+
+    expect(screen.getByTestId("commit-editor-draft-source-new")).toHaveTextContent("✏️ New");
+  });
+
+  it("does not label carry-forward copies as '✏️ New' in the editor", () => {
+    const commit = makeCommit({ tags: [], carriedFromCommitId: "commit-previous" });
+    render(<CommitEditor {...defaultProps} commit={commit} />);
+
+    expect(screen.queryByTestId("commit-editor-draft-source-new")).not.toBeInTheDocument();
+  });
+
+  it("shows draft source badges in read-only commit editor views", () => {
+    const commit = makeCommit({ tags: ["draft_source:CARRIED_FORWARD"] });
+    render(<CommitEditor {...defaultProps} commit={commit} planState={PlanState.RECONCILED} />);
+
+    expect(screen.getByTestId("commit-editor-draft-source-carried_forward")).toHaveTextContent(
+      "🔄 Carried forward",
+    );
   });
 
   it("toggles non-strategic mode", () => {
@@ -120,9 +170,7 @@ describe("CommitEditor", () => {
     const suggest1 = vi.fn();
     const suggest2 = vi.fn();
 
-    const { rerender } = render(
-      <CommitEditor {...defaultProps} onAiSuggestRequest={suggest1} />,
-    );
+    const { rerender } = render(<CommitEditor {...defaultProps} onAiSuggestRequest={suggest1} />);
 
     // Type a title long enough to trigger the effect (>= 5 chars)
     act(() => {
@@ -136,9 +184,7 @@ describe("CommitEditor", () => {
     // Re-render with a new callback reference but the same title/description.
     // This should not itself retrigger the effect.
     suggest1.mockClear();
-    rerender(
-      <CommitEditor {...defaultProps} onAiSuggestRequest={suggest2} />,
-    );
+    rerender(<CommitEditor {...defaultProps} onAiSuggestRequest={suggest2} />);
 
     expect(suggest1).not.toHaveBeenCalled();
     expect(suggest2).not.toHaveBeenCalled();

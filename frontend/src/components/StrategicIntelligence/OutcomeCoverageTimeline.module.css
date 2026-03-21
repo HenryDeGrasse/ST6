@@ -1,0 +1,148 @@
+/**
+ * OutcomeCoverageTimeline – CSS Module (Academia / Classical)
+ *
+ * Week-by-week bar chart for a single RCDO outcome's commit coverage.
+ * Shares the ai-insight token set used by other analytics panels.
+ */
+
+/* ─── Outer panel ────────────────────────────────────────────────────────── */
+
+.panel {
+  padding:          var(--wc-space-sm) var(--wc-space-md);
+  border:           1.5px dashed var(--wc-ai-insight-border);
+  border-radius:    var(--wc-radius-md);
+  background-color: var(--wc-ai-insight-bg);
+  margin-bottom:    var(--wc-space-md);
+}
+
+/* ─── Header row ─────────────────────────────────────────────────────────── */
+
+.header {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  gap:             var(--wc-space-sm);
+  margin-bottom:   var(--wc-space-sm);
+  flex-wrap:       wrap;
+}
+
+.title {
+  font-family:    var(--wc-font-display);
+  font-size:      0.6875rem;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color:          var(--wc-ai-insight-text);
+  flex:           1;
+  min-width:      0;
+  overflow:       hidden;
+  text-overflow:  ellipsis;
+  white-space:    nowrap;
+}
+
+/* ─── Trend indicator ────────────────────────────────────────────────────── */
+
+.trendIndicator {
+  font-size:   1.125rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.trendRising {
+  color: var(--wc-color-success);
+}
+
+.trendFalling {
+  color: var(--wc-color-error);
+}
+
+.trendStable {
+  color: var(--wc-color-text-muted);
+}
+
+/* ─── Loading / empty state ──────────────────────────────────────────────── */
+
+.statusMsg {
+  font-size:  0.875rem;
+  color:      var(--wc-color-text-muted);
+  font-style: italic;
+  padding:    var(--wc-space-xs) 0 var(--wc-space-sm);
+}
+
+/* ─── Bar chart ──────────────────────────────────────────────────────────── */
+
+.chart {
+  display:        flex;
+  align-items:    flex-end;
+  gap:            var(--wc-space-xs);
+  overflow-x:     auto;
+  padding-bottom: var(--wc-space-xs);
+}
+
+/* ─── Week column ────────────────────────────────────────────────────────── */
+
+.weekColumn {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  flex:           1;
+  min-width:      2.25rem;
+}
+
+/* Fixed-height container so bars are proportional from the bottom up */
+.barWrapper {
+  height:      72px;
+  width:       100%;
+  display:     flex;
+  align-items: flex-end;
+}
+
+.bar {
+  width:            100%;
+  background-color: var(--wc-color-accent);
+  border-radius:    var(--wc-radius-sm) var(--wc-radius-sm) 0 0;
+  min-height:       2px;
+  transition:       height var(--wc-transition-base);
+}
+
+/* ─── Meta row (commit count · contributor count) ────────────────────────── */
+
+.weekMeta {
+  display:     flex;
+  align-items: baseline;
+  gap:         0.2rem;
+  margin-top:  0.2rem;
+  flex-wrap:   nowrap;
+}
+
+.commitCount {
+  font-family: var(--wc-font-body);
+  font-size:   0.6875rem;
+  font-weight: 600;
+  color:       var(--wc-color-text-primary);
+  white-space: nowrap;
+}
+
+.separator {
+  font-size: 0.625rem;
+  color:     var(--wc-color-text-muted);
+}
+
+.contributorCount {
+  font-size:  0.625rem;
+  color:      var(--wc-color-text-muted);
+  white-space: nowrap;
+}
+
+/* ─── Week date label (MM-DD) ────────────────────────────────────────────── */
+
+.weekLabel {
+  font-family:    var(--wc-font-display);
+  font-size:      0.5rem;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color:          var(--wc-color-text-muted);
+  margin-top:     0.15rem;
+  white-space:    nowrap;
+}

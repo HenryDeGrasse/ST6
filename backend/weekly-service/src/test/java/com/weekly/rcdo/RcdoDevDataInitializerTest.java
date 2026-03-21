@@ -1,11 +1,10 @@
 package com.weekly.rcdo;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
 
 /**
  * Ensures local dev RCDO seed data uses UUID identifiers so it is compatible

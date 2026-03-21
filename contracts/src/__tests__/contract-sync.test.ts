@@ -30,9 +30,9 @@ describe("contracts public API completeness", () => {
     expect(Object.values(LockType)).toHaveLength(2);
     expect(Object.values(CommitCategory)).toHaveLength(7);
     expect(Object.keys(ErrorCode)).toHaveLength(21);
-    expect(Object.values(EventType)).toHaveLength(10);
+    expect(Object.values(EventType)).toHaveLength(11);
     expect(Object.values(AggregateType)).toHaveLength(3);
-    expect(Object.values(NotificationType)).toHaveLength(5);
+    expect(Object.values(NotificationType)).toHaveLength(6);
   });
 
   it("exports ERROR_HTTP_STATUS with entries for every ErrorCode", () => {
@@ -97,10 +97,17 @@ describe("contracts public API completeness", () => {
 
   it("EventType values match backend event type strings exactly", () => {
     const expected = [
-      "plan.created", "plan.locked", "plan.reconciliation_started",
-      "plan.reconciled", "plan.carry_forward", "review.submitted",
-      "commit.created", "commit.updated", "commit.deleted",
+      "plan.created",
+      "plan.locked",
+      "plan.reconciliation_started",
+      "plan.reconciled",
+      "plan.carry_forward",
+      "review.submitted",
+      "commit.created",
+      "commit.updated",
+      "commit.deleted",
       "commit.actual_updated",
+      "notification.weekly_digest",
     ];
     expect(Object.values(EventType)).toEqual(expected);
   });

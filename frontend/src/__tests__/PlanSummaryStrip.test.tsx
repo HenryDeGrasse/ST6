@@ -55,10 +55,7 @@ describe("computeMetrics", () => {
   });
 
   it("counts all strategic when all have outcomeId", () => {
-    const commits = [
-      makeCommit({ outcomeId: "o1" }),
-      makeCommit({ outcomeId: "o2" }),
-    ];
+    const commits = [makeCommit({ outcomeId: "o1" }), makeCommit({ outcomeId: "o2" })];
     const m = computeMetrics(commits);
     expect(m.total).toBe(2);
     expect(m.strategicCount).toBe(2);
@@ -67,11 +64,7 @@ describe("computeMetrics", () => {
   });
 
   it("computes mixed alignment correctly", () => {
-    const commits = [
-      makeCommit({ outcomeId: "o1" }),
-      makeCommit({ outcomeId: "o2" }),
-      makeCommit(),
-    ];
+    const commits = [makeCommit({ outcomeId: "o1" }), makeCommit({ outcomeId: "o2" }), makeCommit()];
     const m = computeMetrics(commits);
     expect(m.total).toBe(3);
     expect(m.strategicCount).toBe(2);

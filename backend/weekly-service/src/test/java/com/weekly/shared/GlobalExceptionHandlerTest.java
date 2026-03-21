@@ -1,27 +1,5 @@
 package com.weekly.shared;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.weekly.auth.InMemoryOrgGraphClient;
-import com.weekly.plan.dto.CarryForwardRequest;
-import com.weekly.plan.dto.CreateCommitRequest;
-import com.weekly.rcdo.InMemoryRcdoClient;
-import com.weekly.rcdo.RcdoTree;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
-import java.util.List;
-import java.util.UUID;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -34,6 +12,27 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.weekly.auth.InMemoryOrgGraphClient;
+import com.weekly.plan.dto.CarryForwardRequest;
+import com.weekly.plan.dto.CreateCommitRequest;
+import com.weekly.rcdo.InMemoryRcdoClient;
+import com.weekly.rcdo.RcdoTree;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 /**
  * Integration tests for {@link GlobalExceptionHandler}.
@@ -216,7 +215,7 @@ class GlobalExceptionHandlerTest {
         // Add commit, lock, start reconciliation, fill actuals, submit
         CreateCommitRequest king = new CreateCommitRequest(
                 "Ship feature", null, "KING", "DELIVERY",
-                outcomeId.toString(), null, "Feature live", 0.9, null
+                outcomeId.toString(), null, "Feature live", 0.9, null, null
         );
         mockMvc.perform(post("/api/v1/plans/{planId}/commits", planId)
                         .header("X-User-Id", userId)

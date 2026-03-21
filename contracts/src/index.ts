@@ -6,14 +6,7 @@
  * PA host stub consume these types.
  */
 
-export {
-  PlanState,
-  ReviewStatus,
-  ChessPriority,
-  CompletionStatus,
-  LockType,
-  CommitCategory,
-} from "./enums.js";
+export { PlanState, ReviewStatus, ChessPriority, CompletionStatus, LockType, CommitCategory } from "./enums.js";
 
 export type {
   WeeklyPlan,
@@ -24,21 +17,44 @@ export type {
   RcdoObjective,
   RcdoCry,
   ValidationError,
+  TrendSeverity,
+  TrendInsight,
+  WeekTrendPoint,
+  TrendsResponse,
+  NextWorkSource,
+  NextWorkSuggestion,
+  SuggestNextWorkRequest,
+  SuggestNextWorkResponse,
+  NextWorkSuggestionsResponse,
+  SuggestionFeedbackAction,
+  SuggestionFeedbackRequest,
+  SuggestionFeedbackResponse,
+  CheckInStatus,
+  CheckInEntry,
+  CheckInHistoryResponse,
 } from "./types.js";
 
 export { ErrorCode, ERROR_HTTP_STATUS } from "./errors.js";
 export type { ApiError, ApiErrorDetail, ApiErrorResponse } from "./api.js";
 
-export {
-  EventType,
-  AggregateType,
-  NotificationType,
-} from "./events.js";
+export { EventType, AggregateType, NotificationType } from "./events.js";
 export type { OutboxEvent } from "./events.js";
 
-export {
-  createWeeklyCommitmentsClient,
-} from "./client.js";
+export type {
+  OutcomeCoverageWeek,
+  OutcomeCoverageTimeline,
+  HeatmapCell,
+  HeatmapUser,
+  CarryForwardHeatmap,
+  UserCategoryShift,
+  CategoryShiftAnalysis,
+  UserEstimationAccuracy,
+  EstimationAccuracyDistribution,
+  Prediction,
+  UserPredictions,
+} from "./analytics.js";
+
+export { createWeeklyCommitmentsClient } from "./client.js";
 export type {
   WeeklyCommitmentsClient,
   WeeklyCommitmentsClientOptions,
@@ -56,6 +72,7 @@ export type {
   CreateCommitRequest,
   UpdateCommitRequest,
   UpdateActualRequest,
+  CheckInRequest,
   ReviewStatusCounts,
   TeamMemberSummary,
   TeamSummaryResponse,
@@ -77,5 +94,33 @@ export type {
   ManagerInsightsRequest,
   ManagerInsightItem,
   ManagerInsightsResponse,
+  QualityNudge,
+  PlanQualityCheckRequest,
+  PlanQualityCheckResponse,
+  CommitSourceType,
+  SuggestedCommit,
+  DraftFromHistoryRequest,
+  DraftFromHistoryResponse,
+  CapacityConfidenceLevel,
+  OvercommitLevel,
+  CapacityProfile,
+  CapacityProfileResponse,
+  TeamMemberCapacity,
+  TeamCapacityResponse,
+  CategoryInsight,
+  PriorityInsight,
+  EstimationCoachingResponse,
+  OrgPolicy,
+  UpdateDigestConfigRequest,
+  WeeklyAdoptionPoint,
+  AdoptionMetrics,
+  AiUsageMetrics,
+  OutcomeHealthItem,
+  RcdoHealthReport,
   PaginatedResponse,
+  IntegrationProvider,
+  LinkTicketRequest,
+  ExternalTicketLink,
+  LinkedTicketsResponse,
+  WebhookResponse,
 } from "./api.js";

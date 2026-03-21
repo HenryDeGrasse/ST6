@@ -1,7 +1,6 @@
 package com.weekly.plan.dto;
 
 import com.weekly.plan.domain.WeeklyPlanEntity;
-
 import java.time.format.DateTimeFormatter;
 
 /**

@@ -111,21 +111,14 @@ function drawScene(
 
   // ── Chess-board grid ──────────────────────────────────────────────────────
   const gridAlpha = GRID_BASE_ALPHA * intensity;
-  ctx.fillStyle = isDark
-    ? `rgba(255,255,255,${gridAlpha})`
-    : `rgba(0,0,0,${gridAlpha})`;
+  ctx.fillStyle = isDark ? `rgba(255,255,255,${gridAlpha})` : `rgba(0,0,0,${gridAlpha})`;
 
   const cols = Math.ceil(w / GRID_CELL_PX) + 1;
   const rows = Math.ceil(h / GRID_CELL_PX) + 1;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       if ((r + c) % 2 === 0) {
-        ctx.fillRect(
-          c * GRID_CELL_PX,
-          r * GRID_CELL_PX,
-          GRID_CELL_PX,
-          GRID_CELL_PX,
-        );
+        ctx.fillRect(c * GRID_CELL_PX, r * GRID_CELL_PX, GRID_CELL_PX, GRID_CELL_PX);
       }
     }
   }
@@ -158,10 +151,7 @@ function drawScene(
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 
-export const PixelBackground: React.FC<PixelBackgroundProps> = ({
-  intensity = 1,
-  dataPoints: _dataPoints,
-}) => {
+export const PixelBackground: React.FC<PixelBackgroundProps> = ({ intensity = 1, dataPoints: _dataPoints }) => {
   const { theme } = useTheme();
   const [hasCanvasSupport] = useState(detectCanvasSupport);
 
@@ -182,31 +172,20 @@ export const PixelBackground: React.FC<PixelBackgroundProps> = ({
     rafRef.current = 0;
   }, []);
 
-  const startAnim = useCallback(
-    (ctx: CanvasRenderingContext2D) => {
-      cancelAnimationFrame(rafRef.current);
+  const startAnim = useCallback((ctx: CanvasRenderingContext2D) => {
+    cancelAnimationFrame(rafRef.current);
 
-      const tick = () => {
-        if (!document.hidden) {
-          const { w, h } = sizeRef.current;
-          tickParticles(particlesRef.current, w, h);
-          drawScene(
-            ctx,
-            w,
-            h,
-            particlesRef.current,
-            isDarkRef.current,
-            intensityRef.current,
-            true,
-          );
-        }
-        rafRef.current = requestAnimationFrame(tick);
-      };
-
+    const tick = () => {
+      if (!document.hidden) {
+        const { w, h } = sizeRef.current;
+        tickParticles(particlesRef.current, w, h);
+        drawScene(ctx, w, h, particlesRef.current, isDarkRef.current, intensityRef.current, true);
+      }
       rafRef.current = requestAnimationFrame(tick);
-    },
-    [],
-  );
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+  }, []);
 
   useEffect(() => {
     if (!hasCanvasSupport) {
@@ -224,9 +203,10 @@ export const PixelBackground: React.FC<PixelBackgroundProps> = ({
     }
     if (!ctx) return;
 
-    const mq = typeof window !== "undefined" && typeof window.matchMedia === "function"
-      ? window.matchMedia("(prefers-reduced-motion: reduce)")
-      : null;
+    const mq =
+      typeof window !== "undefined" && typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)")
+        : null;
     let prefersReduced = mq?.matches ?? false;
 
     const applySize = (w: number, h: number) => {
@@ -237,20 +217,8 @@ export const PixelBackground: React.FC<PixelBackgroundProps> = ({
       sizeRef.current = { w: safeW, h: safeH };
       particlesRef.current = prefersReduced
         ? []
-        : initParticles(
-          safeW,
-          safeH,
-          Math.round(BASE_PARTICLE_COUNT * intensityRef.current),
-        );
-      drawScene(
-        ctx,
-        safeW,
-        safeH,
-        particlesRef.current,
-        isDarkRef.current,
-        intensityRef.current,
-        !prefersReduced,
-      );
+        : initParticles(safeW, safeH, Math.round(BASE_PARTICLE_COUNT * intensityRef.current));
+      drawScene(ctx, safeW, safeH, particlesRef.current, isDarkRef.current, intensityRef.current, !prefersReduced);
     };
 
     const parent = canvas.parentElement ?? canvas;
@@ -276,21 +244,9 @@ export const PixelBackground: React.FC<PixelBackgroundProps> = ({
       const { w, h } = sizeRef.current;
       particlesRef.current = prefersReduced
         ? []
-        : initParticles(
-          w,
-          h,
-          Math.round(BASE_PARTICLE_COUNT * intensityRef.current),
-        );
+        : initParticles(w, h, Math.round(BASE_PARTICLE_COUNT * intensityRef.current));
 
-      drawScene(
-        ctx,
-        w,
-        h,
-        particlesRef.current,
-        isDarkRef.current,
-        intensityRef.current,
-        !prefersReduced,
-      );
+      drawScene(ctx, w, h, particlesRef.current, isDarkRef.current, intensityRef.current, !prefersReduced);
 
       if (!prefersReduced && !document.hidden) {
         startAnim(ctx);
@@ -310,10 +266,7 @@ export const PixelBackground: React.FC<PixelBackgroundProps> = ({
       const ro = new ResizeObserver((entries) => {
         const entry = entries[0];
         if (!entry) return;
-        applySize(
-          Math.round(entry.contentRect.width),
-          Math.round(entry.contentRect.height),
-        );
+        applySize(Math.round(entry.contentRect.width), Math.round(entry.contentRect.height));
       });
       ro.observe(parent);
       disconnectResize = () => ro.disconnect();

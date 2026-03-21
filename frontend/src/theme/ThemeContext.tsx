@@ -10,12 +10,7 @@
 import "./tokens.css";
 import "./global.css";
 
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useState,
-} from "react";
+import React, { createContext, useCallback, useContext, useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -43,9 +38,7 @@ export interface ThemeProviderProps {
  * for backward compatibility but has no visual effect — all tokens
  * live on `.wc-theme` without a mode suffix.
  */
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({
-  children,
-}) => {
+export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>("dark");
 
   const toggleTheme = useCallback(() => {
@@ -54,11 +47,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <div
-        className="wc-theme"
-        data-testid="wc-theme-root"
-        style={{ position: "relative", minHeight: "100vh" }}
-      >
+      <div className="wc-theme" data-testid="wc-theme-root" style={{ position: "relative", minHeight: "100vh" }}>
         {children}
       </div>
     </ThemeContext.Provider>

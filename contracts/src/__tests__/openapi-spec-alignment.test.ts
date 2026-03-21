@@ -1,8 +1,5 @@
 import { describe, it, expect, expectTypeOf } from "vitest";
-import type {
-  WeeklyCommitmentsApiComponents,
-  WeeklyCommitmentsApiOperations,
-} from "../index.js";
+import type { WeeklyCommitmentsApiComponents, WeeklyCommitmentsApiOperations } from "../index.js";
 import type { WeeklyPlan, WeeklyCommit, WeeklyCommitActual } from "../types.js";
 import type {
   CreateCommitRequest,
@@ -13,15 +10,15 @@ import type {
   TeamMemberSummary,
   RcdoRollupItem,
   ManagerReview,
+  OrgPolicy,
+  UpdateDigestConfigRequest,
 } from "../api.js";
 
 // ─── Type assertion helpers ──────────────────────────────────────────────────
 
 type Assert<T extends true> = T;
 type HasKey<T, K extends PropertyKey> = K extends keyof T ? true : false;
-type IsRequiredKey<T, K extends keyof T> = Pick<T, K> extends Required<Pick<T, K>>
-  ? true
-  : false;
+type IsRequiredKey<T, K extends keyof T> = Pick<T, K> extends Required<Pick<T, K>> ? true : false;
 
 // ─── Spec schema types (from auto-generated openapi.ts) ──────────────────────
 
@@ -110,17 +107,24 @@ describe("WeeklyPlan schema alignment: spec ↔ manually-authored types.ts", () 
     const specHasReviewStatus: Assert<HasKey<SpecWeeklyPlan, "reviewStatus">> = true;
     const specHasLockType: Assert<HasKey<SpecWeeklyPlan, "lockType">> = true;
     const specHasLockedAt: Assert<HasKey<SpecWeeklyPlan, "lockedAt">> = true;
-    const specHasCarryForwardExecutedAt: Assert<
-      HasKey<SpecWeeklyPlan, "carryForwardExecutedAt">
-    > = true;
+    const specHasCarryForwardExecutedAt: Assert<HasKey<SpecWeeklyPlan, "carryForwardExecutedAt">> = true;
     const specHasVersion: Assert<HasKey<SpecWeeklyPlan, "version">> = true;
     const specHasCreatedAt: Assert<HasKey<SpecWeeklyPlan, "createdAt">> = true;
     const specHasUpdatedAt: Assert<HasKey<SpecWeeklyPlan, "updatedAt">> = true;
 
     expect(
-      specHasId && specHasOrgId && specHasOwnerUserId && specHasWeekStartDate
-      && specHasState && specHasReviewStatus && specHasLockType && specHasLockedAt
-      && specHasCarryForwardExecutedAt && specHasVersion && specHasCreatedAt && specHasUpdatedAt
+      specHasId &&
+        specHasOrgId &&
+        specHasOwnerUserId &&
+        specHasWeekStartDate &&
+        specHasState &&
+        specHasReviewStatus &&
+        specHasLockType &&
+        specHasLockedAt &&
+        specHasCarryForwardExecutedAt &&
+        specHasVersion &&
+        specHasCreatedAt &&
+        specHasUpdatedAt,
     ).toBe(true);
   });
 });
@@ -137,9 +141,7 @@ describe("WeeklyCommit schema alignment: spec ↔ manually-authored types.ts", (
     const specRequiredProgressNotes: Assert<IsRequiredKey<SpecWeeklyCommit, "progressNotes">> = true;
     const specRequiredTags: Assert<IsRequiredKey<SpecWeeklyCommit, "tags">> = true;
     const specRequiredVersion: Assert<IsRequiredKey<SpecWeeklyCommit, "version">> = true;
-    const specRequiredValidationErrors: Assert<
-      IsRequiredKey<SpecWeeklyCommit, "validationErrors">
-    > = true;
+    const specRequiredValidationErrors: Assert<IsRequiredKey<SpecWeeklyCommit, "validationErrors">> = true;
 
     // All these must be present in the manually-authored type
     const manualHasId: Assert<HasKey<WeeklyCommit, "id">> = true;
@@ -178,14 +180,40 @@ describe("WeeklyCommit schema alignment: spec ↔ manually-authored types.ts", (
     const manualHasCarriedFrom: Assert<HasKey<WeeklyCommit, "carriedFromCommitId">> = true;
 
     expect(
-      specHasSnapshotRcId && specHasSnapshotRcName && specHasSnapshotObjId
-      && specHasSnapshotObjName && specHasSnapshotOutId && specHasSnapshotOutName
-      && specHasCarriedFrom
+      specHasSnapshotRcId &&
+        specHasSnapshotRcName &&
+        specHasSnapshotObjId &&
+        specHasSnapshotObjName &&
+        specHasSnapshotOutId &&
+        specHasSnapshotOutName &&
+        specHasCarriedFrom,
     ).toBe(true);
     expect(
-      manualHasSnapshotRcId && manualHasSnapshotRcName && manualHasSnapshotObjId
-      && manualHasSnapshotObjName && manualHasSnapshotOutId && manualHasSnapshotOutName
-      && manualHasCarriedFrom
+      manualHasSnapshotRcId &&
+        manualHasSnapshotRcName &&
+        manualHasSnapshotObjId &&
+        manualHasSnapshotObjName &&
+        manualHasSnapshotOutId &&
+        manualHasSnapshotOutName &&
+        manualHasCarriedFrom,
+    ).toBe(true);
+  });
+
+  it("capacity fields exist in both spec and manually-authored type and remain optional", () => {
+    const specHasEstimatedHours: Assert<HasKey<SpecWeeklyCommit, "estimatedHours">> = true;
+    const manualHasEstimatedHours: Assert<HasKey<WeeklyCommit, "estimatedHours">> = true;
+    const specEstimatedHoursIsOptional: Assert<
+      IsRequiredKey<SpecWeeklyCommit, "estimatedHours"> extends false ? true : false
+    > = true;
+    const manualEstimatedHoursIsOptional: Assert<
+      IsRequiredKey<WeeklyCommit, "estimatedHours"> extends false ? true : false
+    > = true;
+
+    expect(
+      specHasEstimatedHours &&
+        manualHasEstimatedHours &&
+        specEstimatedHoursIsOptional &&
+        manualEstimatedHoursIsOptional,
     ).toBe(true);
   });
 
@@ -234,6 +262,7 @@ describe("CreateCommitRequest schema alignment: spec ↔ manually-authored api.t
     const specHasOutcomeId: Assert<HasKey<SpecCreateCommitRequest, "outcomeId">> = true;
     const specHasExpectedResult: Assert<HasKey<SpecCreateCommitRequest, "expectedResult">> = true;
     const specHasTags: Assert<HasKey<SpecCreateCommitRequest, "tags">> = true;
+    const specHasEstimatedHours: Assert<HasKey<SpecCreateCommitRequest, "estimatedHours">> = true;
 
     const manualHasDescription: Assert<HasKey<CreateCommitRequest, "description">> = true;
     const manualHasChessPriority: Assert<HasKey<CreateCommitRequest, "chessPriority">> = true;
@@ -241,34 +270,37 @@ describe("CreateCommitRequest schema alignment: spec ↔ manually-authored api.t
     const manualHasOutcomeId: Assert<HasKey<CreateCommitRequest, "outcomeId">> = true;
     const manualHasExpectedResult: Assert<HasKey<CreateCommitRequest, "expectedResult">> = true;
     const manualHasTags: Assert<HasKey<CreateCommitRequest, "tags">> = true;
+    const manualHasEstimatedHours: Assert<HasKey<CreateCommitRequest, "estimatedHours">> = true;
 
     expect(specRequiresTitle && manualRequiresTitle).toBe(true);
     expect(
-      specHasDescription && specHasChessPriority && specHasCategory
-      && specHasOutcomeId && specHasExpectedResult && specHasTags
+      specHasDescription &&
+        specHasChessPriority &&
+        specHasCategory &&
+        specHasOutcomeId &&
+        specHasExpectedResult &&
+        specHasTags &&
+        specHasEstimatedHours,
     ).toBe(true);
     expect(
-      manualHasDescription && manualHasChessPriority && manualHasCategory
-      && manualHasOutcomeId && manualHasExpectedResult && manualHasTags
+      manualHasDescription &&
+        manualHasChessPriority &&
+        manualHasCategory &&
+        manualHasOutcomeId &&
+        manualHasExpectedResult &&
+        manualHasTags &&
+        manualHasEstimatedHours,
     ).toBe(true);
   });
 });
 
 describe("UpdateActualRequest schema alignment: spec ↔ manually-authored api.ts", () => {
   it("spec requires actualResult and completionStatus; manual type agrees", () => {
-    const specRequiresActualResult: Assert<
-      IsRequiredKey<SpecUpdateActualRequest, "actualResult">
-    > = true;
-    const specRequiresCompletionStatus: Assert<
-      IsRequiredKey<SpecUpdateActualRequest, "completionStatus">
-    > = true;
+    const specRequiresActualResult: Assert<IsRequiredKey<SpecUpdateActualRequest, "actualResult">> = true;
+    const specRequiresCompletionStatus: Assert<IsRequiredKey<SpecUpdateActualRequest, "completionStatus">> = true;
 
-    const manualRequiresActualResult: Assert<
-      IsRequiredKey<UpdateActualRequest, "actualResult">
-    > = true;
-    const manualRequiresCompletionStatus: Assert<
-      IsRequiredKey<UpdateActualRequest, "completionStatus">
-    > = true;
+    const manualRequiresActualResult: Assert<IsRequiredKey<UpdateActualRequest, "actualResult">> = true;
+    const manualRequiresCompletionStatus: Assert<IsRequiredKey<UpdateActualRequest, "completionStatus">> = true;
 
     expect(specRequiresActualResult && specRequiresCompletionStatus).toBe(true);
     expect(manualRequiresActualResult && manualRequiresCompletionStatus).toBe(true);
@@ -277,9 +309,7 @@ describe("UpdateActualRequest schema alignment: spec ↔ manually-authored api.t
 
 describe("CarryForwardRequest schema alignment: spec ↔ manually-authored api.ts", () => {
   it("spec requires commitIds array; manual type agrees", () => {
-    const specRequiresCommitIds: Assert<
-      IsRequiredKey<SpecCarryForwardRequest, "commitIds">
-    > = true;
+    const specRequiresCommitIds: Assert<IsRequiredKey<SpecCarryForwardRequest, "commitIds">> = true;
     const manualRequiresCommitIds: Assert<IsRequiredKey<CarryForwardRequest, "commitIds">> = true;
 
     expect(specRequiresCommitIds && manualRequiresCommitIds).toBe(true);
@@ -376,14 +406,16 @@ describe("UpdateCommitRequest schema alignment: spec ↔ manually-authored api.t
     const specHasDescription: Assert<HasKey<SpecUpdateCommitRequest, "description">> = true;
     const specHasChessPriority: Assert<HasKey<SpecUpdateCommitRequest, "chessPriority">> = true;
     const specHasProgressNotes: Assert<HasKey<SpecUpdateCommitRequest, "progressNotes">> = true;
+    const specHasEstimatedHours: Assert<HasKey<SpecUpdateCommitRequest, "estimatedHours">> = true;
 
     const manualHasTitle: Assert<HasKey<UpdateCommitRequest, "title">> = true;
     const manualHasDescription: Assert<HasKey<UpdateCommitRequest, "description">> = true;
     const manualHasChessPriority: Assert<HasKey<UpdateCommitRequest, "chessPriority">> = true;
     const manualHasProgressNotes: Assert<HasKey<UpdateCommitRequest, "progressNotes">> = true;
+    const manualHasEstimatedHours: Assert<HasKey<UpdateCommitRequest, "estimatedHours">> = true;
 
-    expect(specHasTitle && specHasDescription && specHasChessPriority && specHasProgressNotes).toBe(true);
-    expect(manualHasTitle && manualHasDescription && manualHasChessPriority && manualHasProgressNotes).toBe(true);
+    expect(specHasTitle && specHasDescription && specHasChessPriority && specHasProgressNotes && specHasEstimatedHours).toBe(true);
+    expect(manualHasTitle && manualHasDescription && manualHasChessPriority && manualHasProgressNotes && manualHasEstimatedHours).toBe(true);
   });
 });
 
@@ -391,9 +423,7 @@ describe("ManagerReview schema alignment: spec ↔ manually-authored types.ts", 
   it("all spec-required ManagerReview fields exist in the manually-authored type", () => {
     const specRequiresId: Assert<IsRequiredKey<SpecManagerReview, "id">> = true;
     const specRequiresPlanId: Assert<IsRequiredKey<SpecManagerReview, "weeklyPlanId">> = true;
-    const specRequiresReviewerUserId: Assert<
-      IsRequiredKey<SpecManagerReview, "reviewerUserId">
-    > = true;
+    const specRequiresReviewerUserId: Assert<IsRequiredKey<SpecManagerReview, "reviewerUserId">> = true;
     const specRequiresDecision: Assert<IsRequiredKey<SpecManagerReview, "decision">> = true;
     const specRequiresComments: Assert<IsRequiredKey<SpecManagerReview, "comments">> = true;
     const specRequiresCreatedAt: Assert<IsRequiredKey<SpecManagerReview, "createdAt">> = true;
@@ -406,12 +436,20 @@ describe("ManagerReview schema alignment: spec ↔ manually-authored types.ts", 
     const manualHasCreatedAt: Assert<HasKey<ManagerReview, "createdAt">> = true;
 
     expect(
-      specRequiresId && specRequiresPlanId && specRequiresReviewerUserId
-      && specRequiresDecision && specRequiresComments && specRequiresCreatedAt
+      specRequiresId &&
+        specRequiresPlanId &&
+        specRequiresReviewerUserId &&
+        specRequiresDecision &&
+        specRequiresComments &&
+        specRequiresCreatedAt,
     ).toBe(true);
     expect(
-      manualHasId && manualHasPlanId && manualHasReviewerUserId
-      && manualHasDecision && manualHasComments && manualHasCreatedAt
+      manualHasId &&
+        manualHasPlanId &&
+        manualHasReviewerUserId &&
+        manualHasDecision &&
+        manualHasComments &&
+        manualHasCreatedAt,
     ).toBe(true);
   });
 });
@@ -422,48 +460,45 @@ describe("TeamSummaryResponse and TeamMemberSummary alignment: spec ↔ api.ts",
   it("spec TeamSummaryResponse required fields exist in manually-authored type", () => {
     const specRequiresWeekStart: Assert<IsRequiredKey<SpecTeamSummaryResponse, "weekStart">> = true;
     const specRequiresUsers: Assert<IsRequiredKey<SpecTeamSummaryResponse, "users">> = true;
-    const specRequiresReviewStatusCounts: Assert<
-      IsRequiredKey<SpecTeamSummaryResponse, "reviewStatusCounts">
-    > = true;
+    const specRequiresReviewStatusCounts: Assert<IsRequiredKey<SpecTeamSummaryResponse, "reviewStatusCounts">> = true;
     const specRequiresPage: Assert<IsRequiredKey<SpecTeamSummaryResponse, "page">> = true;
     const specRequiresSize: Assert<IsRequiredKey<SpecTeamSummaryResponse, "size">> = true;
-    const specRequiresTotalElements: Assert<
-      IsRequiredKey<SpecTeamSummaryResponse, "totalElements">
-    > = true;
-    const specRequiresTotalPages: Assert<
-      IsRequiredKey<SpecTeamSummaryResponse, "totalPages">
-    > = true;
+    const specRequiresTotalElements: Assert<IsRequiredKey<SpecTeamSummaryResponse, "totalElements">> = true;
+    const specRequiresTotalPages: Assert<IsRequiredKey<SpecTeamSummaryResponse, "totalPages">> = true;
 
     const manualHasWeekStart: Assert<HasKey<TeamSummaryResponse, "weekStart">> = true;
     const manualHasUsers: Assert<HasKey<TeamSummaryResponse, "users">> = true;
-    const manualHasReviewStatusCounts: Assert<
-      HasKey<TeamSummaryResponse, "reviewStatusCounts">
-    > = true;
+    const manualHasReviewStatusCounts: Assert<HasKey<TeamSummaryResponse, "reviewStatusCounts">> = true;
     const manualHasPage: Assert<HasKey<TeamSummaryResponse, "page">> = true;
     const manualHasSize: Assert<HasKey<TeamSummaryResponse, "size">> = true;
     const manualHasTotalElements: Assert<HasKey<TeamSummaryResponse, "totalElements">> = true;
     const manualHasTotalPages: Assert<HasKey<TeamSummaryResponse, "totalPages">> = true;
 
     expect(
-      specRequiresWeekStart && specRequiresUsers && specRequiresReviewStatusCounts
-      && specRequiresPage && specRequiresSize && specRequiresTotalElements
-      && specRequiresTotalPages
+      specRequiresWeekStart &&
+        specRequiresUsers &&
+        specRequiresReviewStatusCounts &&
+        specRequiresPage &&
+        specRequiresSize &&
+        specRequiresTotalElements &&
+        specRequiresTotalPages,
     ).toBe(true);
     expect(
-      manualHasWeekStart && manualHasUsers && manualHasReviewStatusCounts
-      && manualHasPage && manualHasSize && manualHasTotalElements && manualHasTotalPages
+      manualHasWeekStart &&
+        manualHasUsers &&
+        manualHasReviewStatusCounts &&
+        manualHasPage &&
+        manualHasSize &&
+        manualHasTotalElements &&
+        manualHasTotalPages,
     ).toBe(true);
   });
 
   it("spec TeamMemberSummary required fields exist in manually-authored type", () => {
     const specRequiresUserId: Assert<IsRequiredKey<SpecTeamMemberSummary, "userId">> = true;
     const specRequiresCommitCount: Assert<IsRequiredKey<SpecTeamMemberSummary, "commitCount">> = true;
-    const specRequiresIncompleteCount: Assert<
-      IsRequiredKey<SpecTeamMemberSummary, "incompleteCount">
-    > = true;
-    const specRequiresIssueCount: Assert<
-      IsRequiredKey<SpecTeamMemberSummary, "issueCount">
-    > = true;
+    const specRequiresIncompleteCount: Assert<IsRequiredKey<SpecTeamMemberSummary, "incompleteCount">> = true;
+    const specRequiresIssueCount: Assert<IsRequiredKey<SpecTeamMemberSummary, "issueCount">> = true;
     const specRequiresKingCount: Assert<IsRequiredKey<SpecTeamMemberSummary, "kingCount">> = true;
     const specRequiresQueenCount: Assert<IsRequiredKey<SpecTeamMemberSummary, "queenCount">> = true;
     const specRequiresIsStale: Assert<IsRequiredKey<SpecTeamMemberSummary, "isStale">> = true;
@@ -480,15 +515,25 @@ describe("TeamSummaryResponse and TeamMemberSummary alignment: spec ↔ api.ts",
     const manualHasIsLateLock: Assert<HasKey<TeamMemberSummary, "isLateLock">> = true;
 
     expect(
-      specRequiresUserId && specRequiresCommitCount && specRequiresIncompleteCount
-      && specRequiresIssueCount
-      && specRequiresKingCount && specRequiresQueenCount && specRequiresIsStale
-      && specRequiresIsLateLock
+      specRequiresUserId &&
+        specRequiresCommitCount &&
+        specRequiresIncompleteCount &&
+        specRequiresIssueCount &&
+        specRequiresKingCount &&
+        specRequiresQueenCount &&
+        specRequiresIsStale &&
+        specRequiresIsLateLock,
     ).toBe(true);
     expect(
-      manualHasUserId && manualHasDisplayName && manualHasCommitCount && manualHasIncompleteCount
-      && manualHasIssueCount
-      && manualHasKingCount && manualHasQueenCount && manualHasIsStale && manualHasIsLateLock
+      manualHasUserId &&
+        manualHasDisplayName &&
+        manualHasCommitCount &&
+        manualHasIncompleteCount &&
+        manualHasIssueCount &&
+        manualHasKingCount &&
+        manualHasQueenCount &&
+        manualHasIsStale &&
+        manualHasIsLateLock,
     ).toBe(true);
   });
 });
@@ -516,14 +561,24 @@ describe("RcdoRollupItem alignment: spec ↔ api.ts", () => {
     const manualHasPawnCount: Assert<HasKey<RcdoRollupItem, "pawnCount">> = true;
 
     expect(
-      specRequiresOutcomeId && specRequiresCommitCount && specRequiresKingCount
-      && specRequiresQueenCount && specRequiresRookCount && specRequiresBishopCount
-      && specRequiresKnightCount && specRequiresPawnCount
+      specRequiresOutcomeId &&
+        specRequiresCommitCount &&
+        specRequiresKingCount &&
+        specRequiresQueenCount &&
+        specRequiresRookCount &&
+        specRequiresBishopCount &&
+        specRequiresKnightCount &&
+        specRequiresPawnCount,
     ).toBe(true);
     expect(
-      manualHasOutcomeId && manualHasCommitCount && manualHasKingCount
-      && manualHasQueenCount && manualHasRookCount && manualHasBishopCount
-      && manualHasKnightCount && manualHasPawnCount
+      manualHasOutcomeId &&
+        manualHasCommitCount &&
+        manualHasKingCount &&
+        manualHasQueenCount &&
+        manualHasRookCount &&
+        manualHasBishopCount &&
+        manualHasKnightCount &&
+        manualHasPawnCount,
     ).toBe(true);
   });
 });
@@ -540,7 +595,10 @@ describe("OpenAPI operation catalog completeness", () => {
    * via WeeklyCommitmentsApiPaths; this test verifies operation-ID coverage.
    */
   it("generated operations map includes all documented operation IDs", () => {
-    // Verify type-level presence of all 26 operation IDs from the spec
+    // Verify type-level presence of all 31 operation IDs from the spec
+    // (Wave 1 step 5 added planQualityCheck)
+    // (Wave 2 step 7 added draftFromHistory)
+    // (Wave 2 step 9 added suggestNextWork + recordSuggestionFeedback)
     expectTypeOf<WeeklyCommitmentsApiOperations["createPlan"]>().toMatchTypeOf<object>();
     expectTypeOf<WeeklyCommitmentsApiOperations["getMyPlan"]>().toMatchTypeOf<object>();
     expectTypeOf<WeeklyCommitmentsApiOperations["getPlan"]>().toMatchTypeOf<object>();
@@ -567,8 +625,64 @@ describe("OpenAPI operation catalog completeness", () => {
     expectTypeOf<WeeklyCommitmentsApiOperations["draftReconciliation"]>().toMatchTypeOf<object>();
     expectTypeOf<WeeklyCommitmentsApiOperations["managerInsights"]>().toMatchTypeOf<object>();
     expectTypeOf<WeeklyCommitmentsApiOperations["healthCheck"]>().toMatchTypeOf<object>();
+    // Wave 1 step 5
+    expectTypeOf<WeeklyCommitmentsApiOperations["planQualityCheck"]>().toMatchTypeOf<object>();
+    // Wave 2 step 7
+    expectTypeOf<WeeklyCommitmentsApiOperations["draftFromHistory"]>().toMatchTypeOf<object>();
+    // Wave 2 step 9 (GET /users/me/trends from step 1-2)
+    expectTypeOf<WeeklyCommitmentsApiOperations["getMyTrends"]>().toMatchTypeOf<object>();
+    // Wave 2 step 9
+    expectTypeOf<WeeklyCommitmentsApiOperations["suggestNextWork"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["recordSuggestionFeedback"]>().toMatchTypeOf<object>();
+    // Wave 3 step 17 — admin digest config
+    expectTypeOf<WeeklyCommitmentsApiOperations["getOrgPolicy"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiOperations["updateDigestConfig"]>().toMatchTypeOf<object>();
 
     // Runtime: at least one operation can be used as a type guard
     expect(true).toBe(true);
+  });
+});
+
+// ─── OrgPolicy schema alignment ───────────────────────────────────────────────
+
+describe("OrgPolicy schema alignment: spec ↔ manually-authored api.ts", () => {
+  type SpecOrgPolicy = WeeklyCommitmentsApiComponents["schemas"]["OrgPolicy"];
+  type SpecUpdateDigestConfigRequest =
+    WeeklyCommitmentsApiComponents["schemas"]["UpdateDigestConfigRequest"];
+
+  it("all spec-required OrgPolicy fields exist in the manually-authored type", () => {
+    const specRequiresDigestDay: Assert<IsRequiredKey<SpecOrgPolicy, "digestDay">> = true;
+    const specRequiresDigestTime: Assert<IsRequiredKey<SpecOrgPolicy, "digestTime">> = true;
+    const specRequiresChessKingRequired: Assert<IsRequiredKey<SpecOrgPolicy, "chessKingRequired">> = true;
+    const specRequiresChessMaxKing: Assert<IsRequiredKey<SpecOrgPolicy, "chessMaxKing">> = true;
+    const specRequiresChessMaxQueen: Assert<IsRequiredKey<SpecOrgPolicy, "chessMaxQueen">> = true;
+    const specRequiresLockDay: Assert<IsRequiredKey<SpecOrgPolicy, "lockDay">> = true;
+    const specRequiresLockTime: Assert<IsRequiredKey<SpecOrgPolicy, "lockTime">> = true;
+
+    const manualHasDigestDay: Assert<HasKey<OrgPolicy, "digestDay">> = true;
+    const manualHasDigestTime: Assert<HasKey<OrgPolicy, "digestTime">> = true;
+    const manualHasChessKingRequired: Assert<HasKey<OrgPolicy, "chessKingRequired">> = true;
+    const manualHasChessMaxKing: Assert<HasKey<OrgPolicy, "chessMaxKing">> = true;
+    const manualHasChessMaxQueen: Assert<HasKey<OrgPolicy, "chessMaxQueen">> = true;
+    const manualHasLockDay: Assert<HasKey<OrgPolicy, "lockDay">> = true;
+    const manualHasLockTime: Assert<HasKey<OrgPolicy, "lockTime">> = true;
+
+    expect(specRequiresDigestDay && specRequiresDigestTime).toBe(true);
+    expect(specRequiresChessKingRequired && specRequiresChessMaxKing && specRequiresChessMaxQueen).toBe(true);
+    expect(specRequiresLockDay && specRequiresLockTime).toBe(true);
+    expect(manualHasDigestDay && manualHasDigestTime).toBe(true);
+    expect(manualHasChessKingRequired && manualHasChessMaxKing && manualHasChessMaxQueen).toBe(true);
+    expect(manualHasLockDay && manualHasLockTime).toBe(true);
+  });
+
+  it("UpdateDigestConfigRequest requires digestDay and digestTime in both spec and manual type", () => {
+    const specRequiresDigestDay: Assert<IsRequiredKey<SpecUpdateDigestConfigRequest, "digestDay">> = true;
+    const specRequiresDigestTime: Assert<IsRequiredKey<SpecUpdateDigestConfigRequest, "digestTime">> = true;
+
+    const manualRequiresDigestDay: Assert<IsRequiredKey<UpdateDigestConfigRequest, "digestDay">> = true;
+    const manualRequiresDigestTime: Assert<IsRequiredKey<UpdateDigestConfigRequest, "digestTime">> = true;
+
+    expect(specRequiresDigestDay && specRequiresDigestTime).toBe(true);
+    expect(manualRequiresDigestDay && manualRequiresDigestTime).toBe(true);
   });
 });

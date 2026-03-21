@@ -18,9 +18,6 @@ import com.weekly.plan.repository.WeeklyCommitRepository;
 import com.weekly.plan.repository.WeeklyPlanRepository;
 import com.weekly.shared.ErrorCode;
 import com.weekly.shared.EventType;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,6 +28,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service for weekly commit CRUD operations with plan-state enforcement.
@@ -118,6 +117,9 @@ public class CommitService {
         }
         if (request.confidence() != null) {
             commit.setConfidence(BigDecimal.valueOf(request.confidence()));
+        }
+        if (request.estimatedHours() != null) {
+            commit.setEstimatedHours(BigDecimal.valueOf(request.estimatedHours()));
         }
         if (request.tags() != null) {
             commit.setTagsFromArray(request.tags());
@@ -348,6 +350,9 @@ public class CommitService {
         if (request.confidence() != null) {
             commit.setConfidence(BigDecimal.valueOf(request.confidence()));
         }
+        if (request.estimatedHours() != null) {
+            commit.setEstimatedHours(BigDecimal.valueOf(request.estimatedHours()));
+        }
         if (request.tags() != null) {
             commit.setTagsFromArray(request.tags());
         }
@@ -366,6 +371,7 @@ public class CommitService {
                 || request.nonStrategicReason() != null
                 || request.expectedResult() != null
                 || request.confidence() != null
+                || request.estimatedHours() != null
                 || request.tags() != null;
 
         if (hasFrozenField) {
@@ -421,6 +427,9 @@ public class CommitService {
         if (!Objects.equals(before.confidence(), after.getConfidence())) {
             changedFields.add("confidence");
         }
+        if (!Objects.equals(before.estimatedHours(), after.getEstimatedHours())) {
+            changedFields.add("estimatedHours");
+        }
         if (!Arrays.equals(before.tags(), after.getTags())) {
             changedFields.add("tags");
         }
@@ -450,6 +459,7 @@ public class CommitService {
                 commit.getNonStrategicReason(),
                 commit.getExpectedResult(),
                 commit.getConfidence(),
+                commit.getEstimatedHours(),
                 commit.getTags(),
                 commit.getProgressNotes()
         );
@@ -505,6 +515,7 @@ public class CommitService {
             String nonStrategicReason,
             String expectedResult,
             BigDecimal confidence,
+            BigDecimal estimatedHours,
             String[] tags,
             String progressNotes
     ) {

@@ -14,11 +14,7 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({ message, onDismiss }) 
   if (!message) return null;
 
   return (
-    <div
-      data-testid="error-banner"
-      role="alert"
-      className={styles.banner}
-    >
+    <div data-testid="error-banner" role="alert" className={styles.banner}>
       <span className={styles.message}>{message}</span>
       {onDismiss && (
         <button

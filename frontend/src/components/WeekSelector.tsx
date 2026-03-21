@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  getWeekStart,
-  getNextWeekStart,
-  getPrevWeekStart,
-  formatWeekLabel,
-  isCurrentWeek,
-} from "../utils/week.js";
+import { getWeekStart, getNextWeekStart, getPrevWeekStart, formatWeekLabel, isCurrentWeek } from "../utils/week.js";
 import styles from "./WeekSelector.module.css";
 
 export interface WeekSelectorProps {
@@ -18,10 +12,7 @@ export interface WeekSelectorProps {
  * jump to the current week. Only current + next week are
  * creatable, but past weeks remain viewable.
  */
-export const WeekSelector: React.FC<WeekSelectorProps> = ({
-  selectedWeek,
-  onWeekChange,
-}) => {
+export const WeekSelector: React.FC<WeekSelectorProps> = ({ selectedWeek, onWeekChange }) => {
   const currentWeek = getWeekStart();
   const nextWeek = getNextWeekStart(currentWeek);
   const isCurrent = isCurrentWeek(selectedWeek);

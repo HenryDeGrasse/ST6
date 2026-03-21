@@ -49,10 +49,7 @@ export function formatWeekLabel(weekStart: string): string {
   const end = new Date(start);
   end.setDate(end.getDate() + 6);
 
-  const monthNames = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-  ];
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   const startMonth = monthNames[start.getMonth()];
   const endMonth = monthNames[end.getMonth()];

@@ -63,41 +63,21 @@ describe("PlanDrillDown", () => {
   };
 
   it("renders a busy loading skeleton while drill-down data is loading", () => {
-    render(
-      <PlanDrillDown
-        {...defaultProps}
-        loading={true}
-        plan={null}
-        commits={[]}
-      />,
-    );
+    render(<PlanDrillDown {...defaultProps} loading={true} plan={null} commits={[]} />);
 
     expect(screen.getByTestId("drilldown-loading")).toHaveAttribute("aria-busy", "true");
     expect(screen.getByText("Loading plan…")).toBeInTheDocument();
   });
 
   it("shows the direct report display name in the header when provided", () => {
-    render(
-      <PlanDrillDown
-        {...defaultProps}
-        plan={plan}
-        commits={[commit]}
-        displayName="Alice Smith"
-      />,
-    );
+    render(<PlanDrillDown {...defaultProps} plan={plan} commits={[commit]} displayName="Alice Smith" />);
 
     expect(screen.getByRole("heading", { name: "Plan for Alice Smith" })).toBeInTheDocument();
     expect(screen.getByText("Increase adoption")).toBeInTheDocument();
   });
 
   it("falls back to ownerUserId when display name is unavailable", () => {
-    render(
-      <PlanDrillDown
-        {...defaultProps}
-        plan={plan}
-        commits={[commit]}
-      />,
-    );
+    render(<PlanDrillDown {...defaultProps} plan={plan} commits={[commit]} />);
 
     expect(screen.getByRole("heading", { name: "Plan for user-1" })).toBeInTheDocument();
   });
@@ -106,13 +86,7 @@ describe("PlanDrillDown", () => {
 
   describe("actuals columns visibility", () => {
     it("does NOT show actuals columns for LOCKED plan", () => {
-      render(
-        <PlanDrillDown
-          {...defaultProps}
-          plan={{ ...plan, state: PlanState.LOCKED }}
-          commits={[commit]}
-        />,
-      );
+      render(<PlanDrillDown {...defaultProps} plan={{ ...plan, state: PlanState.LOCKED }} commits={[commit]} />);
 
       const table = screen.getByTestId("drilldown-commits");
       expect(within(table).queryByText("Completion Status")).not.toBeInTheDocument();
@@ -121,13 +95,7 @@ describe("PlanDrillDown", () => {
     });
 
     it("does NOT show actuals columns for DRAFT plan", () => {
-      render(
-        <PlanDrillDown
-          {...defaultProps}
-          plan={{ ...plan, state: PlanState.DRAFT }}
-          commits={[commit]}
-        />,
-      );
+      render(<PlanDrillDown {...defaultProps} plan={{ ...plan, state: PlanState.DRAFT }} commits={[commit]} />);
 
       const table = screen.getByTestId("drilldown-commits");
       expect(within(table).queryByText("Completion Status")).not.toBeInTheDocument();
@@ -136,13 +104,7 @@ describe("PlanDrillDown", () => {
     it.each([PlanState.RECONCILING, PlanState.RECONCILED, PlanState.CARRY_FORWARD])(
       "shows actuals columns for %s plan",
       (state) => {
-        render(
-          <PlanDrillDown
-            {...defaultProps}
-            plan={{ ...plan, state }}
-            commits={[commit]}
-          />,
-        );
+        render(<PlanDrillDown {...defaultProps} plan={{ ...plan, state }} commits={[commit]} />);
 
         const table = screen.getByTestId("drilldown-commits");
         expect(within(table).getByText("Completion Status")).toBeInTheDocument();
@@ -156,13 +118,7 @@ describe("PlanDrillDown", () => {
     const reconciledPlan = { ...plan, state: PlanState.RECONCILED };
 
     it("shows '—' when commit has no actual", () => {
-      render(
-        <PlanDrillDown
-          {...defaultProps}
-          plan={reconciledPlan}
-          commits={[{ ...commit, actual: null }]}
-        />,
-      );
+      render(<PlanDrillDown {...defaultProps} plan={reconciledPlan} commits={[{ ...commit, actual: null }]} />);
 
       expect(screen.getByTestId("actual-status-commit-1")).toHaveTextContent("—");
       expect(screen.getByTestId("actual-result-commit-1")).toHaveTextContent("—");
@@ -181,13 +137,7 @@ describe("PlanDrillDown", () => {
         },
       };
 
-      render(
-        <PlanDrillDown
-          {...defaultProps}
-          plan={reconciledPlan}
-          commits={[commitWithActual]}
-        />,
-      );
+      render(<PlanDrillDown {...defaultProps} plan={reconciledPlan} commits={[commitWithActual]} />);
 
       expect(screen.getByTestId("actual-status-commit-1")).toHaveTextContent("DONE");
       expect(screen.getByTestId("actual-result-commit-1")).toHaveTextContent("Feature shipped successfully");
@@ -206,13 +156,7 @@ describe("PlanDrillDown", () => {
         },
       };
 
-      render(
-        <PlanDrillDown
-          {...defaultProps}
-          plan={reconciledPlan}
-          commits={[commitWithDelta]}
-        />,
-      );
+      render(<PlanDrillDown {...defaultProps} plan={reconciledPlan} commits={[commitWithDelta]} />);
 
       expect(screen.getByTestId("actual-status-commit-1")).toHaveTextContent("PARTIALLY");
       expect(screen.getByTestId("actual-result-commit-1")).toHaveTextContent("Only phase 1 shipped");

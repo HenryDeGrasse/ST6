@@ -1,0 +1,11 @@
+# Build outputs
+dist/
+build/
+node_modules/
+
+# Generated files
+contracts/src/generated/
+frontend/src/generated/
+
+# Gradle
+backend/

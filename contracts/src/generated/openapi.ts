@@ -233,6 +233,48 @@ export interface paths {
         patch: operations["updateActual"];
         trace?: never;
     };
+    "/commits/{commitId}/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Append a daily check-in to a commit
+         * @description Appends a structured progress micro-update to the given commit.
+         *     Check-in history is append-only — entries are never modified or deleted.
+         */
+        post: operations["addCheckIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commits/{commitId}/check-ins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get check-in history for a commit
+         * @description Returns the complete append-only check-in history for the given commit,
+         *     ordered oldest-first.
+         */
+        get: operations["getCheckIns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/weeks/{weekStart}/team/summary": {
         parameters: {
             query?: never;
@@ -448,6 +490,386 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/plan-quality-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lock-time AI plan quality nudge (Wave 1)
+         * @description Runs data-driven quality checks on the given plan and returns a list of
+         *     nudge items covering: RCDO coverage gaps, category imbalance, chess
+         *     distribution balance, and RCDO alignment vs team average.
+         *     No LLM is required — all checks are computed from existing plan data.
+         *     Returns 200 with status "unavailable" and empty nudges when the
+         *     planQualityNudge feature flag is disabled.
+         */
+        post: operations["planQualityCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/suggest-next-work": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * AI next-work suggestions — Phase 1 (Wave 2)
+         * @description Returns data-driven next-work suggestions for the authenticated user.
+         *     Phase 1 is pure data queries — no LLM required.
+         *
+         *     Suggestion sources:
+         *     - CARRY_FORWARD — commits not completed in the user's last 2 weeks
+         *     - COVERAGE_GAP — RCDO outcomes with zero team commits in the last 2–4 weeks
+         *       that had prior team activity
+         *
+         *     Results are filtered by recent DECLINE feedback (within 4 weeks) to avoid
+         *     re-surfacing dismissed items.
+         *
+         *     Returns 200 with status "unavailable" and empty suggestions when the
+         *     suggestNextWork feature flag is disabled.
+         */
+        post: operations["suggestNextWork"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/suggestion-feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record user feedback on a next-work suggestion
+         * @description Records a user action (ACCEPT, DEFER, DECLINE) on an AI-generated
+         *     next-work suggestion.
+         *
+         *     Upsert semantics: submitting feedback for a suggestion the user has already
+         *     acted on updates the previous record.
+         *
+         *     DECLINE actions suppress the suggestion from re-surfacing for 4 weeks.
+         *     Returns 200 with status "unavailable" when the suggestNextWork flag is disabled.
+         */
+        post: operations["recordSuggestionFeedback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plans/draft-from-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * "Start My Week" — create a draft plan pre-filled from history
+         * @description Creates (or updates) a DRAFT plan for the requested week, pre-filled with
+         *     AI-suggested commits derived from the user's last 4 weeks of planning history.
+         *
+         *     Suggestion sources:
+         *     - CARRIED_FORWARD — commits not completed (status != DONE) in the most recent
+         *       reconciled plan
+         *     - RECURRING — commit titles or outcome IDs appearing in 2+ consecutive historical weeks
+         *     - COVERAGE_GAP — reserved for future NextWorkService integration
+         *
+         *     Each suggested commit is persisted in the new/existing DRAFT plan with its source
+         *     stored in the tags[] array as "draft_source:<SOURCE>".
+         *
+         *     Returns 409 if the target week already has a plan in a non-DRAFT state.
+         */
+        post: operations["draftFromHistory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/me/trends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get cross-week trend analytics for the authenticated user
+         * @description Returns rolling-window planning metrics for the last N weeks:
+         *     strategic alignment rate, carry-forward velocity, completion accuracy,
+         *     priority/category distributions, per-week breakdown, and structured insights.
+         */
+        get: operations["getMyTrends"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/org-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get org policy configuration (admin only)
+         * @description Returns the current org policy including chess rules, cadence schedule,
+         *     and weekly digest configuration. Requires the ADMIN role.
+         */
+        get: operations["getOrgPolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/org-policy/digest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update the weekly digest schedule (admin only)
+         * @description Updates the digest_day and digest_time fields of the org's policy record.
+         *     Evicts the policy cache so the next digest job run picks up the change.
+         *     Requires the ADMIN role.
+         */
+        patch: operations["updateDigestConfig"];
+        trace?: never;
+    };
+    "/admin/adoption-metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get weekly adoption funnel metrics (admin only)
+         * @description Returns per-week breakdowns of the planning lifecycle funnel:
+         *     plans created, locked, reconciled, and reviewed, plus total active
+         *     users and cadence-compliance rate over a rolling window.
+         *     Requires the ADMIN role.
+         */
+        get: operations["getAdoptionMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/ai-usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get AI feature usage metrics (admin only)
+         * @description Returns suggestion acceptance/defer/decline rates from
+         *     ai_suggestion_feedback and in-process cache hit/miss statistics.
+         *     Requires the ADMIN role.
+         */
+        get: operations["getAiUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/rcdo-health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get RCDO health report (admin only)
+         * @description Examines locked commits from the last 8 weeks and produces a ranked
+         *     list of RCDO outcomes by commit coverage. Outcomes with zero commits
+         *     are listed as stale/uncovered. Requires the ADMIN role.
+         */
+        get: operations["getRcdoHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integrations/link-ticket": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Link a commit to an external ticket
+         * @description Links a weekly commit to a ticket in an external issue-tracker (Jira or Linear).
+         *     When the commit's title or description is empty, the values are auto-populated
+         *     from the fetched ticket data.
+         *
+         *     Idempotent: if the link already exists, returns the existing record with 201.
+         */
+        post: operations["linkTicket"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commits/{commitId}/linked-tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get external ticket links for a commit
+         * @description Returns all external ticket links associated with the given weekly commit.
+         */
+        get: operations["getLinkedTickets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integrations/webhook/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Handle an external ticket status webhook
+         * @description Receives a provider webhook payload and fan-outs any mapped ticket status
+         *     change to linked internal check-in entries. This endpoint is unauthenticated
+         *     because external providers cannot present a user session; provider-specific
+         *     signature verification is handled separately.
+         */
+        post: operations["handleIntegrationWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/me/capacity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my capacity profile
+         * @description Returns the authenticated user's most recently computed capacity profile.
+         *     Returns 404 when no profile has been computed yet (the profile is
+         *     generated by the weekly CapacityComputeJob).
+         */
+        get: operations["getMyCapacity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/team/capacity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get team capacity for a week (manager only)
+         * @description Returns the capacity posture of every direct report of the authenticated
+         *     manager for the requested week. Requires the MANAGER role.
+         */
+        get: operations["getTeamCapacity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/me/estimation-coaching": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get estimation coaching feedback for a plan
+         * @description Returns post-reconciliation estimation coaching insights for the
+         *     authenticated user's specified plan. Gated by the estimationCoaching
+         *     feature flag on the backend.
+         */
+        get: operations["getEstimationCoaching"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -523,6 +945,7 @@ export interface components {
             confidence?: number | null;
             tags: string[];
             progressNotes: string;
+            estimatedHours?: number | null;
             /** Format: uuid */
             snapshotRallyCryId?: string | null;
             snapshotRallyCryName?: string | null;
@@ -580,6 +1003,7 @@ export interface components {
             confidence?: number | null;
             /** @default [] */
             tags: string[];
+            estimatedHours?: number | null;
         };
         UpdateCommitRequest: {
             title?: string;
@@ -593,6 +1017,7 @@ export interface components {
             confidence?: number | null;
             tags?: string[];
             progressNotes?: string;
+            estimatedHours?: number | null;
         };
         UpdateActualRequest: {
             actualResult: string;
@@ -761,6 +1186,688 @@ export interface components {
             detail: string;
             /** @enum {string} */
             severity: "INFO" | "WARNING" | "POSITIVE";
+        };
+        PlanQualityCheckRequest: {
+            /**
+             * Format: uuid
+             * @description The plan to assess for quality nudges
+             */
+            planId: string;
+        };
+        PlanQualityCheckResponse: {
+            /**
+             * @description ok when checks ran successfully; unavailable when flag is disabled
+             * @enum {string}
+             */
+            status: "ok" | "unavailable";
+            nudges: components["schemas"]["QualityNudge"][];
+        };
+        QualityNudge: {
+            /**
+             * @description Machine-readable nudge type identifier. Known values:
+             *     COVERAGE_GAP, CATEGORY_IMBALANCE, CHESS_NO_KING, CHESS_PAWN_HEAVY,
+             *     CHESS_BALANCED, ZERO_RCDO_ALIGNMENT, BELOW_TEAM_RCDO_ALIGNMENT,
+             *     HIGH_RCDO_ALIGNMENT
+             * @example COVERAGE_GAP
+             */
+            type: string;
+            /** @description Human-readable explanation shown in the UI */
+            message: string;
+            /**
+             * @description Visual treatment — INFO is neutral, WARNING is amber, POSITIVE is green
+             * @enum {string}
+             */
+            severity: "INFO" | "WARNING" | "POSITIVE";
+        };
+        SuggestNextWorkRequest: {
+            /**
+             * Format: date
+             * @description ISO date of the Monday to use as the reference week (e.g. 2026-03-16).
+             *     Defaults to the current Monday if omitted.
+             */
+            weekStart?: string;
+        };
+        SuggestNextWorkResponse: {
+            /**
+             * @description ok when suggestions were computed; unavailable when flag is disabled
+             * @enum {string}
+             */
+            status: "ok" | "unavailable";
+            suggestions: components["schemas"]["NextWorkSuggestion"][];
+        };
+        NextWorkSuggestion: {
+            /**
+             * Format: uuid
+             * @description Stable deterministic ID for feedback correlation
+             */
+            suggestionId: string;
+            /** @description Suggested commit title */
+            title: string;
+            /**
+             * Format: uuid
+             * @description RCDO outcome UUID (null for non-strategic carry-forward items)
+             */
+            suggestedOutcomeId?: string | null;
+            /** @description Recommended chess priority (null when no recommendation available) */
+            suggestedChessPriority?: components["schemas"]["ChessPriority"] | null;
+            /**
+             * Format: double
+             * @description Confidence score for this suggestion
+             */
+            confidence: number;
+            /**
+             * @description How this suggestion was generated
+             * @enum {string}
+             */
+            source: "CARRY_FORWARD" | "COVERAGE_GAP" | "EXTERNAL_TICKET";
+            /** @description Human-readable detail about the suggestion source */
+            sourceDetail: string;
+            /** @description Human-readable explanation of why this item is suggested */
+            rationale: string;
+            /**
+             * @description URL to the ticket in the provider's web UI.
+             *     Only present when source is EXTERNAL_TICKET.
+             */
+            externalTicketUrl?: string | null;
+            /**
+             * @description Last-synced status label from the external provider (e.g. "In Progress").
+             *     Only present when source is EXTERNAL_TICKET.
+             */
+            externalTicketStatus?: string | null;
+        };
+        SuggestionFeedbackRequest: {
+            /**
+             * Format: uuid
+             * @description ID of the suggestion being acted upon
+             */
+            suggestionId: string;
+            /**
+             * @description User action on the suggestion.
+             *     DECLINE suppresses the suggestion for 4 weeks.
+             * @enum {string}
+             */
+            action: "ACCEPT" | "DEFER" | "DECLINE";
+            /** @description Optional free-text reason for the action */
+            reason?: string | null;
+            /** @description Source type for traceability (e.g. CARRY_FORWARD, COVERAGE_GAP) */
+            sourceType?: string | null;
+            /** @description Additional source context for traceability */
+            sourceDetail?: string | null;
+        };
+        SuggestionFeedbackResponse: {
+            /**
+             * @description ok when feedback was recorded; unavailable when flag is disabled
+             * @enum {string}
+             */
+            status: "ok" | "unavailable";
+        };
+        /**
+         * @description Source classification for AI-suggested commits produced by the
+         *     draft-from-history service:
+         *     - CARRIED_FORWARD: not completed in the most recent reconciled plan
+         *     - RECURRING: similar title or outcome ID appeared in 2+ consecutive weeks
+         *     - COVERAGE_GAP: coverage gap (future NextWorkService integration)
+         * @enum {string}
+         */
+        CommitSource: "CARRIED_FORWARD" | "RECURRING" | "COVERAGE_GAP";
+        SuggestedCommit: {
+            /**
+             * Format: uuid
+             * @description ID of the newly created DRAFT commit
+             */
+            commitId: string;
+            title: string;
+            description?: string | null;
+            chessPriority?: components["schemas"]["ChessPriority"] | null;
+            category?: components["schemas"]["CommitCategory"] | null;
+            /** Format: uuid */
+            outcomeId?: string | null;
+            nonStrategicReason?: string | null;
+            expectedResult?: string | null;
+            source: components["schemas"]["CommitSource"];
+        };
+        DraftFromHistoryRequest: {
+            /**
+             * Format: date
+             * @description ISO date of the Monday that starts the target week (e.g. 2026-03-16).
+             *     Must be a Monday; returns 422 otherwise.
+             */
+            weekStart: string;
+        };
+        DraftFromHistoryResponse: {
+            /**
+             * Format: uuid
+             * @description ID of the created or updated DRAFT plan
+             */
+            planId: string;
+            /** @description Ordered list of suggested commits added to the draft plan */
+            suggestedCommits: components["schemas"]["SuggestedCommit"][];
+        };
+        CheckInRequest: {
+            /**
+             * @description Current progress status of the commit
+             * @enum {string}
+             */
+            status: "ON_TRACK" | "AT_RISK" | "BLOCKED" | "DONE_EARLY";
+            /** @description Optional free-text note (stored as empty string if omitted) */
+            note?: string;
+        };
+        CheckInEntry: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            commitId: string;
+            /** @enum {string} */
+            status: "ON_TRACK" | "AT_RISK" | "BLOCKED" | "DONE_EARLY";
+            note: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CheckInHistoryResponse: {
+            /** Format: uuid */
+            commitId: string;
+            /** @description Append-only history ordered oldest-first */
+            entries: components["schemas"]["CheckInEntry"][];
+        };
+        TrendsResponse: {
+            /** @description Number of weeks with at least one commit */
+            weeksAnalyzed: number;
+            /**
+             * Format: date
+             * @description Earliest Monday in the rolling window
+             */
+            windowStart: string;
+            /**
+             * Format: date
+             * @description Most recent Monday in the rolling window
+             */
+            windowEnd: string;
+            /**
+             * Format: double
+             * @description Fraction of commits linked to an RCDO outcome
+             */
+            strategicAlignmentRate: number;
+            /**
+             * Format: double
+             * @description Org-wide strategic alignment rate for comparison
+             */
+            teamStrategicAlignmentRate: number;
+            /**
+             * Format: double
+             * @description Average carry-forward commits per active week
+             */
+            avgCarryForwardPerWeek: number;
+            /** @description Consecutive recent weeks with at least one carry-forward commit */
+            carryForwardStreak: number;
+            /**
+             * Format: double
+             * @description Mean confidence across all commits in the window
+             */
+            avgConfidence: number;
+            /**
+             * Format: double
+             * @description Mean completion rate across reconciled weeks
+             */
+            completionAccuracy: number;
+            /**
+             * Format: double
+             * @description avgConfidence minus completionAccuracy (positive = overconfident)
+             */
+            confidenceAccuracyGap: number;
+            /** @description Fraction of commits per ChessPriority (KING, QUEEN, …) */
+            priorityDistribution: {
+                [key: string]: number;
+            };
+            /** @description Fraction of commits per CommitCategory (DELIVERY, OPERATIONS, …) */
+            categoryDistribution: {
+                [key: string]: number;
+            };
+            /** @description Per-week breakdown, oldest to newest */
+            weekPoints: components["schemas"]["WeekTrendPoint"][];
+            /** @description Structured insights for notable patterns */
+            insights: components["schemas"]["TrendInsight"][];
+        };
+        WeekTrendPoint: {
+            /** Format: date */
+            weekStart: string;
+            totalCommits: number;
+            strategicCommits: number;
+            carryForwardCommits: number;
+            /** Format: double */
+            avgConfidence: number;
+            /** Format: double */
+            completionRate: number;
+            hasActuals: boolean;
+            priorityCounts: {
+                [key: string]: number;
+            };
+            categoryCounts: {
+                [key: string]: number;
+            };
+        };
+        TrendInsight: {
+            /**
+             * @description Machine-readable insight type identifier
+             * @example CARRY_FORWARD_STREAK
+             */
+            type: string;
+            /** @description Human-readable explanation */
+            message: string;
+            /** @enum {string} */
+            severity: "INFO" | "WARNING" | "POSITIVE";
+        };
+        /** @description Immutable snapshot of an org's configuration. Returned by the admin org-policy endpoints. */
+        OrgPolicy: {
+            /** @description Whether at least one KING commit is required to lock a plan */
+            chessKingRequired: boolean;
+            /** @description Maximum KING commits allowed per plan */
+            chessMaxKing: number;
+            /** @description Maximum QUEEN commits allowed per plan */
+            chessMaxQueen: number;
+            /** @description Day-of-week for the plan lock reminder (e.g. "MONDAY") */
+            lockDay: string;
+            /** @description Wall-clock time for the plan lock reminder in HH:mm format (e.g. "10:00") */
+            lockTime: string;
+            /** @description Day-of-week for the reconciliation reminder (e.g. "FRIDAY") */
+            reconcileDay: string;
+            /** @description Wall-clock time for the reconciliation reminder in HH:mm format (e.g. "16:00") */
+            reconcileTime: string;
+            /** @description Whether locking is blocked when RCDO data is stale */
+            blockLockOnStaleRcdo: boolean;
+            /** @description How many minutes before RCDO data is considered stale */
+            rcdoStalenessThresholdMinutes: number;
+            /**
+             * @description Day-of-week for the weekly digest notification (e.g. "FRIDAY").
+             *     The DigestJob fires once the current time is on or after digestTime on this day.
+             */
+            digestDay: string;
+            /** @description Wall-clock time for the weekly digest in valid 24-hour HH:mm format (e.g. "17:00") */
+            digestTime: string;
+        };
+        /** @description Request body for updating the org's weekly digest schedule. */
+        UpdateDigestConfigRequest: {
+            /**
+             * @description Day-of-week for the weekly digest (e.g. "FRIDAY", "MONDAY").
+             *     Must be a valid Java DayOfWeek name in any case.
+             * @example FRIDAY
+             */
+            digestDay: string;
+            /**
+             * @description Wall-clock time for the weekly digest in valid 24-hour HH:mm format (e.g. "17:00")
+             * @example 17:00
+             */
+            digestTime: string;
+        };
+        /**
+         * @description Weekly adoption funnel metrics produced by the admin dashboard.
+         *     Each week in the rolling window is broken down into funnel stages.
+         */
+        AdoptionMetrics: {
+            /** @description Number of weeks in the rolling window */
+            weeks: number;
+            /**
+             * Format: date
+             * @description Monday at the start of the rolling window
+             */
+            windowStart: string;
+            /**
+             * Format: date
+             * @description Monday at the end of the rolling window (current week)
+             */
+            windowEnd: string;
+            /** @description Distinct users with any plan in the rolling window */
+            totalActiveUsers: number;
+            /**
+             * Format: double
+             * @description Fraction of locked plans that were locked ON_TIME (not LATE_LOCK)
+             */
+            cadenceComplianceRate: number;
+            /** @description Per-week funnel breakdown, oldest to newest */
+            weeklyPoints: components["schemas"]["WeeklyAdoptionPoint"][];
+        };
+        /** @description Adoption funnel counts for a single week. */
+        WeeklyAdoptionPoint: {
+            /**
+             * Format: date
+             * @description Monday of this week
+             */
+            weekStart: string;
+            /** @description Distinct users with any plan this week */
+            activeUsers: number;
+            /** @description Total plans in any state this week */
+            plansCreated: number;
+            /** @description Plans that reached LOCKED state or beyond */
+            plansLocked: number;
+            /** @description Plans that reached RECONCILED or CARRY_FORWARD state */
+            plansReconciled: number;
+            /** @description Plans where a manager review was submitted (APPROVED or CHANGES_REQUESTED) */
+            plansReviewed: number;
+        };
+        /** @description AI feature usage metrics over a rolling window. */
+        AiUsageMetrics: {
+            /** @description Number of weeks in the rolling window */
+            weeks: number;
+            /**
+             * Format: date
+             * @description Start of the rolling window
+             */
+            windowStart: string;
+            /**
+             * Format: date
+             * @description End of the rolling window
+             */
+            windowEnd: string;
+            /**
+             * Format: int64
+             * @description Total suggestion feedback records in the window
+             */
+            totalFeedbackCount: number;
+            /**
+             * Format: int64
+             * @description Count of ACCEPT actions
+             */
+            acceptedCount: number;
+            /**
+             * Format: int64
+             * @description Count of DEFER actions
+             */
+            deferredCount: number;
+            /**
+             * Format: int64
+             * @description Count of DECLINE actions
+             */
+            declinedCount: number;
+            /**
+             * Format: double
+             * @description acceptedCount / totalFeedbackCount (0 if no feedback)
+             */
+            acceptanceRate: number;
+            /**
+             * Format: int64
+             * @description Cumulative AI cache hits attributed to this org since the last service restart.
+             */
+            cacheHits: number;
+            /**
+             * Format: int64
+             * @description Cumulative AI cache misses attributed to this org since the last service restart
+             */
+            cacheMisses: number;
+            /**
+             * Format: double
+             * @description cacheHits / (cacheHits + cacheMisses) (0 if no cache activity)
+             */
+            cacheHitRate: number;
+            /**
+             * Format: int64
+             * @description Coarse estimate of AI tokens spent for this org since the last service restart.
+             *     Computed as cacheMisses × 1000 tokens/request.
+             */
+            approximateTokensSpent: number;
+            /**
+             * Format: int64
+             * @description Coarse estimate of AI tokens avoided by cache hits for this org since the last
+             *     service restart. Computed as cacheHits × 1000 tokens/request.
+             */
+            approximateTokensSaved: number;
+        };
+        /**
+         * @description RCDO health report ranking outcomes by commit coverage over a recent window.
+         *     Helps leadership identify strategic objectives that are being neglected.
+         */
+        RcdoHealthReport: {
+            /**
+             * Format: date-time
+             * @description Timestamp when the report was generated
+             */
+            generatedAt: string;
+            /** @description Number of weeks examined */
+            windowWeeks: number;
+            /** @description Total outcomes in the RCDO tree */
+            totalOutcomes: number;
+            /** @description Outcomes with at least one commit in the window */
+            coveredOutcomes: number;
+            /** @description Covered outcomes ranked by commitCount descending */
+            topOutcomes: components["schemas"]["OutcomeHealthItem"][];
+            /** @description Outcomes with zero commits in the window, sorted by outcomeName */
+            staleOutcomes: components["schemas"]["OutcomeHealthItem"][];
+        };
+        /** @description Commit coverage data for a single RCDO outcome. */
+        OutcomeHealthItem: {
+            /** @description UUID string of the outcome */
+            outcomeId: string;
+            /** @description Display name of the outcome */
+            outcomeName: string;
+            /** @description UUID string of the parent objective */
+            objectiveId: string;
+            /** @description Display name of the parent objective */
+            objectiveName: string;
+            /** @description UUID string of the parent rally cry */
+            rallyCryId: string;
+            /** @description Display name of the parent rally cry */
+            rallyCryName: string;
+            /** @description Number of commits linked to this outcome in the analysis window */
+            commitCount: number;
+        };
+        /** @description Request body for linking a weekly commit to an external issue-tracker ticket. */
+        LinkTicketRequest: {
+            /**
+             * Format: uuid
+             * @description ID of the weekly commit to link
+             */
+            commitId: string;
+            /**
+             * @description External issue-tracker provider
+             * @enum {string}
+             */
+            provider: "JIRA" | "LINEAR";
+            /** @description Provider-specific ticket identifier (e.g. "PROJ-42" for Jira) */
+            externalTicketId: string;
+        };
+        /** @description A link between a weekly commit and an external issue-tracker ticket. */
+        ExternalTicketLink: {
+            /**
+             * Format: uuid
+             * @description Link record UUID
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @description Organisation ID
+             */
+            orgId: string;
+            /**
+             * Format: uuid
+             * @description Weekly commit UUID
+             */
+            commitId: string;
+            /**
+             * @description External issue-tracker provider
+             * @enum {string}
+             */
+            provider: "JIRA" | "LINEAR";
+            /** @description Provider-specific ticket identifier */
+            externalTicketId: string;
+            /** @description URL to the ticket in the provider's web UI */
+            externalTicketUrl?: string | null;
+            /** @description Current ticket status as returned by the provider */
+            externalStatus?: string | null;
+            /**
+             * Format: date-time
+             * @description Timestamp of the most recent status sync
+             */
+            lastSyncedAt?: string | null;
+            /**
+             * Format: date-time
+             * @description Timestamp when the link was created
+             */
+            createdAt: string;
+        };
+        /** @description All external ticket links for a weekly commit. */
+        LinkedTicketsResponse: {
+            /**
+             * Format: uuid
+             * @description The weekly commit UUID
+             */
+            commitId: string;
+            /** @description List of linked external tickets */
+            links: components["schemas"]["ExternalTicketLink"][];
+        };
+        /** @description Result of accepting an integration webhook. */
+        WebhookResponse: {
+            /**
+             * @description External issue-tracker provider that sent the webhook
+             * @enum {string}
+             */
+            provider: "JIRA" | "LINEAR";
+            /**
+             * Format: int32
+             * @description Number of check-in entries auto-created from the webhook
+             */
+            checkInsCreated: number;
+        };
+        CapacityProfileResponse: {
+            /**
+             * Format: uuid
+             * @description Organisation ID
+             */
+            orgId: string;
+            /**
+             * Format: uuid
+             * @description User ID
+             */
+            userId: string;
+            /** @description Number of weeks of history included in the profile */
+            weeksAnalyzed: number;
+            /**
+             * Format: double
+             * @description Mean estimated hours per week (1 d.p.)
+             */
+            avgEstimatedHours?: number | null;
+            /**
+             * Format: double
+             * @description Mean actual hours per week (1 d.p.)
+             */
+            avgActualHours?: number | null;
+            /**
+             * Format: double
+             * @description Ratio of avgActual / avgEstimated; null when no estimated hours recorded
+             */
+            estimationBias?: number | null;
+            /**
+             * Format: double
+             * @description p50 of actual weekly totals — the sustainable cap
+             */
+            realisticWeeklyCap?: number | null;
+            /** @description JSON array of per-category bias breakdowns */
+            categoryBiasJson?: string | null;
+            /** @description JSON array of per-priority completion statistics */
+            priorityCompletionJson?: string | null;
+            /**
+             * @description Data quality tier
+             * @enum {string}
+             */
+            confidenceLevel: "LOW" | "MEDIUM" | "HIGH";
+            /**
+             * Format: date-time
+             * @description ISO-8601 timestamp of the most recent profile computation
+             */
+            computedAt?: string | null;
+        };
+        /** @description Manager team-capacity view for a given week. */
+        TeamCapacityResponse: {
+            /**
+             * Format: date
+             * @description ISO-8601 date (Monday) for the week being queried
+             */
+            weekStart: string;
+            /** @description Capacity summary for each direct report */
+            members: components["schemas"]["TeamMemberCapacity"][];
+        };
+        /** @description Capacity summary for a single team member in a given week. */
+        TeamMemberCapacity: {
+            /**
+             * Format: uuid
+             * @description Team member user ID
+             */
+            userId: string;
+            /** @description Human-readable display name */
+            name: string | null;
+            /**
+             * Format: double
+             * @description Sum of raw estimated_hours across all commits for the week
+             */
+            estimatedHours: number;
+            /**
+             * Format: double
+             * @description Bias-adjusted estimated total
+             */
+            adjustedEstimate: number;
+            /**
+             * Format: double
+             * @description p50 realistic weekly capacity cap, or null if no profile
+             */
+            realisticCap?: number | null;
+            /**
+             * @description Overcommitment severity level
+             * @enum {string}
+             */
+            overcommitLevel: "NONE" | "MODERATE" | "HIGH";
+        };
+        /** @description Post-reconciliation estimation coaching for a plan. */
+        EstimationCoachingResponse: {
+            /**
+             * Format: double
+             * @description Sum of estimated hours for all commits in the plan
+             */
+            thisWeekEstimated: number;
+            /**
+             * Format: double
+             * @description Sum of actual hours for all actuals in the plan
+             */
+            thisWeekActual: number;
+            /**
+             * Format: double
+             * @description thisWeekActual / thisWeekEstimated ratio; null when thisWeekEstimated is zero
+             */
+            accuracyRatio?: number | null;
+            /**
+             * Format: double
+             * @description Historical avgActual / avgEstimated from capacity profile; null if no profile
+             */
+            overallBias?: number | null;
+            /**
+             * @description Profile data quality tier
+             * @enum {string}
+             */
+            confidenceLevel: "LOW" | "MEDIUM" | "HIGH";
+            /** @description Per-category bias breakdown with optional coaching tips */
+            categoryInsights: components["schemas"]["CategoryInsight"][];
+            /** @description Per-priority completion-rate statistics */
+            priorityInsights: components["schemas"]["PriorityInsight"][];
+        };
+        /** @description Per-category estimation insight. */
+        CategoryInsight: {
+            /** @description Commit category name (e.g. DELIVERY) */
+            category: string;
+            /**
+             * Format: double
+             * @description Historical actual/estimated ratio for this category
+             */
+            bias?: number | null;
+            /** @description Human-readable coaching tip when bias deviates from 1.0 by ≥15% */
+            tip?: string | null;
+        };
+        /** @description Per-priority completion insight. */
+        PriorityInsight: {
+            /** @description Chess priority name (e.g. KING) */
+            priority: string;
+            /**
+             * Format: double
+             * @description Fraction of commits with status DONE
+             */
+            completionRate: number;
+            /** @description Number of historical commits in this priority tier */
+            sampleSize: number;
         };
         ApiError: {
             code: string;
@@ -1260,6 +2367,61 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    addCheckIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                commitId: components["parameters"]["CommitIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInRequest"];
+            };
+        };
+        responses: {
+            /** @description Check-in entry created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckInEntry"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getCheckIns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                commitId: components["parameters"]["CommitIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Check-in history returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckInHistoryResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     getTeamSummary: {
         parameters: {
             query?: {
@@ -1550,6 +2712,426 @@ export interface operations {
                 };
                 content?: never;
             };
+        };
+    };
+    planQualityCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanQualityCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description Quality nudges returned (may be empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanQualityCheckResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    suggestNextWork: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuggestNextWorkRequest"];
+            };
+        };
+        responses: {
+            /** @description Suggestions returned (may be empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuggestNextWorkResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    recordSuggestionFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuggestionFeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description Feedback recorded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuggestionFeedbackResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    draftFromHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftFromHistoryRequest"];
+            };
+        };
+        responses: {
+            /** @description Draft plan created or updated with suggestions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftFromHistoryResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getMyTrends: {
+        parameters: {
+            query?: {
+                /** @description Size of the rolling window in weeks (1–26, default 8) */
+                weeks?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Trend data returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendsResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getOrgPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Org policy returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgPolicy"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updateDigestConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDigestConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description Digest configuration updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgPolicy"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getAdoptionMetrics: {
+        parameters: {
+            query?: {
+                /** @description Rolling-window size in weeks (1–26) */
+                weeks?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Adoption metrics returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdoptionMetrics"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getAiUsage: {
+        parameters: {
+            query?: {
+                /** @description Rolling-window size in weeks (1–26) */
+                weeks?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description AI usage metrics returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiUsageMetrics"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getRcdoHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description RCDO health report returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RcdoHealthReport"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    linkTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkTicketRequest"];
+            };
+        };
+        responses: {
+            /** @description Ticket linked (or already linked — idempotent) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalTicketLink"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getLinkedTickets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The weekly commit UUID */
+                commitId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of linked tickets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkedTicketsResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    handleIntegrationWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description External issue-tracker provider (case-insensitive; e.g. jira or linear) */
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Webhook accepted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookResponse"];
+                };
+            };
+        };
+    };
+    getMyCapacity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Capacity profile returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapacityProfileResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getTeamCapacity: {
+        parameters: {
+            query: {
+                /** @description ISO-8601 Monday date (e.g. 2026-03-16) */
+                weekStart: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Team capacity returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamCapacityResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getEstimationCoaching: {
+        parameters: {
+            query: {
+                /** @description UUID of the weekly plan to generate coaching for */
+                planId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Estimation coaching returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstimationCoachingResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
         };
     };
     healthCheck: {

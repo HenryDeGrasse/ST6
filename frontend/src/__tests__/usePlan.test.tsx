@@ -38,16 +38,14 @@ describe("usePlan", () => {
 
   it("auto-retries lockPlan with server's currentVersion on 409 and succeeds", async () => {
     const lockedPlan = { id: "plan-1", version: 3, state: "LOCKED" };
-    mockClient.POST
-      .mockResolvedValueOnce({
-        data: undefined,
-        error: { error: { code: "CONFLICT", message: "modified", details: [{ currentVersion: 3 }] } },
-        response: { status: 409 },
-      })
-      .mockResolvedValueOnce({
-        data: lockedPlan,
-        response: { status: 200 },
-      });
+    mockClient.POST.mockResolvedValueOnce({
+      data: undefined,
+      error: { error: { code: "CONFLICT", message: "modified", details: [{ currentVersion: 3 }] } },
+      response: { status: 409 },
+    }).mockResolvedValueOnce({
+      data: lockedPlan,
+      response: { status: 200 },
+    });
 
     const { result } = renderHook(() => usePlan());
 
@@ -107,16 +105,14 @@ describe("usePlan", () => {
 
   it("auto-retries startReconciliation with server's currentVersion on 409 and succeeds", async () => {
     const reconcilingPlan = { id: "plan-1", version: 4, state: "RECONCILING" };
-    mockClient.POST
-      .mockResolvedValueOnce({
-        data: undefined,
-        error: { error: { code: "CONFLICT", message: "modified", details: [{ currentVersion: 4 }] } },
-        response: { status: 409 },
-      })
-      .mockResolvedValueOnce({
-        data: reconcilingPlan,
-        response: { status: 200 },
-      });
+    mockClient.POST.mockResolvedValueOnce({
+      data: undefined,
+      error: { error: { code: "CONFLICT", message: "modified", details: [{ currentVersion: 4 }] } },
+      response: { status: 409 },
+    }).mockResolvedValueOnce({
+      data: reconcilingPlan,
+      response: { status: 200 },
+    });
 
     const { result } = renderHook(() => usePlan());
 

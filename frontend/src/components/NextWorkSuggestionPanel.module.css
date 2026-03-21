@@ -1,0 +1,652 @@
+/**
+ * NextWorkSuggestionPanel – CSS Module (Academia / Classical)
+ *
+ * AI-Suggested Work panel shown on the DRAFT plan page (Wave 2).
+ * Uses the same ai-insight design tokens as AiManagerInsightsPanel
+ * and MyTrendsPanel for visual consistency.
+ */
+
+/* ─── Outer panel ────────────────────────────────────────────────────────── */
+
+.panel {
+  padding:          var(--wc-space-sm) var(--wc-space-md);
+  border:           1.5px dashed var(--wc-ai-insight-border);
+  border-radius:    var(--wc-radius-md);
+  background-color: var(--wc-ai-insight-bg);
+  margin-bottom:    var(--wc-space-md);
+}
+
+/* ─── Header row ─────────────────────────────────────────────────────────── */
+
+.header {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  gap:             var(--wc-space-sm);
+  margin-bottom:   var(--wc-space-sm);
+}
+
+.headerLeft {
+  display:     flex;
+  align-items: center;
+  gap:         var(--wc-space-xs);
+  flex-wrap:   wrap;
+}
+
+.robotIcon {
+  color:       var(--wc-ai-insight-text);
+  flex-shrink: 0;
+}
+
+.title {
+  font-family:    var(--wc-font-display);
+  font-size:      0.6875rem;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color:          var(--wc-ai-insight-text);
+  white-space:    nowrap;
+}
+
+.advisoryBadge {
+  display:          inline-flex;
+  align-items:      center;
+  padding:          0.1rem 0.4rem;
+  border-radius:    var(--wc-radius-sm);
+  background-color: var(--wc-ai-insight-bg);
+  border:           1px solid var(--wc-ai-insight-border);
+  font-family:      var(--wc-font-display);
+  font-size:        0.5625rem;
+  font-weight:      600;
+  color:            var(--wc-ai-insight-text);
+  letter-spacing:   0.1em;
+  text-transform:   uppercase;
+  white-space:      nowrap;
+}
+
+.refreshButton {
+  display:          inline-flex;
+  align-items:      center;
+  justify-content:  center;
+  width:            1.75rem;
+  height:           1.75rem;
+  border:           1px solid var(--wc-color-border);
+  border-radius:    var(--wc-radius-sm);
+  background:       transparent;
+  color:            var(--wc-color-text-muted);
+  font-size:        1rem;
+  cursor:           pointer;
+  transition:
+    background-color var(--wc-transition-fast),
+    color            var(--wc-transition-fast);
+  flex-shrink:      0;
+}
+
+.refreshButton:hover:not(:disabled) {
+  background-color: var(--wc-color-bg-tertiary);
+  color:            var(--wc-color-text-primary);
+}
+
+.refreshButton:disabled {
+  opacity: 0.4;
+  cursor:  not-allowed;
+}
+
+.refreshButton:focus-visible {
+  outline:        2px solid var(--wc-color-accent);
+  outline-offset: 2px;
+}
+
+/* ─── Body states ────────────────────────────────────────────────────────── */
+
+.loading {
+  display:     flex;
+  align-items: center;
+  gap:         var(--wc-space-xs);
+  padding:     var(--wc-space-xs) 0;
+  font-size:   0.875rem;
+  color:       var(--wc-color-text-muted);
+  font-style:  italic;
+}
+
+.rateLimited {
+  padding:   var(--wc-space-xs) 0;
+  font-size: 0.875rem;
+  color:     var(--wc-color-error);
+}
+
+.unavailable {
+  padding:    var(--wc-space-xs) 0;
+  font-size:  0.875rem;
+  color:      var(--wc-color-text-muted);
+  font-style: italic;
+}
+
+.idle {
+  padding: var(--wc-space-xs) 0;
+}
+
+.fetchButton {
+  display:          inline-flex;
+  align-items:      center;
+  padding:          0.35rem 0.875rem;
+  border-radius:    var(--wc-radius-sm);
+  border:           1px solid var(--wc-ai-insight-border);
+  background-color: transparent;
+  color:            var(--wc-ai-insight-text);
+  font-family:      var(--wc-font-body);
+  font-size:        0.875rem;
+  font-weight:      500;
+  cursor:           pointer;
+  transition:
+    background-color var(--wc-transition-fast),
+    color            var(--wc-transition-fast);
+}
+
+.fetchButton:hover {
+  background-color: var(--wc-ai-insight-bg);
+  color:            var(--wc-color-text-primary);
+}
+
+.fetchButton:focus-visible {
+  outline:        2px solid var(--wc-color-accent);
+  outline-offset: 2px;
+}
+
+.empty {
+  padding:    var(--wc-space-xs) 0;
+  font-size:  0.875rem;
+  color:      var(--wc-color-success);
+  font-style: italic;
+}
+
+/* ─── Suggestion list ────────────────────────────────────────────────────── */
+
+.suggestionList {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--wc-space-sm);
+  margin:         0;
+  padding:        0;
+  list-style:     none;
+}
+
+.suggestionItem {
+  padding:          var(--wc-space-sm) var(--wc-space-md);
+  border:           1px solid var(--wc-color-border);
+  border-radius:    var(--wc-radius-sm);
+  background-color: var(--wc-color-bg-secondary);
+}
+
+/* ─── Card header: title + priority ─────────────────────────────────────── */
+
+.cardHeader {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     flex-start;
+  gap:             var(--wc-space-sm);
+  margin-bottom:   0.25rem;
+}
+
+.suggestionTitle {
+  font-family: var(--wc-font-heading);
+  font-weight: 600;
+  font-size:   0.9375rem;
+  color:       var(--wc-color-text-primary);
+  line-height: 1.4;
+  flex:        1;
+  min-width:   0;
+}
+
+.priorityBadge {
+  display:        inline-flex;
+  align-items:    center;
+  padding:        0.1rem 0.45rem;
+  border-radius:  var(--wc-radius-sm);
+  background:     var(--wc-color-accent-muted);
+  border:         1px solid rgba(201, 169, 98, 0.25);
+  font-family:    var(--wc-font-display);
+  font-size:      0.5625rem;
+  font-weight:    600;
+  color:          var(--wc-color-accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space:    nowrap;
+  flex-shrink:    0;
+}
+
+/* ─── Suggested RCDO link ───────────────────────────────────────────────── */
+
+.rcdoRow {
+  display:       flex;
+  align-items:   center;
+  gap:           0.35rem;
+  margin-bottom: 0.35rem;
+  flex-wrap:     wrap;
+}
+
+.rcdoIcon {
+  color:       var(--wc-color-accent);
+  flex-shrink: 0;
+}
+
+.rcdoLabel {
+  font-family:    var(--wc-font-display);
+  font-size:      0.5625rem;
+  font-weight:    600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color:          var(--wc-color-text-muted);
+}
+
+.rcdoValue {
+  font-size:   0.8125rem;
+  line-height: 1.4;
+  color:       var(--wc-color-text-secondary);
+}
+
+/* ─── AI-generated label + confidence bar ────────────────────────────────── */
+
+.confidenceRow {
+  display:       flex;
+  align-items:   center;
+  gap:           0.4rem;
+  margin-bottom: 0.35rem;
+  flex-wrap:     wrap;
+}
+
+.aiGeneratedLabel {
+  display:        inline-flex;
+  align-items:    center;
+  padding:        0.1rem 0.4rem;
+  border-radius:  var(--wc-radius-sm);
+  background-color: var(--wc-ai-insight-bg);
+  border:         1px solid var(--wc-ai-insight-border);
+  font-family:    var(--wc-font-display);
+  font-size:      0.5rem;
+  font-weight:    600;
+  color:          var(--wc-ai-insight-text);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space:    nowrap;
+}
+
+.confidenceBar {
+  flex:             1;
+  min-width:        3rem;
+  max-width:        5rem;
+  height:           0.375rem;
+  border-radius:    9999px;
+  background-color: var(--wc-color-border-muted, rgba(139, 170, 176, 0.2));
+  overflow:         hidden;
+}
+
+.confidenceFill {
+  height:           100%;
+  border-radius:    9999px;
+  background-color: var(--wc-ai-insight-text);
+  transition:       width var(--wc-transition-fast);
+}
+
+.confidencePct {
+  font-family:    var(--wc-font-display);
+  font-size:      0.625rem;
+  font-weight:    600;
+  color:          var(--wc-ai-insight-text);
+  white-space:    nowrap;
+  letter-spacing: 0.05em;
+}
+
+/* ─── Source context ─────────────────────────────────────────────────────── */
+
+.sourceRow {
+  display:       flex;
+  align-items:   center;
+  gap:           0.4rem;
+  margin-bottom: 0.25rem;
+  flex-wrap:     wrap;
+}
+
+.sourceBadge {
+  display:        inline-flex;
+  align-items:    center;
+  padding:        0.1rem 0.4rem;
+  border-radius:  var(--wc-radius-sm);
+  background-color: rgba(139, 170, 176, 0.12);
+  border:         1px solid rgba(139, 170, 176, 0.25);
+  font-family:    var(--wc-font-display);
+  font-size:      0.5625rem;
+  font-weight:    600;
+  color:          #8BAAB0;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space:    nowrap;
+}
+
+.sourceDetail {
+  margin:      0 0 0.35rem;
+  font-size:   0.8125rem;
+  color:       var(--wc-color-text-muted);
+  font-style:  italic;
+  line-height: 1.4;
+}
+
+/* ─── External ticket link and status badge ─────────────────────────────── */
+
+.ticketStatusBadge {
+  display:        inline-flex;
+  align-items:    center;
+  padding:        0.1rem 0.4rem;
+  border-radius:  var(--wc-radius-sm);
+  background-color: rgba(74, 144, 226, 0.12);
+  border:         1px solid rgba(74, 144, 226, 0.3);
+  font-family:    var(--wc-font-display);
+  font-size:      0.5625rem;
+  font-weight:    600;
+  color:          #4A90E2;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space:    nowrap;
+}
+
+.ticketLinkRow {
+  display:       flex;
+  align-items:   center;
+  margin-bottom: 0.35rem;
+}
+
+.ticketLink {
+  font-family:    var(--wc-font-body);
+  font-size:      0.8125rem;
+  color:          var(--wc-color-accent);
+  text-decoration: none;
+  transition:     color var(--wc-transition-fast);
+}
+
+.ticketLink:hover {
+  text-decoration: underline;
+  color:           var(--wc-color-accent);
+  filter:          brightness(1.2);
+}
+
+.ticketLink:focus-visible {
+  outline:        2px solid var(--wc-color-accent);
+  outline-offset: 2px;
+  border-radius:  var(--wc-radius-sm);
+}
+
+/* ─── "Why this suggestion?" expandable section ──────────────────────────── */
+
+.whySection {
+  margin-top: 0.35rem;
+}
+
+.whyToggle {
+  display:          inline-flex;
+  align-items:      center;
+  gap:              0.25rem;
+  padding:          0;
+  border:           none;
+  background:       transparent;
+  color:            var(--wc-color-text-muted);
+  font-family:      var(--wc-font-body);
+  font-size:        0.8125rem;
+  font-style:       italic;
+  cursor:           pointer;
+  text-decoration:  none;
+  transition:       color var(--wc-transition-fast);
+  line-height:      1.4;
+}
+
+.whyToggle:hover {
+  color: var(--wc-color-text-secondary);
+}
+
+.whyToggle:focus-visible {
+  outline:        2px solid var(--wc-color-accent);
+  outline-offset: 2px;
+  border-radius:  var(--wc-radius-sm);
+}
+
+.whyContent {
+  margin-top:  0.25rem;
+  padding:     0.4rem 0.6rem;
+  border-left: 2px solid var(--wc-ai-insight-border);
+  display:     flex;
+  flex-direction: column;
+  gap:         0.15rem;
+}
+
+/* ─── Rationale ──────────────────────────────────────────────────────────── */
+
+.rationale {
+  margin:      0;
+  font-size:   0.8125rem;
+  color:       var(--wc-color-text-secondary);
+  font-style:  italic;
+  line-height: 1.5;
+}
+
+/* ─── Decline form ───────────────────────────────────────────────────────── */
+
+.declineForm {
+  margin-top:     var(--wc-space-sm);
+  padding-top:    var(--wc-space-sm);
+  border-top:     1px solid var(--wc-color-border-muted);
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--wc-space-xs);
+}
+
+.declineLabel {
+  font-size:   0.8125rem;
+  font-weight: 500;
+  color:       var(--wc-color-text-secondary);
+}
+
+.declineInput {
+  width:            100%;
+  padding:          0.35rem 0.6rem;
+  border:           1px solid var(--wc-color-border);
+  border-radius:    var(--wc-radius-sm);
+  background-color: var(--wc-color-bg-primary);
+  color:            var(--wc-color-text-primary);
+  font-family:      var(--wc-font-body);
+  font-size:        0.875rem;
+  box-sizing:       border-box;
+}
+
+.declineInput:focus {
+  outline:      2px solid var(--wc-color-accent);
+  outline-offset: 1px;
+  border-color: var(--wc-color-accent);
+}
+
+.declineActions {
+  display:    flex;
+  gap:        var(--wc-space-xs);
+  justify-content: flex-end;
+}
+
+/* ─── Action row buttons ─────────────────────────────────────────────────── */
+
+.actionRow {
+  display:     flex;
+  gap:         var(--wc-space-xs);
+  flex-wrap:   wrap;
+  margin-top:  var(--wc-space-sm);
+  padding-top: var(--wc-space-sm);
+  border-top:  1px solid var(--wc-color-border-muted);
+}
+
+/* Accept — primary brass button */
+.acceptButton {
+  display:         inline-flex;
+  align-items:     center;
+  padding:         0.35rem 0.875rem;
+  border-radius:   var(--wc-radius-sm);
+  border:          none;
+  background:      var(--wc-brass-gradient);
+  color:           var(--wc-color-accent-foreground);
+  font-family:     var(--wc-font-display);
+  font-size:       0.6875rem;
+  font-weight:     600;
+  text-transform:  uppercase;
+  letter-spacing:  0.12em;
+  text-shadow:     var(--wc-text-engraved);
+  cursor:          pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.2),
+    inset 0 -1px 0 rgba(0,0,0,0.2),
+    0 2px 6px rgba(0,0,0,0.25);
+  transition:
+    filter     var(--wc-transition-fast),
+    box-shadow var(--wc-transition-fast);
+}
+
+.acceptButton:hover:not(:disabled) {
+  filter:     brightness(1.1);
+  box-shadow: var(--wc-shadow-glow);
+}
+
+.acceptButton:disabled {
+  opacity: 0.5;
+  cursor:  not-allowed;
+}
+
+.acceptButton:focus-visible {
+  outline:        2px solid var(--wc-color-accent);
+  outline-offset: 2px;
+}
+
+/* Defer — secondary outline button */
+.deferButton {
+  display:          inline-flex;
+  align-items:      center;
+  padding:          0.35rem 0.75rem;
+  border-radius:    var(--wc-radius-sm);
+  border:           1px solid var(--wc-color-border);
+  background-color: transparent;
+  color:            var(--wc-color-text-secondary);
+  font-family:      var(--wc-font-body);
+  font-size:        0.875rem;
+  font-weight:      500;
+  cursor:           pointer;
+  transition:
+    background-color var(--wc-transition-fast),
+    color            var(--wc-transition-fast);
+}
+
+.deferButton:hover:not(:disabled) {
+  background-color: var(--wc-color-bg-tertiary);
+  color:            var(--wc-color-text-primary);
+}
+
+.deferButton:disabled {
+  opacity: 0.4;
+  cursor:  not-allowed;
+}
+
+.deferButton:focus-visible {
+  outline:        2px solid var(--wc-color-accent);
+  outline-offset: 2px;
+}
+
+/* Decline — ghost button */
+.declineButton {
+  display:          inline-flex;
+  align-items:      center;
+  padding:          0.35rem 0.75rem;
+  border-radius:    var(--wc-radius-sm);
+  border:           1px solid transparent;
+  background-color: transparent;
+  color:            var(--wc-color-text-muted);
+  font-family:      var(--wc-font-body);
+  font-size:        0.875rem;
+  font-weight:      400;
+  cursor:           pointer;
+  transition:
+    color            var(--wc-transition-fast),
+    border-color     var(--wc-transition-fast);
+}
+
+.declineButton:hover:not(:disabled) {
+  color:        var(--wc-color-error);
+  border-color: var(--wc-color-error);
+}
+
+.declineButton:disabled {
+  opacity: 0.4;
+  cursor:  not-allowed;
+}
+
+.declineButton:focus-visible {
+  outline:        2px solid var(--wc-color-accent);
+  outline-offset: 2px;
+}
+
+/* Decline confirm button */
+.declineConfirmButton {
+  display:          inline-flex;
+  align-items:      center;
+  padding:          0.3rem 0.7rem;
+  border-radius:    var(--wc-radius-sm);
+  border:           1px solid var(--wc-color-error);
+  background-color: transparent;
+  color:            var(--wc-color-error);
+  font-family:      var(--wc-font-body);
+  font-size:        0.875rem;
+  font-weight:      500;
+  cursor:           pointer;
+  transition:
+    background-color var(--wc-transition-fast);
+}
+
+.declineConfirmButton:hover:not(:disabled) {
+  background-color: rgba(var(--wc-color-error-rgb, 200, 80, 80), 0.08);
+}
+
+.declineConfirmButton:disabled {
+  opacity: 0.4;
+  cursor:  not-allowed;
+}
+
+.declineConfirmButton:focus-visible {
+  outline:        2px solid var(--wc-color-accent);
+  outline-offset: 2px;
+}
+
+/* Cancel button (inside decline form) */
+.cancelButton {
+  display:          inline-flex;
+  align-items:      center;
+  padding:          0.3rem 0.7rem;
+  border-radius:    var(--wc-radius-sm);
+  border:           1px solid var(--wc-color-border);
+  background-color: transparent;
+  color:            var(--wc-color-text-muted);
+  font-family:      var(--wc-font-body);
+  font-size:        0.875rem;
+  font-weight:      400;
+  cursor:           pointer;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background-color: var(--wc-color-bg-tertiary);
+  color:            var(--wc-color-text-primary);
+}
+
+.cancelButton:focus-visible {
+  outline:        2px solid var(--wc-color-accent);
+  outline-offset: 2px;
+}
+
+/* ─── Advisory hint ──────────────────────────────────────────────────────── */
+
+.advisoryHint {
+  margin:      var(--wc-space-sm) 0 0;
+  font-size:   0.75rem;
+  color:       var(--wc-color-text-muted);
+  font-style:  italic;
+  line-height: 1.5;
+}

@@ -50,6 +50,22 @@
       "lifecycle": "temporary"
     },
     {
+      "key": "wc.quick-update",
+      "type": "boolean",
+      "scope": "org",
+      "default": false,
+      "description": "Whether the rapid-fire batch check-in (Quick Update) flow is available",
+      "lifecycle": "temporary"
+    },
+    {
+      "key": "wc.user-profile",
+      "type": "boolean",
+      "scope": "org",
+      "default": false,
+      "description": "Whether the user model profile panel is available",
+      "lifecycle": "temporary"
+    },
+    {
       "key": "wc.notifications.email",
       "type": "boolean",
       "scope": "org",
@@ -64,6 +80,54 @@
       "default": false,
       "description": "Whether Slack notifications are sent (post-MVP)",
       "lifecycle": "permanent"
+    },
+    {
+      "key": "wc.capacity.tracking",
+      "type": "boolean",
+      "scope": "org",
+      "default": false,
+      "description": "Whether capacity tracking (estimated/actual hours) is enabled",
+      "lifecycle": "temporary"
+    },
+    {
+      "key": "wc.capacity.estimation-coaching",
+      "type": "boolean",
+      "scope": "org",
+      "default": false,
+      "description": "Whether estimation coaching feedback is shown post-reconciliation",
+      "lifecycle": "temporary"
+    },
+    {
+      "key": "wc.analytics.strategic-intelligence",
+      "type": "boolean",
+      "scope": "org",
+      "default": false,
+      "description": "Whether the multi-week strategic intelligence panel is shown on the manager dashboard",
+      "lifecycle": "temporary"
+    },
+    {
+      "key": "wc.analytics.predictions",
+      "type": "boolean",
+      "scope": "org",
+      "default": false,
+      "description": "Whether rule-based prediction alerts are shown on the manager dashboard",
+      "lifecycle": "temporary"
+    },
+    {
+      "key": "wc.urgency.outcome",
+      "type": "boolean",
+      "scope": "org",
+      "default": false,
+      "description": "Whether outcome urgency bands and target-date tracking are enabled",
+      "lifecycle": "temporary"
+    },
+    {
+      "key": "wc.urgency.strategic-slack",
+      "type": "boolean",
+      "scope": "org",
+      "default": false,
+      "description": "Whether strategic slack computation and recommended focus floors are shown",
+      "lifecycle": "temporary"
     }
   ],
   "rolloutPhases": {
@@ -74,7 +138,9 @@
         "wc.module.enabled": true,
         "wc.ai.suggest": true,
         "wc.ai.reconciliation": true,
-        "wc.ai.manager-insights": true
+        "wc.ai.manager-insights": true,
+        "wc.analytics.strategic-intelligence": true,
+        "wc.analytics.predictions": true
       }
     },
     "phase1": {

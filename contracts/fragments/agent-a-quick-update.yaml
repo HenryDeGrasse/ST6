@@ -1,0 +1,515 @@
+openapi: 3.1.0
+info:
+  title: Agent A – Quick Update & User Model Fragment
+  description: |
+    Standalone OpenAPI 3.1 fragment for Agent A (Phase 1 — Quick Update & User Model).
+
+    Defines:
+      - Three new API endpoints under the /api/v1 server base:
+        POST /plans/{planId}/quick-update, POST /ai/check-in-options,
+        and GET /users/me/profile.
+      - New schemas: QuickUpdateRequest, QuickUpdateItem, QuickUpdateResponse,
+        CheckInOptionRequest, CheckInOptionsResponse, CheckInOptionItem,
+        UserProfileResponse, PerformanceProfile, UserPreferences, UserTrends.
+
+    This fragment follows the convention described in fragments/README.md.
+  version: 1.0.0
+  contact:
+    name: ST6 Engineering – Agent A
+
+servers:
+  - url: /api/v1
+    description: API v1 base path
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: QuickUpdate
+    description: Rapid-fire batch check-in flow (Phase 1)
+  - name: AI
+    description: AI-assisted suggestion endpoints
+  - name: UserProfile
+    description: User model and behavioural profile (Phase 1)
+
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+paths:
+  /plans/{planId}/quick-update:
+    post:
+      operationId: quickUpdate
+      summary: Batch check-in for multiple commits
+      description: |
+        Submits a rapid-fire batch of progress check-ins for multiple commits
+        within a single plan. Each item in the `updates` array creates a new
+        immutable ProgressEntry for the target commit.
+
+        Behaviour:
+        - The plan must belong to the authenticated user.
+        - The plan must be in LOCKED or RECONCILING state.
+        - Each referenced commitId must belong to the target plan.
+        - An empty `updates` array is accepted and returns `updatedCount: 0`.
+      tags: [QuickUpdate]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          description: UUID of the weekly plan to check in against
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuickUpdateRequest'
+      responses:
+        '200':
+          description: Batch check-in recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuickUpdateResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /ai/check-in-options:
+    post:
+      operationId: getCheckInOptions
+      summary: Generate AI check-in note options
+      description: |
+        Generates context-aware check-in note suggestions for a single commit.
+
+        The response contains:
+        - `statusOptions` — valid ProgressStatus values for the status picker.
+        - `progressOptions` — short text suggestions derived from AI analysis of
+          the commit context plus pattern-matched options from the user's past
+          check-in notes.
+
+        This endpoint always returns HTTP 200 on application-level fallback.
+        When the LLM is unavailable, the commit is not found, or response parsing
+        fails, the service returns `status: "ok"`, the standard status options,
+        and an empty `progressOptions` list.
+      tags: [AI]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInOptionRequest'
+      responses:
+        '200':
+          description: Check-in options returned (may be empty on fallback)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckInOptionsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /users/me/profile:
+    get:
+      operationId: getUserProfile
+      summary: Get the authenticated user's behavioural profile
+      description: |
+        Returns the computed user model snapshot for the authenticated user.
+
+        If a snapshot exists, the response contains the latest computed
+        performance metrics, preferences, and trend signals. If no snapshot has
+        been computed yet, the endpoint still returns HTTP 200 with:
+        - `userId` set to the authenticated user
+        - `weeksAnalyzed` set to 0
+        - `performanceProfile`, `preferences`, and `trends` set to null
+      tags: [UserProfile]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+# ---------------------------------------------------------------------------
+# Components
+# ---------------------------------------------------------------------------
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  # -------------------------------------------------------------------------
+  # New schemas introduced by Agent A
+  # -------------------------------------------------------------------------
+  schemas:
+    ApiError:
+      type: object
+      required: [code, message, details]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+
+    QuickUpdateRequest:
+      type: object
+      required:
+        - updates
+      description: Batch check-in request containing zero or more per-commit items.
+      properties:
+        updates:
+          type: array
+          description: List of per-commit check-in items
+          items:
+            $ref: '#/components/schemas/QuickUpdateItem'
+
+    QuickUpdateItem:
+      type: object
+      required:
+        - commitId
+        - status
+      description: A single per-commit check-in entry within a quick-update batch.
+      properties:
+        commitId:
+          type: string
+          format: uuid
+          description: UUID of the weekly commit to check in against
+        status:
+          type: string
+          enum: [ON_TRACK, AT_RISK, BLOCKED, DONE_EARLY]
+          description: Current progress status for the commit
+        note:
+          type: string
+          nullable: true
+          description: Optional free-text note accompanying this check-in
+
+    QuickUpdateResponse:
+      type: object
+      required:
+        - updatedCount
+        - entries
+      description: Result of a batch quick-update operation.
+      properties:
+        updatedCount:
+          type: integer
+          minimum: 0
+          description: Total number of progress entries created by this request
+        entries:
+          type: array
+          description: The newly created progress entries, in processing order
+          items:
+            $ref: '#/components/schemas/CheckInEntry'
+
+    CheckInEntry:
+      type: object
+      required:
+        - id
+        - commitId
+        - status
+        - note
+        - createdAt
+      description: An immutable progress check-in entry for a weekly commit.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the progress entry
+        commitId:
+          type: string
+          format: uuid
+          description: UUID of the associated weekly commit
+        status:
+          type: string
+          enum: [ON_TRACK, AT_RISK, BLOCKED, DONE_EARLY]
+          description: Progress status recorded for this entry
+        note:
+          type: string
+          description: Free-text note (empty string when no note was provided)
+        createdAt:
+          type: string
+          format: date-time
+          description: ISO-8601 UTC timestamp when the entry was created
+
+    CheckInOptionRequest:
+      type: object
+      required:
+        - commitId
+      description: Context for generating AI check-in note options for a single commit.
+      properties:
+        commitId:
+          type: string
+          format: uuid
+          description: UUID of the weekly commit to generate options for
+        currentStatus:
+          type: string
+          nullable: true
+          description: Current progress status selection, if any
+        lastNote:
+          type: string
+          nullable: true
+          description: Most recent check-in note for this commit, if any
+        daysSinceLastCheckIn:
+          type: integer
+          minimum: 0
+          description: Number of days elapsed since the commit's most recent check-in
+
+    CheckInOptionsResponse:
+      type: object
+      required:
+        - status
+        - statusOptions
+        - progressOptions
+      description: |
+        Generated check-in option payload.
+
+        `status` is currently always `"ok"`.
+      properties:
+        status:
+          type: string
+          enum: [ok]
+          description: Service status
+        statusOptions:
+          type: array
+          description: Ordered list of valid progress status strings for the UI picker
+          items:
+            type: string
+            enum: [ON_TRACK, AT_RISK, BLOCKED, DONE_EARLY]
+        progressOptions:
+          type: array
+          description: AI- and pattern-derived note suggestions (may be empty on fallback)
+          items:
+            $ref: '#/components/schemas/CheckInOptionItem'
+
+    CheckInOptionItem:
+      type: object
+      required:
+        - text
+        - source
+      description: A single note suggestion within a CheckInOptionsResponse.
+      properties:
+        text:
+          type: string
+          maxLength: 50
+          description: Short phrase presented to the user in the Quick Update card
+        source:
+          type: string
+          description: Suggestion origin, typically `ai` or `pattern`
+
+    UserProfileResponse:
+      type: object
+      required:
+        - userId
+        - weeksAnalyzed
+        - performanceProfile
+        - preferences
+        - trends
+      description: |
+        Computed user model snapshot derived from a rolling window of reconciled
+        weekly plans.
+
+        When no snapshot exists yet, the nested profile sections are null and
+        `weeksAnalyzed` is 0.
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: UUID of the user this profile belongs to
+        weeksAnalyzed:
+          type: integer
+          minimum: 0
+          description: Number of reconciled plan weeks used to derive this profile
+        performanceProfile:
+          allOf:
+            - $ref: '#/components/schemas/PerformanceProfile'
+          nullable: true
+        preferences:
+          allOf:
+            - $ref: '#/components/schemas/UserPreferences'
+          nullable: true
+        trends:
+          allOf:
+            - $ref: '#/components/schemas/UserTrends'
+          nullable: true
+
+    PerformanceProfile:
+      type: object
+      required:
+        - estimationAccuracy
+        - completionReliability
+        - avgCommitsPerWeek
+        - avgCarryForwardPerWeek
+        - topCategories
+        - categoryCompletionRates
+        - priorityCompletionRates
+      description: Aggregated performance metrics computed from the user's reconciled plan history.
+      properties:
+        estimationAccuracy:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Confidence accuracy ratio against final completion outcome
+        completionReliability:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Fraction of reconciled commits marked DONE across the analysis window
+        avgCommitsPerWeek:
+          type: number
+          format: double
+          minimum: 0
+          description: Average number of commits created per analyzed week
+        avgCarryForwardPerWeek:
+          type: number
+          format: double
+          minimum: 0
+          description: Average number of commits carried forward per analyzed week
+        topCategories:
+          type: array
+          maxItems: 3
+          description: Top commit categories by DONE completion rate, ordered descending
+          items:
+            type: string
+            description: CommitCategory name (for example DELIVERY or OPERATIONS)
+        categoryCompletionRates:
+          type: object
+          description: DONE completion rate per CommitCategory
+          additionalProperties:
+            type: number
+            format: double
+        priorityCompletionRates:
+          type: object
+          description: DONE completion rate per ChessPriority
+          additionalProperties:
+            type: number
+            format: double
+
+    UserPreferences:
+      type: object
+      required:
+        - typicalPriorityPattern
+        - recurringCommitTitles
+        - avgCheckInsPerWeek
+        - preferredUpdateDays
+      description: Behavioural preference signals derived from the user's planning history.
+      properties:
+        typicalPriorityPattern:
+          type: string
+          description: Average weekly chess-priority mix, for example `1K-2Q-3R`
+        recurringCommitTitles:
+          type: array
+          description: Commonly repeated commit titles from recent history
+          items:
+            type: string
+        avgCheckInsPerWeek:
+          type: number
+          format: double
+          minimum: 0
+          description: Average number of progress entries recorded per analyzed week
+        preferredUpdateDays:
+          type: array
+          description: Day-of-week names ordered by frequency descending
+          items:
+            type: string
+            description: ISO day-of-week name, for example MONDAY
+
+    UserTrends:
+      type: object
+      required:
+        - strategicAlignmentTrend
+        - completionTrend
+        - carryForwardTrend
+      description: Directional trend signals comparing recent performance with earlier history.
+      properties:
+        strategicAlignmentTrend:
+          type: string
+          enum: [IMPROVING, STABLE, WORSENING]
+          description: Trend in the fraction of commits linked to RCDO outcomes
+        completionTrend:
+          type: string
+          enum: [IMPROVING, STABLE, WORSENING]
+          description: Trend in commit completion reliability
+        carryForwardTrend:
+          type: string
+          enum: [IMPROVING, STABLE, WORSENING]
+          description: Trend in carry-forward velocity
+
+  # -------------------------------------------------------------------------
+  # Shared response definitions (mirror the main spec for standalone validity)
+  # -------------------------------------------------------------------------
+  responses:
+    Unauthorized:
+      description: Missing or invalid JWT
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                $ref: '#/components/schemas/ApiError'
+
+    Forbidden:
+      description: Valid JWT but insufficient access
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                $ref: '#/components/schemas/ApiError'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                $ref: '#/components/schemas/ApiError'
+
+    Conflict:
+      description: Conflict (for example, plan is not in LOCKED or RECONCILING state)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                $ref: '#/components/schemas/ApiError'
+
+    ValidationError:
+      description: Validation failed (for example, invalid enum value or malformed UUID)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                $ref: '#/components/schemas/ApiError'

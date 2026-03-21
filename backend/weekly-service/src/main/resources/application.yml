@@ -55,14 +55,48 @@ ai:
     suggest-rcdo-enabled: true
     draft-reconciliation-enabled: false
     manager-insights-enabled: false
+    plan-quality-nudge-enabled: false
+    suggest-next-work-enabled: false
+    llm-next-work-ranking-enabled: false
+
+analytics:
+  refresh:
+    enabled: false
 
 notification:
   materializer:
     enabled: false
+  digest:
+    enabled: false
+
+integration:
+  ticket-sync:
+    enabled: false
+    interval-ms: 900000
+    initial-delay-ms: 60000
 
 tenant:
   rls:
     enabled: true
+
+capacity:
+  compute:
+    enabled: false
+
+weekly:
+  audit:
+    hash-verification:
+      enabled: false
+    state-reconciliation:
+      enabled: false
+    archival:
+      enabled: false
+      archive-after-years: 5
+  plan:
+    retention:
+      enabled: false
+      soft-delete-years: 3
+      hard-delete-grace-days: 90
 
 ---
 spring:
@@ -70,8 +104,20 @@ spring:
     activate:
       on-profile: worker
 
+analytics:
+  refresh:
+    enabled: true
+
 notification:
   materializer:
+    enabled: true
+  cadence:
+    enabled: true
+  digest:
+    enabled: true
+
+integration:
+  ticket-sync:
     enabled: true
 
 ---

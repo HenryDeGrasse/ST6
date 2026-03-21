@@ -1,0 +1,163 @@
+/**
+ * CarryForwardHeatmap – CSS Module (Academia / Classical)
+ *
+ * Heatmap grid for per-user carry-forward counts across weeks.
+ * Shares the ai-insight token set used by other analytics panels.
+ */
+
+/* ─── Outer panel ─────────────────────────────────────────────────────────── */
+
+.panel {
+  padding:          var(--wc-space-sm) var(--wc-space-md);
+  border:           1.5px dashed var(--wc-ai-insight-border);
+  border-radius:    var(--wc-radius-md);
+  background-color: var(--wc-ai-insight-bg);
+  margin-bottom:    var(--wc-space-md);
+}
+
+/* ─── Header row ──────────────────────────────────────────────────────────── */
+
+.header {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  gap:             var(--wc-space-sm);
+  margin-bottom:   var(--wc-space-sm);
+  flex-wrap:       wrap;
+}
+
+.title {
+  font-family:    var(--wc-font-display);
+  font-size:      0.6875rem;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color:          var(--wc-ai-insight-text);
+  flex:           1;
+  min-width:      0;
+  overflow:       hidden;
+  text-overflow:  ellipsis;
+  white-space:    nowrap;
+}
+
+/* ─── Legend ──────────────────────────────────────────────────────────────── */
+
+.legend {
+  display:     flex;
+  align-items: center;
+  gap:         0.25rem;
+  flex-shrink: 0;
+}
+
+.legendDot {
+  display:       inline-block;
+  width:         0.625rem;
+  height:        0.625rem;
+  border-radius: var(--wc-radius-sm);
+  flex-shrink:   0;
+}
+
+.legendLabel {
+  font-size:   0.625rem;
+  color:       var(--wc-color-text-muted);
+  white-space: nowrap;
+  margin-right: 0.35rem;
+}
+
+/* ─── Loading / empty state ───────────────────────────────────────────────── */
+
+.statusMsg {
+  font-size:  0.875rem;
+  color:      var(--wc-color-text-muted);
+  font-style: italic;
+  padding:    var(--wc-space-xs) 0 var(--wc-space-sm);
+}
+
+/* ─── Table wrapper (horizontal scroll) ──────────────────────────────────── */
+
+.tableWrapper {
+  overflow-x: auto;
+  padding-bottom: var(--wc-space-xs);
+}
+
+/* ─── Table ───────────────────────────────────────────────────────────────── */
+
+.table {
+  border-collapse: collapse;
+  width:           100%;
+  min-width:       max-content;
+}
+
+/* ─── Corner / week header cells ─────────────────────────────────────────── */
+
+.cornerCell {
+  width:    6rem;
+  min-width: 6rem;
+}
+
+.weekHeader {
+  font-family:    var(--wc-font-display);
+  font-size:      0.5625rem;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color:          var(--wc-color-text-muted);
+  text-align:     center;
+  padding:        0.2rem 0.35rem;
+  white-space:    nowrap;
+  min-width:      2.5rem;
+}
+
+/* ─── Row ─────────────────────────────────────────────────────────────────── */
+
+.row {
+  border-top: 1px solid var(--wc-ai-insight-border);
+}
+
+/* ─── User name cell (row header) ────────────────────────────────────────── */
+
+.userCell {
+  font-family:   var(--wc-font-body);
+  font-size:     0.75rem;
+  font-weight:   500;
+  color:         var(--wc-color-text-primary);
+  text-align:    left;
+  padding:       0.3rem 0.5rem 0.3rem 0;
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  max-width:     8rem;
+}
+
+/* ─── Data cell ───────────────────────────────────────────────────────────── */
+
+.cell {
+  text-align:    center;
+  font-family:   var(--wc-font-body);
+  font-size:     0.6875rem;
+  font-weight:   600;
+  padding:       0.25rem 0.35rem;
+  border-radius: var(--wc-radius-sm);
+  min-width:     2rem;
+  transition:    background-color var(--wc-transition-base);
+}
+
+/* ─── Cell colour variants ────────────────────────────────────────────────── */
+
+/* 0 carried – neutral / green */
+.cellNeutral {
+  background-color: color-mix(in srgb, var(--wc-color-success) 15%, transparent);
+  color:            var(--wc-color-success);
+}
+
+/* 1–2 carried – yellow / warning */
+.cellWarn {
+  background-color: color-mix(in srgb, var(--wc-color-warning, #d97706) 15%, transparent);
+  color:            var(--wc-color-warning, #d97706);
+}
+
+/* 3+ carried – red / high */
+.cellHigh {
+  background-color: color-mix(in srgb, var(--wc-color-error) 15%, transparent);
+  color:            var(--wc-color-error);
+}

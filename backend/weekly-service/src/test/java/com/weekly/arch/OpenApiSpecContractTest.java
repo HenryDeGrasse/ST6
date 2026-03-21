@@ -1,6 +1,23 @@
 package com.weekly.arch;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -12,24 +29,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
-
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Contract-level test asserting the OpenAPI spec paths match Spring controller mappings.
@@ -79,7 +78,7 @@ class OpenApiSpecContractTest {
      * {@code /api/v1} prefix (Spring controllers add that prefix; the OpenAPI spec omits it
      * because the server URL defines the base path).
      *
-     * <p>Count: 26 operations across 7 controllers.
+     * <p>Count: 27 operations across 8 controllers.
      */
     private static final Set<String> EXPECTED_OPENAPI_OPERATIONS = Set.of(
             // Plans
@@ -115,6 +114,20 @@ class OpenApiSpecContractTest {
             "POST /ai/suggest-rcdo",
             "POST /ai/draft-reconciliation",
             "POST /ai/manager-insights",
+            "POST /ai/plan-quality-check",
+            // "Start My Week" — draft from history (Wave 2)
+            "POST /plans/draft-from-history",
+            // Next-work suggestions — Wave 2, Step 9
+            "POST /ai/suggest-next-work",
+            "POST /ai/suggestion-feedback",
+            // Trends
+            "GET /users/me/trends",
+            // Quick Daily Check-In — Wave 2, Step 11
+            "POST /commits/{commitId}/check-in",
+            "GET /commits/{commitId}/check-ins",
+            // Admin — org policy / digest config (Wave 3, Step 17)
+            "GET /admin/org-policy",
+            "PATCH /admin/org-policy/digest",
             // Health
             "GET /health"
     );
@@ -172,8 +185,13 @@ class OpenApiSpecContractTest {
      */
     @Test
     void expectedOperationCountMatchesOpenApiSpec() {
-        // 26 operations across 7 controllers; update this when the spec grows
-        int expectedCount = 26;
+        // 33 operations across 8 controllers; update this when the spec grows
+        // (Wave 1 step 5 added POST /ai/plan-quality-check)
+        // (Wave 2 step 7 added POST /plans/draft-from-history)
+        // (Wave 2 step 9 added POST /ai/suggest-next-work, POST /ai/suggestion-feedback)
+        // (Wave 2 step 11 added POST /commits/{commitId}/check-in, GET /commits/{commitId}/check-ins)
+        // (Wave 3 step 17 added GET /admin/org-policy, PATCH /admin/org-policy/digest)
+        int expectedCount = 35;
         assertTrue(
                 EXPECTED_OPENAPI_OPERATIONS.size() == expectedCount,
                 "Expected " + expectedCount + " OpenAPI operations but found "

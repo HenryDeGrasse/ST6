@@ -1,6 +1,7 @@
 package com.weekly.config;
 
 import com.weekly.auth.UserPrincipal;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcOperations;
@@ -8,8 +9,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.TransactionExecution;
 import org.springframework.transaction.TransactionExecutionListener;
-
-import java.util.UUID;
 
 /**
  * Executes {@code SET LOCAL app.current_org_id = '...'} at the start of

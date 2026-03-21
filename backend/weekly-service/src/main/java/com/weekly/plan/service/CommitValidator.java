@@ -1,10 +1,9 @@
 package com.weekly.plan.service;
 
 import com.weekly.plan.domain.WeeklyCommitEntity;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.stereotype.Component;
 
 /**
  * Validates a commit and returns a list of validation errors.

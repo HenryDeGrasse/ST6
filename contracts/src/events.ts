@@ -14,6 +14,8 @@ export enum EventType {
   COMMIT_UPDATED = "commit.updated",
   COMMIT_DELETED = "commit.deleted",
   COMMIT_ACTUAL_UPDATED = "commit.actual_updated",
+  /** Wave 3 — weekly digest notification dispatched by the DigestJob. */
+  WEEKLY_DIGEST = "notification.weekly_digest",
 }
 
 /** Aggregate types that events are associated with */
@@ -43,4 +45,6 @@ export enum NotificationType {
   RECONCILIATION_OVERDUE = "RECONCILIATION_OVERDUE",
   RECONCILIATION_SUBMITTED = "RECONCILIATION_SUBMITTED",
   CHANGES_REQUESTED = "CHANGES_REQUESTED",
+  /** Wave 3 — weekly digest summary sent to managers. */
+  WEEKLY_DIGEST = "WEEKLY_DIGEST",
 }

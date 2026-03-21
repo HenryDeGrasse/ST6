@@ -54,18 +54,14 @@ describe("generated OpenAPI client", () => {
   });
 
   it("exports generated schema and operation maps for consumers", () => {
-    const weeklyPlanHasId: Assert<
-      HasKey<WeeklyCommitmentsApiComponents["schemas"]["WeeklyPlan"], "id">
-    > = true;
+    const weeklyPlanHasId: Assert<HasKey<WeeklyCommitmentsApiComponents["schemas"]["WeeklyPlan"], "id">> = true;
     const weeklyPlanHasReviewStatus: Assert<
       HasKey<WeeklyCommitmentsApiComponents["schemas"]["WeeklyPlan"], "reviewStatus">
     > = true;
     const suggestionResponseHasSuggestions: Assert<
       HasKey<WeeklyCommitmentsApiComponents["schemas"]["SuggestRcdoResponse"], "suggestions">
     > = true;
-    const lockPlanHasResponses: Assert<
-      HasKey<WeeklyCommitmentsApiOperations["lockPlan"], "responses">
-    > = true;
+    const lockPlanHasResponses: Assert<HasKey<WeeklyCommitmentsApiOperations["lockPlan"], "responses">> = true;
 
     expect(weeklyPlanHasId).toBe(true);
     expect(weeklyPlanHasReviewStatus).toBe(true);

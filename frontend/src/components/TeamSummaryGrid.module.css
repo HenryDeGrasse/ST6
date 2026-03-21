@@ -15,7 +15,7 @@
   padding: var(--wc-space-xs) var(--wc-space-sm); text-align: left;
   font-family: var(--wc-font-display); font-size: 0.5rem; font-weight: 600;
   text-transform: uppercase; letter-spacing: 0.12em;
-  color: var(--wc-color-text-secondary); border-bottom: 2px solid var(--wc-color-border); white-space: nowrap;
+  color: var(--wc-color-text-primary); border-bottom: 2px solid var(--wc-color-border); white-space: nowrap;
 }
 
 .thPiece { text-align: center; }

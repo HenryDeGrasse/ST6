@@ -14,11 +14,11 @@ import com.weekly.plan.repository.WeeklyCommitRepository;
 import com.weekly.plan.repository.WeeklyPlanRepository;
 import com.weekly.shared.ErrorCode;
 import com.weekly.shared.EventType;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service for managing commit actuals (reconciliation data).
@@ -95,6 +95,9 @@ public class ActualService {
         actual.setCompletionStatus(status);
         actual.setDeltaReason(request.deltaReason());
         actual.setTimeSpent(request.timeSpent());
+        if (request.actualHours() != null) {
+            actual.setActualHours(BigDecimal.valueOf(request.actualHours()));
+        }
         actualRepository.save(actual);
 
         // Bump commit version (aggregate root)

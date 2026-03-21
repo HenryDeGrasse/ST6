@@ -1,32 +1,5 @@
 package com.weekly.plan.service;
 
-import com.weekly.audit.AuditService;
-import com.weekly.auth.OrgGraphClient;
-import com.weekly.outbox.OutboxService;
-import com.weekly.plan.domain.ChessPriority;
-import com.weekly.plan.domain.CompletionStatus;
-import com.weekly.plan.domain.LockType;
-import com.weekly.plan.domain.WeeklyCommitActualEntity;
-import com.weekly.plan.domain.WeeklyCommitEntity;
-import com.weekly.plan.domain.WeeklyPlanEntity;
-import com.weekly.plan.dto.WeeklyPlanResponse;
-import com.weekly.plan.repository.WeeklyCommitActualRepository;
-import com.weekly.plan.repository.WeeklyCommitRepository;
-import com.weekly.plan.repository.WeeklyPlanRepository;
-import com.weekly.rcdo.InMemoryRcdoClient;
-import com.weekly.rcdo.RcdoTree;
-import com.weekly.shared.ErrorCode;
-import com.weekly.shared.EventType;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -40,6 +13,34 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.weekly.audit.AuditService;
+import com.weekly.auth.OrgGraphClient;
+import com.weekly.config.OrgPolicyService;
+import com.weekly.outbox.OutboxService;
+import com.weekly.plan.domain.ChessPriority;
+import org.springframework.context.ApplicationEventPublisher;
+import com.weekly.plan.domain.CompletionStatus;
+import com.weekly.plan.domain.LockType;
+import com.weekly.plan.domain.WeeklyCommitActualEntity;
+import com.weekly.plan.domain.WeeklyCommitEntity;
+import com.weekly.plan.domain.WeeklyPlanEntity;
+import com.weekly.plan.dto.WeeklyPlanResponse;
+import com.weekly.plan.repository.WeeklyCommitActualRepository;
+import com.weekly.plan.repository.WeeklyCommitRepository;
+import com.weekly.plan.repository.WeeklyPlanRepository;
+import com.weekly.rcdo.InMemoryRcdoClient;
+import com.weekly.rcdo.RcdoTree;
+import com.weekly.shared.ErrorCode;
+import com.weekly.shared.EventType;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link PlanService}: plan creation, retrieval, locking,
@@ -58,6 +59,8 @@ class PlanServiceTest {
     private AuditService auditService;
     private OutboxService outboxService;
     private OrgGraphClient orgGraphClient;
+    private OrgPolicyService orgPolicyService;
+    private ApplicationEventPublisher eventPublisher;
     private PlanService planService;
 
     @BeforeEach
@@ -70,10 +73,13 @@ class PlanServiceTest {
         auditService = mock(AuditService.class);
         outboxService = mock(OutboxService.class);
         orgGraphClient = mock(OrgGraphClient.class);
+        orgPolicyService = mock(OrgPolicyService.class);
+        eventPublisher = mock(ApplicationEventPublisher.class);
+        when(orgPolicyService.getPolicy(any())).thenReturn(OrgPolicyService.defaultPolicy());
         planService = new PlanService(
                 planRepository, commitRepository, actualRepository,
                 commitValidator, rcdoClient, auditService, outboxService,
-                orgGraphClient
+                orgGraphClient, orgPolicyService, eventPublisher
         );
     }
 
@@ -392,6 +398,38 @@ class PlanServiceTest {
         }
 
         @Test
+        void allowsLockWithoutKingWhenPolicyDoesNotRequireOne() {
+            when(orgPolicyService.getPolicy(ORG_ID)).thenReturn(new OrgPolicyService.OrgPolicy(
+                    false, 2, 2, "MONDAY", "10:00", "FRIDAY", "16:00", true, 60, "FRIDAY", "17:00"
+            ));
+            WeeklyCommitEntity queen = createCommit(planId, "Queen", ChessPriority.QUEEN, outcomeId, null);
+            WeeklyCommitEntity rook = createCommit(planId, "Rook", ChessPriority.ROOK, null, "Support");
+            when(commitRepository.findByOrgIdAndWeeklyPlanId(ORG_ID, planId))
+                    .thenReturn(List.of(queen, rook));
+
+            WeeklyPlanResponse result = planService.lockPlan(ORG_ID, planId, plan.getVersion(), USER_ID);
+
+            assertEquals("LOCKED", result.state());
+            verify(orgPolicyService).getPolicy(ORG_ID);
+        }
+
+        @Test
+        void allowsTwoKingsWhenPolicyMaximumIsTwo() {
+            when(orgPolicyService.getPolicy(ORG_ID)).thenReturn(new OrgPolicyService.OrgPolicy(
+                    true, 2, 2, "MONDAY", "10:00", "FRIDAY", "16:00", true, 60, "FRIDAY", "17:00"
+            ));
+            WeeklyCommitEntity king1 = createCommit(planId, "Task 1", ChessPriority.KING, outcomeId, null);
+            WeeklyCommitEntity king2 = createCommit(planId, "Task 2", ChessPriority.KING, null, "Non-strategic");
+            when(commitRepository.findByOrgIdAndWeeklyPlanId(ORG_ID, planId))
+                    .thenReturn(List.of(king1, king2));
+
+            WeeklyPlanResponse result = planService.lockPlan(ORG_ID, planId, plan.getVersion(), USER_ID);
+
+            assertEquals("LOCKED", result.state());
+            verify(orgPolicyService).getPolicy(ORG_ID);
+        }
+
+        @Test
         void rejectsLockOnNonDraftPlan() {
             plan.lock(LockType.ON_TIME);
 
@@ -417,17 +455,17 @@ class PlanServiceTest {
         }
 
         @Test
-        void rejectsLockWhenRcdoStale() {
-            rcdoClient.clear(); // Clear forces isCacheFresh to return true by default
-
-            // Create a custom RCDO client mock to test staleness
+        void rejectsLockWhenRcdoStaleUsingOrgSpecificThreshold() {
             var mockRcdoClient = mock(com.weekly.rcdo.RcdoClient.class);
-            when(mockRcdoClient.isCacheFresh(eq(ORG_ID), eq(60))).thenReturn(false);
+            when(orgPolicyService.getPolicy(ORG_ID)).thenReturn(new OrgPolicyService.OrgPolicy(
+                    true, 1, 2, "MONDAY", "10:00", "FRIDAY", "16:00", true, 15, "FRIDAY", "17:00"
+            ));
+            when(mockRcdoClient.isCacheFresh(eq(ORG_ID), eq(15))).thenReturn(false);
 
             PlanService serviceWithStaleRcdo = new PlanService(
                     planRepository, commitRepository, actualRepository,
                     commitValidator, mockRcdoClient, auditService, outboxService,
-                    orgGraphClient
+                    orgGraphClient, orgPolicyService, eventPublisher
             );
 
             WeeklyCommitEntity king = createCommit(planId, "Task", ChessPriority.KING, outcomeId, null);
@@ -439,6 +477,31 @@ class PlanServiceTest {
                     () -> serviceWithStaleRcdo.lockPlan(ORG_ID, planId, plan.getVersion(), USER_ID)
             );
             assertEquals(ErrorCode.RCDO_VALIDATION_STALE, ex.getErrorCode());
+            verify(mockRcdoClient).isCacheFresh(ORG_ID, 15);
+        }
+
+        @Test
+        void allowsLockWhenPolicyDoesNotBlockStaleRcdo() {
+            var mockRcdoClient = mock(com.weekly.rcdo.RcdoClient.class);
+            when(orgPolicyService.getPolicy(ORG_ID)).thenReturn(new OrgPolicyService.OrgPolicy(
+                    false, 2, 2, "MONDAY", "10:00", "FRIDAY", "16:00", false, 15, "FRIDAY", "17:00"
+            ));
+
+            PlanService serviceWithoutStaleBlock = new PlanService(
+                    planRepository, commitRepository, actualRepository,
+                    commitValidator, mockRcdoClient, auditService, outboxService,
+                    orgGraphClient, orgPolicyService, eventPublisher
+            );
+
+            WeeklyCommitEntity rook = createCommit(planId, "Task", ChessPriority.ROOK, null, "Support work");
+            when(commitRepository.findByOrgIdAndWeeklyPlanId(ORG_ID, planId))
+                    .thenReturn(List.of(rook));
+
+            WeeklyPlanResponse result = serviceWithoutStaleBlock.lockPlan(
+                    ORG_ID, planId, plan.getVersion(), USER_ID
+            );
+
+            assertEquals("LOCKED", result.state());
         }
 
         @Test

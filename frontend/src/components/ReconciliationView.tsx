@@ -1,8 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import type {
-  WeeklyCommit,
-  UpdateActualRequest,
-} from "@weekly-commitments/contracts";
+import type { WeeklyCommit, UpdateActualRequest } from "@weekly-commitments/contracts";
 import { CompletionStatus, PlanState } from "@weekly-commitments/contracts";
 import { StatusIcon, type StatusIconName } from "./icons/index.js";
 import styles from "./ReconciliationView.module.css";
@@ -12,6 +9,7 @@ export interface ActualEntry {
   actualResult: string;
   completionStatus: CompletionStatus | null;
   deltaReason: string;
+  actualHours: number | null;
 }
 
 export interface ReconciliationViewProps {
@@ -58,6 +56,7 @@ function buildActualEntry(commit: WeeklyCommit): ActualEntry {
     actualResult: commit.actual?.actualResult ?? "",
     completionStatus: commit.actual?.completionStatus ?? CompletionStatus.DONE,
     deltaReason: commit.actual?.deltaReason ?? "",
+    actualHours: commit.actual?.actualHours ?? null,
   };
 }
 
@@ -67,6 +66,7 @@ function buildActualSignature(commit: WeeklyCommit): string {
     actualResult: commit.actual?.actualResult ?? "",
     completionStatus: commit.actual?.completionStatus ?? CompletionStatus.DONE,
     deltaReason: commit.actual?.deltaReason ?? "",
+    actualHours: commit.actual?.actualHours ?? null,
   });
 }
 
@@ -117,7 +117,11 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
     serverActualSignaturesRef.current = nextServerSignatures;
   }, [commits]);
 
-  const updateActualField = (commitId: string, field: keyof ActualEntry, value: string | CompletionStatus | null) => {
+  const updateActualField = (
+    commitId: string,
+    field: keyof ActualEntry,
+    value: string | CompletionStatus | number | null,
+  ) => {
     setActuals((prev) => ({
       ...prev,
       [commitId]: {
@@ -125,6 +129,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
         actualResult: prev[commitId]?.actualResult ?? "",
         completionStatus: prev[commitId]?.completionStatus ?? CompletionStatus.DONE,
         deltaReason: prev[commitId]?.deltaReason ?? "",
+        actualHours: prev[commitId]?.actualHours ?? null,
         [field]: value,
       },
     }));
@@ -140,6 +145,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
       ...(entry.completionStatus !== CompletionStatus.DONE && entry.deltaReason
         ? { deltaReason: entry.deltaReason }
         : {}),
+      ...(entry.actualHours !== null ? { actualHours: entry.actualHours } : {}),
     };
 
     setSavingCommits((prev) => ({ ...prev, [commit.id]: true }));
@@ -165,9 +171,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
   return (
     <div data-testid="reconciliation-view" className={styles.container}>
       <h3 className={styles.heading}>Reconciliation</h3>
-      <p className={styles.description}>
-        Review each commitment and mark what actually happened this week.
-      </p>
+      <p className={styles.description}>Review each commitment and mark what actually happened this week.</p>
 
       {commits.map((commit) => {
         const entry = actuals[commit.id] ?? buildActualEntry(commit);
@@ -184,11 +188,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
           >
             <div className={styles.cardHeader}>
               <strong className={styles.cardTitle}>{commit.title}</strong>
-              {commit.chessPriority && (
-                <span className={styles.chessBadge}>
-                  {commit.chessPriority}
-                </span>
-              )}
+              {commit.chessPriority && <span className={styles.chessBadge}>{commit.chessPriority}</span>}
               {entry.completionStatus && statusIcon && (
                 <span className={`${styles.statusBadge} ${statusBadgeClass}`}>
                   <StatusIcon icon={statusIcon} size={14} />
@@ -196,18 +196,11 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
                 </span>
               )}
             </div>
-            {commit.expectedResult && (
-              <div className={styles.expectedResult}>
-                Expected: {commit.expectedResult}
-              </div>
-            )}
+            {commit.expectedResult && <div className={styles.expectedResult}>Expected: {commit.expectedResult}</div>}
 
             {/* Completion status */}
             <div className={styles.statusRow}>
-              <label
-                htmlFor={`reconcile-status-select-${commit.id}`}
-                className={styles.statusLabel}
-              >
+              <label htmlFor={`reconcile-status-select-${commit.id}`} className={styles.statusLabel}>
                 Status:
               </label>
               <select
@@ -237,6 +230,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
               <textarea
                 data-testid={`reconcile-actual-${commit.id}`}
                 placeholder="What actually happened?"
+                aria-label={`Actual result for ${commit.title}`}
                 value={entry.actualResult}
                 onChange={(e) => updateActualField(commit.id, "actualResult", e.target.value)}
                 rows={2}
@@ -250,19 +244,38 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
                 <textarea
                   data-testid={`reconcile-delta-${commit.id}`}
                   placeholder="Why wasn't this completed? (required)"
+                  aria-label={`Delta reason for ${commit.title}`}
                   value={entry.deltaReason}
                   onChange={(e) => updateActualField(commit.id, "deltaReason", e.target.value)}
                   rows={2}
-                  className={`${styles.textarea} ${
-                    entry.deltaReason.trim() ? "" : styles.textareaError
-                  }`}
+                  className={`${styles.textarea} ${entry.deltaReason.trim() ? "" : styles.textareaError}`}
                 />
               </div>
             )}
 
+            {/* Actual hours spent */}
+            <div className={styles.fieldRow}>
+              <input
+                data-testid={`reconcile-actual-hours-${commit.id}`}
+                type="number"
+                step="0.5"
+                min="0"
+                max="100"
+                placeholder="Actual hours (optional)"
+                aria-label={`Actual hours for ${commit.title}`}
+                value={entry.actualHours ?? ""}
+                onChange={(e) =>
+                  updateActualField(commit.id, "actualHours", e.target.value ? Number(e.target.value) : null)
+                }
+                className={styles.input}
+              />
+            </div>
+
             <button
               data-testid={`reconcile-save-${commit.id}`}
-              onClick={() => { void handleSaveActual(commit); }}
+              onClick={() => {
+                void handleSaveActual(commit);
+              }}
               disabled={savingCommits[commit.id]}
               className={styles.saveButton}
             >
@@ -290,11 +303,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
         >
           Submit Reconciliation
         </button>
-        {!allComplete && (
-          <span className={styles.incompleteHint}>
-            Complete all commitments to submit.
-          </span>
-        )}
+        {!allComplete && <span className={styles.incompleteHint}>Complete all commitments to submit.</span>}
       </div>
     </div>
   );

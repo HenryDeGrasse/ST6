@@ -1,11 +1,10 @@
 package com.weekly.auth;
 
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.stereotype.Component;
 
 /**
  * In-memory implementation of {@link OrgGraphClient} for development and testing.

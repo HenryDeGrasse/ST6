@@ -10,7 +10,8 @@ public record WeeklyCommitActualResponse(
         String actualResult,
         String completionStatus,
         String deltaReason,
-        Integer timeSpent
+        Integer timeSpent,
+        Double actualHours
 ) {
 
     public static WeeklyCommitActualResponse from(WeeklyCommitActualEntity entity) {
@@ -19,7 +20,8 @@ public record WeeklyCommitActualResponse(
                 entity.getActualResult(),
                 entity.getCompletionStatus().name(),
                 entity.getDeltaReason(),
-                entity.getTimeSpent()
+                entity.getTimeSpent(),
+                entity.getActualHours() != null ? entity.getActualHours().doubleValue() : null
         );
     }
 }

@@ -1,0 +1,170 @@
+/**
+ * TeamCapacityPanel – CSS Module (Academia / Classical)
+ *
+ * Responsive table displaying per-member and team-total capacity data.
+ * Status-colored rows for MODERATE (amber) and HIGH (red) overcommitment.
+ * Follows the project's design token system.
+ */
+
+/* ─── Panel container ────────────────────────────────────────────────────── */
+
+.panel {
+  font-family:   var(--wc-font-body);
+  font-size:     0.9375rem;
+}
+
+/* ─── Scrollable wrapper ─────────────────────────────────────────────────── */
+
+.tableWrap {
+  overflow-x: auto;
+  margin:     0 calc(-1 * var(--wc-space-sm));
+  padding:    0 var(--wc-space-sm);
+}
+
+/* ─── Table ──────────────────────────────────────────────────────────────── */
+
+.table {
+  width:           100%;
+  border-collapse: collapse;
+  font-size:       0.8125rem;
+  font-family:     var(--wc-font-body);
+  min-width:       520px;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+
+.thead {
+  background-color: var(--wc-color-bg-tertiary);
+}
+
+.th {
+  padding:        var(--wc-space-xs) var(--wc-space-sm);
+  text-align:     left;
+  font-family:    var(--wc-font-display);
+  font-size:      0.5rem;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color:          var(--wc-color-text-primary);
+  border-bottom:  2px solid var(--wc-color-border);
+  white-space:    nowrap;
+}
+
+/* ─── Rows ───────────────────────────────────────────────────────────────── */
+
+.tr {
+  border-bottom: 1px solid var(--wc-color-border-muted);
+  transition:    background-color var(--wc-transition-fast);
+}
+
+.tr:hover {
+  background-color: var(--wc-color-bg-tertiary);
+}
+
+.tr:nth-child(even) {
+  background-color: rgba(74, 63, 53, 0.08);
+}
+
+.tr:nth-child(even):hover {
+  background-color: var(--wc-color-bg-tertiary);
+}
+
+/* ─── Status row variants ────────────────────────────────────────────────── */
+
+.rowModerate {
+  background-color: var(--wc-color-warning-bg) !important;
+}
+
+.rowModerate:hover {
+  background-color: rgba(212, 184, 114, 0.20) !important;
+}
+
+.rowHigh {
+  background-color: var(--wc-color-error-bg) !important;
+}
+
+.rowHigh:hover {
+  background-color: rgba(196, 122, 122, 0.20) !important;
+}
+
+/* ─── Cells ──────────────────────────────────────────────────────────────── */
+
+.td {
+  padding:        var(--wc-space-xs) var(--wc-space-sm);
+  color:          var(--wc-color-text-primary);
+  vertical-align: middle;
+}
+
+.tdRight {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Totals row ─────────────────────────────────────────────────────────── */
+
+.totalsRow {
+  border-top: 2px solid var(--wc-color-border);
+}
+
+.totalsLabel {
+  font-family: var(--wc-font-display);
+  font-size:   0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color:       var(--wc-color-text-secondary);
+}
+
+.totalsValue {
+  font-weight: 600;
+  color:       var(--wc-color-text-primary);
+}
+
+/* ─── Status badge ───────────────────────────────────────────────────────── */
+
+.statusBadge {
+  display:        inline-flex;
+  align-items:    center;
+  padding:        0.125rem 0.4rem;
+  border-radius:  var(--wc-radius-sm);
+  font-family:    var(--wc-font-display);
+  font-size:      0.5625rem;
+  font-weight:    600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space:    nowrap;
+  border:         1px solid transparent;
+}
+
+.statusNONE {
+  background-color: var(--wc-color-success-bg);
+  color:            var(--wc-color-success);
+  border-color:     var(--wc-color-success-border);
+}
+
+.statusMODERATE {
+  background-color: var(--wc-color-warning-bg);
+  color:            var(--wc-color-warning);
+  border-color:     var(--wc-color-warning-border);
+}
+
+.statusHIGH {
+  background-color: var(--wc-color-error-bg);
+  color:            var(--wc-color-error);
+  border-color:     var(--wc-color-error-border);
+}
+
+/* ─── Loading / error states ─────────────────────────────────────────────── */
+
+.loading {
+  padding:    var(--wc-space-md);
+  font-size:  0.875rem;
+  color:      var(--wc-color-text-muted);
+  font-style: italic;
+}
+
+.errorMsg {
+  padding:    var(--wc-space-md);
+  font-size:  0.875rem;
+  color:      var(--wc-color-error);
+}

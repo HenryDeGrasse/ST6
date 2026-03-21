@@ -1,7 +1,6 @@
 package com.weekly.outbox;
 
 import com.weekly.shared.EventType;
-
 import java.util.Map;
 import java.util.UUID;
 
