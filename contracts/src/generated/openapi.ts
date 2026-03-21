@@ -1831,6 +1831,21 @@ export interface components {
              * @description avgConfidence minus completionAccuracy (positive = overconfident)
              */
             confidenceAccuracyGap: number;
+            /**
+             * Format: double
+             * @description Average estimated hours across weeks with estimate data
+             */
+            avgEstimatedHoursPerWeek: number | null;
+            /**
+             * Format: double
+             * @description Average actual hours across weeks with actual-hour data
+             */
+            avgActualHoursPerWeek: number | null;
+            /**
+             * Format: double
+             * @description totalActualHours / totalEstimatedHours across weeks that have both values; null when insufficient comparable hour data exists
+             */
+            hoursAccuracyRatio: number | null;
             /** @description Fraction of commits per ChessPriority (KING, QUEEN, …) */
             priorityDistribution: {
                 [key: string]: number;
@@ -1861,6 +1876,21 @@ export interface components {
             categoryCounts: {
                 [key: string]: number;
             };
+            /**
+             * Format: double
+             * @description Summed estimated hours for the week, or null when no estimates were recorded
+             */
+            estimatedHours: number | null;
+            /**
+             * Format: double
+             * @description Summed actual hours for the week, or null when no actual-hour data was recorded
+             */
+            actualHours: number | null;
+            /**
+             * Format: double
+             * @description actualHours / estimatedHours for the week, or null when unavailable
+             */
+            hoursAccuracyRatio: number | null;
         };
         TrendInsight: {
             /**
@@ -2361,8 +2391,11 @@ export interface components {
         CheckInOptionItem: {
             /** @description Short phrase presented to the user in the Quick Update card */
             text: string;
-            /** @description Suggestion origin, typically `ai` or `pattern` */
-            source: string;
+            /**
+             * @description Deterministic suggestion origin assigned by the server
+             * @enum {string}
+             */
+            source: "user_history" | "team_common" | "ai_generated";
         };
         /**
          * @description Computed user model snapshot derived from a rolling window of reconciled

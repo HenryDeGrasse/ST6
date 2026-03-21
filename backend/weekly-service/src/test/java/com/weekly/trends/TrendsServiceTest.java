@@ -3,12 +3,15 @@ package com.weekly.trends;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.weekly.capacity.CapacityProfileEntity;
+import com.weekly.capacity.CapacityProfileService;
 import com.weekly.plan.domain.ChessPriority;
 import com.weekly.plan.domain.CommitCategory;
 import com.weekly.plan.domain.CompletionStatus;
@@ -38,6 +41,7 @@ class TrendsServiceTest {
     private WeeklyPlanRepository planRepository;
     private WeeklyCommitRepository commitRepository;
     private WeeklyCommitActualRepository actualRepository;
+    private CapacityProfileService capacityProfileService;
     private DefaultTrendsService service;
 
     @BeforeEach
@@ -45,11 +49,17 @@ class TrendsServiceTest {
         planRepository = mock(WeeklyPlanRepository.class);
         commitRepository = mock(WeeklyCommitRepository.class);
         actualRepository = mock(WeeklyCommitActualRepository.class);
-        service = new DefaultTrendsService(planRepository, commitRepository, actualRepository);
+        capacityProfileService = mock(CapacityProfileService.class);
+        service = new DefaultTrendsService(
+                planRepository,
+                commitRepository,
+                actualRepository,
+                capacityProfileService);
 
-        // Default: no team plans
+        // Default: no team plans or saved capacity profile
         when(planRepository.findByOrgIdAndWeekStartDateBetween(
                 eq(ORG_ID), any(), any())).thenReturn(List.of());
+        when(capacityProfileService.getProfile(eq(ORG_ID), eq(USER_ID))).thenReturn(java.util.Optional.empty());
     }
 
     private LocalDate currentMonday() {
@@ -91,6 +101,18 @@ class TrendsServiceTest {
         WeeklyCommitActualEntity actual = new WeeklyCommitActualEntity(commitId, ORG_ID);
         actual.setCompletionStatus(status);
         return actual;
+    }
+
+    private CapacityProfileEntity makeCapacityProfile(String estimationBias, String realisticWeeklyCap) {
+        CapacityProfileEntity profile = new CapacityProfileEntity(ORG_ID, USER_ID);
+        if (estimationBias != null) {
+            profile.setEstimationBias(new BigDecimal(estimationBias));
+        }
+        if (realisticWeeklyCap != null) {
+            profile.setRealisticWeeklyCap(new BigDecimal(realisticWeeklyCap));
+        }
+        profile.setConfidenceLevel("MEDIUM");
+        return profile;
     }
 
     // ─── Empty data ───────────────────────────────────────────────────────────
@@ -266,6 +288,50 @@ class TrendsServiceTest {
         }
     }
 
+    // ─── Hours metrics ────────────────────────────────────────────────────────
+
+    @Nested
+    class HoursMetrics {
+
+        @Test
+        void hoursAccuracyRatioUsesOnlyWeeksWithBothEstimateAndActualData() {
+            List<WeekTrendPoint> points = List.of(
+                    new WeekTrendPoint(
+                            "2026-01-05", 3, 1, 0, 0.7, 0.0, false,
+                            java.util.Map.of(), java.util.Map.of(),
+                            10.0, null, null),
+                    new WeekTrendPoint(
+                            "2026-01-12", 3, 1, 0, 0.7, 0.0, true,
+                            java.util.Map.of(), java.util.Map.of(),
+                            8.0, 12.0, 1.5),
+                    new WeekTrendPoint(
+                            "2026-01-19", 3, 1, 0, 0.7, 0.0, true,
+                            java.util.Map.of(), java.util.Map.of(),
+                            null, 5.0, null)
+            );
+
+            Double ratio = service.computeHoursAccuracyRatio(points);
+
+            assertEquals(12.0 / 8.0, ratio, 0.001);
+        }
+
+        @Test
+        void hoursAccuracyRatioReturnsNullWhenNoComparableWeeksExist() {
+            List<WeekTrendPoint> points = List.of(
+                    new WeekTrendPoint(
+                            "2026-01-05", 3, 1, 0, 0.7, 0.0, false,
+                            java.util.Map.of(), java.util.Map.of(),
+                            10.0, null, null),
+                    new WeekTrendPoint(
+                            "2026-01-12", 3, 1, 0, 0.7, 0.0, true,
+                            java.util.Map.of(), java.util.Map.of(),
+                            null, 5.0, null)
+            );
+
+            assertNull(service.computeHoursAccuracyRatio(points));
+        }
+    }
+
     // ─── Priority distribution ────────────────────────────────────────────────
 
     @Nested
@@ -345,20 +411,27 @@ class TrendsServiceTest {
 
             WeeklyCommitEntity commit1 = makeStrategicCommit(planId1);
             commit1.setConfidence(new BigDecimal("0.8"));
+            commit1.setEstimatedHours(new BigDecimal("4.0"));
             WeeklyCommitEntity commit2 = makeCarryForwardCommit(planId1);
+            commit2.setEstimatedHours(new BigDecimal("2.0"));
             WeeklyCommitEntity commit3 = makeStrategicCommit(planId2);
             commit3.setConfidence(new BigDecimal("0.9"));
+            commit3.setEstimatedHours(new BigDecimal("3.0"));
 
             when(commitRepository.findByOrgIdAndWeeklyPlanIdIn(
                     eq(ORG_ID), any()))
                     .thenReturn(List.of(commit1, commit2, commit3));
 
             WeeklyCommitActualEntity actual1 = makeActual(commit1.getId(), CompletionStatus.DONE);
+            actual1.setActualHours(new BigDecimal("5.0"));
             WeeklyCommitActualEntity actual2 = makeActual(commit2.getId(), CompletionStatus.NOT_DONE);
+            actual2.setActualHours(new BigDecimal("1.5"));
 
             when(actualRepository.findByOrgIdAndCommitIdIn(
                     eq(ORG_ID), any()))
                     .thenReturn(List.of(actual1, actual2));
+            when(capacityProfileService.getProfile(eq(ORG_ID), eq(USER_ID)))
+                    .thenReturn(java.util.Optional.of(makeCapacityProfile("1.18", "30.0")));
 
             TrendsResponse response = service.computeTrends(ORG_ID, USER_ID, 2);
 
@@ -374,7 +447,11 @@ class TrendsServiceTest {
             assertEquals(0.85, response.avgConfidence(), 0.001);
             // plan1 is reconciled: 1 DONE / 2 total = 0.5
             assertEquals(0.5, response.completionAccuracy(), 0.001);
+            assertEquals(4.5, response.avgEstimatedHoursPerWeek(), 0.001);
+            assertEquals(6.5, response.avgActualHoursPerWeek(), 0.001);
+            assertEquals(6.5 / 6.0, response.hoursAccuracyRatio(), 0.001);
             assertEquals(2, response.weekPoints().size());
+            assertTrue(response.insights().stream().anyMatch(i -> "CAPACITY_PROFILE_SUMMARY".equals(i.type())));
         }
 
         @Test
@@ -416,7 +493,7 @@ class TrendsServiceTest {
         @Test
         void generatesCarryForwardStreakWarning() {
             List<TrendInsight> insights = service.generateInsights(
-                    0.5, 0.5, 3, 0.7, 0.7, 0.0, emptyWeekPoints());
+                    0.5, 0.5, 3, 0.7, 0.7, 0.0, null, emptyWeekPoints(), java.util.Optional.empty());
 
             assertTrue(insights.stream()
                     .anyMatch(i -> "CARRY_FORWARD_STREAK".equals(i.type())
@@ -426,7 +503,7 @@ class TrendsServiceTest {
         @Test
         void noCarryForwardInsightForStreakLessThan3() {
             List<TrendInsight> insights = service.generateInsights(
-                    0.5, 0.5, 2, 0.7, 0.7, 0.0, emptyWeekPoints());
+                    0.5, 0.5, 2, 0.7, 0.7, 0.0, null, emptyWeekPoints(), java.util.Optional.empty());
 
             assertFalse(insights.stream()
                     .anyMatch(i -> "CARRY_FORWARD_STREAK".equals(i.type())));
@@ -435,7 +512,7 @@ class TrendsServiceTest {
         @Test
         void generatesConfidenceGapWarning() {
             List<TrendInsight> insights = service.generateInsights(
-                    0.5, 0.5, 0, 0.9, 0.5, 0.4, emptyWeekPoints());
+                    0.5, 0.5, 0, 0.9, 0.5, 0.4, null, emptyWeekPoints(), java.util.Optional.empty());
 
             assertTrue(insights.stream()
                     .anyMatch(i -> "CONFIDENCE_ACCURACY_GAP".equals(i.type())
@@ -445,7 +522,7 @@ class TrendsServiceTest {
         @Test
         void noConfidenceGapInsightWhenGapSmall() {
             List<TrendInsight> insights = service.generateInsights(
-                    0.5, 0.5, 0, 0.7, 0.6, 0.1, emptyWeekPoints());
+                    0.5, 0.5, 0, 0.7, 0.6, 0.1, null, emptyWeekPoints(), java.util.Optional.empty());
 
             assertFalse(insights.stream()
                     .anyMatch(i -> "CONFIDENCE_ACCURACY_GAP".equals(i.type())));
@@ -460,7 +537,7 @@ class TrendsServiceTest {
             );
 
             List<TrendInsight> insights = service.generateInsights(
-                    0.3, 0.5, 0, 0.7, 0.7, 0.0, points);
+                    0.3, 0.5, 0, 0.7, 0.7, 0.0, null, points, java.util.Optional.empty());
 
             assertTrue(insights.stream()
                     .anyMatch(i -> "ZERO_CATEGORY_STREAK".equals(i.type())
@@ -476,7 +553,7 @@ class TrendsServiceTest {
             );
 
             List<TrendInsight> insights = service.generateInsights(
-                    0.0, 0.5, 0, 0.7, 0.7, 0.0, points);
+                    0.0, 0.5, 0, 0.7, 0.7, 0.0, null, points, java.util.Optional.empty());
 
             assertTrue(insights.stream()
                     .anyMatch(i -> "ZERO_STRATEGIC_WEEKS".equals(i.type())
@@ -487,7 +564,7 @@ class TrendsServiceTest {
         void generatesBelowTeamAverageWarning() {
             // User at 30%, team at 60% → gap 30 pp > 20 pp threshold
             List<TrendInsight> insights = service.generateInsights(
-                    0.30, 0.60, 0, 0.7, 0.7, 0.0, emptyWeekPoints());
+                    0.30, 0.60, 0, 0.7, 0.7, 0.0, null, emptyWeekPoints(), java.util.Optional.empty());
 
             assertTrue(insights.stream()
                     .anyMatch(i -> "BELOW_TEAM_STRATEGIC_AVERAGE".equals(i.type())
@@ -501,7 +578,7 @@ class TrendsServiceTest {
             );
 
             List<TrendInsight> insights = service.generateInsights(
-                    0.5, 0.5, 0, 0.9, 0.90, 0.0, points);
+                    0.5, 0.5, 0, 0.9, 0.90, 0.0, null, points, java.util.Optional.empty());
 
             assertTrue(insights.stream()
                     .anyMatch(i -> "HIGH_COMPLETION_RATE".equals(i.type())
@@ -511,11 +588,40 @@ class TrendsServiceTest {
         @Test
         void generatesHighStrategicAlignmentPositive() {
             List<TrendInsight> insights = service.generateInsights(
-                    0.85, 0.60, 0, 0.7, 0.7, 0.0, emptyWeekPoints());
+                    0.85, 0.60, 0, 0.7, 0.7, 0.0, null, emptyWeekPoints(), java.util.Optional.empty());
 
             assertTrue(insights.stream()
                     .anyMatch(i -> "HIGH_STRATEGIC_ALIGNMENT".equals(i.type())
                             && "POSITIVE".equals(i.severity())));
+        }
+
+        @Test
+        void generatesHoursUnderestimationWarning() {
+            List<TrendInsight> insights = service.generateInsights(
+                    0.5, 0.5, 0, 0.7, 0.7, 0.0, 1.25, emptyWeekPoints(), java.util.Optional.empty());
+
+            assertTrue(insights.stream()
+                    .anyMatch(i -> "HOURS_UNDERESTIMATION".equals(i.type())
+                            && "WARNING".equals(i.severity())));
+        }
+
+        @Test
+        void generatesCapacityProfileSummaryInsight() {
+            List<TrendInsight> insights = service.generateInsights(
+                    0.5,
+                    0.5,
+                    0,
+                    0.7,
+                    0.7,
+                    0.0,
+                    null,
+                    emptyWeekPoints(),
+                    java.util.Optional.of(makeCapacityProfile("1.10", "32.0")));
+
+            assertTrue(insights.stream()
+                    .anyMatch(i -> "CAPACITY_PROFILE_SUMMARY".equals(i.type())
+                            && "INFO".equals(i.severity())
+                            && i.message().contains("32.0 hours")));
         }
 
         @Test
@@ -526,7 +632,7 @@ class TrendsServiceTest {
             );
 
             List<TrendInsight> insights = service.generateInsights(
-                    0.5, 0.5, 1, 0.7, 0.70, 0.0, points);
+                    0.5, 0.5, 1, 0.7, 0.70, 0.0, null, points, java.util.Optional.empty());
 
             // streak=1 (<3), gap=0.0 (<0.2), strategicRate=0.5 (<0.8),
             // teamDiff=0 (<0.2), completionAccuracy=0.70 (<0.85)

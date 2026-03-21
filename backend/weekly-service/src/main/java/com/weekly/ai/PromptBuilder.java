@@ -328,6 +328,9 @@ public final class PromptBuilder {
             ));
         }
 
+        // ── Analytics diagnostic context ─────────────────────────────────────
+        appendDiagnosticContext(dashboardContext, context);
+
         // ── Urgency and slack context ────────────────────────────────────────
         appendUrgencyContext(dashboardContext, context);
 
@@ -336,6 +339,70 @@ public final class PromptBuilder {
 
         messages.add(new LlmClient.Message(LlmClient.Role.ASSISTANT, dashboardContext.toString()));
         return messages;
+    }
+
+    /**
+     * Appends analytics diagnostic context for manager insights.
+     */
+    private static void appendDiagnosticContext(
+            StringBuilder sb, ManagerInsightDataProvider.ManagerWeekContext context) {
+
+        ManagerInsightDataProvider.DiagnosticContext diagnostics = context.diagnosticContext();
+        if (diagnostics == null) {
+            return;
+        }
+
+        boolean hasCategoryShifts = diagnostics.categoryShifts() != null
+                && !diagnostics.categoryShifts().isEmpty();
+        boolean hasOutcomeCoverage = diagnostics.outcomeCoverages() != null
+                && !diagnostics.outcomeCoverages().isEmpty();
+        boolean hasBlockerFrequency = diagnostics.blockerFrequencies() != null
+                && !diagnostics.blockerFrequencies().isEmpty();
+
+        if (!hasCategoryShifts && !hasOutcomeCoverage && !hasBlockerFrequency) {
+            return;
+        }
+
+        sb.append("\nAnalytics diagnostics:\n");
+
+        if (hasCategoryShifts) {
+            sb.append("Category mix shifts:\n");
+            for (ManagerInsightDataProvider.UserCategoryShiftContext shift : diagnostics.categoryShifts()) {
+                sb.append(String.format(
+                        "- userId: %s | currentPeriod: %s | priorPeriod: %s%n",
+                        shift.userId(),
+                        formatDoubleMap(shift.currentPeriod()),
+                        formatDoubleMap(shift.priorPeriod())
+                ));
+            }
+        }
+
+        if (hasOutcomeCoverage) {
+            sb.append("Per-user outcome coverage:\n");
+            for (ManagerInsightDataProvider.UserOutcomeCoverageContext coverage : diagnostics.outcomeCoverages()) {
+                String outcomeDetails = coverage.outcomes() == null ? "" : coverage.outcomes().stream()
+                        .map(outcome -> outcome.outcomeId() + "@" + outcome.weekStart() + "=" + outcome.commitCount())
+                        .collect(Collectors.joining(", "));
+                sb.append(String.format(
+                        "- userId: %s | outcomes: [%s]%n",
+                        coverage.userId(),
+                        outcomeDetails
+                ));
+            }
+        }
+
+        if (hasBlockerFrequency) {
+            sb.append("Check-in blocker frequency:\n");
+            for (ManagerInsightDataProvider.UserBlockerFrequencyContext blocker : diagnostics.blockerFrequencies()) {
+                sb.append(String.format(
+                        "- userId: %s | atRiskCount: %d | blockedCount: %d | totalCheckIns: %d%n",
+                        blocker.userId(),
+                        blocker.atRiskCount(),
+                        blocker.blockedCount(),
+                        blocker.totalCheckIns()
+                ));
+            }
+        }
     }
 
     /**
@@ -450,6 +517,24 @@ public final class PromptBuilder {
 
     private static String formatDecimal(BigDecimal value) {
         return value == null ? "n/a" : value.stripTrailingZeros().toPlainString();
+    }
+
+    private static String formatDoubleMap(Map<String, Double> values) {
+        if (values == null || values.isEmpty()) {
+            return "n/a";
+        }
+        return values.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> entry.getKey() + "=" + formatRatio(entry.getValue()))
+                .collect(Collectors.joining(", "));
+    }
+
+    private static String formatRatio(Double value) {
+        if (value == null) {
+            return "n/a";
+        }
+        BigDecimal decimal = BigDecimal.valueOf(value);
+        return decimal.stripTrailingZeros().toPlainString();
     }
 
     private static String formatProgressGap(BigDecimal actualProgressPct, BigDecimal expectedProgressPct) {

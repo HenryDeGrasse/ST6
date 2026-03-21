@@ -5,12 +5,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.weekly.ai.LlmClient;
 import com.weekly.plan.domain.WeeklyCommitEntity;
 import com.weekly.plan.repository.WeeklyCommitRepository;
+import com.weekly.usermodel.TeamPatternService;
+import com.weekly.usermodel.UserModelService;
+import com.weekly.usermodel.UserProfileResponse;
 import com.weekly.usermodel.UserUpdatePatternEntity;
 import com.weekly.usermodel.UserUpdatePatternService;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -22,9 +29,11 @@ import org.springframework.stereotype.Service;
  * <p>Pipeline:
  * <ol>
  *   <li>Fetch the commit and verify it belongs to the requesting org.</li>
- *   <li>Retrieve the user's top note-text patterns for the commit's category.</li>
+ *   <li>Load the user's learned note history for the commit category.</li>
+ *   <li>Top up with org-level team-common patterns when personal history is sparse.</li>
+ *   <li>Load the latest user-model snapshot for prompt enrichment.</li>
  *   <li>Build a structured prompt using {@link CheckInOptionPromptBuilder}.</li>
- *   <li>Call the LLM and parse the JSON response.</li>
+ *   <li>Call the LLM and merge deterministic seeded options with AI-generated remainder.</li>
  *   <li>On any failure (LLM unavailable, parse error, commit not found), return
  *       {@link CheckInOptionsResponse#empty()} — per PRD §4 fallback contract.</li>
  * </ol>
@@ -34,36 +43,39 @@ public class CheckInOptionService {
 
     private static final Logger LOG = LoggerFactory.getLogger(CheckInOptionService.class);
 
-    /** Maximum number of user patterns to include in the prompt context. */
+    /** Maximum number of personal/team patterns to fetch. */
     private static final int TOP_PATTERNS_LIMIT = 5;
+
+    /** Maximum number of progress options returned to the client. */
+    private static final int MAX_PROGRESS_OPTIONS = 5;
+
+    private static final Pattern WHITESPACE = Pattern.compile("\\s+");
 
     private final WeeklyCommitRepository commitRepository;
     private final UserUpdatePatternService userUpdatePatternService;
+    private final TeamPatternService teamPatternService;
+    private final UserModelService userModelService;
     private final LlmClient llmClient;
     private final ObjectMapper objectMapper;
 
     public CheckInOptionService(
             WeeklyCommitRepository commitRepository,
             UserUpdatePatternService userUpdatePatternService,
+            TeamPatternService teamPatternService,
+            UserModelService userModelService,
             LlmClient llmClient,
             ObjectMapper objectMapper
     ) {
         this.commitRepository = commitRepository;
         this.userUpdatePatternService = userUpdatePatternService;
+        this.teamPatternService = teamPatternService;
+        this.userModelService = userModelService;
         this.llmClient = llmClient;
         this.objectMapper = objectMapper;
     }
 
     /**
      * Generates contextual check-in options for the given commit.
-     *
-     * @param orgId                the authenticated user's organisation
-     * @param userId               the authenticated user (used to retrieve personal patterns)
-     * @param commitId             the commit to generate options for
-     * @param currentStatus        the current progress status (context hint; may be null)
-     * @param lastNote             the most recent check-in note (context hint; may be null)
-     * @param daysSinceLastCheckIn days elapsed since the last check-in
-     * @return generated options, or {@link CheckInOptionsResponse#empty()} on any failure
      */
     public CheckInOptionsResponse generateOptions(
             UUID orgId,
@@ -73,7 +85,6 @@ public class CheckInOptionService {
             String lastNote,
             int daysSinceLastCheckIn
     ) {
-        // 1. Fetch commit and verify it belongs to the requesting org
         Optional<WeeklyCommitEntity> commitOpt = commitRepository.findById(commitId)
                 .filter(c -> c.getOrgId().equals(orgId));
 
@@ -83,8 +94,6 @@ public class CheckInOptionService {
         }
 
         WeeklyCommitEntity commit = commitOpt.get();
-
-        // 2. Extract commit context fields
         String title = commit.getTitle();
         String category = commit.getCategory() != null ? commit.getCategory().name() : null;
         String chessPriority = commit.getChessPriority() != null
@@ -92,14 +101,27 @@ public class CheckInOptionService {
                 : null;
         String outcomeName = commit.getSnapshotOutcomeName();
 
-        // 3. Retrieve user's top note-text patterns for this category
-        List<UserUpdatePatternEntity> patternEntities =
-                userUpdatePatternService.getTopPatterns(orgId, userId, category, TOP_PATTERNS_LIMIT);
-        List<String> userPatterns = patternEntities.stream()
-                .map(UserUpdatePatternEntity::getNoteText)
-                .toList();
+        List<String> userPatterns = collectDistinctOptionTexts(
+                userUpdatePatternService.getTopPatterns(orgId, userId, category, TOP_PATTERNS_LIMIT).stream()
+                        .map(UserUpdatePatternEntity::getNoteText)
+                        .toList(),
+                TOP_PATTERNS_LIMIT,
+                List.<String>of()
+        );
 
-        // 4. Build prompt messages
+        int remainingTeamSlots = Math.max(0, TOP_PATTERNS_LIMIT - userPatterns.size());
+        List<String> teamPatterns = remainingTeamSlots == 0
+                ? List.<String>of()
+                : collectDistinctOptionTexts(
+                        teamPatternService.getTopPatterns(orgId, category, TOP_PATTERNS_LIMIT),
+                        remainingTeamSlots,
+                        userPatterns
+                );
+
+        String userModelSummary = userModelService.getSnapshot(orgId, userId)
+                .map(profile -> summarizeUserModel(profile, category))
+                .orElse(null);
+
         List<LlmClient.Message> messages = CheckInOptionPromptBuilder.buildCheckInOptionMessages(
                 title,
                 category,
@@ -108,84 +130,189 @@ public class CheckInOptionService {
                 lastNote,
                 daysSinceLastCheckIn,
                 userPatterns,
-                outcomeName
+                teamPatterns,
+                outcomeName,
+                userModelSummary
         );
 
-        // 5–7. Call LLM, parse response, handle failures
         try {
             String rawResponse = llmClient.complete(messages, CheckInOptionPromptBuilder.RESPONSE_SCHEMA);
-            return parseResponse(rawResponse);
+            return parseAndMergeResponse(rawResponse, userPatterns, teamPatterns);
         } catch (LlmClient.LlmUnavailableException ex) {
             LOG.warn("LLM unavailable while generating check-in options for commit {}: {}",
                     commitId, ex.getMessage());
-            return CheckInOptionsResponse.empty();
+            return fallbackResponse(userPatterns, teamPatterns);
         } catch (Exception ex) {
             LOG.warn("Failed to parse check-in options response for commit {}: {}",
                     commitId, ex.getMessage());
-            return CheckInOptionsResponse.empty();
+            return fallbackResponse(userPatterns, teamPatterns);
         }
     }
 
-    // ── Internal helpers ──────────────────────────────────────────────────────
-
-    /**
-     * Parses the raw LLM JSON response into a {@link CheckInOptionsResponse}.
-     *
-     * <p>Expected structure:
-     * <pre>{@code
-     * {
-     *   "statusOptions": ["ON_TRACK", "AT_RISK", ...],
-     *   "progressOptions": [
-     *     { "text": "Wrapped API integration", "source": "pattern" },
-     *     ...
-     *   ]
-     * }
-     * }</pre>
-     *
-     * @param rawResponse the raw LLM response string
-     * @return parsed response, or {@link CheckInOptionsResponse#empty()} if parsing fails
-     * @throws Exception if JSON parsing or structure validation fails
-     */
-    private CheckInOptionsResponse parseResponse(String rawResponse) throws Exception {
-        if (rawResponse == null || rawResponse.isBlank()) {
-            return CheckInOptionsResponse.empty();
-        }
-
-        JsonNode root = objectMapper.readTree(rawResponse);
-
-        // Parse statusOptions
+    private CheckInOptionsResponse parseAndMergeResponse(
+            String rawResponse,
+            List<String> userPatterns,
+            List<String> teamPatterns
+    ) throws Exception {
         List<String> statusOptions = new ArrayList<>();
-        JsonNode statusNode = root.get("statusOptions");
-        if (statusNode != null && statusNode.isArray()) {
-            for (JsonNode element : statusNode) {
-                if (element.isTextual()) {
-                    statusOptions.add(element.asText());
+        List<String> aiOptions = new ArrayList<>();
+
+        if (rawResponse != null && !rawResponse.isBlank()) {
+            JsonNode root = objectMapper.readTree(rawResponse);
+
+            JsonNode statusNode = root.get("statusOptions");
+            if (statusNode != null && statusNode.isArray()) {
+                for (JsonNode element : statusNode) {
+                    if (element.isTextual()) {
+                        statusOptions.add(element.asText());
+                    }
+                }
+            }
+
+            JsonNode progressNode = root.get("progressOptions");
+            if (progressNode != null && progressNode.isArray()) {
+                for (JsonNode element : progressNode) {
+                    JsonNode textNode = element.get("text");
+                    if (textNode != null && textNode.isTextual()) {
+                        aiOptions.add(textNode.asText());
+                    }
                 }
             }
         }
 
-        // Parse progressOptions
-        List<CheckInOptionItem> progressOptions = new ArrayList<>();
-        JsonNode progressNode = root.get("progressOptions");
-        if (progressNode != null && progressNode.isArray()) {
-            for (JsonNode element : progressNode) {
-                JsonNode textNode = element.get("text");
-                JsonNode sourceNode = element.get("source");
-                if (textNode != null && textNode.isTextual()
-                        && sourceNode != null && sourceNode.isTextual()) {
-                    progressOptions.add(new CheckInOptionItem(
-                            textNode.asText(), sourceNode.asText()
-                    ));
-                }
-            }
-        }
-
-        // Fall back to the default status list if the LLM returned none
         if (statusOptions.isEmpty()) {
-            return new CheckInOptionsResponse("ok",
-                    CheckInOptionsResponse.empty().statusOptions(), progressOptions);
+            statusOptions = CheckInOptionsResponse.empty().statusOptions();
         }
 
-        return new CheckInOptionsResponse("ok", statusOptions, progressOptions);
+        return new CheckInOptionsResponse(
+                "ok",
+                statusOptions,
+                mergeProgressOptions(userPatterns, teamPatterns, aiOptions)
+        );
+    }
+
+    private CheckInOptionsResponse fallbackResponse(List<String> userPatterns, List<String> teamPatterns) {
+        return new CheckInOptionsResponse(
+                "ok",
+                CheckInOptionsResponse.empty().statusOptions(),
+                mergeProgressOptions(userPatterns, teamPatterns, List.of())
+        );
+    }
+
+    private List<CheckInOptionItem> mergeProgressOptions(
+            List<String> userPatterns,
+            List<String> teamPatterns,
+            List<String> aiOptions
+    ) {
+        Map<String, CheckInOptionItem> deduped = new LinkedHashMap<>();
+
+        addSeededOptions(deduped, userPatterns, "user_history");
+        addSeededOptions(deduped, teamPatterns, "team_common");
+        addSeededOptions(deduped, aiOptions, "ai_generated");
+
+        return deduped.values().stream()
+                .limit(MAX_PROGRESS_OPTIONS)
+                .toList();
+    }
+
+    private void addSeededOptions(
+            Map<String, CheckInOptionItem> deduped,
+            List<String> texts,
+            String source
+    ) {
+        if (texts == null || texts.isEmpty()) {
+            return;
+        }
+
+        for (String text : texts) {
+            if (text == null || text.isBlank()) {
+                continue;
+            }
+            String normalizedKey = normalizeOptionKey(text);
+            if (normalizedKey.isBlank()) {
+                continue;
+            }
+            deduped.putIfAbsent(normalizedKey, new CheckInOptionItem(normalizeOptionText(text), source));
+        }
+    }
+
+    private List<String> collectDistinctOptionTexts(
+            List<String> texts,
+            int limit,
+            List<String> existingTexts
+    ) {
+        if (limit <= 0 || texts == null || texts.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, String> deduped = new LinkedHashMap<>();
+        if (existingTexts != null) {
+            for (String existingText : existingTexts) {
+                String normalizedKey = normalizeOptionKey(existingText);
+                if (!normalizedKey.isBlank()) {
+                    deduped.put(normalizedKey, normalizeOptionText(existingText));
+                }
+            }
+        }
+
+        List<String> results = new ArrayList<>();
+        for (String text : texts) {
+            String normalizedKey = normalizeOptionKey(text);
+            if (normalizedKey.isBlank() || deduped.containsKey(normalizedKey)) {
+                continue;
+            }
+            String normalizedText = normalizeOptionText(text);
+            deduped.put(normalizedKey, normalizedText);
+            results.add(normalizedText);
+            if (results.size() == limit) {
+                break;
+            }
+        }
+        return results;
+    }
+
+    private String normalizeOptionKey(String text) {
+        return normalizeOptionText(text).toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeOptionText(String text) {
+        if (text == null) {
+            return "";
+        }
+        return WHITESPACE.matcher(text.trim()).replaceAll(" ");
+    }
+
+    private String summarizeUserModel(UserProfileResponse profile, String category) {
+        List<String> summaryParts = new ArrayList<>();
+
+        if (profile.performanceProfile() != null) {
+            summaryParts.add("completion reliability "
+                    + formatRate(profile.performanceProfile().completionReliability()));
+
+            if (category != null && profile.performanceProfile().categoryCompletionRates() != null) {
+                Double categoryStrength = profile.performanceProfile().categoryCompletionRates().get(category);
+                if (categoryStrength != null) {
+                    summaryParts.add("current category " + category + " done rate "
+                            + formatRate(categoryStrength));
+                }
+            }
+
+            if (profile.performanceProfile().topCategories() != null
+                    && !profile.performanceProfile().topCategories().isEmpty()) {
+                summaryParts.add("top categories "
+                        + String.join(", ", profile.performanceProfile().topCategories()));
+            }
+        }
+
+        if (profile.preferences() != null && profile.preferences().avgCheckInsPerWeek() > 0) {
+            summaryParts.add("avg check-ins/week "
+                    + String.format(java.util.Locale.US, "%.1f", profile.preferences().avgCheckInsPerWeek()));
+        }
+
+        return summaryParts.isEmpty() ? null : String.join("; ", summaryParts);
+    }
+
+    private String formatRate(double value) {
+        return String.format(java.util.Locale.US, "%.0f%%", value * 100);
     }
 }

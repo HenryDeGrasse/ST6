@@ -28,8 +28,7 @@ public final class CheckInOptionPromptBuilder {
      * <ul>
      *   <li>{@code statusOptions} — an array of status label strings</li>
      *   <li>{@code progressOptions} — an array of progress option objects, each with
-     *       a {@code text} (the short phrase, under 50 chars) and a {@code source}
-     *       (for example, {@code "ai"} or {@code "pattern"})</li>
+     *       a {@code text} (the short phrase, under 50 chars)</li>
      * </ul>
      */
     public static final String RESPONSE_SCHEMA = """
@@ -45,10 +44,9 @@ public final class CheckInOptionPromptBuilder {
                   "type": "array",
                   "items": {
                     "type": "object",
-                    "required": ["text", "source"],
+                    "required": ["text"],
                     "properties": {
-                      "text": { "type": "string" },
-                      "source": { "type": "string" }
+                      "text": { "type": "string" }
                     }
                   }
                 }
@@ -61,30 +59,14 @@ public final class CheckInOptionPromptBuilder {
      *
      * <p>Produces two messages:
      * <ol>
-     *   <li>A SYSTEM message containing the assistant persona and generation rules.</li>
+     *   <li>A SYSTEM message containing the assistant persona, generation rules,
+     *       and derived user-model summary.</li>
      *   <li>A USER message containing the commitment context block ({@code commitTitle},
      *       {@code category}, {@code chessPriority}, {@code outcomeName},
      *       {@code currentStatus}, {@code lastNote}, {@code daysSinceLastCheckIn},
-     *       and optional user phrase patterns). Placing user-authored text in the
-     *       USER role mitigates prompt injection per PRD §4.</li>
+     *       personal phrase history, and team-common fallbacks). Placing
+     *       user-authored text in the USER role mitigates prompt injection per PRD §4.</li>
      * </ol>
-     *
-     * @param commitTitle the title of the commitment (user-authored)
-     * @param category the commitment category (for example, {@code "ENGINEERING"}
-     *                 or {@code "OPERATIONS"})
-     * @param chessPriority the chess-piece priority (for example, {@code "KING"}
-     *                      or {@code "QUEEN"})
-     * @param currentStatus the current progress status (for example,
-     *                      {@code "ON_TRACK"} or {@code "AT_RISK"})
-     * @param lastNote the most recent check-in note; blank or {@code null} values are
-     *                 rendered as {@value #NONE}
-     * @param daysSinceLastCheckIn number of days since the last check-in;
-     *                             {@code 0} indicates a same-day or no-gap update
-     * @param userPatterns the user's most frequently used phrases for this context;
-     *                     empty list means no personalisation data is available
-     * @param outcomeName the linked outcome name; blank or {@code null} values are
-     *                    rendered as {@value #NONE}
-     * @return ordered messages for the LLM — [{@code SYSTEM}, {@code USER}]
      */
     public static List<LlmClient.Message> buildCheckInOptionMessages(
             String commitTitle,
@@ -94,7 +76,9 @@ public final class CheckInOptionPromptBuilder {
             String lastNote,
             int daysSinceLastCheckIn,
             List<String> userPatterns,
-            String outcomeName
+            List<String> teamPatterns,
+            String outcomeName,
+            String userModelSummary
     ) {
         List<LlmClient.Message> messages = new ArrayList<>();
 
@@ -104,7 +88,9 @@ public final class CheckInOptionPromptBuilder {
                         + "Generate concise progress update options for a work commitment. "
                         + "Return valid JSON matching the response schema. "
                         + "Each progress option should be a short phrase (under 50 chars). "
-                        + "Include 4-5 options mixing status continuations and common transitions."
+                        + "Do not include source labels in the text. "
+                        + "Use the derived user-model summary to tailor the tone and relevance. "
+                        + "Derived user model summary: " + contextValue(userModelSummary)
         ));
 
         StringBuilder context = new StringBuilder();
@@ -117,6 +103,9 @@ public final class CheckInOptionPromptBuilder {
         context.append("daysSinceLastCheckIn: ").append(daysSinceLastCheckIn).append('\n');
         if (userPatterns != null && !userPatterns.isEmpty()) {
             context.append("User's common phrases: ").append(userPatterns).append('\n');
+        }
+        if (teamPatterns != null && !teamPatterns.isEmpty()) {
+            context.append("Team's common phrases: ").append(teamPatterns).append('\n');
         }
         context.append('\n').append("Generate contextual progress update options.");
 

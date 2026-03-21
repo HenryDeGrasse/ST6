@@ -1,5 +1,7 @@
 package com.weekly.trends;
 
+import com.weekly.capacity.CapacityProfileEntity;
+import com.weekly.capacity.CapacityProfileService;
 import com.weekly.plan.domain.ChessPriority;
 import com.weekly.plan.domain.CommitCategory;
 import com.weekly.plan.domain.CompletionStatus;
@@ -10,12 +12,14 @@ import com.weekly.plan.domain.WeeklyPlanEntity;
 import com.weekly.plan.repository.WeeklyCommitActualRepository;
 import com.weekly.plan.repository.WeeklyCommitRepository;
 import com.weekly.plan.repository.WeeklyPlanRepository;
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.UUID;
 import java.util.function.Function;
@@ -33,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>Strategic alignment rate (% RCDO-linked commits)</li>
  *   <li>Carry-forward velocity (avg per week + consecutive streak)</li>
  *   <li>Completion accuracy (avg confidence vs actual completion rate)</li>
+ *   <li>Estimated-vs-actual hour trends</li>
  *   <li>Priority and category distributions</li>
  *   <li>Team average for strategic alignment comparison</li>
  * </ul>
@@ -44,18 +49,25 @@ public class DefaultTrendsService implements TrendsService {
     static final int MIN_WEEKS = 1;
     static final int MAX_WEEKS = 26;
 
+    private static final double HOURS_UNDERESTIMATION_THRESHOLD = 1.15;
+    private static final double HOURS_ON_TARGET_LOW = 0.90;
+    private static final double HOURS_ON_TARGET_HIGH = 1.10;
+
     private final WeeklyPlanRepository planRepository;
     private final WeeklyCommitRepository commitRepository;
     private final WeeklyCommitActualRepository actualRepository;
+    private final CapacityProfileService capacityProfileService;
 
     public DefaultTrendsService(
             WeeklyPlanRepository planRepository,
             WeeklyCommitRepository commitRepository,
-            WeeklyCommitActualRepository actualRepository
+            WeeklyCommitActualRepository actualRepository,
+            CapacityProfileService capacityProfileService
     ) {
         this.planRepository = planRepository;
         this.commitRepository = commitRepository;
         this.actualRepository = actualRepository;
+        this.capacityProfileService = capacityProfileService;
     }
 
     /**
@@ -74,7 +86,6 @@ public class DefaultTrendsService implements TrendsService {
         LocalDate windowEnd = LocalDate.now().with(DayOfWeek.MONDAY);
         LocalDate windowStart = windowEnd.minusWeeks(clampedWeeks - 1);
 
-        // ── 1. Fetch user's plans in window ──────────────────────────────────
         List<WeeklyPlanEntity> plans =
                 planRepository.findByOrgIdAndOwnerUserIdAndWeekStartDateBetweenOrderByWeekStartDateAsc(
                         orgId, userId, windowStart, windowEnd);
@@ -82,7 +93,6 @@ public class DefaultTrendsService implements TrendsService {
         Map<LocalDate, WeeklyPlanEntity> planByWeek = plans.stream()
                 .collect(Collectors.toMap(WeeklyPlanEntity::getWeekStartDate, Function.identity()));
 
-        // ── 2. Fetch commits for all plans ───────────────────────────────────
         List<UUID> planIds = plans.stream().map(WeeklyPlanEntity::getId).toList();
         List<WeeklyCommitEntity> allUserCommits = planIds.isEmpty()
                 ? List.of()
@@ -91,7 +101,6 @@ public class DefaultTrendsService implements TrendsService {
         Map<UUID, List<WeeklyCommitEntity>> commitsByPlan = allUserCommits.stream()
                 .collect(Collectors.groupingBy(WeeklyCommitEntity::getWeeklyPlanId));
 
-        // ── 3. Fetch actuals for all commits ─────────────────────────────────
         List<UUID> commitIds = allUserCommits.stream().map(WeeklyCommitEntity::getId).toList();
         Map<UUID, WeeklyCommitActualEntity> actualsByCommitId = commitIds.isEmpty()
                 ? Map.of()
@@ -99,27 +108,35 @@ public class DefaultTrendsService implements TrendsService {
                         .collect(Collectors.toMap(
                                 WeeklyCommitActualEntity::getCommitId, Function.identity()));
 
-        // ── 4. Build per-week trend points ───────────────────────────────────
         List<WeekTrendPoint> weekPoints = buildWeekPoints(
                 windowStart, windowEnd, planByWeek, commitsByPlan, actualsByCommitId);
 
-        // ── 5. Aggregate user-level metrics ──────────────────────────────────
         double strategicRate = computeStrategicRate(allUserCommits);
         double avgCarryForward = computeAvgCarryForward(weekPoints);
         int streak = computeCarryForwardStreak(weekPoints);
         double avgConfidence = computeAvgConfidence(allUserCommits);
         double completionAccuracy = computeCompletionAccuracy(weekPoints);
         double confidenceGap = computeConfidenceGap(avgConfidence, completionAccuracy);
+        Double avgEstimatedHoursPerWeek = computeAverageEstimatedHoursPerWeek(weekPoints);
+        Double avgActualHoursPerWeek = computeAverageActualHoursPerWeek(weekPoints);
+        Double hoursAccuracyRatio = computeHoursAccuracyRatio(weekPoints);
         Map<String, Double> priorityDist = computePriorityDistribution(allUserCommits);
         Map<String, Double> categoryDist = computeCategoryDistribution(allUserCommits);
 
-        // ── 6. Compute team-wide strategic alignment ──────────────────────────
         double teamStrategicRate = computeTeamStrategicRate(orgId, windowStart, windowEnd);
+        Optional<CapacityProfileEntity> capacityProfile = capacityProfileService.getProfile(orgId, userId);
 
-        // ── 7. Generate insights ──────────────────────────────────────────────
         List<TrendInsight> insights = generateInsights(
-                strategicRate, teamStrategicRate,
-                streak, avgConfidence, completionAccuracy, confidenceGap, weekPoints);
+                strategicRate,
+                teamStrategicRate,
+                streak,
+                avgConfidence,
+                completionAccuracy,
+                confidenceGap,
+                hoursAccuracyRatio,
+                weekPoints,
+                capacityProfile
+        );
 
         int weeksAnalyzed = (int) weekPoints.stream()
                 .filter(wp -> wp.totalCommits() > 0)
@@ -136,14 +153,15 @@ public class DefaultTrendsService implements TrendsService {
                 avgConfidence,
                 completionAccuracy,
                 confidenceGap,
+                avgEstimatedHoursPerWeek,
+                avgActualHoursPerWeek,
+                hoursAccuracyRatio,
                 priorityDist,
                 categoryDist,
                 weekPoints,
                 insights
         );
     }
-
-    // ── Per-week breakdown ───────────────────────────────────────────────────
 
     private List<WeekTrendPoint> buildWeekPoints(
             LocalDate windowStart,
@@ -180,6 +198,10 @@ public class DefaultTrendsService implements TrendsService {
         double sumConfidence = 0.0;
         int confidenceCount = 0;
         int doneCount = 0;
+        BigDecimal totalEstimatedHours = BigDecimal.ZERO;
+        BigDecimal totalActualHours = BigDecimal.ZERO;
+        boolean hasEstimatedHours = false;
+        boolean hasActualHours = false;
 
         Map<String, Integer> priorityCounts = new LinkedHashMap<>();
         Map<String, Integer> categoryCounts = new LinkedHashMap<>();
@@ -195,17 +217,24 @@ public class DefaultTrendsService implements TrendsService {
                 sumConfidence += commit.getConfidence().doubleValue();
                 confidenceCount++;
             }
+            if (commit.getEstimatedHours() != null) {
+                totalEstimatedHours = totalEstimatedHours.add(commit.getEstimatedHours());
+                hasEstimatedHours = true;
+            }
             if (commit.getChessPriority() != null) {
                 priorityCounts.merge(commit.getChessPriority().name(), 1, Integer::sum);
             }
             if (commit.getCategory() != null) {
                 categoryCounts.merge(commit.getCategory().name(), 1, Integer::sum);
             }
-            if (hasActuals) {
-                WeeklyCommitActualEntity actual = actualsByCommitId.get(commit.getId());
-                if (actual != null && actual.getCompletionStatus() == CompletionStatus.DONE) {
-                    doneCount++;
-                }
+
+            WeeklyCommitActualEntity actual = actualsByCommitId.get(commit.getId());
+            if (actual != null && actual.getActualHours() != null) {
+                totalActualHours = totalActualHours.add(actual.getActualHours());
+                hasActualHours = true;
+            }
+            if (hasActuals && actual != null && actual.getCompletionStatus() == CompletionStatus.DONE) {
+                doneCount++;
             }
         }
 
@@ -213,6 +242,13 @@ public class DefaultTrendsService implements TrendsService {
         double completionRate = hasActuals && totalCommits > 0
                 ? (double) doneCount / totalCommits
                 : 0.0;
+        Double estimatedHours = hasEstimatedHours ? totalEstimatedHours.doubleValue() : null;
+        Double actualHours = hasActualHours ? totalActualHours.doubleValue() : null;
+        Double hoursAccuracyRatio = hasEstimatedHours
+                && hasActualHours
+                && totalEstimatedHours.compareTo(BigDecimal.ZERO) > 0
+                ? totalActualHours.divide(totalEstimatedHours, 4, java.math.RoundingMode.HALF_UP).doubleValue()
+                : null;
 
         return new WeekTrendPoint(
                 weekStart.toString(),
@@ -223,11 +259,12 @@ public class DefaultTrendsService implements TrendsService {
                 completionRate,
                 hasActuals,
                 priorityCounts,
-                categoryCounts
+                categoryCounts,
+                estimatedHours,
+                actualHours,
+                hoursAccuracyRatio
         );
     }
-
-    // ── Aggregate metrics ────────────────────────────────────────────────────
 
     double computeStrategicRate(List<WeeklyCommitEntity> commits) {
         if (commits.isEmpty()) {
@@ -289,6 +326,44 @@ public class DefaultTrendsService implements TrendsService {
         return avgConfidence - completionAccuracy;
     }
 
+    Double computeAverageEstimatedHoursPerWeek(List<WeekTrendPoint> weekPoints) {
+        return averageNullable(weekPoints.stream()
+                .map(WeekTrendPoint::estimatedHours)
+                .toList());
+    }
+
+    Double computeAverageActualHoursPerWeek(List<WeekTrendPoint> weekPoints) {
+        return averageNullable(weekPoints.stream()
+                .map(WeekTrendPoint::actualHours)
+                .toList());
+    }
+
+    Double computeHoursAccuracyRatio(List<WeekTrendPoint> weekPoints) {
+        BigDecimal totalEstimated = BigDecimal.ZERO;
+        BigDecimal totalActual = BigDecimal.ZERO;
+        boolean hasComparableWeeks = false;
+
+        for (WeekTrendPoint weekPoint : weekPoints) {
+            if (weekPoint.estimatedHours() == null || weekPoint.actualHours() == null) {
+                continue;
+            }
+
+            BigDecimal estimated = BigDecimal.valueOf(weekPoint.estimatedHours());
+            if (estimated.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+
+            totalEstimated = totalEstimated.add(estimated);
+            totalActual = totalActual.add(BigDecimal.valueOf(weekPoint.actualHours()));
+            hasComparableWeeks = true;
+        }
+
+        if (!hasComparableWeeks || totalEstimated.compareTo(BigDecimal.ZERO) <= 0) {
+            return null;
+        }
+        return totalActual.divide(totalEstimated, 4, java.math.RoundingMode.HALF_UP).doubleValue();
+    }
+
     Map<String, Double> computePriorityDistribution(List<WeeklyCommitEntity> commits) {
         Map<String, Double> result = new LinkedHashMap<>();
         long withPriority = commits.stream()
@@ -325,8 +400,6 @@ public class DefaultTrendsService implements TrendsService {
         return result;
     }
 
-    // ── Team average ─────────────────────────────────────────────────────────
-
     double computeTeamStrategicRate(UUID orgId, LocalDate windowStart, LocalDate windowEnd) {
         List<WeeklyPlanEntity> orgPlans =
                 planRepository.findByOrgIdAndWeekStartDateBetween(orgId, windowStart, windowEnd);
@@ -345,8 +418,6 @@ public class DefaultTrendsService implements TrendsService {
         return (double) strategic / orgCommits.size();
     }
 
-    // ── Insight generation ───────────────────────────────────────────────────
-
     @SuppressWarnings("checkstyle:ParameterNumber")
     List<TrendInsight> generateInsights(
             double strategicRate,
@@ -355,11 +426,12 @@ public class DefaultTrendsService implements TrendsService {
             double avgConfidence,
             double completionAccuracy,
             double confidenceGap,
-            List<WeekTrendPoint> weekPoints
+            Double hoursAccuracyRatio,
+            List<WeekTrendPoint> weekPoints,
+            Optional<CapacityProfileEntity> capacityProfile
     ) {
         List<TrendInsight> insights = new ArrayList<>();
 
-        // Carry-forward streak warning (3+ consecutive weeks)
         if (carryForwardStreak >= 3) {
             insights.add(new TrendInsight(
                     "CARRY_FORWARD_STREAK",
@@ -369,7 +441,6 @@ public class DefaultTrendsService implements TrendsService {
             ));
         }
 
-        // Confidence-accuracy gap warning (overconfident by more than 20 pp)
         if (confidenceGap > 0.20) {
             String gap = String.format("%.0f%%", confidenceGap * 100);
             insights.add(new TrendInsight(
@@ -381,7 +452,6 @@ public class DefaultTrendsService implements TrendsService {
             ));
         }
 
-        // Recent uncategorized work streak (3+ active weeks)
         int zeroCategoryStreak = computeTrailingActiveWeekStreak(
                 weekPoints,
                 point -> point.categoryCounts().values().stream().mapToInt(Integer::intValue).sum() == 0
@@ -396,7 +466,6 @@ public class DefaultTrendsService implements TrendsService {
             ));
         }
 
-        // Persistent zero strategic alignment (3+ active weeks with no RCDO links)
         long zeroStrategicWeeks = weekPoints.stream()
                 .filter(wp -> wp.totalCommits() > 0 && wp.strategicCommits() == 0)
                 .count();
@@ -410,7 +479,6 @@ public class DefaultTrendsService implements TrendsService {
             ));
         }
 
-        // Below team average by more than 20 pp
         if (teamStrategicRate > 0 && (teamStrategicRate - strategicRate) > 0.20) {
             insights.add(new TrendInsight(
                     "BELOW_TEAM_STRATEGIC_AVERAGE",
@@ -422,7 +490,34 @@ public class DefaultTrendsService implements TrendsService {
             ));
         }
 
-        // High completion rate — positive signal
+        if (hoursAccuracyRatio != null && hoursAccuracyRatio > HOURS_UNDERESTIMATION_THRESHOLD) {
+            insights.add(new TrendInsight(
+                    "HOURS_UNDERESTIMATION",
+                    String.format(
+                            "Your actual hours are averaging %.0f%% of estimated hours."
+                                    + " Consider adding more buffer to weekly plans.",
+                            hoursAccuracyRatio * 100),
+                    "WARNING"
+            ));
+        } else if (hoursAccuracyRatio != null
+                && hoursAccuracyRatio >= HOURS_ON_TARGET_LOW
+                && hoursAccuracyRatio <= HOURS_ON_TARGET_HIGH) {
+            insights.add(new TrendInsight(
+                    "HOURS_ESTIMATION_ON_TARGET",
+                    String.format(
+                            "Your estimated and actual hours are closely aligned at %.0f%% accuracy.",
+                            hoursAccuracyRatio * 100),
+                    "POSITIVE"
+            ));
+        }
+
+        capacityProfile.flatMap(this::buildCapacityProfileSummaryMessage)
+                .ifPresent(message -> insights.add(new TrendInsight(
+                        "CAPACITY_PROFILE_SUMMARY",
+                        message,
+                        "INFO"
+                )));
+
         boolean hasReconciledWeeks = weekPoints.stream().anyMatch(WeekTrendPoint::hasActuals);
         if (hasReconciledWeeks && completionAccuracy >= 0.85) {
             insights.add(new TrendInsight(
@@ -433,7 +528,6 @@ public class DefaultTrendsService implements TrendsService {
             ));
         }
 
-        // High strategic alignment — positive signal
         if (strategicRate >= 0.80) {
             insights.add(new TrendInsight(
                     "HIGH_STRATEGIC_ALIGNMENT",
@@ -446,7 +540,33 @@ public class DefaultTrendsService implements TrendsService {
         return insights;
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
+    private Optional<String> buildCapacityProfileSummaryMessage(CapacityProfileEntity profile) {
+        List<String> parts = new ArrayList<>();
+        if (profile.getEstimationBias() != null) {
+            parts.add(String.format("historical bias is %.2fx", profile.getEstimationBias().doubleValue()));
+        }
+        if (profile.getRealisticWeeklyCap() != null) {
+            parts.add(String.format("realistic weekly cap is %.1f hours", profile.getRealisticWeeklyCap().doubleValue()));
+        }
+        if (parts.isEmpty()) {
+            return Optional.empty();
+        }
+        String confidenceSuffix = profile.getConfidenceLevel() != null
+                ? " (confidence: " + profile.getConfidenceLevel() + ")"
+                : "";
+        return Optional.of("Capacity profile summary: your "
+                + String.join(" and ", parts)
+                + confidenceSuffix
+                + ".");
+    }
+
+    private Double averageNullable(List<Double> values) {
+        DoubleSummary summary = new DoubleSummary();
+        values.stream()
+                .filter(value -> value != null)
+                .forEach(summary::add);
+        return summary.average();
+    }
 
     private int computeTrailingActiveWeekStreak(
             List<WeekTrendPoint> weekPoints,
@@ -469,5 +589,19 @@ public class DefaultTrendsService implements TrendsService {
 
     private boolean isFinalizedReconciliation(PlanState state) {
         return state == PlanState.RECONCILED || state == PlanState.CARRY_FORWARD;
+    }
+
+    private static final class DoubleSummary {
+        private double sum;
+        private int count;
+
+        void add(double value) {
+            sum += value;
+            count++;
+        }
+
+        Double average() {
+            return count > 0 ? sum / count : null;
+        }
     }
 }

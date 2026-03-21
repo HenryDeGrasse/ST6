@@ -136,9 +136,11 @@ export interface CheckInOptionRequest {
   daysSinceLastCheckIn?: number;
 }
 
+export type CheckInOptionSource = "user_history" | "team_common" | "ai_generated";
+
 export interface CheckInOptionItem {
   text: string;
-  source: string;
+  source: CheckInOptionSource;
 }
 
 export interface CheckInOptionsResponse {

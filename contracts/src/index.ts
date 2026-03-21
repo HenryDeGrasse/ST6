@@ -79,6 +79,7 @@ export type {
   QuickUpdateRequest,
   QuickUpdateResponse,
   CheckInOptionRequest,
+  CheckInOptionSource,
   CheckInOptionItem,
   CheckInOptionsResponse,
   ReviewStatusCounts,

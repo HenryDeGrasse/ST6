@@ -191,6 +191,12 @@ export interface WeekTrendPoint {
   hasActuals: boolean;
   priorityCounts: Record<string, number>;
   categoryCounts: Record<string, number>;
+  /** Summed estimated hours for the week, or null when absent. */
+  estimatedHours: number | null;
+  /** Summed actual hours for the week, or null when absent. */
+  actualHours: number | null;
+  /** actualHours / estimatedHours, or null when unavailable. */
+  hoursAccuracyRatio: number | null;
 }
 
 export interface TrendsResponse {
@@ -214,6 +220,12 @@ export interface TrendsResponse {
   completionAccuracy: number;
   /** avgConfidence minus completionAccuracy (positive = overconfident). */
   confidenceAccuracyGap: number;
+  /** Average estimated hours across weeks with estimate data. */
+  avgEstimatedHoursPerWeek: number | null;
+  /** Average actual hours across weeks with actual-hour data. */
+  avgActualHoursPerWeek: number | null;
+  /** totalActualHours / totalEstimatedHours across weeks that have both values, or null when unavailable. */
+  hoursAccuracyRatio: number | null;
   /** Fraction of commits per ChessPriority. */
   priorityDistribution: Record<string, number>;
   /** Fraction of commits per CommitCategory. */

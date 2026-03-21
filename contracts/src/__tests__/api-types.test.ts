@@ -130,11 +130,11 @@ describe("Quick update contracts", () => {
     const resp: CheckInOptionsResponse = {
       status: "ok",
       statusOptions: ["ON_TRACK", "AT_RISK", "BLOCKED", "DONE_EARLY"],
-      progressOptions: [{ text: "Blocked on dependency", source: "ai" }],
+      progressOptions: [{ text: "Blocked on dependency", source: "ai_generated" }],
     };
 
     expect(resp.statusOptions).toContain("BLOCKED");
-    expect(resp.progressOptions[0].source).toBe("ai");
+    expect(resp.progressOptions[0].source).toBe("ai_generated");
   });
 });
 

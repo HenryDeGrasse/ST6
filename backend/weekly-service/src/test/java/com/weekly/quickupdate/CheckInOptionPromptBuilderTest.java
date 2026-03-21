@@ -23,20 +23,16 @@ class CheckInOptionPromptBuilderTest {
                 "API is ready for UI hookup",
                 2,
                 List.of("Wrapped API integration", "Waiting on review"),
-                "Improve activation"
+                List.of("Daily rollout status"),
+                "Improve activation",
+                "completion reliability 82%; current category DELIVERY done rate 90%"
         );
 
         assertEquals(2, messages.size());
         assertEquals(LlmClient.Role.SYSTEM, messages.get(0).role());
         assertEquals(LlmClient.Role.USER, messages.get(1).role());
-        assertEquals(
-                "You are a check-in assistant for weekly planning. "
-                        + "Generate concise progress update options for a work commitment. "
-                        + "Return valid JSON matching the response schema. "
-                        + "Each progress option should be a short phrase (under 50 chars). "
-                        + "Include 4-5 options mixing status continuations and common transitions.",
-                messages.get(0).content()
-        );
+        assertTrue(messages.get(0).content().contains("Derived user model summary:"));
+        assertTrue(messages.get(0).content().contains("completion reliability 82%"));
     }
 
     @Test
@@ -49,7 +45,9 @@ class CheckInOptionPromptBuilderTest {
                 "Blocked on final copy",
                 3,
                 List.of("Wrapped API integration", "Waiting on review"),
-                "Improve activation"
+                List.of("Daily rollout status"),
+                "Improve activation",
+                "completion reliability 82%; current category DELIVERY done rate 90%"
         );
 
         String userMessage = messages.get(1).content();
@@ -62,11 +60,12 @@ class CheckInOptionPromptBuilderTest {
         assertTrue(userMessage.contains("daysSinceLastCheckIn: 3"));
         assertTrue(userMessage.contains(
                 "User's common phrases: [Wrapped API integration, Waiting on review]"));
+        assertTrue(userMessage.contains("Team's common phrases: [Daily rollout status]"));
         assertTrue(userMessage.endsWith("Generate contextual progress update options."));
     }
 
     @Test
-    void userMessageOmitsPatternsWhenListIsEmpty() {
+    void userMessageOmitsPatternsWhenListsAreEmpty() {
         List<LlmClient.Message> messages = CheckInOptionPromptBuilder.buildCheckInOptionMessages(
                 "Close out migration",
                 "OPERATIONS",
@@ -75,6 +74,8 @@ class CheckInOptionPromptBuilderTest {
                 null,
                 0,
                 List.of(),
+                List.of(),
+                null,
                 null
         );
 
@@ -82,6 +83,8 @@ class CheckInOptionPromptBuilderTest {
         assertTrue(userMessage.contains("outcomeName: (none)"));
         assertTrue(userMessage.contains("lastNote: (none)"));
         assertFalse(userMessage.contains("User's common phrases:"));
+        assertFalse(userMessage.contains("Team's common phrases:"));
+        assertTrue(messages.get(0).content().contains("Derived user model summary: (none)"));
     }
 
     @Test
@@ -92,6 +95,6 @@ class CheckInOptionPromptBuilderTest {
         assertTrue(schema.contains("\"statusOptions\""));
         assertTrue(schema.contains("\"progressOptions\""));
         assertTrue(schema.contains("\"text\""));
-        assertTrue(schema.contains("\"source\""));
+        assertFalse(schema.contains("\"source\""));
     }
 }

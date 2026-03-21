@@ -18,6 +18,10 @@ import java.util.Map;
  * @param avgConfidence              mean confidence across all commits in the window (0–1)
  * @param completionAccuracy         mean completion rate across reconciled weeks (0–1)
  * @param confidenceAccuracyGap      {@code avgConfidence - completionAccuracy} (positive = overconfident)
+ * @param avgEstimatedHoursPerWeek   average estimated hours across weeks with estimate data
+ * @param avgActualHoursPerWeek      average actual hours across weeks with actual-hour data
+ * @param hoursAccuracyRatio         {@code totalActualHours / totalEstimatedHours} across only
+ *                                   weeks that have both values, or {@code null}
  * @param priorityDistribution       fraction of commits per ChessPriority name (values sum ≤ 1)
  * @param categoryDistribution       fraction of commits per CommitCategory name (values sum ≤ 1)
  * @param weekPoints                 per-week breakdown, oldest to newest
@@ -34,9 +38,51 @@ public record TrendsResponse(
         double avgConfidence,
         double completionAccuracy,
         double confidenceAccuracyGap,
+        Double avgEstimatedHoursPerWeek,
+        Double avgActualHoursPerWeek,
+        Double hoursAccuracyRatio,
         Map<String, Double> priorityDistribution,
         Map<String, Double> categoryDistribution,
         List<WeekTrendPoint> weekPoints,
         List<TrendInsight> insights
 ) {
+    /**
+     * Backwards-compatible constructor for callers that do not provide hour metrics.
+     */
+    public TrendsResponse(
+            int weeksAnalyzed,
+            String windowStart,
+            String windowEnd,
+            double strategicAlignmentRate,
+            double teamStrategicAlignmentRate,
+            double avgCarryForwardPerWeek,
+            int carryForwardStreak,
+            double avgConfidence,
+            double completionAccuracy,
+            double confidenceAccuracyGap,
+            Map<String, Double> priorityDistribution,
+            Map<String, Double> categoryDistribution,
+            List<WeekTrendPoint> weekPoints,
+            List<TrendInsight> insights
+    ) {
+        this(
+                weeksAnalyzed,
+                windowStart,
+                windowEnd,
+                strategicAlignmentRate,
+                teamStrategicAlignmentRate,
+                avgCarryForwardPerWeek,
+                carryForwardStreak,
+                avgConfidence,
+                completionAccuracy,
+                confidenceAccuracyGap,
+                null,
+                null,
+                null,
+                priorityDistribution,
+                categoryDistribution,
+                weekPoints,
+                insights
+        );
+    }
 }
