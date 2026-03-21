@@ -6,6 +6,8 @@ import com.weekly.shared.NextWorkDataProvider;
 import com.weekly.shared.NextWorkDataProvider.CarryForwardItem;
 import com.weekly.shared.NextWorkDataProvider.RcdoCoverageGap;
 import com.weekly.shared.NextWorkDataProvider.RecentCommitContext;
+import com.weekly.shared.UrgencyDataProvider;
+import com.weekly.shared.UrgencyInfo;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -33,7 +35,8 @@ import org.springframework.stereotype.Service;
  *   <li>Filter out suggestions whose {@code suggestionId} the user has DECLINED
  *       within the last {@value #DECLINE_SUPPRESSION_WEEKS} weeks</li>
  *   <li>Rank: carry-forward by age (older = higher confidence), coverage gaps
- *       by severity ({@code weeksMissing} descending)</li>
+ *       by severity ({@code weeksMissing} descending) with urgency multipliers
+ *       for tracked outcomes</li>
  *   <li>Cap at {@value #MAX_SUGGESTIONS}</li>
  * </ol>
  *
@@ -88,6 +91,10 @@ public class DefaultNextWorkSuggestionService implements NextWorkSuggestionServi
     /** Confidence score assigned to coverage gap suggestions. */
     static final double COVERAGE_GAP_BASE_CONFIDENCE = 0.60;
 
+    static final double CRITICAL_URGENCY_MULTIPLIER = 1.4;
+    static final double AT_RISK_URGENCY_MULTIPLIER = 1.2;
+    static final double NEEDS_ATTENTION_URGENCY_MULTIPLIER = 1.1;
+
     /** Confidence score assigned to external ticket suggestions (Phase 3). */
     static final double EXTERNAL_TICKET_BASE_CONFIDENCE = 0.75;
 
@@ -99,6 +106,7 @@ public class DefaultNextWorkSuggestionService implements NextWorkSuggestionServi
     private final AiSuggestionFeedbackRepository feedbackRepository;
     private final LlmClient llmClient;
     private final AiCacheService cacheService;
+    private final UrgencyDataProvider urgencyDataProvider;
     private final boolean llmRankingEnabled;
 
     public DefaultNextWorkSuggestionService(
@@ -107,13 +115,15 @@ public class DefaultNextWorkSuggestionService implements NextWorkSuggestionServi
             AiSuggestionFeedbackRepository feedbackRepository,
             LlmClient llmClient,
             AiCacheService cacheService,
-            AiFeatureFlags featureFlags
+            AiFeatureFlags featureFlags,
+            UrgencyDataProvider urgencyDataProvider
     ) {
         this.dataProvider = dataProvider;
         this.integrationService = integrationService;
         this.feedbackRepository = feedbackRepository;
         this.llmClient = llmClient;
         this.cacheService = cacheService;
+        this.urgencyDataProvider = urgencyDataProvider;
         this.llmRankingEnabled = featureFlags.isLlmNextWorkRankingEnabled();
     }
 
@@ -455,9 +465,10 @@ public class DefaultNextWorkSuggestionService implements NextWorkSuggestionServi
             if (recentlyDeclined.contains(suggestionId)) {
                 continue;
             }
-            // Longer gaps get higher confidence
+            // Longer gaps get higher confidence; tracked urgent outcomes get an extra boost
             double confidence = Math.min(1.0,
-                    COVERAGE_GAP_BASE_CONFIDENCE + (gap.weeksMissing() - MIN_GAP_WEEKS) * 0.05);
+                    (COVERAGE_GAP_BASE_CONFIDENCE + (gap.weeksMissing() - MIN_GAP_WEEKS) * 0.05)
+                            * resolveUrgencyMultiplier(orgId, gap.outcomeId()));
             String sourceDetail = "Outcome \"" + gap.outcomeName()
                     + "\" has had 0 team commits for " + gap.weeksMissing() + " weeks";
             String rationale = buildCoverageGapRationale(gap);
@@ -491,6 +502,40 @@ public class DefaultNextWorkSuggestionService implements NextWorkSuggestionServi
                 .append(gap.teamCommitsPrevWindow() == 1 ? "commit" : "commits")
                 .append(" in the prior 8-week window.");
         return sb.toString();
+    }
+
+    private double resolveUrgencyMultiplier(UUID orgId, String outcomeId) {
+        UUID parsedOutcomeId = parseUuid(outcomeId);
+        if (parsedOutcomeId == null) {
+            return 1.0;
+        }
+
+        try {
+            UrgencyInfo urgency = urgencyDataProvider.getOutcomeUrgency(orgId, parsedOutcomeId);
+            if (urgency == null || urgency.urgencyBand() == null) {
+                return 1.0;
+            }
+            return switch (urgency.urgencyBand()) {
+                case "CRITICAL" -> CRITICAL_URGENCY_MULTIPLIER;
+                case "AT_RISK" -> AT_RISK_URGENCY_MULTIPLIER;
+                case "NEEDS_ATTENTION" -> NEEDS_ATTENTION_URGENCY_MULTIPLIER;
+                default -> 1.0;
+            };
+        } catch (Exception e) {
+            LOG.debug("Could not fetch urgency for outcome {}: {}", outcomeId, e.getMessage());
+            return 1.0;
+        }
+    }
+
+    private UUID parseUuid(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     // ── External ticket suggestion building (Phase 3) ─────────────────────────

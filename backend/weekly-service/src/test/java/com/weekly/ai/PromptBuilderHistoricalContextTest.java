@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.weekly.shared.ManagerInsightDataProvider;
+import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -124,6 +125,53 @@ class PromptBuilderHistoricalContextTest {
                 "Should include review turnaround section");
         assertTrue(contextMessage.contains("2.5"), "Should include avg days");
         assertTrue(contextMessage.contains("6 plans"), "Should include sample size");
+    }
+
+    @Test
+    void includesUrgencyAndSlackSectionBeforeHistoricalContext() {
+        ManagerInsightDataProvider.ManagerWeekContext ctx =
+                new ManagerInsightDataProvider.ManagerWeekContext(
+                        WEEK_START,
+                        new ManagerInsightDataProvider.ReviewCounts(0, 0, 0),
+                        List.of(),
+                        List.of(),
+                        List.of(
+                                new ManagerInsightDataProvider.CarryForwardStreak(
+                                        "user-abc", 2, List.of("Fix login bug"))),
+                        List.of(),
+                        List.of(),
+                        null,
+                        null,
+                        List.of(new ManagerInsightDataProvider.OutcomeUrgencyContext(
+                                "outcome-1",
+                                "Grow ARR",
+                                "2026-03-20",
+                                BigDecimal.valueOf(35),
+                                BigDecimal.valueOf(60),
+                                "AT_RISK",
+                                11
+                        )),
+                        new ManagerInsightDataProvider.StrategicSlackContext(
+                                "LOW_SLACK",
+                                BigDecimal.valueOf(0.65),
+                                2,
+                                1
+                        )
+                );
+
+        List<LlmClient.Message> messages = PromptBuilder.buildManagerInsightsMessages(ctx);
+        String contextMessage = messages.get(1).content();
+
+        assertTrue(contextMessage.contains("Urgency and strategic slack context"));
+        assertTrue(contextMessage.contains("Strategic slack: slackBand=LOW_SLACK | strategicFocusFloor=0.65"));
+        assertTrue(contextMessage.contains("urgencyBand: AT_RISK"));
+        assertTrue(contextMessage.contains("targetDate: 2026-03-20"));
+        assertTrue(contextMessage.contains("actualProgressPct: 35"));
+        assertTrue(contextMessage.contains("expectedProgressPct: 60"));
+        assertTrue(contextMessage.contains("progressGapPct: -25"));
+        assertTrue(contextMessage.indexOf("Urgency and strategic slack context")
+                        < contextMessage.indexOf("Multi-week historical context"),
+                "Urgency block should appear before historical trends");
     }
 
     @Test

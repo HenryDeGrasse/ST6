@@ -17,6 +17,9 @@ import com.weekly.shared.NextWorkDataProvider;
 import com.weekly.shared.NextWorkDataProvider.CarryForwardItem;
 import com.weekly.shared.NextWorkDataProvider.RcdoCoverageGap;
 import com.weekly.shared.NextWorkDataProvider.RecentCommitContext;
+import com.weekly.shared.UrgencyDataProvider;
+import com.weekly.shared.UrgencyInfo;
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
@@ -52,6 +55,7 @@ class DefaultNextWorkSuggestionServiceTest {
     private LlmClient llmClient;
     private AiCacheService cacheService;
     private AiFeatureFlags featureFlags;
+    private UrgencyDataProvider urgencyDataProvider;
     private DefaultNextWorkSuggestionService service;
 
     @BeforeEach
@@ -62,9 +66,10 @@ class DefaultNextWorkSuggestionServiceTest {
         llmClient = mock(LlmClient.class);
         cacheService = new AiCacheService(Duration.ofHours(1));
         featureFlags = new AiFeatureFlags(); // defaults: llmNextWorkRankingEnabled = false
+        urgencyDataProvider = mock(UrgencyDataProvider.class);
         service = new DefaultNextWorkSuggestionService(
                 dataProvider, integrationService, feedbackRepository,
-                llmClient, cacheService, featureFlags);
+                llmClient, cacheService, featureFlags, urgencyDataProvider);
 
         // Default stubs: return empty collections for all calls.
         // Use anyInt() for primitive int parameters to avoid null-unboxing NPE.
@@ -83,6 +88,8 @@ class DefaultNextWorkSuggestionServiceTest {
         when(integrationService.getUnresolvedTicketsForUser(
                 eq(ORG_ID), eq(USER_ID), any(), anyInt()))
                 .thenReturn(List.of());
+        when(urgencyDataProvider.getOutcomeUrgency(eq(ORG_ID), any()))
+                .thenReturn(null);
     }
 
     // ── Basic result structure ────────────────────────────────────────────────
@@ -262,6 +269,53 @@ class DefaultNextWorkSuggestionServiceTest {
                     .findFirst().orElseThrow().confidence();
             assertTrue(confB > confA,
                     "4-week gap should have higher confidence than 2-week gap");
+        }
+
+        @Test
+        void urgencyMultiplierBoostsTrackedCoverageGapSuggestions() {
+            UUID trackedOutcomeId = UUID.randomUUID();
+            RcdoCoverageGap gap = new RcdoCoverageGap(
+                    trackedOutcomeId.toString(), "Renewals", "Obj", "RC", 2, 5);
+            when(dataProvider.getTeamCoverageGaps(eq(ORG_ID), any(), anyInt(), anyInt()))
+                    .thenReturn(List.of(gap));
+            when(urgencyDataProvider.getOutcomeUrgency(ORG_ID, trackedOutcomeId))
+                    .thenReturn(new UrgencyInfo(
+                            trackedOutcomeId,
+                            "Renewals",
+                            WEEK_START.plusWeeks(2),
+                            BigDecimal.valueOf(25),
+                            BigDecimal.valueOf(60),
+                            "CRITICAL",
+                            14
+                    ));
+
+            NextWorkSuggestionService.NextWorkSuggestionsResult result =
+                    service.suggestNextWork(ORG_ID, USER_ID, WEEK_START);
+
+            assertEquals(1, result.suggestions().size());
+            assertEquals(
+                    DefaultNextWorkSuggestionService.COVERAGE_GAP_BASE_CONFIDENCE
+                            * DefaultNextWorkSuggestionService.CRITICAL_URGENCY_MULTIPLIER,
+                    result.suggestions().get(0).confidence(),
+                    0.001);
+        }
+
+        @Test
+        void urgencyMultiplierIsNotAppliedForUntrackedCoverageGapSuggestions() {
+            String nonTrackedOutcomeId = "legacy-outcome-id";
+            RcdoCoverageGap gap = new RcdoCoverageGap(
+                    nonTrackedOutcomeId, "Legacy Outcome", "Obj", "RC", 2, 5);
+            when(dataProvider.getTeamCoverageGaps(eq(ORG_ID), any(), anyInt(), anyInt()))
+                    .thenReturn(List.of(gap));
+
+            NextWorkSuggestionService.NextWorkSuggestionsResult result =
+                    service.suggestNextWork(ORG_ID, USER_ID, WEEK_START);
+
+            assertEquals(1, result.suggestions().size());
+            assertEquals(
+                    DefaultNextWorkSuggestionService.COVERAGE_GAP_BASE_CONFIDENCE,
+                    result.suggestions().get(0).confidence(),
+                    0.001);
         }
     }
 
@@ -654,7 +708,7 @@ class DefaultNextWorkSuggestionServiceTest {
 
             llmEnabledService = new DefaultNextWorkSuggestionService(
                     dataProvider, integrationService, feedbackRepository,
-                    mockLlm, testCache, flags);
+                    mockLlm, testCache, flags, urgencyDataProvider);
         }
 
         @Test

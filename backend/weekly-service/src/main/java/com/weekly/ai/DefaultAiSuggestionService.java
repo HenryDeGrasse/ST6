@@ -5,6 +5,8 @@ import com.weekly.rcdo.RcdoTree;
 import com.weekly.shared.CommitDataProvider;
 import com.weekly.shared.ManagerInsightDataProvider;
 import com.weekly.shared.TeamRcdoUsageProvider;
+import com.weekly.shared.UrgencyDataProvider;
+import com.weekly.shared.UrgencyInfo;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -22,7 +24,7 @@ import org.springframework.stereotype.Service;
  *
  * <p>Pipeline for RCDO auto-suggest:
  * <ol>
- *   <li>Check cache (orgId + hash of input + rcdoTreeVersion)</li>
+ *   <li>Check cache (orgId + hash of input + prompt fingerprint for tree/team/urgency context)</li>
  *   <li>Fetch RCDO tree, narrow to candidate set (~50 outcomes)</li>
  *   <li>Build structured prompt with candidate IDs in context</li>
  *   <li>Call LLM with 5s hard timeout</li>
@@ -44,6 +46,7 @@ public class DefaultAiSuggestionService implements AiSuggestionService {
     private final CommitDataProvider commitDataProvider;
     private final ManagerInsightDataProvider managerInsightDataProvider;
     private final TeamRcdoUsageProvider teamRcdoUsageProvider;
+    private final UrgencyDataProvider urgencyDataProvider;
 
     public DefaultAiSuggestionService(
             LlmClient llmClient,
@@ -51,7 +54,8 @@ public class DefaultAiSuggestionService implements AiSuggestionService {
             AiCacheService cacheService,
             CommitDataProvider commitDataProvider,
             ManagerInsightDataProvider managerInsightDataProvider,
-            TeamRcdoUsageProvider teamRcdoUsageProvider
+            TeamRcdoUsageProvider teamRcdoUsageProvider,
+            UrgencyDataProvider urgencyDataProvider
     ) {
         this.llmClient = llmClient;
         this.rcdoClient = rcdoClient;
@@ -59,6 +63,7 @@ public class DefaultAiSuggestionService implements AiSuggestionService {
         this.commitDataProvider = commitDataProvider;
         this.managerInsightDataProvider = managerInsightDataProvider;
         this.teamRcdoUsageProvider = teamRcdoUsageProvider;
+        this.urgencyDataProvider = urgencyDataProvider;
     }
 
     @Override
@@ -71,18 +76,22 @@ public class DefaultAiSuggestionService implements AiSuggestionService {
                 return SuggestionResult.unavailable();
             }
 
-            // 2. Build cache key and check cache
-            String rcdoVersion = computeRcdoFingerprint(tree);
-            String cacheKey = AiCacheService.buildSuggestKey(orgId, title, description, rcdoVersion);
+            // 2. Fetch prompt-enrichment context needed for prompt construction and cache invalidation
+            LocalDate currentWeekStart = LocalDate.now().with(DayOfWeek.MONDAY);
+            TeamRcdoUsageProvider.TeamRcdoUsageResult teamUsage = getTeamRcdoUsageCached(orgId, currentWeekStart);
+            List<UrgencyInfo> orgUrgencies = getOrgUrgencies(orgId);
+
+            // 3. Build cache key and check cache
+            String promptFingerprint = String.join("#",
+                    computeRcdoFingerprint(tree),
+                    computeTeamUsageFingerprint(teamUsage),
+                    computeUrgencyFingerprint(orgUrgencies));
+            String cacheKey = AiCacheService.buildSuggestKey(orgId, title, description, promptFingerprint);
             Optional<SuggestionResult> cached = cacheService.get(orgId, cacheKey, SuggestionResult.class);
             if (cached.isPresent()) {
                 LOG.debug("Cache hit for suggest-rcdo: {}", cacheKey);
                 return cached.get();
             }
-
-            // 3. Fetch team RCDO usage for the current week (cached for 1 hour)
-            LocalDate currentWeekStart = LocalDate.now().with(DayOfWeek.MONDAY);
-            TeamRcdoUsageProvider.TeamRcdoUsageResult teamUsage = getTeamRcdoUsageCached(orgId, currentWeekStart);
 
             // 4. Build high-usage outcome IDs for candidate boosting
             Set<String> highUsageOutcomeIds = teamUsage.outcomes().stream()
@@ -120,9 +129,19 @@ public class DefaultAiSuggestionService implements AiSuggestionService {
                     .sorted()
                     .toList();
 
+            List<PromptBuilder.CandidateUrgencyContext> candidateUrgencies = buildCandidateUrgencies(
+                    candidates,
+                    orgUrgencies
+            );
+
             // 8. Build enriched prompt and call LLM
             List<LlmClient.Message> messages = PromptBuilder.buildRcdoSuggestMessages(
-                    title, description, candidates, topTeamOutcomes, zeroCoverageOutcomeNames
+                    title,
+                    description,
+                    candidates,
+                    topTeamOutcomes,
+                    zeroCoverageOutcomeNames,
+                    candidateUrgencies
             );
             String rawResponse = llmClient.complete(messages, PromptBuilder.rcdoSuggestResponseSchema());
 
@@ -274,6 +293,51 @@ public class DefaultAiSuggestionService implements AiSuggestionService {
         }
     }
 
+    private List<UrgencyInfo> getOrgUrgencies(UUID orgId) {
+        try {
+            return urgencyDataProvider.getOrgUrgencySummary(orgId);
+        } catch (Exception e) {
+            LOG.warn("Could not fetch urgency summary for org {}: {}", orgId, e.getMessage());
+            return List.of();
+        }
+    }
+
+    private List<PromptBuilder.CandidateUrgencyContext> buildCandidateUrgencies(
+            List<PromptBuilder.CandidateOutcome> candidates,
+            List<UrgencyInfo> orgUrgencies
+    ) {
+        if (candidates.isEmpty() || orgUrgencies == null || orgUrgencies.isEmpty()) {
+            return List.of();
+        }
+
+        java.util.Map<String, UrgencyInfo> urgencyByOutcomeId = orgUrgencies.stream()
+                .filter(urgency -> urgency.outcomeId() != null)
+                .collect(Collectors.toMap(
+                        urgency -> urgency.outcomeId().toString(),
+                        urgency -> urgency,
+                        (first, ignored) -> first
+                ));
+
+        return candidates.stream()
+                .map(candidate -> {
+                    UrgencyInfo urgency = urgencyByOutcomeId.get(candidate.outcomeId());
+                    if (urgency == null) {
+                        return null;
+                    }
+                    return new PromptBuilder.CandidateUrgencyContext(
+                            candidate.outcomeId(),
+                            candidate.outcomeName(),
+                            urgency.urgencyBand(),
+                            urgency.targetDate() == null ? null : urgency.targetDate().toString(),
+                            urgency.progressPct(),
+                            urgency.expectedProgressPct(),
+                            urgency.daysRemaining()
+                    );
+                })
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
     private String computeRcdoFingerprint(RcdoTree tree) {
         return tree.rallyCries().stream()
                 .sorted(Comparator.comparing(RcdoTree.RallyCry::id))
@@ -285,6 +349,43 @@ public class DefaultAiSuggestionService implements AiSuggestionService {
                                         rc.id(), rc.name(),
                                         obj.id(), obj.name(),
                                         outcome.id(), outcome.name()))))
+                .collect(Collectors.joining(";"));
+    }
+
+    private String computeTeamUsageFingerprint(TeamRcdoUsageProvider.TeamRcdoUsageResult teamUsage) {
+        if (teamUsage == null) {
+            return "";
+        }
+
+        String topOutcomes = teamUsage.outcomes() == null ? "" : teamUsage.outcomes().stream()
+                .limit(5)
+                .map(outcome -> String.join("|",
+                        String.valueOf(outcome.outcomeId()),
+                        String.valueOf(outcome.outcomeName()),
+                        String.valueOf(outcome.commitCount())))
+                .collect(Collectors.joining(";"));
+
+        String quarterCoverage = teamUsage.coveredOutcomeIdsThisQuarter() == null ? "" :
+                teamUsage.coveredOutcomeIdsThisQuarter().stream()
+                        .sorted()
+                        .collect(Collectors.joining(","));
+
+        return topOutcomes + "#" + quarterCoverage;
+    }
+
+    private String computeUrgencyFingerprint(List<UrgencyInfo> urgencies) {
+        if (urgencies == null || urgencies.isEmpty()) {
+            return "";
+        }
+        return urgencies.stream()
+                .sorted(Comparator.comparing(urgency -> String.valueOf(urgency.outcomeId())))
+                .map(urgency -> String.join("|",
+                        String.valueOf(urgency.outcomeId()),
+                        String.valueOf(urgency.targetDate()),
+                        String.valueOf(urgency.progressPct()),
+                        String.valueOf(urgency.expectedProgressPct()),
+                        String.valueOf(urgency.urgencyBand()),
+                        String.valueOf(urgency.daysRemaining())))
                 .collect(Collectors.joining(";"));
     }
 

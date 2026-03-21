@@ -4,9 +4,13 @@ import com.weekly.integration.IntegrationService.UserTicketContext;
 import com.weekly.shared.CommitDataProvider;
 import com.weekly.shared.ManagerInsightDataProvider;
 import com.weekly.shared.NextWorkDataProvider;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Constructs structured prompts for AI suggestion calls.
@@ -56,6 +60,31 @@ public final class PromptBuilder {
             List<TeamOutcomeUsage> topTeamOutcomes,
             List<String> zeroCoverageOutcomeNames
     ) {
+        return buildRcdoSuggestMessages(
+                title,
+                description,
+                candidateOutcomes,
+                topTeamOutcomes,
+                zeroCoverageOutcomeNames,
+                List.of()
+        );
+    }
+
+    /**
+     * Builds messages for RCDO auto-suggest enriched with team-context and
+     * candidate-level urgency signals.
+     *
+     * <p>Urgency annotations are supplied by the caller so this static builder
+     * stays side-effect free and does not reach into services directly.
+     */
+    public static List<LlmClient.Message> buildRcdoSuggestMessages(
+            String title,
+            String description,
+            List<CandidateOutcome> candidateOutcomes,
+            List<TeamOutcomeUsage> topTeamOutcomes,
+            List<String> zeroCoverageOutcomeNames,
+            List<CandidateUrgencyContext> candidateUrgencies
+    ) {
         List<LlmClient.Message> messages = new ArrayList<>();
 
         // System prompt — instructions and constraints
@@ -74,17 +103,50 @@ public final class PromptBuilder {
                 4. If no candidates are relevant, return an empty suggestions array.
                 5. Use the team context (if provided) to bias towards outcomes the team is actively \
                 working toward or outcomes that need more coverage.
-                6. Respond ONLY with valid JSON matching the required schema.
+                6. When urgency context is provided, explicitly favour AT_RISK and CRITICAL outcomes \
+                over lower-urgency candidates when relevance is otherwise similar.
+                7. Respond ONLY with valid JSON matching the required schema.
                 """
         ));
+
+        Map<String, CandidateUrgencyContext> urgencyByOutcomeId = candidateUrgencies.stream()
+                .collect(Collectors.toMap(
+                        CandidateUrgencyContext::outcomeId,
+                        Function.identity(),
+                        (first, ignored) -> first
+                ));
 
         // Context message — RCDO candidate set and team context (not user-authored)
         StringBuilder candidateContext = new StringBuilder("Available RCDO outcomes:\n");
         for (CandidateOutcome c : candidateOutcomes) {
             candidateContext.append(String.format(
-                    "- outcomeId: %s | outcomeName: %s | objectiveName: %s | rallyCryName: %s%n",
+                    "- outcomeId: %s | outcomeName: %s | objectiveName: %s | rallyCryName: %s",
                     c.outcomeId(), c.outcomeName(), c.objectiveName(), c.rallyCryName()
             ));
+            CandidateUrgencyContext urgency = urgencyByOutcomeId.get(c.outcomeId());
+            if (urgency != null) {
+                candidateContext.append(String.format(
+                        " | urgencyBand: %s | urgencyPreference: %s | targetDate: %s | actualProgressPct: %s | expectedProgressPct: %s | daysRemaining: %s",
+                        urgency.urgencyBand(),
+                        urgency.isEscalated() ? "FAVOR_HIGH_URGENCY" : "NORMAL",
+                        formatText(urgency.targetDate()),
+                        formatDecimal(urgency.progressPct()),
+                        formatDecimal(urgency.expectedProgressPct()),
+                        formatDaysRemaining(urgency.daysRemaining())
+                ));
+            }
+            candidateContext.append(System.lineSeparator());
+        }
+
+        List<CandidateUrgencyContext> escalatedUrgencies = candidateUrgencies.stream()
+                .filter(CandidateUrgencyContext::isEscalated)
+                .toList();
+        if (!escalatedUrgencies.isEmpty()) {
+            candidateContext.append("\nUrgency preference guidance:\n");
+            escalatedUrgencies.forEach(urgency -> candidateContext.append(String.format(
+                    "- %s is %s and should be explicitly favoured when the commitment could plausibly support it.%n",
+                    urgency.outcomeName(), urgency.urgencyBand()
+            )));
         }
 
         // Append team context when available
@@ -221,7 +283,8 @@ public final class PromptBuilder {
                 You are an AI assistant that summarizes a manager dashboard for weekly commitments.
                 Given team summary metrics, strategic-focus rollups, and multi-week historical patterns,
                 draft a concise headline and 2 to 4 insights about alignment gaps, review risk,
-                capacity strain, carry-forward patterns, or declining outcome coverage.
+                urgency pressure, strategic slack, capacity strain, carry-forward patterns,
+                or declining outcome coverage.
 
                 Rules:
                 1. Only use the data provided in the dashboard context.
@@ -265,11 +328,59 @@ public final class PromptBuilder {
             ));
         }
 
+        // ── Urgency and slack context ────────────────────────────────────────
+        appendUrgencyContext(dashboardContext, context);
+
         // ── Multi-week historical context ────────────────────────────────────
         appendHistoricalContext(dashboardContext, context);
 
         messages.add(new LlmClient.Message(LlmClient.Role.ASSISTANT, dashboardContext.toString()));
         return messages;
+    }
+
+    /**
+     * Appends urgency-band and strategic-slack context for manager insights.
+     */
+    private static void appendUrgencyContext(
+            StringBuilder sb, ManagerInsightDataProvider.ManagerWeekContext context) {
+
+        boolean hasOutcomeUrgencies = context.outcomeUrgencies() != null
+                && !context.outcomeUrgencies().isEmpty();
+        boolean hasStrategicSlack = context.strategicSlackContext() != null;
+
+        if (!hasOutcomeUrgencies && !hasStrategicSlack) {
+            return;
+        }
+
+        sb.append("\nUrgency and strategic slack context:\n");
+
+        if (hasStrategicSlack) {
+            ManagerInsightDataProvider.StrategicSlackContext slack = context.strategicSlackContext();
+            sb.append(String.format(
+                    "Strategic slack: slackBand=%s | strategicFocusFloor=%s | atRiskCount=%d | criticalCount=%d%n",
+                    slack.slackBand(),
+                    formatDecimal(slack.strategicFocusFloor()),
+                    slack.atRiskCount(),
+                    slack.criticalCount()
+            ));
+        }
+
+        if (hasOutcomeUrgencies) {
+            sb.append("Outcome urgency snapshot:\n");
+            for (ManagerInsightDataProvider.OutcomeUrgencyContext urgency : context.outcomeUrgencies()) {
+                sb.append(String.format(
+                        "- outcomeId: %s | outcomeName: %s | urgencyBand: %s | targetDate: %s | actualProgressPct: %s | expectedProgressPct: %s | progressGapPct: %s | daysRemaining: %s%n",
+                        urgency.outcomeId(),
+                        urgency.outcomeName(),
+                        urgency.urgencyBand(),
+                        formatText(urgency.targetDate()),
+                        formatDecimal(urgency.progressPct()),
+                        formatDecimal(urgency.expectedProgressPct()),
+                        formatProgressGap(urgency.progressPct(), urgency.expectedProgressPct()),
+                        formatDaysRemaining(urgency.daysRemaining())
+                ));
+            }
+        }
     }
 
     /**
@@ -337,6 +448,25 @@ public final class PromptBuilder {
         }
     }
 
+    private static String formatDecimal(BigDecimal value) {
+        return value == null ? "n/a" : value.stripTrailingZeros().toPlainString();
+    }
+
+    private static String formatProgressGap(BigDecimal actualProgressPct, BigDecimal expectedProgressPct) {
+        if (actualProgressPct == null || expectedProgressPct == null) {
+            return "n/a";
+        }
+        return actualProgressPct.subtract(expectedProgressPct).stripTrailingZeros().toPlainString();
+    }
+
+    private static String formatDaysRemaining(long daysRemaining) {
+        return daysRemaining == Long.MIN_VALUE ? "no-target" : Long.toString(daysRemaining);
+    }
+
+    private static String formatText(String value) {
+        return value == null || value.isBlank() ? "n/a" : value;
+    }
+
     /**
      * A candidate outcome from the narrowed candidate set.
      */
@@ -346,6 +476,23 @@ public final class PromptBuilder {
             String objectiveName,
             String rallyCryName
     ) {}
+
+    /**
+     * Candidate-level urgency annotation for the RCDO suggestion prompt.
+     */
+    public record CandidateUrgencyContext(
+            String outcomeId,
+            String outcomeName,
+            String urgencyBand,
+            String targetDate,
+            BigDecimal progressPct,
+            BigDecimal expectedProgressPct,
+            long daysRemaining
+    ) {
+        boolean isEscalated() {
+            return "AT_RISK".equals(urgencyBand) || "CRITICAL".equals(urgencyBand);
+        }
+    }
 
     /**
      * Team-level outcome usage entry used for prompt enrichment.

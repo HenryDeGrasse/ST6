@@ -116,6 +116,95 @@ class UserUpdatePatternServiceTest {
         }
     }
 
+    // ─── upsertAggregatedPatterns ────────────────────────────────────────────
+
+    @Nested
+    class UpsertAggregatedPatterns {
+
+        @Test
+        void createsNewEntityUsingAggregatedFrequencyAndTimestamp() {
+            Instant lastUsedAt = Instant.parse("2026-03-21T10:15:30Z");
+            AggregatedPatternUsage usage = new AggregatedPatternUsage(
+                    ORG_ID,
+                    USER_ID,
+                    "DELIVERY",
+                    "Wrapped API integration",
+                    3,
+                    lastUsedAt
+            );
+
+            when(repository.findByOrgIdAndUserIdAndCategoryAndNoteText(
+                    ORG_ID, USER_ID, "DELIVERY", "Wrapped API integration"))
+                    .thenReturn(Optional.empty());
+            when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.upsertAggregatedPatterns(List.of(usage));
+
+            ArgumentCaptor<UserUpdatePatternEntity> captor =
+                    ArgumentCaptor.forClass(UserUpdatePatternEntity.class);
+            verify(repository).save(captor.capture());
+
+            UserUpdatePatternEntity saved = captor.getValue();
+            assertEquals(3, saved.getFrequency());
+            assertEquals(lastUsedAt, saved.getLastUsedAt());
+            assertEquals("DELIVERY", saved.getCategory());
+            assertEquals("Wrapped API integration", saved.getNoteText());
+        }
+
+        @Test
+        void incrementsExistingEntityByAggregatedFrequencyAndKeepsLatestTimestamp() {
+            Instant existingLastUsedAt = Instant.parse("2026-03-20T09:00:00Z");
+            Instant aggregatedLastUsedAt = Instant.parse("2026-03-21T09:00:00Z");
+            UserUpdatePatternEntity existing = new UserUpdatePatternEntity(
+                    UUID.randomUUID(), ORG_ID, USER_ID, "BLOCKED", "Waiting on review");
+            existing.setFrequency(4);
+            existing.setLastUsedAt(existingLastUsedAt);
+
+            when(repository.findByOrgIdAndUserIdAndCategoryAndNoteText(
+                    ORG_ID, USER_ID, "BLOCKED", "Waiting on review"))
+                    .thenReturn(Optional.of(existing));
+            when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.upsertAggregatedPatterns(List.of(new AggregatedPatternUsage(
+                    ORG_ID,
+                    USER_ID,
+                    "BLOCKED",
+                    "Waiting on review",
+                    2,
+                    aggregatedLastUsedAt
+            )));
+
+            ArgumentCaptor<UserUpdatePatternEntity> captor =
+                    ArgumentCaptor.forClass(UserUpdatePatternEntity.class);
+            verify(repository).save(captor.capture());
+
+            UserUpdatePatternEntity saved = captor.getValue();
+            assertEquals(6, saved.getFrequency());
+            assertEquals(aggregatedLastUsedAt, saved.getLastUsedAt());
+        }
+
+        @Test
+        void skipsEmptyAggregatedBatch() {
+            service.upsertAggregatedPatterns(List.of());
+
+            verify(repository, org.mockito.Mockito.never()).save(any());
+        }
+
+        @Test
+        void ignoresBlankAggregatedNoteText() {
+            service.upsertAggregatedPatterns(List.of(new AggregatedPatternUsage(
+                    ORG_ID,
+                    USER_ID,
+                    "DELIVERY",
+                    "   ",
+                    2,
+                    Instant.parse("2026-03-21T09:00:00Z")
+            )));
+
+            verify(repository, org.mockito.Mockito.never()).save(any());
+        }
+    }
+
     // ─── getTopPatterns ───────────────────────────────────────────────────────
 
     @Nested

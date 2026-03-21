@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -187,6 +188,32 @@ class PromptBuilderTeamContextTest {
                 "Candidate section should be present");
         assertFalse(assistantContent.contains("Team usage context"),
                 "3-arg overload must not produce team context section");
+    }
+
+    @Test
+    void annotatesEscalatedUrgencyCandidatesAndAddsPreferenceGuidance() {
+        List<LlmClient.Message> messages = PromptBuilder.buildRcdoSuggestMessages(
+                "Pipeline", "Description", ONE_CANDIDATE,
+                List.of(),
+                List.of(),
+                List.of(new PromptBuilder.CandidateUrgencyContext(
+                        "outcome-1",
+                        "Close Q1 Deals",
+                        "CRITICAL",
+                        "2026-03-20",
+                        BigDecimal.valueOf(35),
+                        BigDecimal.valueOf(70),
+                        5
+                ))
+        );
+
+        String assistantContent = assistantContent(messages);
+        assertTrue(assistantContent.contains("urgencyBand: CRITICAL"));
+        assertTrue(assistantContent.contains("urgencyPreference: FAVOR_HIGH_URGENCY"));
+        assertTrue(assistantContent.contains("actualProgressPct: 35"));
+        assertTrue(assistantContent.contains("expectedProgressPct: 70"));
+        assertTrue(assistantContent.contains("Urgency preference guidance:"));
+        assertTrue(assistantContent.contains("Close Q1 Deals is CRITICAL and should be explicitly favoured"));
     }
 
     // ── CandidateSelector boost ──────────────────────────────────────────────

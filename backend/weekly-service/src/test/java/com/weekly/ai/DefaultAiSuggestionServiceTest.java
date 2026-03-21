@@ -12,6 +12,8 @@ import com.weekly.rcdo.RcdoTree;
 import com.weekly.shared.CommitDataProvider;
 import com.weekly.shared.ManagerInsightDataProvider;
 import com.weekly.shared.TeamRcdoUsageProvider;
+import com.weekly.shared.UrgencyDataProvider;
+import com.weekly.shared.UrgencyInfo;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -35,6 +37,7 @@ class DefaultAiSuggestionServiceTest {
     private CommitDataProvider commitDataProvider;
     private ManagerInsightDataProvider managerInsightDataProvider;
     private TeamRcdoUsageProvider teamRcdoUsageProvider;
+    private UrgencyDataProvider urgencyDataProvider;
     private DefaultAiSuggestionService service;
 
     @BeforeEach
@@ -45,13 +48,16 @@ class DefaultAiSuggestionServiceTest {
         commitDataProvider = mock(CommitDataProvider.class);
         managerInsightDataProvider = mock(ManagerInsightDataProvider.class);
         teamRcdoUsageProvider = mock(TeamRcdoUsageProvider.class);
+        urgencyDataProvider = mock(UrgencyDataProvider.class);
         // Default: empty team usage (no team context)
         when(teamRcdoUsageProvider.getTeamRcdoUsage(
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new TeamRcdoUsageProvider.TeamRcdoUsageResult(List.of(), Set.of()));
+        when(urgencyDataProvider.getOrgUrgencySummary(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(List.of());
         service = new DefaultAiSuggestionService(
                 llmClient, rcdoClient, cacheService, commitDataProvider,
-                managerInsightDataProvider, teamRcdoUsageProvider
+                managerInsightDataProvider, teamRcdoUsageProvider, urgencyDataProvider
         );
     }
 
@@ -224,7 +230,8 @@ class DefaultAiSuggestionServiceTest {
                     new AiCacheService(Duration.ofHours(1)),
                     commitDataProvider,
                     managerInsightDataProvider,
-                    teamRcdoUsageProvider
+                    teamRcdoUsageProvider,
+                    urgencyDataProvider
             );
 
             AiSuggestionService.SuggestionResult result = localService.suggestRcdo(
@@ -243,6 +250,186 @@ class DefaultAiSuggestionServiceTest {
             assertTrue(zeroCoverageSection.contains("- Uncovered Outcome\n"));
             assertFalse(zeroCoverageSection.contains("- Covered Outcome\n"),
                     "Quarter-covered outcomes should not appear in the zero-coverage prompt section");
+        }
+
+        @Test
+        void includesCandidateUrgencyAnnotationsAndInvalidatesCacheWhenUrgencyChanges() {
+            String outcomeId = UUID.randomUUID().toString();
+            RcdoTree tree = new RcdoTree(List.of(
+                    new RcdoTree.RallyCry("rc1", "Revenue Growth", List.of(
+                            new RcdoTree.Objective("obj1", "Enterprise Sales", "rc1", List.of(
+                                    new RcdoTree.Outcome(outcomeId, "Close Q1 deals", "obj1")
+                            ))
+                    ))
+            ));
+            rcdoClient.setTree(ORG_ID, tree);
+
+            when(urgencyDataProvider.getOrgUrgencySummary(ORG_ID)).thenReturn(
+                    List.of(new UrgencyInfo(
+                            UUID.fromString(outcomeId),
+                            "Close Q1 deals",
+                            LocalDate.of(2026, 3, 20),
+                            BigDecimal.valueOf(35),
+                            BigDecimal.valueOf(70),
+                            "AT_RISK",
+                            11
+                    )),
+                    List.of(new UrgencyInfo(
+                            UUID.fromString(outcomeId),
+                            "Close Q1 deals",
+                            LocalDate.of(2026, 3, 20),
+                            BigDecimal.valueOf(35),
+                            BigDecimal.valueOf(70),
+                            "CRITICAL",
+                            11
+                    ))
+            );
+
+            class CountingCapturingLlmClient implements LlmClient {
+                private int callCount;
+                private List<Message> lastMessages = List.of();
+
+                @Override
+                public String complete(List<Message> messages, String responseSchema) {
+                    callCount++;
+                    lastMessages = messages;
+                    return "{\"suggestions\": []}";
+                }
+
+                int callCount() {
+                    return callCount;
+                }
+            }
+
+            CountingCapturingLlmClient capturingLlmClient = new CountingCapturingLlmClient();
+            DefaultAiSuggestionService localService = new DefaultAiSuggestionService(
+                    capturingLlmClient,
+                    rcdoClient,
+                    new AiCacheService(Duration.ofHours(1)),
+                    commitDataProvider,
+                    managerInsightDataProvider,
+                    teamRcdoUsageProvider,
+                    urgencyDataProvider
+            );
+
+            localService.suggestRcdo(ORG_ID, "Close enterprise deals", "Focus on Q1 pipeline");
+            String assistantContent = capturingLlmClient.lastMessages.stream()
+                    .filter(message -> message.role() == LlmClient.Role.ASSISTANT)
+                    .findFirst()
+                    .map(LlmClient.Message::content)
+                    .orElseThrow();
+            assertTrue(assistantContent.contains("urgencyBand: AT_RISK"));
+            assertTrue(assistantContent.contains("urgencyPreference: FAVOR_HIGH_URGENCY"));
+            assertTrue(assistantContent.contains("Urgency preference guidance:"));
+
+            localService.suggestRcdo(ORG_ID, "Close enterprise deals", "Focus on Q1 pipeline");
+
+            assertEquals(2, capturingLlmClient.callCount(),
+                    "Cache key should change when candidate urgency context changes");
+        }
+
+        @Test
+        void invalidatesCachedSuggestionWhenTeamPromptContextChanges() {
+            String outcomeId = UUID.randomUUID().toString();
+            RcdoTree tree = new RcdoTree(List.of(
+                    new RcdoTree.RallyCry("rc1", "Revenue Growth", List.of(
+                            new RcdoTree.Objective("obj1", "Enterprise Sales", "rc1", List.of(
+                                    new RcdoTree.Outcome(outcomeId, "Close Q1 deals", "obj1")
+                            ))
+                    ))
+            ));
+            rcdoClient.setTree(ORG_ID, tree);
+
+            when(teamRcdoUsageProvider.getTeamRcdoUsage(
+                    org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                    .thenReturn(
+                            new TeamRcdoUsageProvider.TeamRcdoUsageResult(
+                                    List.of(new TeamRcdoUsageProvider.OutcomeUsage(
+                                            outcomeId,
+                                            "Close Q1 deals",
+                                            2
+                                    )),
+                                    Set.of(outcomeId)
+                            ),
+                            new TeamRcdoUsageProvider.TeamRcdoUsageResult(
+                                    List.of(new TeamRcdoUsageProvider.OutcomeUsage(
+                                            outcomeId,
+                                            "Close Q1 deals",
+                                            7
+                                    )),
+                                    Set.of()
+                            )
+                    );
+
+            class TeamCacheBypassingAiCacheService extends AiCacheService {
+                TeamCacheBypassingAiCacheService() {
+                    super(Duration.ofHours(1));
+                }
+
+                @Override
+                public <T> java.util.Optional<T> get(UUID orgId, String cacheKey, Class<T> type) {
+                    if (cacheKey.startsWith("ai:team-rcdo-usage:")) {
+                        return java.util.Optional.empty();
+                    }
+                    return super.get(orgId, cacheKey, type);
+                }
+
+                @Override
+                public <T> void put(UUID orgId, String cacheKey, T value) {
+                    if (cacheKey.startsWith("ai:team-rcdo-usage:")) {
+                        return;
+                    }
+                    super.put(orgId, cacheKey, value);
+                }
+            }
+
+            class CountingCapturingLlmClient implements LlmClient {
+                private int callCount;
+                private List<Message> lastMessages = List.of();
+
+                @Override
+                public String complete(List<Message> messages, String responseSchema) {
+                    callCount++;
+                    lastMessages = messages;
+                    return "{\"suggestions\": []}";
+                }
+
+                int callCount() {
+                    return callCount;
+                }
+            }
+
+            CountingCapturingLlmClient capturingLlmClient = new CountingCapturingLlmClient();
+            DefaultAiSuggestionService localService = new DefaultAiSuggestionService(
+                    capturingLlmClient,
+                    rcdoClient,
+                    new TeamCacheBypassingAiCacheService(),
+                    commitDataProvider,
+                    managerInsightDataProvider,
+                    teamRcdoUsageProvider,
+                    urgencyDataProvider
+            );
+
+            localService.suggestRcdo(ORG_ID, "Close enterprise deals", "Focus on Q1 pipeline");
+            String firstAssistantContent = capturingLlmClient.lastMessages.stream()
+                    .filter(message -> message.role() == LlmClient.Role.ASSISTANT)
+                    .findFirst()
+                    .map(LlmClient.Message::content)
+                    .orElseThrow();
+            assertTrue(firstAssistantContent.contains("Close Q1 deals (2 commits)"));
+            assertFalse(firstAssistantContent.contains("Outcomes with 0 commits from your team this quarter"));
+
+            localService.suggestRcdo(ORG_ID, "Close enterprise deals", "Focus on Q1 pipeline");
+            String secondAssistantContent = capturingLlmClient.lastMessages.stream()
+                    .filter(message -> message.role() == LlmClient.Role.ASSISTANT)
+                    .findFirst()
+                    .map(LlmClient.Message::content)
+                    .orElseThrow();
+
+            assertEquals(2, capturingLlmClient.callCount(),
+                    "Cache key should change when team prompt context changes");
+            assertTrue(secondAssistantContent.contains("Close Q1 deals (7 commits)"));
+            assertTrue(secondAssistantContent.contains("Outcomes with 0 commits from your team this quarter"));
         }
     }
 
@@ -342,7 +529,8 @@ class DefaultAiSuggestionServiceTest {
                     new AiCacheService(Duration.ofHours(1)),
                     commitDataProvider,
                     managerInsightDataProvider,
-                    teamRcdoUsageProvider
+                    teamRcdoUsageProvider,
+                    urgencyDataProvider
             );
 
             localService.draftReconciliation(ORG_ID, planId);
@@ -440,7 +628,8 @@ class DefaultAiSuggestionServiceTest {
                     new AiCacheService(Duration.ofHours(1)),
                     commitDataProvider,
                     managerInsightDataProvider,
-                    teamRcdoUsageProvider
+                    teamRcdoUsageProvider,
+                    urgencyDataProvider
             );
 
             localService.draftManagerInsights(ORG_ID, managerId, weekStart);

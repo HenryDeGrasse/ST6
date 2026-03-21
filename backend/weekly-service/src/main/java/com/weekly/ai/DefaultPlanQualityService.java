@@ -2,9 +2,15 @@ package com.weekly.ai;
 
 import com.weekly.rcdo.RcdoClient;
 import com.weekly.rcdo.RcdoTree;
+import com.weekly.shared.CapacityQualityProvider;
+import com.weekly.shared.OvercommitLevel;
+import com.weekly.shared.OvercommitWarning;
 import com.weekly.shared.PlanQualityDataProvider;
 import com.weekly.shared.PlanQualityDataProvider.CommitQualitySummary;
+import com.weekly.shared.SlackInfo;
 import com.weekly.shared.TeamRcdoUsageProvider;
+import com.weekly.shared.UrgencyDataProvider;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -13,6 +19,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -23,16 +30,19 @@ import org.springframework.stereotype.Service;
 /**
  * Default implementation of {@link PlanQualityService}.
  *
- * <p>Runs four data-driven quality checks without any LLM call:
+ * <p>Runs six data-driven quality checks without any LLM call:
  * <ol>
  *   <li>Coverage gaps — user has no commits in any of the team's top rally cries</li>
  *   <li>Category imbalance — one category exceeds {@value #CATEGORY_SKEW_THRESHOLD} of commits</li>
  *   <li>Chess distribution — missing KING or PAWN-heavy distribution</li>
  *   <li>RCDO alignment — user rate vs team average gap exceeds {@value #RCDO_BELOW_TEAM_THRESHOLD}</li>
+ *   <li>Urgency focus gap — strategic coverage falls below the current slack floor</li>
+ *   <li>Overcommitment — capacity quality reports MODERATE or HIGH overcommitment</li>
  * </ol>
  *
  * <p>On any unexpected error the method degrades gracefully and returns
- * {@link PlanQualityService.QualityCheckResult#unavailable()}.
+ * {@link PlanQualityService.QualityCheckResult#unavailable()}. Individual urgency/capacity
+ * provider failures are treated as missing optional signals and do not suppress the core checks.
  */
 @Service
 public class DefaultPlanQualityService implements PlanQualityService {
@@ -57,15 +67,21 @@ public class DefaultPlanQualityService implements PlanQualityService {
     private final PlanQualityDataProvider qualityDataProvider;
     private final TeamRcdoUsageProvider teamRcdoUsageProvider;
     private final RcdoClient rcdoClient;
+    private final UrgencyDataProvider urgencyDataProvider;
+    private final CapacityQualityProvider capacityQualityProvider;
 
     public DefaultPlanQualityService(
             PlanQualityDataProvider qualityDataProvider,
             TeamRcdoUsageProvider teamRcdoUsageProvider,
-            RcdoClient rcdoClient
+            RcdoClient rcdoClient,
+            UrgencyDataProvider urgencyDataProvider,
+            CapacityQualityProvider capacityQualityProvider
     ) {
         this.qualityDataProvider = qualityDataProvider;
         this.teamRcdoUsageProvider = teamRcdoUsageProvider;
         this.rcdoClient = rcdoClient;
+        this.urgencyDataProvider = urgencyDataProvider;
+        this.capacityQualityProvider = capacityQualityProvider;
     }
 
     @Override
@@ -100,6 +116,8 @@ public class DefaultPlanQualityService implements PlanQualityService {
             nudges.addAll(checkCategoryImbalance(commits, prevContext.commits()));
             nudges.addAll(checkChessDistribution(commits));
             nudges.addAll(checkRcdoAlignment(commits, teamStrategicRate));
+            nudges.addAll(checkUrgencyFocusGap(orgId, userId, commits));
+            nudges.addAll(checkOvercommitment(orgId, planId, userId));
 
             return new QualityCheckResult("ok", nudges);
         } catch (Exception e) {
@@ -334,6 +352,74 @@ public class DefaultPlanQualityService implements PlanQualityService {
         }
 
         return List.of();
+    }
+
+    // ── Urgency/capacity integration ──────────────────────────────────────────
+
+    List<QualityNudge> checkUrgencyFocusGap(
+            UUID orgId, UUID userId, List<CommitQualitySummary> commits) {
+        if (commits.size() < MIN_COMMITS_FOR_CHECKS) {
+            return List.of();
+        }
+
+        try {
+            SlackInfo slack = urgencyDataProvider.getStrategicSlack(orgId, userId);
+            if (slack == null || slack.strategicFocusFloor() == null) {
+                return List.of();
+            }
+
+            long strategicCount = commits.stream()
+                    .filter(c -> c.outcomeId() != null)
+                    .count();
+            BigDecimal strategicRatio = BigDecimal.valueOf((double) strategicCount / commits.size());
+
+            if (strategicRatio.compareTo(slack.strategicFocusFloor()) >= 0) {
+                return List.of();
+            }
+
+            String actualPct = String.format("%.0f%%", strategicRatio.doubleValue() * 100);
+            String floorPct = String.format("%.0f%%", slack.strategicFocusFloor().doubleValue() * 100);
+            int pressuredOutcomes = slack.criticalCount() + slack.atRiskCount();
+            String pressureSummary = pressuredOutcomes > 0
+                    ? pressuredOutcomes + " outcome" + (pressuredOutcomes == 1 ? "" : "s")
+                            + " currently AT_RISK/CRITICAL"
+                    : "current strategic outcome pressure";
+
+            return List.of(new QualityNudge(
+                    "URGENCY_FOCUS_GAP",
+                    "Your plan is " + actualPct + " strategic, but " + floorPct
+                            + " is recommended given " + pressureSummary + ".",
+                    "WARNING"
+            ));
+        } catch (Exception e) {
+            LOG.debug("Could not evaluate urgency focus gap for user {}", userId, e);
+            return List.of();
+        }
+    }
+
+    List<QualityNudge> checkOvercommitment(UUID orgId, UUID planId, UUID userId) {
+        try {
+            Optional<OvercommitWarning> warningOpt =
+                    capacityQualityProvider.getOvercommitmentWarning(orgId, planId, userId);
+            if (warningOpt.isEmpty()) {
+                return List.of();
+            }
+
+            OvercommitWarning warning = warningOpt.get();
+            if (warning.level() != OvercommitLevel.MODERATE
+                    && warning.level() != OvercommitLevel.HIGH) {
+                return List.of();
+            }
+
+            return List.of(new QualityNudge(
+                    "OVERCOMMITMENT_WARNING",
+                    warning.message(),
+                    "WARNING"
+            ));
+        } catch (Exception e) {
+            LOG.debug("Could not evaluate overcommitment warning for plan {}", planId, e);
+            return List.of();
+        }
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────

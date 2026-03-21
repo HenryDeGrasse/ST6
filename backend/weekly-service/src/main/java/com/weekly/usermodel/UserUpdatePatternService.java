@@ -11,10 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Service responsible for maintaining the per-user note-text frequency model.
  *
- * <p>Every time a user submits a check-in note the service is called to record
- * (or increment) the pattern. Downstream, {@code CheckInOptionService} reads
- * the top patterns for a given category to generate personalised quick-pick
- * suggestions on the Quick Update card.
+ * <p>Quick-update aggregation jobs upsert grouped pattern usages here, while
+ * downstream {@code CheckInOptionService} reads the top patterns for a given
+ * category to generate personalised quick-pick suggestions on the Quick Update
+ * card.
  */
 @Service
 public class UserUpdatePatternService {
@@ -40,19 +40,39 @@ public class UserUpdatePatternService {
      */
     @Transactional
     public void recordPattern(UUID orgId, UUID userId, String category, String noteText) {
-        Optional<UserUpdatePatternEntity> existing =
-                repository.findByOrgIdAndUserIdAndCategoryAndNoteText(
-                        orgId, userId, category, noteText);
+        upsertPatternUsage(orgId, userId, category, noteText, 1, Instant.now());
+    }
 
-        if (existing.isPresent()) {
-            UserUpdatePatternEntity entity = existing.get();
-            entity.setFrequency(entity.getFrequency() + 1);
-            entity.setLastUsedAt(Instant.now());
-            repository.save(entity);
-        } else {
-            UserUpdatePatternEntity entity = new UserUpdatePatternEntity(
-                    UUID.randomUUID(), orgId, userId, category, noteText);
-            repository.save(entity);
+    /**
+     * Upserts a batch of pre-aggregated pattern usages.
+     *
+     * <p>Each item contributes {@code frequencyIncrement} occurrences to the
+     * existing pattern row, or creates a new one if absent. The persisted
+     * {@code lastUsedAt} is refreshed to the latest timestamp seen.
+     *
+     * @param aggregatedPatterns aggregated pattern usages to apply
+     */
+    @Transactional
+    public void upsertAggregatedPatterns(List<AggregatedPatternUsage> aggregatedPatterns) {
+        if (aggregatedPatterns == null || aggregatedPatterns.isEmpty()) {
+            return;
+        }
+
+        for (AggregatedPatternUsage usage : aggregatedPatterns) {
+            if (usage == null
+                    || usage.frequencyIncrement() <= 0
+                    || usage.noteText() == null
+                    || usage.noteText().isBlank()) {
+                continue;
+            }
+            upsertPatternUsage(
+                    usage.orgId(),
+                    usage.userId(),
+                    usage.category(),
+                    usage.noteText(),
+                    usage.frequencyIncrement(),
+                    usage.lastUsedAt()
+            );
         }
     }
 
@@ -71,5 +91,36 @@ public class UserUpdatePatternService {
             UUID orgId, UUID userId, String category, int limit) {
         return repository.findByOrgIdAndUserIdAndCategoryOrderByFrequencyDesc(
                 orgId, userId, category, PageRequest.of(0, limit));
+    }
+
+    private void upsertPatternUsage(
+            UUID orgId,
+            UUID userId,
+            String category,
+            String noteText,
+            int frequencyIncrement,
+            Instant lastUsedAt
+    ) {
+        Optional<UserUpdatePatternEntity> existing =
+                repository.findByOrgIdAndUserIdAndCategoryAndNoteText(
+                        orgId, userId, category, noteText);
+
+        Instant effectiveLastUsedAt = lastUsedAt == null ? Instant.now() : lastUsedAt;
+
+        if (existing.isPresent()) {
+            UserUpdatePatternEntity entity = existing.get();
+            entity.setFrequency(entity.getFrequency() + frequencyIncrement);
+            if (entity.getLastUsedAt() == null || effectiveLastUsedAt.isAfter(entity.getLastUsedAt())) {
+                entity.setLastUsedAt(effectiveLastUsedAt);
+            }
+            repository.save(entity);
+            return;
+        }
+
+        UserUpdatePatternEntity entity = new UserUpdatePatternEntity(
+                UUID.randomUUID(), orgId, userId, category, noteText);
+        entity.setFrequency(frequencyIncrement);
+        entity.setLastUsedAt(effectiveLastUsedAt);
+        repository.save(entity);
     }
 }

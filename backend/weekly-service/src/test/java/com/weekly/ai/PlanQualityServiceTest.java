@@ -9,12 +9,18 @@ import static org.mockito.Mockito.when;
 
 import com.weekly.rcdo.RcdoClient;
 import com.weekly.rcdo.RcdoTree;
+import com.weekly.shared.CapacityQualityProvider;
+import com.weekly.shared.OvercommitLevel;
+import com.weekly.shared.OvercommitWarning;
 import com.weekly.shared.PlanQualityDataProvider;
 import com.weekly.shared.PlanQualityDataProvider.CommitQualitySummary;
 import com.weekly.shared.PlanQualityDataProvider.PlanQualityContext;
+import com.weekly.shared.SlackInfo;
 import com.weekly.shared.TeamRcdoUsageProvider;
 import com.weekly.shared.TeamRcdoUsageProvider.OutcomeUsage;
 import com.weekly.shared.TeamRcdoUsageProvider.TeamRcdoUsageResult;
+import com.weekly.shared.UrgencyDataProvider;
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
@@ -27,12 +33,13 @@ import org.junit.jupiter.api.Test;
 /**
  * Unit tests for {@link DefaultPlanQualityService}.
  *
- * <p>Each nested class covers one of the four data-driven checks:
+ * <p>Each nested class covers one of the service's data-driven checks:
  * <ol>
  *   <li>Coverage gaps</li>
  *   <li>Category imbalance</li>
  *   <li>Chess distribution balance</li>
  *   <li>RCDO alignment</li>
+ *   <li>Urgency and capacity integration</li>
  * </ol>
  */
 class PlanQualityServiceTest {
@@ -57,6 +64,8 @@ class PlanQualityServiceTest {
     private PlanQualityDataProvider qualityDataProvider;
     private TeamRcdoUsageProvider teamRcdoUsageProvider;
     private RcdoClient rcdoClient;
+    private UrgencyDataProvider urgencyDataProvider;
+    private CapacityQualityProvider capacityQualityProvider;
     private DefaultPlanQualityService service;
 
     /** Minimal RCDO tree: three rally cries, one objective each, one outcome each. */
@@ -67,8 +76,11 @@ class PlanQualityServiceTest {
         qualityDataProvider = mock(PlanQualityDataProvider.class);
         teamRcdoUsageProvider = mock(TeamRcdoUsageProvider.class);
         rcdoClient = mock(RcdoClient.class);
+        urgencyDataProvider = mock(UrgencyDataProvider.class);
+        capacityQualityProvider = mock(CapacityQualityProvider.class);
         service = new DefaultPlanQualityService(
-                qualityDataProvider, teamRcdoUsageProvider, rcdoClient);
+                qualityDataProvider, teamRcdoUsageProvider, rcdoClient,
+                urgencyDataProvider, capacityQualityProvider);
 
         testTree = new RcdoTree(List.of(
                 new RcdoTree.RallyCry(RC1_ID, "Win New Markets", List.of(
@@ -98,6 +110,10 @@ class PlanQualityServiceTest {
                 .thenReturn(PlanQualityContext.empty());
         when(qualityDataProvider.getTeamStrategicAlignmentRate(eq(ORG_ID), any()))
                 .thenReturn(0.0);
+        when(urgencyDataProvider.getStrategicSlack(ORG_ID, USER_ID))
+                .thenReturn(new SlackInfo("HIGH_SLACK", new BigDecimal("0.50"), 0, 0));
+        when(capacityQualityProvider.getOvercommitmentWarning(ORG_ID, PLAN_ID, USER_ID))
+                .thenReturn(java.util.Optional.empty());
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -475,6 +491,117 @@ class PlanQualityServiceTest {
                     service.checkPlanQuality(ORG_ID, PLAN_ID, USER_ID);
 
             assertNoNudgeOfType(result, "ZERO_RCDO_ALIGNMENT");
+        }
+    }
+
+    // ── Urgency/capacity integration ─────────────────────────────────────────
+
+    @Nested
+    class UrgencyAndCapacityChecks {
+
+        @Test
+        void warningWhenStrategicFocusFallsBelowSlackFloor() {
+            stubPlanCommits(List.of(
+                    strategicCommit(OUT1_ID),
+                    nonStrategicCommit(),
+                    nonStrategicCommit(),
+                    nonStrategicCommit()
+            ));
+            when(urgencyDataProvider.getStrategicSlack(ORG_ID, USER_ID))
+                    .thenReturn(new SlackInfo("LOW_SLACK", new BigDecimal("0.75"), 1, 0));
+
+            PlanQualityService.QualityCheckResult result =
+                    service.checkPlanQuality(ORG_ID, PLAN_ID, USER_ID);
+
+            QualityNudge nudge = assertNudgeOfType(result, "URGENCY_FOCUS_GAP");
+            assertEquals("WARNING", nudge.severity());
+            assertTrue(nudge.message().contains("25%"));
+            assertTrue(nudge.message().contains("75%"));
+        }
+
+        @Test
+        void noUrgencyNudgeWhenStrategicFocusMeetsSlackFloor() {
+            stubPlanCommits(List.of(
+                    strategicCommit(OUT1_ID),
+                    strategicCommit(OUT2_ID),
+                    nonStrategicCommit(),
+                    nonStrategicCommit()
+            ));
+            when(urgencyDataProvider.getStrategicSlack(ORG_ID, USER_ID))
+                    .thenReturn(new SlackInfo("HIGH_SLACK", new BigDecimal("0.50"), 0, 0));
+
+            PlanQualityService.QualityCheckResult result =
+                    service.checkPlanQuality(ORG_ID, PLAN_ID, USER_ID);
+
+            assertNoNudgeOfType(result, "URGENCY_FOCUS_GAP");
+        }
+
+        @Test
+        void warningWhenCapacityProviderReturnsModerateOrHighOvercommitment() {
+            when(capacityQualityProvider.getOvercommitmentWarning(ORG_ID, PLAN_ID, USER_ID))
+                    .thenReturn(java.util.Optional.of(new OvercommitWarning(
+                            OvercommitLevel.MODERATE,
+                            "Adjusted estimate is 42h against a 36h cap.",
+                            BigDecimal.valueOf(42),
+                            BigDecimal.valueOf(36)
+                    )));
+
+            PlanQualityService.QualityCheckResult result =
+                    service.checkPlanQuality(ORG_ID, PLAN_ID, USER_ID);
+
+            QualityNudge nudge = assertNudgeOfType(result, "OVERCOMMITMENT_WARNING");
+            assertEquals("WARNING", nudge.severity());
+            assertTrue(nudge.message().contains("42h"));
+        }
+
+        @Test
+        void noOvercommitmentNudgeWhenCapacityLevelIsNone() {
+            when(capacityQualityProvider.getOvercommitmentWarning(ORG_ID, PLAN_ID, USER_ID))
+                    .thenReturn(java.util.Optional.of(new OvercommitWarning(
+                            OvercommitLevel.NONE,
+                            "",
+                            BigDecimal.valueOf(30),
+                            BigDecimal.valueOf(36)
+                    )));
+
+            PlanQualityService.QualityCheckResult result =
+                    service.checkPlanQuality(ORG_ID, PLAN_ID, USER_ID);
+
+            assertNoNudgeOfType(result, "OVERCOMMITMENT_WARNING");
+        }
+
+        @Test
+        void urgencyProviderFailureDoesNotMakeWholeResultUnavailable() {
+            stubPlanCommits(List.of(
+                    nonStrategicCommit(),
+                    nonStrategicCommit()
+            ));
+            when(urgencyDataProvider.getStrategicSlack(ORG_ID, USER_ID))
+                    .thenThrow(new RuntimeException("urgency unavailable"));
+
+            PlanQualityService.QualityCheckResult result =
+                    service.checkPlanQuality(ORG_ID, PLAN_ID, USER_ID);
+
+            assertEquals("ok", result.status());
+            assertNudgeOfType(result, "ZERO_RCDO_ALIGNMENT");
+            assertNoNudgeOfType(result, "URGENCY_FOCUS_GAP");
+        }
+
+        @Test
+        void capacityProviderFailureDoesNotMakeWholeResultUnavailable() {
+            stubPlanCommits(List.of(
+                    nonStrategicCommit(),
+                    nonStrategicCommit()
+            ));
+            when(capacityQualityProvider.getOvercommitmentWarning(ORG_ID, PLAN_ID, USER_ID))
+                    .thenThrow(new RuntimeException("capacity unavailable"));
+
+            PlanQualityService.QualityCheckResult result =
+                    service.checkPlanQuality(ORG_ID, PLAN_ID, USER_ID);
+
+            assertEquals("ok", result.status());
+            assertNudgeOfType(result, "ZERO_RCDO_ALIGNMENT");
+            assertNoNudgeOfType(result, "OVERCOMMITMENT_WARNING");
         }
     }
 
