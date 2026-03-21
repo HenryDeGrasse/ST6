@@ -317,6 +317,27 @@ class DefaultNextWorkSuggestionServiceTest {
                     result.suggestions().get(0).confidence(),
                     0.001);
         }
+
+        @Test
+        void urgencyProviderFailureDoesNotMakeWholeResultUnavailable() {
+            UUID trackedOutcomeId = UUID.randomUUID();
+            RcdoCoverageGap gap = new RcdoCoverageGap(
+                    trackedOutcomeId.toString(), "Renewals", "Obj", "RC", 2, 5);
+            when(dataProvider.getTeamCoverageGaps(eq(ORG_ID), any(), anyInt(), anyInt()))
+                    .thenReturn(List.of(gap));
+            when(urgencyDataProvider.getOutcomeUrgency(ORG_ID, trackedOutcomeId))
+                    .thenThrow(new RuntimeException("urgency unavailable"));
+
+            NextWorkSuggestionService.NextWorkSuggestionsResult result =
+                    service.suggestNextWork(ORG_ID, USER_ID, WEEK_START);
+
+            assertEquals("ok", result.status());
+            assertEquals(1, result.suggestions().size());
+            assertEquals(
+                    DefaultNextWorkSuggestionService.COVERAGE_GAP_BASE_CONFIDENCE,
+                    result.suggestions().get(0).confidence(),
+                    0.001);
+        }
     }
 
     // ── Decline suppression ───────────────────────────────────────────────────

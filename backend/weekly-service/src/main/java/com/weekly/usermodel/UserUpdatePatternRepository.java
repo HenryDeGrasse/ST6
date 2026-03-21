@@ -5,6 +5,8 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -55,6 +57,37 @@ public interface UserUpdatePatternRepository
             UUID orgId,
             UUID userId,
             String category,
+            Pageable pageable
+    );
+
+    /**
+     * Returns org-level rollups for a category by summing learned pattern
+     * frequencies across users.
+     *
+     * <p>Results are ordered deterministically by summed frequency descending,
+     * then recency descending, then note text ascending.
+     *
+     * @param orgId    organisation to aggregate within
+     * @param category category to filter by, may be null
+     * @param pageable page/size constraints for top-N selection
+     * @return aggregated team pattern rollups
+     */
+    @Query("""
+            SELECT new com.weekly.usermodel.TeamPatternRollup(
+                p.noteText,
+                SUM(p.frequency),
+                MAX(p.lastUsedAt)
+            )
+            FROM UserUpdatePatternEntity p
+            WHERE p.orgId = :orgId
+              AND ((:category IS NULL AND p.category IS NULL) OR p.category = :category)
+              AND TRIM(p.noteText) <> ''
+            GROUP BY p.noteText
+            ORDER BY SUM(p.frequency) DESC, MAX(p.lastUsedAt) DESC, p.noteText ASC
+            """)
+    List<TeamPatternRollup> findTopTeamPatternsByOrgIdAndCategory(
+            @Param("orgId") UUID orgId,
+            @Param("category") String category,
             Pageable pageable
     );
 }
