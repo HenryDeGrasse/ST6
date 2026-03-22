@@ -1,5 +1,5 @@
 /**
- * TeamCapacityPanel – CSS Module (Academia / Classical)
+ * TeamCapacityPanel – CSS Module (Enterprise Dashboard)
  *
  * Responsive table displaying per-member and team-total capacity data.
  * Status-colored rows for MODERATE (amber) and HIGH (red) overcommitment.
@@ -62,7 +62,7 @@
 }
 
 .tr:nth-child(even) {
-  background-color: rgba(74, 63, 53, 0.08);
+  background-color: var(--wc-color-bg-tertiary);
 }
 
 .tr:nth-child(even):hover {
@@ -76,7 +76,7 @@
 }
 
 .rowModerate:hover {
-  background-color: rgba(212, 184, 114, 0.20) !important;
+  background-color: rgba(217, 119, 6, 0.15) !important;
 }
 
 .rowHigh {
@@ -84,7 +84,7 @@
 }
 
 .rowHigh:hover {
-  background-color: rgba(196, 122, 122, 0.20) !important;
+  background-color: rgba(220, 38, 38, 0.12) !important;
 }
 
 /* ─── Cells ──────────────────────────────────────────────────────────────── */

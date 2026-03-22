@@ -1,5 +1,5 @@
 /**
- * TeamDashboardFilters – CSS Module (Academia / Classical)
+ * TeamDashboardFilters – CSS Module (Enterprise Dashboard)
  */
 
 /* ─── Filter container row ───────────────────────────────────────────────── */
@@ -33,7 +33,7 @@
 .input:focus {
   outline:      none;
   border-color: var(--wc-color-accent);
-  box-shadow:   0 0 0 2px rgba(201, 169, 98, 0.3);
+  box-shadow:   0 0 0 2px rgba(37, 99, 235, 0.15);
 }
 
 /* ─── Outcome ID text input — a bit wider ────────────────────────────────── */
@@ -48,7 +48,7 @@
 
 .inputError:focus {
   border-color: var(--wc-color-error);
-  box-shadow:   0 0 0 2px rgba(196, 122, 122, 0.2);
+  box-shadow:   0 0 0 2px rgba(220, 38, 38, 0.15);
 }
 
 /* ─── Checkbox label row ─────────────────────────────────────────────────── */

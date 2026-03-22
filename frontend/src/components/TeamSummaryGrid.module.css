@@ -1,5 +1,5 @@
 /**
- * TeamSummaryGrid – CSS Module (Academia / Classical)
+ * TeamSummaryGrid – CSS Module (Enterprise Dashboard)
  */
 
 .empty { padding: var(--wc-space-md); text-align: center; color: var(--wc-color-text-muted); font-size: 0.9375rem; font-style: italic; }
@@ -24,7 +24,7 @@
 
 .tr { border-bottom: 1px solid var(--wc-color-border-muted); transition: background-color var(--wc-transition-fast); }
 .tr:hover { background-color: var(--wc-color-bg-tertiary); }
-.tr:nth-child(even) { background-color: rgba(74, 63, 53, 0.08); }
+.tr:nth-child(even) { background-color: var(--wc-color-bg-tertiary); }
 .tr:nth-child(even):hover { background-color: var(--wc-color-bg-tertiary); }
 
 .td { padding: var(--wc-space-xs) var(--wc-space-sm); color: var(--wc-color-text-primary); vertical-align: middle; }
@@ -78,7 +78,7 @@
 .stateLocked      { background-color: var(--wc-state-locked-bg); color: var(--wc-state-locked-text); border-color: var(--wc-state-locked-border); }
 .stateReconciling { background-color: var(--wc-state-reconciling-bg); color: var(--wc-state-reconciling-text); border-color: var(--wc-state-reconciling-border); }
 .stateReconciled  { background-color: var(--wc-state-reconciled-bg); color: var(--wc-state-reconciled-text); border-color: var(--wc-state-reconciled-border); }
-.stateCarryForward { background-color: var(--wc-state-draft-bg); color: var(--wc-state-draft-text); border-color: var(--wc-state-draft-border); }
+.stateCarryForward { background-color: var(--wc-state-carry-forward-bg); color: var(--wc-state-carry-forward-text); border-color: var(--wc-state-carry-forward-border); }
 .stateDefault      { background-color: var(--wc-color-bg-tertiary); color: var(--wc-color-text-secondary); border-color: var(--wc-color-border-muted); }
 
 .reviewNa       { color: var(--wc-color-text-muted); }
