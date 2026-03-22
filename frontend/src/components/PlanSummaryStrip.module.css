@@ -1,5 +1,5 @@
 /**
- * PlanSummaryStrip – CSS Module (Academia / Classical)
+ * PlanSummaryStrip – CSS Module (Enterprise Dashboard)
  */
 
 .strip {
@@ -52,8 +52,8 @@
   font-family:    var(--wc-font-display);
   font-size:      0.5625rem;
   font-weight:    600;
-  color:          var(--wc-color-text-primary);
+  color:          var(--wc-color-text-secondary);
   margin-top:     0.125rem;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.06em;
 }

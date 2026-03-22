@@ -1,5 +1,5 @@
 /**
- * CommitList – CSS Module (Academia / Classical)
+ * CommitList – CSS Module (Enterprise Dashboard)
  */
 
 /* ─── Root container ─────────────────────────────────────────────────────── */
@@ -22,28 +22,28 @@
   margin:         0;
   font-family:    var(--wc-font-heading);
   font-size:      1.25rem;
-  font-weight:    500;
+  font-weight:    600;
   color:          var(--wc-color-text-primary);
   letter-spacing: -0.01em;
 }
 
 /* ─── Add button ─────────────────────────────────────────────────────────── */
 .addButton {
-  display:         inline-flex;
-  align-items:     center;
-  gap:             var(--wc-space-xs);
-  padding:         0.4rem 0.875rem;
-  border-radius:   var(--wc-radius-sm);
-  border:          2px solid var(--wc-color-accent);
-  background:      transparent;
-  color:           var(--wc-color-accent);
-  font-family:     var(--wc-font-display);
-  font-size:       0.6875rem;
-  font-weight:     600;
-  text-transform:  uppercase;
-  letter-spacing:  0.12em;
-  cursor:          pointer;
-  white-space:     nowrap;
+  display:          inline-flex;
+  align-items:      center;
+  gap:              var(--wc-space-xs);
+  padding:          0.4rem 0.875rem;
+  border-radius:    var(--wc-radius-sm);
+  border:           1px solid var(--wc-color-accent);
+  background:       transparent;
+  color:            var(--wc-color-accent);
+  font-family:      var(--wc-font-display);
+  font-size:        0.6875rem;
+  font-weight:      600;
+  text-transform:   uppercase;
+  letter-spacing:   0.05em;
+  cursor:           pointer;
+  white-space:      nowrap;
   transition:
     background-color var(--wc-transition-base),
     border-color     var(--wc-transition-base),
@@ -51,9 +51,9 @@
 }
 
 .addButton:hover {
-  background-color: var(--wc-color-accent-secondary);
-  border-color:     var(--wc-color-accent-secondary);
-  color:            var(--wc-color-text-primary);
+  background-color: var(--wc-color-accent);
+  border-color:     var(--wc-color-accent);
+  color:            var(--wc-color-accent-foreground);
 }
 
 .addButton:focus-visible {
@@ -75,8 +75,8 @@
 }
 
 .commitCard:hover {
-  box-shadow:   0 8px 24px rgba(0, 0, 0, 0.3);
-  border-color: rgba(201, 169, 98, 0.4);
+  box-shadow:   var(--wc-shadow-md);
+  border-color: rgba(37, 99, 235, 0.3);
 }
 
 .commitCard:focus-visible {
@@ -125,12 +125,12 @@
   border-radius:    var(--wc-radius-sm);
   background-color: var(--wc-color-bg-tertiary);
   border:           1px solid var(--wc-color-border-muted);
-  color:            var(--wc-color-text-primary);
+  color:            var(--wc-color-text-secondary);
   font-family:      var(--wc-font-display);
   font-size:        0.625rem;
   font-weight:      600;
   text-transform:   uppercase;
-  letter-spacing:   0.08em;
+  letter-spacing:   0.05em;
 }
 
 /* ─── Card description ───────────────────────────────────────────────────── */
@@ -180,20 +180,21 @@
   font-style:  italic;
 }
 
+/* CARRIED_FORWARD badge — purple: preserved but unresolved continuation */
 .carriedBadge {
   display:          inline-flex;
   align-items:      center;
   gap:              0.25rem;
-  color:            var(--wc-state-draft-text);
-  background-color: var(--wc-state-draft-bg);
-  border:           1px solid var(--wc-state-draft-border);
+  color:            var(--wc-state-carry-forward-text);
+  background-color: var(--wc-state-carry-forward-bg);
+  border:           1px solid var(--wc-state-carry-forward-border);
   padding:          0.1rem 0.5rem;
   border-radius:    var(--wc-radius-sm);
   font-family:      var(--wc-font-display);
   font-size:        0.625rem;
   font-weight:      600;
   text-transform:   uppercase;
-  letter-spacing:   0.06em;
+  letter-spacing:   0.05em;
 }
 
 /* ─── Validation errors ──────────────────────────────────────────────────── */
@@ -223,43 +224,41 @@
   font-size:        0.625rem;
   font-weight:      600;
   text-transform:   uppercase;
-  letter-spacing:   0.06em;
-  /* Default (RECURRING / COVERAGE_GAP) */
+  letter-spacing:   0.05em;
   background-color: var(--wc-color-bg-tertiary);
   border:           1px solid var(--wc-color-border-muted);
   color:            var(--wc-color-text-secondary);
 }
 
-/* CARRIED_FORWARD — reuse the existing carried-forward visual treatment */
+/* CARRIED_FORWARD — purple: preserved but unresolved continuation */
 .draftSourceBadge[data-source="CARRIED_FORWARD"] {
-  color:            var(--wc-state-draft-text);
-  background-color: var(--wc-state-draft-bg);
-  border-color:     var(--wc-state-draft-border);
+  color:            var(--wc-state-carry-forward-text);
+  background-color: var(--wc-state-carry-forward-bg);
+  border-color:     var(--wc-state-carry-forward-border);
 }
 
-/* RECURRING — soft violet tint */
+/* RECURRING — teal: coordinated, thoughtful */
 .draftSourceBadge[data-source="RECURRING"] {
-  color:            var(--wc-color-accent);
-  background-color: rgba(128, 90, 213, 0.12);
-  border-color:     rgba(128, 90, 213, 0.3);
+  color:            var(--wc-color-accent-secondary);
+  background-color: rgba(15, 118, 110, 0.08);
+  border-color:     rgba(15, 118, 110, 0.25);
 }
 
-/* COVERAGE_GAP — warm amber tint */
+/* COVERAGE_GAP — amber: attention required */
 .draftSourceBadge[data-source="COVERAGE_GAP"] {
-  color:            var(--wc-color-warning, #b7791f);
-  background-color: rgba(183, 121, 31, 0.1);
-  border-color:     rgba(183, 121, 31, 0.3);
+  color:            var(--wc-color-warning);
+  background-color: var(--wc-color-warning-bg);
+  border-color:     var(--wc-color-warning-border);
 }
 
-/* NEW — neutral/gold tint for manually-added commits */
+/* NEW — blue: primary action association */
 .draftSourceBadge[data-source="NEW"] {
-  color:            var(--wc-color-text-primary);
-  background-color: rgba(201, 169, 98, 0.1);
-  border-color:     rgba(201, 169, 98, 0.28);
+  color:            var(--wc-color-accent);
+  background-color: var(--wc-color-accent-muted);
+  border-color:     rgba(37, 99, 235, 0.2);
 }
 
 /* ─── Check-in button (inline on commit card) ────────────────────────────── */
-
 .checkInButton {
   display:          inline-flex;
   align-items:      center;
@@ -273,7 +272,7 @@
   font-size:        0.625rem;
   font-weight:      600;
   text-transform:   uppercase;
-  letter-spacing:   0.06em;
+  letter-spacing:   0.05em;
   cursor:           pointer;
   white-space:      nowrap;
   transition:
@@ -282,7 +281,7 @@
 }
 
 .checkInButton:hover {
-  background-color: rgba(201, 169, 98, 0.18);
+  background-color: rgba(37, 99, 235, 0.08);
   border-color:     var(--wc-color-accent);
 }
 
@@ -304,11 +303,11 @@
 /* ─── Issue key badge (Phase 6 assignment rows) ─────────────────────────── */
 .issueKeyBadge {
   font-size:      0.7rem;
-  font-weight:    700;
+  font-weight:    600;
   font-family:    var(--wc-font-mono, monospace);
-  color:          var(--wc-color-accent, #c9a962);
-  background:     rgba(201, 169, 98, 0.12);
-  border:         1px solid rgba(201, 169, 98, 0.25);
+  color:          var(--wc-color-accent);
+  background:     var(--wc-color-accent-muted);
+  border:         1px solid rgba(37, 99, 235, 0.2);
   border-radius:  4px;
   padding:        0.1em 0.4em;
   margin-right:   0.25em;

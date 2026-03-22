@@ -1,5 +1,5 @@
 /**
- * CommitEditor – CSS Module (Academia / Classical)
+ * CommitEditor – CSS Module (Enterprise Dashboard)
  */
 
 /* ─── Editor card ────────────────────────────────────────────────────────── */
@@ -68,34 +68,38 @@
   font-size:        0.625rem;
   font-weight:      600;
   text-transform:   uppercase;
-  letter-spacing:   0.06em;
+  letter-spacing:   0.05em;
   background-color: var(--wc-color-bg-tertiary);
   border:           1px solid var(--wc-color-border-muted);
   color:            var(--wc-color-text-secondary);
 }
 
+/* CARRIED_FORWARD — purple: preserved but unresolved continuation */
 .sourceBadge[data-source="CARRIED_FORWARD"] {
-  color:            var(--wc-state-draft-text);
-  background-color: var(--wc-state-draft-bg);
-  border-color:     var(--wc-state-draft-border);
+  color:            var(--wc-state-carry-forward-text);
+  background-color: var(--wc-state-carry-forward-bg);
+  border-color:     var(--wc-state-carry-forward-border);
 }
 
+/* RECURRING — teal: coordinated, thoughtful */
 .sourceBadge[data-source="RECURRING"] {
-  color:            var(--wc-color-accent);
-  background-color: rgba(128, 90, 213, 0.12);
-  border-color:     rgba(128, 90, 213, 0.3);
+  color:            var(--wc-color-accent-secondary);
+  background-color: rgba(15, 118, 110, 0.08);
+  border-color:     rgba(15, 118, 110, 0.25);
 }
 
+/* COVERAGE_GAP — amber: attention required */
 .sourceBadge[data-source="COVERAGE_GAP"] {
-  color:            var(--wc-color-warning, #b7791f);
-  background-color: rgba(183, 121, 31, 0.1);
-  border-color:     rgba(183, 121, 31, 0.3);
+  color:            var(--wc-color-warning);
+  background-color: var(--wc-color-warning-bg);
+  border-color:     var(--wc-color-warning-border);
 }
 
+/* NEW — blue: primary action association */
 .sourceBadge[data-source="NEW"] {
-  color:            var(--wc-color-text-primary);
-  background-color: rgba(201, 169, 98, 0.1);
-  border-color:     rgba(201, 169, 98, 0.28);
+  color:            var(--wc-color-accent);
+  background-color: var(--wc-color-accent-muted);
+  border-color:     rgba(37, 99, 235, 0.2);
 }
 
 /* ─── Field groups ───────────────────────────────────────────────────────── */
@@ -109,7 +113,7 @@
   font-size:      0.6875rem;
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.05em;
   color:          var(--wc-color-text-secondary);
   margin-bottom:  0.25rem;
 }
@@ -137,7 +141,7 @@
 .textarea:focus {
   outline:      none;
   border-color: var(--wc-color-accent);
-  box-shadow:   0 0 0 2px rgba(201, 169, 98, 0.3);
+  box-shadow:   var(--wc-shadow-glow);
 }
 
 .input:disabled,
@@ -208,35 +212,31 @@
 }
 
 .saveButton {
-  display:         inline-flex;
-  align-items:     center;
-  gap:             var(--wc-space-xs);
-  padding:         0.4rem 0.875rem;
-  border-radius:   var(--wc-radius-sm);
-  border:          none;
-  background:      var(--wc-brass-gradient);
-  color:           var(--wc-color-accent-foreground);
-  font-family:     var(--wc-font-display);
-  font-size:       0.6875rem;
-  font-weight:     600;
-  text-transform:  uppercase;
-  letter-spacing:  0.12em;
-  text-shadow:     var(--wc-text-engraved);
-  cursor:          pointer;
-  white-space:     nowrap;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.2),
-    inset 0 -1px 0 rgba(0,0,0,0.2),
-    0 2px 6px rgba(0,0,0,0.25);
+  display:          inline-flex;
+  align-items:      center;
+  gap:              var(--wc-space-xs);
+  padding:          0.4rem 0.875rem;
+  border-radius:    var(--wc-radius-sm);
+  border:           none;
+  background-color: var(--wc-color-accent);
+  color:            var(--wc-color-accent-foreground);
+  font-family:      var(--wc-font-display);
+  font-size:        0.6875rem;
+  font-weight:      600;
+  text-transform:   uppercase;
+  letter-spacing:   0.05em;
+  cursor:           pointer;
+  white-space:      nowrap;
+  box-shadow:       var(--wc-shadow-sm);
   transition:
-    filter     var(--wc-transition-fast),
-    box-shadow var(--wc-transition-fast);
+    background-color var(--wc-transition-fast),
+    box-shadow       var(--wc-transition-fast);
 }
 
 .saveButton:hover:not(:disabled) {
-  filter:     brightness(1.1);
-  box-shadow: var(--wc-shadow-glow);
-  color:      var(--wc-color-accent-foreground);
+  background-color: var(--wc-color-accent-hover);
+  box-shadow:       var(--wc-shadow-md);
+  color:            var(--wc-color-accent-foreground);
 }
 
 .saveButton:focus-visible {
@@ -247,7 +247,6 @@
 .saveButton:disabled {
   opacity: 0.5;
   cursor:  not-allowed;
-  filter:  saturate(0.5);
 }
 
 .cancelButton {
@@ -299,7 +298,7 @@
 }
 
 .deleteButton:hover {
-  background-color: rgba(196, 122, 122, 0.2);
+  background-color: rgba(220, 38, 38, 0.12);
   border-color:     var(--wc-color-error);
 }
 
