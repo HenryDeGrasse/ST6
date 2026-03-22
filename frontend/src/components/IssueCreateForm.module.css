@@ -1,5 +1,5 @@
 /**
- * IssueCreateForm – CSS Module
+ * IssueCreateForm – CSS Module (Enterprise Dashboard)
  */
 
 .form {
@@ -18,13 +18,13 @@
   font-size:      0.75rem;
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color:          var(--wc-color-text-muted, #9C8B7A);
+  letter-spacing: 0.05em;
+  color:          var(--wc-color-text-secondary);
 }
 
 .labelRequired::after {
   content: " *";
-  color:   var(--wc-chess-queen, #C9A962);
+  color:   var(--wc-color-error);
 }
 
 .input,
@@ -40,14 +40,14 @@
 }
 
 .row {
-  display: grid;
+  display:               grid;
   grid-template-columns: 1fr 1fr;
-  gap:     var(--wc-space-md);
+  gap:                   var(--wc-space-md);
 }
 
 .errorText {
-  font-size: 0.75rem;
-  color:     var(--wc-color-error, #C26B6B);
+  font-size:  0.75rem;
+  color:      var(--wc-color-error);
   margin-top: 0.25rem;
 }
 
@@ -56,14 +56,14 @@
   justify-content: flex-end;
   gap:             var(--wc-space-sm);
   padding-top:     var(--wc-space-sm);
-  border-top:      1px solid var(--wc-color-border, #4A3F35);
+  border-top:      1px solid var(--wc-color-border);
   margin-top:      var(--wc-space-sm);
 }
 
 .aiHint,
 .helpText {
   font-size:  0.7rem;
-  color:      var(--wc-color-text-muted, #9C8B7A);
+  color:      var(--wc-color-text-muted);
   margin-top: 0.25rem;
 }
 

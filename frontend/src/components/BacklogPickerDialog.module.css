@@ -1,233 +1,266 @@
 /* BacklogPickerDialog — Modal overlay for adding backlog issues to a weekly plan */
 
 .overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
+  position:        fixed;
+  inset:           0;
+  background:      rgba(15, 23, 42, 0.4);
+  display:         flex;
+  align-items:     center;
   justify-content: center;
-  z-index: 400;
+  z-index:         400;
 }
 
 .dialog {
-  background: var(--color-surface, #1a1f2e);
-  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
-  border-radius: 12px;
-  padding: 1.5rem;
-  width: 100%;
-  max-width: 640px;
-  max-height: 80vh;
-  display: flex;
+  background:     var(--wc-color-bg-secondary);
+  border:         1px solid var(--wc-color-border);
+  border-radius:  var(--wc-radius-lg);
+  padding:        var(--wc-space-lg);
+  width:          100%;
+  max-width:      640px;
+  max-height:     80vh;
+  display:        flex;
   flex-direction: column;
-  gap: 1rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  gap:            var(--wc-space-md);
+  box-shadow:     var(--wc-shadow-lg);
 }
 
 .title {
-  font-size: 1.125rem;
+  font-size:   1rem;
   font-weight: 600;
-  color: var(--color-text-primary, #e2e8f0);
-  margin: 0;
+  color:       var(--wc-color-text-primary);
+  margin:      0;
 }
 
 .description {
   font-size: 0.875rem;
-  color: var(--color-text-secondary, #94a3b8);
-  margin: 0;
+  color:     var(--wc-color-text-secondary);
+  margin:    0;
 }
 
 .controls {
-  display: flex;
-  gap: 0.75rem;
+  display:   flex;
+  gap:       var(--wc-space-sm);
   flex-wrap: wrap;
 }
 
 .searchInput {
-  flex: 1;
-  min-width: 200px;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
-  border-radius: 6px;
-  background: var(--color-surface-raised, rgba(255, 255, 255, 0.05));
-  color: var(--color-text-primary, #e2e8f0);
-  font-size: 0.875rem;
+  flex:         1;
+  min-width:    200px;
+  padding:      0.5rem 0.75rem;
+  border:       1px solid var(--wc-color-border);
+  border-radius: var(--wc-radius-sm);
+  background:   var(--wc-color-bg-tertiary);
+  color:        var(--wc-color-text-primary);
+  font-family:  var(--wc-font-body);
+  font-size:    0.875rem;
+  transition:   border-color var(--wc-transition-fast);
+}
+
+.searchInput:focus {
+  outline:      none;
+  border-color: var(--wc-color-accent);
+  box-shadow:   var(--wc-shadow-glow);
+  background:   var(--wc-color-bg-secondary);
 }
 
 .searchInput::placeholder {
-  color: var(--color-text-muted, #64748b);
+  color: var(--wc-color-text-muted);
 }
 
 .teamSelect {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
-  border-radius: 6px;
-  background: var(--color-surface-raised, rgba(255, 255, 255, 0.05));
-  color: var(--color-text-primary, #e2e8f0);
-  font-size: 0.875rem;
-  min-width: 140px;
+  padding:       0.5rem 0.75rem;
+  border:        1px solid var(--wc-color-border);
+  border-radius: var(--wc-radius-sm);
+  background:    var(--wc-color-bg-tertiary);
+  color:         var(--wc-color-text-primary);
+  font-family:   var(--wc-font-body);
+  font-size:     0.875rem;
+  min-width:     140px;
+  cursor:        pointer;
+  transition:    border-color var(--wc-transition-fast);
+}
+
+.teamSelect:focus {
+  outline:      none;
+  border-color: var(--wc-color-accent);
 }
 
 .teamSelect option {
-  background: var(--color-surface, #1a1f2e);
-  color: var(--color-text-primary, #e2e8f0);
+  background: var(--wc-color-bg-secondary);
+  color:      var(--wc-color-text-primary);
 }
 
 .issueList {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
+  flex:           1;
+  overflow-y:     auto;
+  display:        flex;
   flex-direction: column;
-  gap: 0.5rem;
-  min-height: 0;
-  max-height: 380px;
+  gap:            var(--wc-space-xs);
+  min-height:     0;
+  max-height:     380px;
 }
 
 .issueRow {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-  background: var(--color-surface-raised, rgba(255, 255, 255, 0.03));
+  display:       flex;
+  align-items:   flex-start;
+  gap:           var(--wc-space-sm);
+  padding:       var(--wc-space-sm);
+  border:        1px solid var(--wc-color-border);
+  border-radius: var(--wc-radius-md);
+  cursor:        pointer;
+  transition:    background-color var(--wc-transition-fast), border-color var(--wc-transition-fast);
+  background:    var(--wc-color-bg-secondary);
 }
 
 .issueRow:hover {
-  background: var(--color-surface-hover, rgba(255, 255, 255, 0.07));
-  border-color: var(--color-border-hover, rgba(255, 255, 255, 0.18));
+  background:   var(--wc-color-bg-tertiary);
+  border-color: var(--wc-color-accent);
 }
 
 .issueRow.issueRowSelected {
-  background: rgba(99, 102, 241, 0.12);
-  border-color: rgba(99, 102, 241, 0.4);
+  background:   var(--wc-color-accent-muted);
+  border-color: var(--wc-color-accent);
 }
 
 .checkbox {
-  margin-top: 2px;
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  accent-color: var(--color-primary, #6366f1);
+  margin-top:   2px;
+  flex-shrink:  0;
+  width:        16px;
+  height:       16px;
+  cursor:       pointer;
+  accent-color: var(--wc-color-accent);
 }
 
 .issueMeta {
-  flex: 1;
+  flex:      1;
   min-width: 0;
 }
 
 .issueKey {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-primary, #6366f1);
-  font-family: var(--font-mono, monospace);
+  font-size:     0.75rem;
+  font-weight:   700;
+  color:         var(--wc-color-accent);
+  font-family:   var(--wc-font-mono);
   margin-bottom: 0.125rem;
 }
 
 .issueTitle {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-text-primary, #e2e8f0);
-  white-space: nowrap;
-  overflow: hidden;
+  font-size:     0.875rem;
+  font-weight:   500;
+  color:         var(--wc-color-text-primary);
+  white-space:   nowrap;
+  overflow:      hidden;
   text-overflow: ellipsis;
 }
 
 .issueBadges {
-  display: flex;
-  gap: 0.375rem;
+  display:   flex;
+  gap:       0.375rem;
   margin-top: 0.25rem;
   flex-wrap: wrap;
 }
 
 .badge {
-  font-size: 0.7rem;
-  font-weight: 500;
-  padding: 0.125rem 0.375rem;
-  border-radius: 4px;
-  background: var(--color-surface-raised, rgba(255, 255, 255, 0.08));
-  color: var(--color-text-secondary, #94a3b8);
+  font-size:      0.6875rem;
+  font-weight:    500;
+  padding:        0.125rem 0.375rem;
+  border-radius:  var(--wc-radius-sm);
+  background:     var(--wc-color-bg-tertiary);
+  border:         1px solid var(--wc-color-border);
+  color:          var(--wc-color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 
 .emptyState {
   text-align: center;
-  color: var(--color-text-muted, #64748b);
-  font-size: 0.875rem;
-  padding: 2rem;
+  color:      var(--wc-color-text-muted);
+  font-size:  0.875rem;
+  padding:    var(--wc-space-xl);
 }
 
 .loadingState {
   text-align: center;
-  color: var(--color-text-muted, #64748b);
-  font-size: 0.875rem;
-  padding: 2rem;
+  color:      var(--wc-color-text-muted);
+  font-size:  0.875rem;
+  padding:    var(--wc-space-xl);
 }
 
 .errorState {
-  color: var(--color-danger, #f87171);
-  font-size: 0.875rem;
-  padding: 0.75rem;
-  background: rgba(248, 113, 113, 0.1);
-  border-radius: 6px;
+  color:         var(--wc-color-error);
+  font-size:     0.875rem;
+  padding:       var(--wc-space-sm);
+  background:    var(--wc-color-error-bg);
+  border:        1px solid var(--wc-color-error-border);
+  border-radius: var(--wc-radius-sm);
 }
 
 .buttonRow {
-  display: flex;
-  gap: 0.75rem;
+  display:         flex;
+  gap:             var(--wc-space-sm);
   justify-content: flex-end;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  padding-top:     var(--wc-space-sm);
+  border-top:      1px solid var(--wc-color-border);
 }
 
 .cancelButton {
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
-  background: transparent;
-  color: var(--color-text-secondary, #94a3b8);
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: background 0.15s;
+  padding:          0.5rem 1rem;
+  border-radius:    var(--wc-radius-sm);
+  border:           1px solid var(--wc-color-border);
+  background:       transparent;
+  color:            var(--wc-color-text-secondary);
+  font-family:      var(--wc-font-body);
+  font-size:        0.875rem;
+  cursor:           pointer;
+  transition:       background-color var(--wc-transition-fast);
 }
 
-.cancelButton:hover {
-  background: var(--color-surface-raised, rgba(255, 255, 255, 0.05));
+.cancelButton:hover:not(:disabled) {
+  background: var(--wc-color-bg-tertiary);
+  color:      var(--wc-color-text-primary);
+}
+
+.cancelButton:focus-visible {
+  outline:        2px solid var(--wc-color-accent);
+  outline-offset: 2px;
 }
 
 .cancelButton:disabled {
   opacity: 0.5;
-  cursor: not-allowed;
+  cursor:  not-allowed;
 }
 
 .confirmButton {
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  border: none;
-  background: var(--color-primary, #6366f1);
-  color: #fff;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
+  padding:       0.5rem 1.125rem;
+  border-radius: var(--wc-radius-sm);
+  border:        none;
+  background:    var(--wc-primary-gradient);
+  color:         var(--wc-color-accent-foreground);
+  font-family:   var(--wc-font-body);
+  font-size:     0.875rem;
+  font-weight:   600;
+  cursor:        pointer;
+  box-shadow:    var(--wc-shadow-sm);
+  transition:    opacity var(--wc-transition-fast);
 }
 
 .confirmButton:hover:not(:disabled) {
-  opacity: 0.85;
+  opacity: 0.9;
+}
+
+.confirmButton:focus-visible {
+  outline:        2px solid var(--wc-color-accent);
+  outline-offset: 2px;
 }
 
 .confirmButton:disabled {
   opacity: 0.4;
-  cursor: not-allowed;
+  cursor:  not-allowed;
 }
 
 .selectionCount {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary, #94a3b8);
-  align-self: center;
+  font-size:   0.75rem;
+  color:       var(--wc-color-text-secondary);
+  align-self:  center;
   margin-right: auto;
 }

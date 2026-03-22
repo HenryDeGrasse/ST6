@@ -1,15 +1,15 @@
 /**
- * ConfirmDialog – CSS Module (Academia / Classical)
+ * ConfirmDialog – CSS Module (Enterprise Dashboard)
  */
 
 .overlay {
-  position:  fixed;
-  inset:     0;
-  display:   flex;
+  position:        fixed;
+  inset:           0;
+  display:         flex;
   align-items:     center;
   justify-content: center;
-  z-index:   1000;
-  background: rgba(28, 23, 20, 0.7);
+  z-index:         1000;
+  background:      rgba(15, 23, 42, 0.4);
 }
 
 .dialog {
@@ -21,46 +21,23 @@
   border:           1px solid var(--wc-color-border);
   background-color: var(--wc-color-bg-secondary);
   box-shadow:       var(--wc-shadow-lg);
-  position:         relative;
-}
-
-/* Corner flourishes on dialog */
-.dialog::before,
-.dialog::after {
-  content:        '';
-  position:       absolute;
-  width:          24px;
-  height:         24px;
-  border:         2px solid var(--wc-color-accent);
-  opacity:        0.5;
-  pointer-events: none;
-}
-
-.dialog::before {
-  top: -1px; left: -1px;
-  border-right: none; border-bottom: none;
-}
-
-.dialog::after {
-  bottom: -1px; right: -1px;
-  border-left: none; border-top: none;
 }
 
 .title {
-  margin:         0 0 var(--wc-space-sm);
-  font-family:    var(--wc-font-heading);
-  font-size:      1.375rem;
-  font-weight:    500;
-  color:          var(--wc-color-text-primary);
-  line-height:    1.2;
+  margin:      0 0 var(--wc-space-sm);
+  font-family: var(--wc-font-heading);
+  font-size:   1.125rem;
+  font-weight: 600;
+  color:       var(--wc-color-text-primary);
+  line-height: 1.3;
 }
 
 .message {
   margin:      0 0 var(--wc-space-lg);
   color:       var(--wc-color-text-secondary);
   font-family: var(--wc-font-body);
-  font-size:   1rem;
-  line-height: 1.625;
+  font-size:   0.9375rem;
+  line-height: 1.6;
 }
 
 .buttonRow {
@@ -73,7 +50,7 @@
 .cancelButton {
   display:          inline-flex;
   align-items:      center;
-  padding:          0.4rem 0.875rem;
+  padding:          0.5rem 1rem;
   border-radius:    var(--wc-radius-sm);
   border:           1px solid var(--wc-color-border);
   background-color: transparent;
@@ -93,42 +70,35 @@
 }
 
 .cancelButton:focus-visible {
-  outline: 2px solid var(--wc-color-accent);
+  outline:        2px solid var(--wc-color-accent);
   outline-offset: 2px;
 }
 
 .confirmButton {
   display:         inline-flex;
   align-items:     center;
-  padding:         0.4rem 1rem;
+  padding:         0.5rem 1.125rem;
   border-radius:   var(--wc-radius-sm);
   border:          none;
-  background:      var(--wc-brass-gradient);
+  background:      var(--wc-primary-gradient);
   color:           var(--wc-color-accent-foreground);
-  font-family:     var(--wc-font-display);
-  font-size:       0.6875rem;
+  font-family:     var(--wc-font-body);
+  font-size:       0.875rem;
   font-weight:     600;
-  text-transform:  uppercase;
-  letter-spacing:  0.12em;
-  text-shadow:     var(--wc-text-engraved);
   cursor:          pointer;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.2),
-    inset 0 -1px 0 rgba(0,0,0,0.2),
-    0 2px 6px rgba(0,0,0,0.25);
+  box-shadow:      var(--wc-shadow-sm);
   transition:
-    filter     var(--wc-transition-fast),
-    box-shadow var(--wc-transition-fast);
+    opacity       var(--wc-transition-fast),
+    box-shadow    var(--wc-transition-fast);
 }
 
 .confirmButton:hover:not(:disabled) {
-  filter:     brightness(1.1);
-  box-shadow: var(--wc-shadow-glow);
-  color:      var(--wc-color-accent-foreground);
+  opacity:    0.9;
+  box-shadow: var(--wc-shadow-md);
 }
 
 .confirmButton:focus-visible {
-  outline: 2px solid var(--wc-color-accent);
+  outline:        2px solid var(--wc-color-accent);
   outline-offset: 2px;
 }
 
