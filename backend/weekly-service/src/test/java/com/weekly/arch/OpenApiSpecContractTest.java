@@ -115,6 +115,7 @@ class OpenApiSpecContractTest {
             "POST /ai/draft-reconciliation",
             "POST /ai/manager-insights",
             "POST /ai/plan-quality-check",
+            "POST /ai/suggest-effort-type",
             // "Start My Week" — draft from history (Wave 2)
             "POST /plans/draft-from-history",
             // Next-work suggestions — Wave 2, Step 9
@@ -224,7 +225,7 @@ class OpenApiSpecContractTest {
         // Update this sentinel whenever the committed OpenAPI path set changes.
         // Recent additions: Phase 5 forecasting/planning-copilot/executive,
         // Phase 6 team management and issue/assignment endpoints.
-        int expectedCount = 64;
+        int expectedCount = 65;
         assertTrue(
                 EXPECTED_OPENAPI_OPERATIONS.size() == expectedCount,
                 "Expected " + expectedCount + " OpenAPI operations but found "
@@ -443,6 +444,25 @@ class OpenApiSpecContractTest {
      * <p>The health endpoint is documented in the spec as unauthenticated ({@code security: []}).
      * This test verifies both that the endpoint is mapped and that it responds without auth.
      */
+    @Test
+    void suggestEffortTypeResponseContainsContractFields() throws Exception {
+        String body = objectMapper.writeValueAsString(Map.of(
+                "title", "Fix production memory leak",
+                "description", "Patch the auth service after the incident",
+                "outcomeId", UUID.randomUUID().toString()
+        ));
+
+        mockMvc.perform(post("/api/v1/ai/suggest-effort-type")
+                        .header("X-Org-Id", ORG_ID)
+                        .header("X-User-Id", USER_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status", is("ok")))
+                .andExpect(jsonPath("$.suggestedType", is("MAINTAIN")))
+                .andExpect(jsonPath("$.confidence", notNullValue()));
+    }
+
     @Test
     void healthEndpointRespondsWith200WithoutAuth() throws Exception {
         mockMvc.perform(get("/api/v1/health"))

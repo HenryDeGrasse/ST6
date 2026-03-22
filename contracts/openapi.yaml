@@ -3565,14 +3565,14 @@ components:
       required:
         - title
       properties:
-        issueId:
-          type: string
-          format: uuid
-          nullable: true
         title:
           type: string
         description:
           type: string
+          nullable: true
+        outcomeId:
+          type: string
+          format: uuid
           nullable: true
 
     SuggestEffortTypeResponse:
@@ -3585,11 +3585,8 @@ components:
           enum:
             - ok
             - unavailable
-        suggestedEffortType:
+        suggestedType:
           $ref: "#/components/schemas/EffortType"
-          nullable: true
-        rationale:
-          type: string
           nullable: true
         confidence:
           type: number

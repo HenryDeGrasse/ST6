@@ -892,6 +892,97 @@ public final class PromptBuilder {
         return messages;
     }
 
+    // ── Effort Type Suggestion ────────────────────────────────────────────────
+
+    /**
+     * Builds messages for AI effort type classification (Phase 6, Step 9).
+     *
+     * <p>Few-shot examples are embedded in the system prompt to guide classification.
+     * User-authored text (title, description) is isolated in the USER message.
+     *
+     * @param title       issue title (required)
+     * @param description issue description (may be null)
+     * @param outcomeId   optional RCDO outcome ID for additional context
+     * @return ordered messages for the LLM
+     */
+    public static List<LlmClient.Message> buildEffortTypeSuggestMessages(
+            String title,
+            String description,
+            String outcomeId
+    ) {
+        List<LlmClient.Message> messages = new ArrayList<>();
+
+        messages.add(new LlmClient.Message(
+                LlmClient.Role.SYSTEM,
+                """
+                You are a work classification assistant. Given an issue title and optional description, \
+                classify it into exactly one of the four effort types:
+
+                - BUILD: Creating something new — features, tools, content, infrastructure, new services.
+                - MAINTAIN: Keeping things running — bug fixes, incidents, ops, tech debt, upgrades.
+                - COLLABORATE: Working with or for others — reviews, meetings, hiring, mentoring, customer work.
+                - LEARN: Investing in growth — spikes, training, research, experiments, documentation.
+
+                Few-shot examples:
+                title: "Implement OAuth2 login flow" → BUILD (confidence: 0.92)
+                title: "Fix production memory leak in payment service" → MAINTAIN (confidence: 0.95)
+                title: "Review PRs for new team member onboarding" → COLLABORATE (confidence: 0.88)
+                title: "Research GraphQL federation options" → LEARN (confidence: 0.90)
+                title: "Deploy new recommendation service to staging" → BUILD (confidence: 0.78)
+                title: "Patch CVE-2024-1234 in auth library" → MAINTAIN (confidence: 0.93)
+                title: "1:1 with direct reports" → COLLABORATE (confidence: 0.97)
+                title: "Spike: evaluate vector DB options for semantic search" → LEARN (confidence: 0.91)
+
+                Rules:
+                1. Return exactly one effortType from: BUILD, MAINTAIN, COLLABORATE, LEARN.
+                2. Return confidence as a number between 0.0 and 1.0.
+                3. Respond ONLY with valid JSON matching the required schema.
+                4. If the title is ambiguous, use the description to disambiguate.
+                """
+        ));
+
+        // ASSISTANT context — outcome context if provided (not user-authored)
+        if (outcomeId != null && !outcomeId.isBlank()) {
+            messages.add(new LlmClient.Message(
+                    LlmClient.Role.ASSISTANT,
+                    "RCDO outcome context (for disambiguation): outcomeId=" + outcomeId
+            ));
+        }
+
+        // USER message — untrusted input in separate role
+        String userContent = "Issue title: " + title;
+        if (description != null && !description.isBlank()) {
+            userContent += "\nIssue description: " + description;
+        }
+        userContent += "\n\nClassify this issue into one of: BUILD, MAINTAIN, COLLABORATE, LEARN.";
+        messages.add(new LlmClient.Message(LlmClient.Role.USER, userContent));
+
+        return messages;
+    }
+
+    /**
+     * The JSON schema for effort type suggestion responses.
+     */
+    public static String effortTypeSuggestResponseSchema() {
+        return """
+                {
+                  "type": "object",
+                  "required": ["effortType", "confidence"],
+                  "properties": {
+                    "effortType": {
+                      "type": "string",
+                      "enum": ["BUILD", "MAINTAIN", "COLLABORATE", "LEARN"]
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  }
+                }
+                """;
+    }
+
     /**
      * The JSON schema for next-work LLM re-ranking responses.
      *

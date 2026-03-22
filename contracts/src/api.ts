@@ -1106,15 +1106,14 @@ export interface TeamAccessRequestListResponse {
 // AI: Suggest effort type
 
 export interface SuggestEffortTypeRequest {
-  issueId?: string | null;
   title: string;
   description?: string | null;
+  outcomeId?: string | null;
 }
 
 export interface SuggestEffortTypeResponse {
   status: AiSuggestionStatus;
-  suggestedEffortType: EffortType | null;
-  rationale: string | null;
+  suggestedType: EffortType | null;
   confidence: number | null;
 }
 

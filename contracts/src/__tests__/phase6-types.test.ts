@@ -533,15 +533,16 @@ describe("AI endpoint types", () => {
     const req: SuggestEffortTypeRequest = {
       title: "Refactor database layer",
       description: "Reduce query complexity",
+      outcomeId: "00000000-0000-0000-0000-000000000001",
     };
     const resp: SuggestEffortTypeResponse = {
       status: "ok",
-      suggestedEffortType: EffortType.MAINTAIN,
-      rationale: "Title suggests maintenance work on existing systems",
+      suggestedType: EffortType.MAINTAIN,
       confidence: 0.88,
     };
     expect(req.title).toBe("Refactor database layer");
-    expect(resp.suggestedEffortType).toBe("MAINTAIN");
+    expect(req.outcomeId).toBe("00000000-0000-0000-0000-000000000001");
+    expect(resp.suggestedType).toBe("MAINTAIN");
     expect(resp.confidence).toBeGreaterThan(0);
   });
 
@@ -643,8 +644,7 @@ describe("AI endpoint types", () => {
   it("supports unavailable status for all AI endpoints", () => {
     const effortResp: SuggestEffortTypeResponse = {
       status: "unavailable",
-      suggestedEffortType: null,
-      rationale: null,
+      suggestedType: null,
       confidence: null,
     };
     const rankResp: RankBacklogResponse = { status: "unavailable", rankedIssues: [] };

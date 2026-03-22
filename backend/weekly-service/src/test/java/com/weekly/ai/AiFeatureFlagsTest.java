@@ -31,6 +31,7 @@ class AiFeatureFlagsTest {
         assertTrue(flags.isExecutiveDashboardEnabled());
         assertTrue(flags.isWeeklyPlanningAgentEnabled());
         assertTrue(flags.isMisalignmentAgentEnabled());
+        assertTrue(flags.isSuggestEffortTypeEnabled());
     }
 
     @Test
@@ -56,10 +57,12 @@ class AiFeatureFlagsTest {
         flags.setExecutiveDashboardEnabled(true);
         flags.setWeeklyPlanningAgentEnabled(true);
         flags.setMisalignmentAgentEnabled(true);
+        flags.setSuggestEffortTypeEnabled(false);
         assertTrue(flags.isTargetDateForecastingEnabled());
         assertTrue(flags.isPlanningCopilotEnabled());
         assertTrue(flags.isExecutiveDashboardEnabled());
         assertTrue(flags.isWeeklyPlanningAgentEnabled());
         assertTrue(flags.isMisalignmentAgentEnabled());
+        assertFalse(flags.isSuggestEffortTypeEnabled());
     }
 }

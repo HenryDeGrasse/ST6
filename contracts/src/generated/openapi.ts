@@ -2094,16 +2094,15 @@ export interface components {
             assignments: components["schemas"]["WeeklyAssignmentWithActual"][];
         };
         SuggestEffortTypeRequest: {
-            /** Format: uuid */
-            issueId?: string | null;
             title: string;
             description?: string | null;
+            /** Format: uuid */
+            outcomeId?: string | null;
         };
         SuggestEffortTypeResponse: {
             /** @enum {string} */
             status: "ok" | "unavailable";
-            suggestedEffortType?: components["schemas"]["EffortType"];
-            rationale?: string | null;
+            suggestedType?: components["schemas"]["EffortType"];
             /** Format: double */
             confidence?: number | null;
         };

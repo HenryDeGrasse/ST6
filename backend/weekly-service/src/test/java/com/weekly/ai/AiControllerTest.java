@@ -2,6 +2,7 @@ package com.weekly.ai;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -44,6 +45,7 @@ class AiControllerTest {
     private AiFeatureFlags featureFlags;
     private RateLimiter rateLimiter;
     private AuthenticatedUserContext authenticatedUserContext;
+    private AiEffortTypeSuggestionService effortTypeSuggestionService;
     private AiController controller;
 
     @BeforeEach
@@ -52,6 +54,7 @@ class AiControllerTest {
         planQualityService = mock(PlanQualityService.class);
         nextWorkSuggestionService = mock(NextWorkSuggestionService.class);
         feedbackRepository = mock(AiSuggestionFeedbackRepository.class);
+        effortTypeSuggestionService = mock(AiEffortTypeSuggestionService.class);
         featureFlags = new AiFeatureFlags();
         rateLimiter = new RateLimiter(20, java.time.Duration.ofMinutes(1));
         authenticatedUserContext = new AuthenticatedUserContext();
@@ -60,7 +63,8 @@ class AiControllerTest {
         );
         controller = new AiController(
                 aiService, planQualityService, nextWorkSuggestionService,
-                feedbackRepository, featureFlags, rateLimiter, authenticatedUserContext);
+                feedbackRepository, featureFlags, rateLimiter, authenticatedUserContext,
+                effortTypeSuggestionService);
     }
 
     @AfterEach
@@ -116,7 +120,8 @@ class AiControllerTest {
                     feedbackRepository,
                     featureFlags,
                     strictLimiter,
-                    authenticatedUserContext
+                    authenticatedUserContext,
+                    effortTypeSuggestionService
             );
             var request = new AiController.SuggestRcdoRequest("title", null);
 
@@ -190,7 +195,8 @@ class AiControllerTest {
                     feedbackRepository,
                     featureFlags,
                     strictLimiter,
-                    authenticatedUserContext
+                    authenticatedUserContext,
+                    effortTypeSuggestionService
             );
             var request = new AiController.DraftReconciliationRequest(UUID.randomUUID().toString());
 
@@ -248,7 +254,8 @@ class AiControllerTest {
                     feedbackRepository,
                     featureFlags,
                     strictLimiter,
-                    authenticatedUserContext
+                    authenticatedUserContext,
+                    effortTypeSuggestionService
             );
             var request = new AiController.PlanQualityCheckRequest(UUID.randomUUID().toString());
 
@@ -382,7 +389,8 @@ class AiControllerTest {
                     feedbackRepository,
                     featureFlags,
                     strictLimiter,
-                    authenticatedUserContext
+                    authenticatedUserContext,
+                    effortTypeSuggestionService
             );
             var request = new AiController.SuggestNextWorkRequest(null);
 
@@ -469,6 +477,102 @@ class AiControllerTest {
             assertEquals("COVERAGE_GAP", existing.getSourceType());
             assertEquals("4-week drought", existing.getSourceDetail());
             assertTrue(existing.getCreatedAt().isAfter(originalTimestamp));
+        }
+    }
+
+    // ─── SuggestEffortType ───────────────────────────────────────────────────
+
+    @Nested
+    class SuggestEffortType {
+
+        @Test
+        void returnsOkWithSuggestedType() {
+            var result = new AiEffortTypeSuggestionService.SuggestionResult(
+                    "ok", com.weekly.issues.domain.EffortType.BUILD, 0.85);
+            when(effortTypeSuggestionService.suggest(eq("Build login page"), eq(null), eq(null)))
+                    .thenReturn(result);
+
+            var request = new AiController.SuggestEffortTypeRequest("Build login page", null, null);
+            ResponseEntity<?> response = controller.suggestEffortType(request);
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            var body = (AiController.SuggestEffortTypeResponse) response.getBody();
+            assertNotNull(body);
+            assertEquals("ok", body.status());
+            assertEquals("BUILD", body.suggestedType());
+            assertEquals(0.85, body.confidence());
+        }
+
+        @Test
+        void returnsOkWithNoSuggestionWhenLowConfidence() {
+            var result = new AiEffortTypeSuggestionService.SuggestionResult("ok", null, null);
+            when(effortTypeSuggestionService.suggest(any(), any(), any())).thenReturn(result);
+
+            var request = new AiController.SuggestEffortTypeRequest("Do stuff", null, null);
+            ResponseEntity<?> response = controller.suggestEffortType(request);
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            var body = (AiController.SuggestEffortTypeResponse) response.getBody();
+            assertNotNull(body);
+            assertEquals("ok", body.status());
+            assertNull(body.suggestedType());
+            assertNull(body.confidence());
+        }
+
+        @Test
+        void returnsUnavailableWhenFeatureDisabled() {
+            featureFlags.setSuggestEffortTypeEnabled(false);
+            var request = new AiController.SuggestEffortTypeRequest("Build login page", null, null);
+
+            ResponseEntity<?> response = controller.suggestEffortType(request);
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            var body = (AiController.SuggestEffortTypeResponse) response.getBody();
+            assertNotNull(body);
+            assertEquals("unavailable", body.status());
+            assertNull(body.suggestedType());
+            verify(effortTypeSuggestionService, never()).suggest(any(), any(), any());
+        }
+
+        @Test
+        void returns429WhenRateLimited() {
+            featureFlags.setSuggestEffortTypeEnabled(true);
+            RateLimiter strictLimiter = new RateLimiter(0, java.time.Duration.ofMinutes(1));
+            AiController strictController = new AiController(
+                    aiService,
+                    planQualityService,
+                    nextWorkSuggestionService,
+                    feedbackRepository,
+                    featureFlags,
+                    strictLimiter,
+                    authenticatedUserContext,
+                    effortTypeSuggestionService
+            );
+            var request = new AiController.SuggestEffortTypeRequest("Build login page", null, null);
+
+            ResponseEntity<?> response = strictController.suggestEffortType(request);
+
+            assertEquals(HttpStatus.TOO_MANY_REQUESTS, response.getStatusCode());
+            verify(effortTypeSuggestionService, never()).suggest(any(), any(), any());
+        }
+
+        @Test
+        void passesOutcomeIdToService() {
+            String outcomeId = UUID.randomUUID().toString();
+            var result = new AiEffortTypeSuggestionService.SuggestionResult(
+                    "ok", com.weekly.issues.domain.EffortType.COLLABORATE, 0.75);
+            when(effortTypeSuggestionService.suggest(
+                    eq("Pair on feature"), eq("Work together"), eq(outcomeId)))
+                    .thenReturn(result);
+
+            var request = new AiController.SuggestEffortTypeRequest(
+                    "Pair on feature", "Work together", outcomeId);
+            ResponseEntity<?> response = controller.suggestEffortType(request);
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            var body = (AiController.SuggestEffortTypeResponse) response.getBody();
+            assertNotNull(body);
+            assertEquals("COLLABORATE", body.suggestedType());
         }
     }
 }

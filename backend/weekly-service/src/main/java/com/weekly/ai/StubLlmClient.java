@@ -46,6 +46,13 @@ public class StubLlmClient implements LlmClient {
             }
         }
 
+        // Effort type classification request
+        for (Message msg : messages) {
+            if (msg.role() == Role.USER && msg.content().contains("BUILD, MAINTAIN, COLLABORATE, LEARN")) {
+                return buildDefaultEffortTypeResponse(msg.content());
+            }
+        }
+
         // Extract the candidate outcomes from the ASSISTANT context message
         // and return a response suggesting the first one
         for (Message msg : messages) {
@@ -147,6 +154,25 @@ public class StubLlmClient implements LlmClient {
         }
         sb.append("]}");
         return sb.toString();
+    }
+
+    private String buildDefaultEffortTypeResponse(String userContent) {
+        // Simple keyword heuristic for the stub — mirrors the service fallback
+        String lower = userContent.toLowerCase(java.util.Locale.ROOT);
+        String effortType;
+        if (lower.contains("fix") || lower.contains("bug") || lower.contains("patch")
+                || lower.contains("incident") || lower.contains("maintain")) {
+            effortType = "MAINTAIN";
+        } else if (lower.contains("review") || lower.contains("meeting") || lower.contains("mentor")
+                || lower.contains("collaborate") || lower.contains("customer")) {
+            effortType = "COLLABORATE";
+        } else if (lower.contains("learn") || lower.contains("spike") || lower.contains("research")
+                || lower.contains("training") || lower.contains("explore")) {
+            effortType = "LEARN";
+        } else {
+            effortType = "BUILD";
+        }
+        return String.format("{\"effortType\": \"%s\", \"confidence\": 0.85}", effortType);
     }
 
     private String buildDefaultManagerInsightsResponse() {

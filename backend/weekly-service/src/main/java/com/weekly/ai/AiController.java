@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>POST /api/v1/ai/plan-quality-check — Wave 1, behind {@code planQualityNudge} flag.
  * <p>POST /api/v1/ai/suggest-next-work — Wave 2, behind {@code suggestNextWork} flag.
  * <p>POST /api/v1/ai/suggestion-feedback — Wave 2, behind {@code suggestNextWork} flag.
+ * <p>POST /api/v1/ai/suggest-effort-type — Phase 6, behind {@code suggestEffortType} flag.
  *
  * <p>Rate limited to 20 requests per user per minute (PRD §4).
  * On LLM unavailability, returns 200 with {@code status: "unavailable"}.
@@ -44,6 +45,7 @@ public class AiController {
     private final AiFeatureFlags featureFlags;
     private final RateLimiter rateLimiter;
     private final AuthenticatedUserContext authenticatedUserContext;
+    private final AiEffortTypeSuggestionService effortTypeSuggestionService;
 
     public AiController(
             AiSuggestionService aiSuggestionService,
@@ -52,7 +54,8 @@ public class AiController {
             AiSuggestionFeedbackRepository feedbackRepository,
             AiFeatureFlags featureFlags,
             RateLimiter rateLimiter,
-            AuthenticatedUserContext authenticatedUserContext
+            AuthenticatedUserContext authenticatedUserContext,
+            AiEffortTypeSuggestionService effortTypeSuggestionService
     ) {
         this.aiSuggestionService = aiSuggestionService;
         this.planQualityService = planQualityService;
@@ -61,6 +64,7 @@ public class AiController {
         this.featureFlags = featureFlags;
         this.rateLimiter = rateLimiter;
         this.authenticatedUserContext = authenticatedUserContext;
+        this.effortTypeSuggestionService = effortTypeSuggestionService;
     }
 
     /**
@@ -149,6 +153,58 @@ public class AiController {
                 );
 
         return ResponseEntity.ok(ManagerInsightsResponse.from(result));
+    }
+
+    // ─── Effort Type Suggestion ──────────────────────────────
+
+    /**
+     * POST /ai/suggest-effort-type
+     *
+     * <p>Returns an AI-suggested effort type (BUILD/MAINTAIN/COLLABORATE/LEARN)
+     * for an issue being created. Phase 6 feature, behind {@code suggestEffortType} flag.
+     * Returns 200 with no suggestion when the LLM has low confidence or is unavailable.
+     */
+    @PostMapping("/suggest-effort-type")
+    public ResponseEntity<?> suggestEffortType(
+            @RequestBody SuggestEffortTypeRequest request
+    ) {
+        if (!featureFlags.isSuggestEffortTypeEnabled()) {
+            return ResponseEntity.ok(new SuggestEffortTypeResponse("unavailable", null, null));
+        }
+
+        if (!rateLimiter.tryAcquire(authenticatedUserContext.userId())) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(ApiErrorResponse.of(ErrorCode.CONFLICT, "Rate limit exceeded: 20 AI requests per minute"));
+        }
+
+        AiEffortTypeSuggestionService.SuggestionResult result =
+                effortTypeSuggestionService.suggest(
+                        request.title(),
+                        request.description(),
+                        request.outcomeId()
+                );
+
+        return ResponseEntity.ok(SuggestEffortTypeResponse.from(result));
+    }
+
+    public record SuggestEffortTypeRequest(
+            String title,
+            String description,
+            String outcomeId
+    ) {}
+
+    public record SuggestEffortTypeResponse(
+            String status,
+            String suggestedType,
+            Double confidence
+    ) {
+        static SuggestEffortTypeResponse from(AiEffortTypeSuggestionService.SuggestionResult result) {
+            return new SuggestEffortTypeResponse(
+                    result.status(),
+                    result.suggestedType() != null ? result.suggestedType().name() : null,
+                    result.confidence()
+            );
+        }
     }
 
     // ─── Request / Response DTOs ────────────────────────────

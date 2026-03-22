@@ -20,6 +20,7 @@ public class AiFeatureFlags {
     private boolean executiveDashboardEnabled = true;
     private boolean weeklyPlanningAgentEnabled = true;
     private boolean misalignmentAgentEnabled = true;
+    private boolean suggestEffortTypeEnabled = true;
 
     /**
      * Whether the RCDO auto-suggest endpoint is active.
@@ -147,5 +148,17 @@ public class AiFeatureFlags {
 
     public void setMisalignmentAgentEnabled(boolean enabled) {
         this.misalignmentAgentEnabled = enabled;
+    }
+
+    /**
+     * Whether the AI effort type suggestion endpoint is active.
+     * Default: enabled in dev/local. Configurable via {@code ai.features.suggest-effort-type-enabled}.
+     */
+    public boolean isSuggestEffortTypeEnabled() {
+        return suggestEffortTypeEnabled;
+    }
+
+    public void setSuggestEffortTypeEnabled(boolean enabled) {
+        this.suggestEffortTypeEnabled = enabled;
     }
 }
