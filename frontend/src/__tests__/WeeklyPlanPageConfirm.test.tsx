@@ -147,6 +147,20 @@ vi.mock("../hooks/useRcdo.js", () => ({
   }),
 }));
 
+vi.mock("../hooks/useWeeklyAssignments.js", () => ({
+  useWeeklyAssignments: () => ({
+    assignments: [],
+    loading: false,
+    error: null,
+    fetchAssignments: vi.fn().mockResolvedValue(undefined),
+    createAssignment: vi.fn().mockResolvedValue(null),
+    removeAssignment: vi.fn().mockResolvedValue(true),
+    releaseToBacklog: vi.fn().mockResolvedValue(true),
+    resetAssignments: vi.fn(),
+    clearError: vi.fn(),
+  }),
+}));
+
 vi.mock("../hooks/useAiSuggestions.js", () => ({
   useAiSuggestions: () => ({
     suggestions: [],

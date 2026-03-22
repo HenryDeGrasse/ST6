@@ -1,12 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import type { WeeklyCommit } from "@weekly-commitments/contracts";
+import type { WeeklyCommit, WeeklyAssignmentWithActual } from "@weekly-commitments/contracts";
 import { ChessIcon } from "./icons/ChessIcon.js";
 import type { ChessPiece } from "./icons/ChessIcon.js";
 import styles from "./CarryForwardDialog.module.css";
 
 export interface CarryForwardDialogProps {
   commits: WeeklyCommit[];
+  /** Phase 6: assignment-based items that can be carried forward (creates a new assignment). */
+  assignments?: WeeklyAssignmentWithActual[];
   onCarryForward: (commitIds: string[]) => void;
+  /** Phase 6: called when the user carries forward assignment-based items. */
+  onCarryForwardAssignments?: (assignmentIds: string[]) => void | Promise<void>;
   onCancel: () => void;
   loading?: boolean;
 }
@@ -25,7 +29,9 @@ function priorityToPiece(priority: string | null | undefined): ChessPiece | null
  */
 export const CarryForwardDialog: React.FC<CarryForwardDialogProps> = ({
   commits,
+  assignments = [],
   onCarryForward,
+  onCarryForwardAssignments,
   onCancel,
   loading = false,
 }) => {
@@ -35,6 +41,10 @@ export const CarryForwardDialog: React.FC<CarryForwardDialogProps> = ({
 
   // Pre-select commits that aren't DONE (heuristic for the dialog)
   const [selected, setSelected] = useState<Set<string>>(() => new Set(incompleteCommits.map((c) => c.id)));
+  // Pre-select all assignments for carry-forward
+  const [selectedAssignments, setSelectedAssignments] = useState<Set<string>>(
+    () => new Set(assignments.map((a) => a.id)),
+  );
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -44,6 +54,17 @@ export const CarryForwardDialog: React.FC<CarryForwardDialogProps> = ({
       return next;
     });
   };
+
+  const toggleAssignment = (id: string) => {
+    setSelectedAssignments((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const totalSelected = selected.size + selectedAssignments.size;
 
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -109,7 +130,7 @@ export const CarryForwardDialog: React.FC<CarryForwardDialogProps> = ({
           carry-forward reference.
         </p>
 
-        {incompleteCommits.length === 0 ? (
+        {incompleteCommits.length === 0 && assignments.length === 0 ? (
           <p className={styles.emptyState}>No commits available to carry forward.</p>
         ) : (
           <div className={styles.commitList}>
@@ -138,6 +159,40 @@ export const CarryForwardDialog: React.FC<CarryForwardDialogProps> = ({
                 </label>
               );
             })}
+            {/* Phase 6: assignment-based items */}
+            {assignments.map((assignment) => {
+              const issue = assignment.issue;
+              const displayKey = issue?.issueKey;
+              const displayTitle = issue ? `${displayKey}: ${issue.title}` : `Assignment ${assignment.id}`;
+              const priorityPiece = priorityToPiece(assignment.chessPriorityOverride ?? issue?.chessPriority ?? null);
+              const priority = assignment.chessPriorityOverride ?? issue?.chessPriority ?? null;
+              return (
+                <label
+                  key={assignment.id}
+                  data-testid={`carry-assignment-option-${assignment.id}`}
+                  className={styles.commitRow}
+                >
+                  <input
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={selectedAssignments.has(assignment.id)}
+                    onChange={() => toggleAssignment(assignment.id)}
+                  />
+                  <div className={styles.commitMeta}>
+                    <span className={styles.commitTitle}>{displayTitle}</span>
+                    <div className={styles.commitInfo}>
+                      {priorityPiece && priority && (
+                        <span className={styles.chessBadge}>
+                          <ChessIcon piece={priorityPiece} size={12} />
+                          {priority}
+                        </span>
+                      )}
+                      <span className={styles.categoryBadge}>Backlog</span>
+                    </div>
+                  </div>
+                </label>
+              );
+            })}
           </div>
         )}
 
@@ -148,10 +203,15 @@ export const CarryForwardDialog: React.FC<CarryForwardDialogProps> = ({
           <button
             data-testid="carry-confirm"
             className={styles.confirmButton}
-            onClick={() => onCarryForward(Array.from(selected))}
-            disabled={selected.size === 0 || loading}
+            onClick={() => {
+              onCarryForward(Array.from(selected));
+              if (onCarryForwardAssignments && selectedAssignments.size > 0) {
+                void onCarryForwardAssignments(Array.from(selectedAssignments));
+              }
+            }}
+            disabled={totalSelected === 0 || loading}
           >
-            {loading ? "Carrying…" : `Carry Forward (${String(selected.size)})`}
+            {loading ? "Carrying…" : `Carry Forward (${String(totalSelected)})`}
           </button>
         </div>
       </div>

@@ -7,6 +7,7 @@ import type {
   NextWorkSuggestion,
   SuggestionFeedbackRequest,
   CheckInRequest,
+  Issue,
 } from "@weekly-commitments/contracts";
 import { PlanState, CompletionStatus, ChessPriority } from "@weekly-commitments/contracts";
 import { WeekSelector } from "../components/WeekSelector.js";
@@ -27,9 +28,11 @@ import { QuickUpdateFlow } from "../components/QuickUpdate/QuickUpdateFlow.js";
 import type { QuickUpdateCommitment } from "../components/QuickUpdate/QuickUpdateFlow.js";
 import { OvercommitBanner } from "../components/CapacityView/OvercommitBanner.js";
 import type { OvercommitLevel } from "../components/CapacityView/OvercommitBanner.js";
+import { BacklogPickerDialog } from "../components/BacklogPickerDialog.js";
 import { StatusIcon } from "../components/icons/StatusIcon.js";
 import { usePlan } from "../hooks/usePlan.js";
 import { useCommits } from "../hooks/useCommits.js";
+import { useWeeklyAssignments } from "../hooks/useWeeklyAssignments.js";
 import { useRcdo } from "../hooks/useRcdo.js";
 import { useAiSuggestions } from "../hooks/useAiSuggestions.js";
 import { usePlanQualityCheck } from "../hooks/usePlanQualityCheck.js";
@@ -37,7 +40,7 @@ import { useDraftFromHistory } from "../hooks/useDraftFromHistory.js";
 import { useNextWorkSuggestions } from "../hooks/useNextWorkSuggestions.js";
 import { useCheckIn } from "../hooks/useCheckIn.js";
 import { useCapacityProfile } from "../hooks/useCapacity.js";
-import { getWeekStart, isPastWeek, isFutureWeek, isCreateAllowedForWeek } from "../utils/week.js";
+import { getWeekStart, getNextWeekStart, isPastWeek, isFutureWeek, isCreateAllowedForWeek } from "../utils/week.js";
 import { useToast } from "../context/ToastContext.js";
 import { useFeatureFlags } from "../context/FeatureFlagContext.js";
 import styles from "./WeeklyPlanPage.module.css";
@@ -60,6 +63,8 @@ type LifecycleAction = "lock-plan" | "start-reconciliation" | "submit-reconcilia
 export const WeeklyPlanPage: React.FC = () => {
   const [selectedWeek, setSelectedWeek] = useState(() => getWeekStart());
   const [showCarryForward, setShowCarryForward] = useState(false);
+  const [showBacklogPicker, setShowBacklogPicker] = useState(false);
+  const [addingFromBacklog, setAddingFromBacklog] = useState(false);
   const [pendingConfirm, setPendingConfirm] = useState<ConfirmAction>(null);
   const [lifecycleAction, setLifecycleAction] = useState<LifecycleAction>(null);
   const [showQualityNudge, setShowQualityNudge] = useState(false);
@@ -92,6 +97,18 @@ export const WeeklyPlanPage: React.FC = () => {
     resetCommits,
     clearError: clearCommitsError,
   } = useCommits();
+
+  const {
+    assignments,
+    loading: assignmentsLoading,
+    error: assignmentsError,
+    fetchAssignments,
+    createAssignment,
+    removeAssignment,
+    releaseToBacklog,
+    resetAssignments,
+    clearError: clearAssignmentsError,
+  } = useWeeklyAssignments();
 
   const {
     tree: rcdoTree,
@@ -165,6 +182,16 @@ export const WeeklyPlanPage: React.FC = () => {
     }
     resetCommits();
   }, [plan, fetchCommits, resetCommits]);
+
+  // Load assignments when plan is available (only when useIssueBacklog flag is on)
+  useEffect(() => {
+    if (plan && flags.useIssueBacklog) {
+      resetAssignments();
+      void fetchAssignments(plan.id);
+      return;
+    }
+    resetAssignments();
+  }, [plan, flags.useIssueBacklog, fetchAssignments, resetAssignments]);
 
   // Load RCDO tree on mount
   useEffect(() => {
@@ -363,6 +390,75 @@ export const WeeklyPlanPage: React.FC = () => {
     [plan, carryForward, showToast],
   );
 
+  // ── Phase 6: Assignment / Backlog handlers ────────────────────────────────
+
+  const handleAddFromBacklog = useCallback(
+    async (issues: Issue[]) => {
+      if (!plan) return;
+      setAddingFromBacklog(true);
+      try {
+        await Promise.all(
+          issues.map((issue) => createAssignment(selectedWeek, { issueId: issue.id })),
+        );
+        await Promise.all([
+          fetchAssignments(plan.id),
+          fetchCommits(plan.id),
+        ]);
+        setShowBacklogPicker(false);
+      } finally {
+        setAddingFromBacklog(false);
+      }
+    },
+    [plan, selectedWeek, createAssignment, fetchAssignments, fetchCommits],
+  );
+
+  const handleRemoveAssignment = useCallback(
+    async (assignmentId: string) => {
+      if (!plan) return;
+      const ok = await removeAssignment(selectedWeek, assignmentId);
+      if (ok) {
+        await fetchCommits(plan.id);
+      }
+    },
+    [fetchCommits, plan, removeAssignment, selectedWeek],
+  );
+
+  const handleReleaseToBacklog = useCallback(
+    async (issueId: string) => {
+      if (!plan) return;
+      const ok = await releaseToBacklog(issueId, plan.id);
+      if (ok) {
+        await Promise.all([
+          fetchAssignments(plan.id),
+          fetchCommits(plan.id),
+        ]);
+      }
+    },
+    [plan, releaseToBacklog, fetchAssignments, fetchCommits],
+  );
+
+  const handleCarryForwardAssignments = useCallback(
+    async (assignmentIds: string[]) => {
+      const nextWeekStart = getNextWeekStart(selectedWeek);
+
+      await Promise.all(
+        assignmentIds.map(async (assignmentId) => {
+          const assignment = assignments.find((a) => a.id === assignmentId);
+          if (!assignment) {
+            return;
+          }
+          await createAssignment(nextWeekStart, {
+            issueId: assignment.issueId,
+            chessPriorityOverride: assignment.chessPriorityOverride ?? undefined,
+          });
+        }),
+      );
+    },
+    [selectedWeek, assignments, createAssignment],
+  );
+
+  // ── End Phase 6 handlers ─────────────────────────────────────────────────
+
   const handleStartFromLastWeek = useCallback(async () => {
     const result = await draftFromHistory(selectedWeek);
     if (result) {
@@ -486,17 +582,18 @@ export const WeeklyPlanPage: React.FC = () => {
     [addCheckIn],
   );
 
-  const loading = planLoading || commitsLoading;
+  const loading = planLoading || commitsLoading || assignmentsLoading;
   const lifecycleLoading = lifecycleAction !== null;
   const draftLoading = draftFromHistoryStatus === "loading";
-  const error = planError ?? commitsError ?? rcdoError ?? draftFromHistoryError;
+  const error = planError ?? commitsError ?? rcdoError ?? draftFromHistoryError ?? assignmentsError;
 
   const clearError = useCallback(() => {
     clearPlanError();
     clearCommitsError();
     clearRcdoError();
     resetDraftFromHistory();
-  }, [clearPlanError, clearCommitsError, clearRcdoError, resetDraftFromHistory]);
+    clearAssignmentsError();
+  }, [clearPlanError, clearCommitsError, clearRcdoError, resetDraftFromHistory, clearAssignmentsError]);
 
   return (
     <div data-testid="weekly-plan-page" className={styles.page}>
@@ -608,6 +705,9 @@ export const WeeklyPlanPage: React.FC = () => {
 
           <CommitList
             commits={commits}
+            assignments={flags.useIssueBacklog ? assignments : []}
+            onRemoveAssignment={flags.useIssueBacklog ? handleRemoveAssignment : undefined}
+            onAddFromBacklog={flags.useIssueBacklog ? () => setShowBacklogPicker(true) : undefined}
             planState={plan.state}
             rcdoTree={rcdoTree}
             rcdoSearchResults={rcdoSearchResults}
@@ -645,8 +745,10 @@ export const WeeklyPlanPage: React.FC = () => {
               />
               <ReconciliationView
                 commits={commits}
+                assignments={flags.useIssueBacklog ? assignments : []}
                 planState={plan.state}
                 onUpdateActual={handleUpdateActual}
+                onReleaseToBacklog={flags.useIssueBacklog ? handleReleaseToBacklog : undefined}
                 onSubmit={handleRequestSubmitReconciliation}
                 loading={loading}
               />
@@ -656,7 +758,9 @@ export const WeeklyPlanPage: React.FC = () => {
           {showCarryForward && plan.state === PlanState.RECONCILED && (
             <CarryForwardDialog
               commits={commits}
+              assignments={flags.useIssueBacklog ? assignments : []}
               onCarryForward={handleCarryForward}
+              onCarryForwardAssignments={flags.useIssueBacklog ? handleCarryForwardAssignments : undefined}
               onCancel={() => setShowCarryForward(false)}
               loading={lifecycleAction === "carry-forward"}
             />
@@ -677,6 +781,16 @@ export const WeeklyPlanPage: React.FC = () => {
           <DigestPreferencesSection />
         </GlassPanel>
       )}
+      {/* Phase 6: Backlog picker dialog */}
+      {flags.useIssueBacklog && showBacklogPicker && (
+        <BacklogPickerDialog
+          weekStart={selectedWeek}
+          onConfirm={handleAddFromBacklog}
+          onCancel={() => setShowBacklogPicker(false)}
+          loading={addingFromBacklog}
+        />
+      )}
+
       {/* Plan quality nudge — shown before lock confirm dialog when flag is enabled */}
       {showQualityNudge && (
         <PlanQualityNudge

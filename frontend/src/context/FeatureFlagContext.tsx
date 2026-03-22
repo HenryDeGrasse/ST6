@@ -29,6 +29,8 @@ export interface FeatureFlags {
   executiveDashboard: boolean;
   weeklyPlanningAgent: boolean;
   misalignmentAgent: boolean;
+  /** Phase 6: Show backlog/assignment-based workflow in WeeklyPlanPage. Default off for gradual rollout. */
+  useIssueBacklog: boolean;
 }
 
 export const FEATURE_FLAGS_STORAGE_KEY = "wc-feature-flags";
@@ -55,6 +57,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   executiveDashboard: true,
   weeklyPlanningAgent: true,
   misalignmentAgent: true,
+  useIssueBacklog: false,
 };
 
 const FeatureFlagContext = createContext<FeatureFlags>(DEFAULT_FLAGS);

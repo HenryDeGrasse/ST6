@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import type { WeeklyCommit, UpdateActualRequest } from "@weekly-commitments/contracts";
+import type { WeeklyCommit, WeeklyAssignmentWithActual, UpdateActualRequest } from "@weekly-commitments/contracts";
 import { CompletionStatus, PlanState } from "@weekly-commitments/contracts";
 import { StatusIcon, type StatusIconName } from "./icons/index.js";
 import styles from "./ReconciliationView.module.css";
@@ -14,8 +14,12 @@ export interface ActualEntry {
 
 export interface ReconciliationViewProps {
   commits: WeeklyCommit[];
+  /** Phase 6: assignment-based plan items (optional). */
+  assignments?: WeeklyAssignmentWithActual[];
   planState: PlanState;
   onUpdateActual: (commitId: string, version: number, req: UpdateActualRequest) => Promise<void> | void;
+  /** Phase 6: called when the user chooses to release an issue back to the backlog. */
+  onReleaseToBacklog?: (issueId: string) => void | Promise<void>;
   onSubmit: () => void;
   loading?: boolean;
 }
@@ -76,11 +80,14 @@ function buildActualSignature(commit: WeeklyCommit): string {
  */
 export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
   commits,
+  assignments = [],
   planState,
   onUpdateActual,
+  onReleaseToBacklog,
   onSubmit,
   loading = false,
 }) => {
+  const [releasingIds, setReleasingIds] = useState<Set<string>>(new Set());
   const isReconciling = planState === PlanState.RECONCILING;
 
   // Per-commit saving state
@@ -291,6 +298,59 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
           </div>
         );
       })}
+
+      {/* ── Phase 6: Assignment-based items with Release to Backlog option ── */}
+      {assignments.length > 0 && (
+        <div data-testid="reconcile-assignments-section">
+          <h4 className={styles.heading} style={{ marginTop: "1.25rem", fontSize: "0.95rem" }}>
+            Backlog Issues
+          </h4>
+          {assignments.map((assignment) => {
+            const issue = assignment.issue;
+            const isReleasing = releasingIds.has(assignment.id);
+            return (
+              <div
+                key={assignment.id}
+                data-testid={`reconcile-assignment-${assignment.id}`}
+                className={styles.commitCard}
+              >
+                <div className={styles.cardHeader}>
+                  <strong className={styles.cardTitle}>
+                    {issue ? `${issue.issueKey}: ${issue.title}` : `Assignment ${assignment.id}`}
+                  </strong>
+                  {(assignment.chessPriorityOverride ?? issue?.chessPriority) && (
+                    <span className={styles.chessBadge}>
+                      {assignment.chessPriorityOverride ?? issue?.chessPriority}
+                    </span>
+                  )}
+                </div>
+                {onReleaseToBacklog && issue && (
+                  <div className={styles.statusRow} style={{ marginTop: "0.5rem" }}>
+                    <button
+                      data-testid={`release-to-backlog-${assignment.id}`}
+                      className={styles.saveButton}
+                      onClick={() => {
+                        setReleasingIds((prev) => new Set([...prev, assignment.id]));
+                        void Promise.resolve(onReleaseToBacklog(issue.id)).finally(() => {
+                          setReleasingIds((prev) => {
+                            const next = new Set(prev);
+                            next.delete(assignment.id);
+                            return next;
+                          });
+                        });
+                      }}
+                      disabled={isReleasing}
+                      style={{ background: "rgba(248,113,113,0.15)", borderColor: "rgba(248,113,113,0.3)" }}
+                    >
+                      {isReleasing ? "Releasing…" : "Release to Backlog"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className={styles.submitRow}>
         <button

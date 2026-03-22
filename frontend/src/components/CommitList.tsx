@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import type {
   WeeklyCommit,
+  WeeklyAssignmentWithActual,
   CreateCommitRequest,
   UpdateCommitRequest,
   RcdoCry,
@@ -37,6 +38,14 @@ export interface CommitListCheckInProps {
 
 export interface CommitListProps {
   commits: WeeklyCommit[];
+  /**
+   * Phase 6: weekly assignments from the backlog (optional).
+   * When provided alongside the useIssueBacklog flag, assignment rows are
+   * rendered with issue key and effort type.
+   */
+  assignments?: WeeklyAssignmentWithActual[];
+  /** Called to remove an assignment from the plan (Phase 6). */
+  onRemoveAssignment?: (assignmentId: string) => void | Promise<void>;
   planState: PlanState;
   rcdoTree: RcdoCry[];
   rcdoSearchResults: RcdoSearchResult[];
@@ -59,6 +68,8 @@ export interface CommitListProps {
    * When omitted (or feature flag off), check-in UI is not rendered.
    */
   checkIn?: CommitListCheckInProps;
+  /** Phase 6: Callback to open the BacklogPickerDialog (shown only in DRAFT state). */
+  onAddFromBacklog?: () => void;
 }
 
 /**
@@ -91,6 +102,8 @@ function resolveOutcomeFromTree(
  */
 export const CommitList: React.FC<CommitListProps> = ({
   commits,
+  assignments = [],
+  onRemoveAssignment,
   planState,
   rcdoTree,
   rcdoSearchResults,
@@ -104,27 +117,42 @@ export const CommitList: React.FC<CommitListProps> = ({
   onAiSuggestRequest,
   onAiSuggestClear,
   checkIn,
+  onAddFromBacklog,
 }) => {
   const [showNewForm, setShowNewForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const isDraft = planState === PlanState.DRAFT;
   const isEditable = isDraft || planState === PlanState.LOCKED || planState === PlanState.RECONCILING;
+  const totalItems = commits.length + assignments.length;
 
 
   return (
     <div data-testid="commit-list" className={styles.container}>
       {/* ── List header ── */}
       <div className={styles.listHeader}>
-        <h3 className={styles.listTitle}>Commitments ({String(commits.length)})</h3>
+        <h3 className={styles.listTitle}>Commitments ({String(totalItems)})</h3>
         {isDraft && !showNewForm && (
-          <button
-            data-testid="add-commit-btn"
-            type="button"
-            className={styles.addButton}
-            onClick={() => setShowNewForm(true)}
-          >
-            + Add Commitment
-          </button>
+          <>
+            <button
+              data-testid="add-commit-btn"
+              type="button"
+              className={styles.addButton}
+              onClick={() => setShowNewForm(true)}
+            >
+              + Add Commitment
+            </button>
+            {onAddFromBacklog && (
+              <button
+                data-testid="add-from-backlog-btn"
+                type="button"
+                className={styles.addButton}
+                onClick={onAddFromBacklog}
+                style={{ marginLeft: "0.5rem" }}
+              >
+                + Add from Backlog
+              </button>
+            )}
+          </>
         )}
       </div>
 
@@ -340,8 +368,64 @@ export const CommitList: React.FC<CommitListProps> = ({
         ),
       )}
 
+      {/* ── Assignment rows (Phase 6 backlog items) ── */}
+      {assignments.map((assignment) => {
+        const issue = assignment.issue;
+        return (
+          <div
+            key={assignment.id}
+            data-testid={`assignment-row-${assignment.id}`}
+            className={styles.commitCard}
+          >
+            <div className={styles.cardHeader}>
+              <span className={styles.cardTitle}>
+                {issue ? (
+                  <>
+                    <span className={styles.issueKeyBadge} data-testid={`assignment-key-${assignment.id}`}>
+                      {issue.issueKey}
+                    </span>{" "}
+                    {issue.title}
+                  </>
+                ) : (
+                  `Assignment ${assignment.id}`
+                )}
+              </span>
+              <div className={styles.cardMeta}>
+                {(assignment.chessPriorityOverride ?? issue?.chessPriority) && (
+                  <span data-testid="assignment-priority" className={styles.metaBadge}>
+                    {assignment.chessPriorityOverride ?? issue?.chessPriority}
+                  </span>
+                )}
+                {issue?.effortType && (
+                  <span data-testid={`assignment-effort-${assignment.id}`} className={styles.metaBadge}>
+                    {issue.effortType}
+                  </span>
+                )}
+                {isDraft && onRemoveAssignment && (
+                  <button
+                    type="button"
+                    data-testid={`assignment-remove-${assignment.id}`}
+                    className={styles.checkInButton}
+                    onClick={() => void onRemoveAssignment(assignment.id)}
+                    aria-label={`Remove assignment ${issue?.issueKey ?? assignment.id} from plan`}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+            {issue?.description && <p className={styles.cardDescription}>{issue.description}</p>}
+            <div className={styles.cardFooter}>
+              <span className={styles.draftSourceBadge} data-source="BACKLOG">
+                From backlog
+              </span>
+            </div>
+          </div>
+        );
+      })}
+
       {/* ── Empty state ── */}
-      {commits.length === 0 && !showNewForm && <p className={styles.emptyState}>No commitments yet.</p>}
+      {totalItems === 0 && !showNewForm && <p className={styles.emptyState}>No commitments yet.</p>}
     </div>
   );
 };

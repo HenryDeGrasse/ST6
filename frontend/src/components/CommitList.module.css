@@ -300,3 +300,17 @@
   font-family: var(--wc-font-body);
   font-size:   1rem;
 }
+
+/* ─── Issue key badge (Phase 6 assignment rows) ─────────────────────────── */
+.issueKeyBadge {
+  font-size:      0.7rem;
+  font-weight:    700;
+  font-family:    var(--wc-font-mono, monospace);
+  color:          var(--wc-color-accent, #c9a962);
+  background:     rgba(201, 169, 98, 0.12);
+  border:         1px solid rgba(201, 169, 98, 0.25);
+  border-radius:  4px;
+  padding:        0.1em 0.4em;
+  margin-right:   0.25em;
+  vertical-align: middle;
+}
