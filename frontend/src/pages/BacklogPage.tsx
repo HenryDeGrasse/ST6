@@ -48,7 +48,12 @@ function memberLabel(member: TeamMember): string {
   return `${member.userId}${member.role === "OWNER" ? " (Owner)" : ""}`;
 }
 
-export const BacklogPage: React.FC = () => {
+export interface BacklogPageProps {
+  /** Navigate to team management page (from App shell). */
+  onManageTeam?: (teamId: string) => void;
+}
+
+export const BacklogPage: React.FC<BacklogPageProps> = ({ onManageTeam }) => {
   const teamsHook = useTeams();
   const issuesHook = useIssues();
   const fetchTeamDetail = teamsHook.fetchTeamDetail;
@@ -241,6 +246,16 @@ export const BacklogPage: React.FC = () => {
         </div>
 
         <div className={styles.toolbarRight}>
+          {onManageTeam && selectedTeamId && (
+            <button
+              type="button"
+              className="wc-button-secondary"
+              onClick={() => onManageTeam(selectedTeamId)}
+              data-testid="backlog-manage-team-btn"
+            >
+              Manage Team
+            </button>
+          )}
           <button
             type="button"
             className="wc-button"

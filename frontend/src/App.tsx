@@ -8,6 +8,7 @@ import { AdminDashboardPage } from "./pages/AdminDashboardPage.js";
 import { ExecutiveDashboardPage } from "./pages/ExecutiveDashboardPage.js";
 import { MyInsightsPage } from "./pages/MyInsightsPage.js";
 import { BacklogPage } from "./pages/BacklogPage.js";
+import { TeamManagementPage } from "./pages/TeamManagementPage.js";
 import { ErrorBoundary } from "./components/ErrorBoundary.js";
 import { ToastProvider } from "./context/ToastContext.js";
 import { ThemeProvider } from "./theme/ThemeContext.js";
@@ -25,7 +26,7 @@ const DEV_USER = {
 };
 const DEV_TOKEN = "dev-jwt-token";
 
-type AppRoute = "weekly" | "weekly/backlog" | "weekly/insights" | "weekly/team" | "admin" | "executive";
+type AppRoute = "weekly" | "weekly/backlog" | "weekly/insights" | "weekly/team" | "weekly/team-management" | "admin" | "executive";
 
 interface NavigateEventDetail {
   route: AppRoute;
@@ -62,6 +63,7 @@ const AppShell: React.FC<{
 }> = ({ user, initialRoute }) => {
   const flags = useFeatureFlags();
   const [route, setRoute] = useState<AppRoute>(initialRoute);
+  const [teamManagementTeamId, setTeamManagementTeamId] = useState<string | undefined>(undefined);
   const isManager = user.roles.includes("MANAGER");
   const isAdmin = user.roles.includes("ADMIN");
   const canAccessExecutive = isAdmin && flags.executiveDashboard;
@@ -122,9 +124,22 @@ const AppShell: React.FC<{
           {isAdmin && renderNavButton("admin", "Admin", "nav-admin")}
         </nav>
       {route === "weekly" && <WeeklyPlanPage />}
-      {route === "weekly/backlog" && <BacklogPage />}
+      {route === "weekly/backlog" && (
+        <BacklogPage
+          onManageTeam={(teamId) => {
+            setTeamManagementTeamId(teamId);
+            setRoute("weekly/team-management");
+          }}
+        />
+      )}
       {route === "weekly/insights" && <MyInsightsPage />}
       {route === "weekly/team" && isManager && <TeamDashboardPage />}
+      {route === "weekly/team-management" && (
+        <TeamManagementPage
+          initialTeamId={teamManagementTeamId}
+          onBack={() => setRoute("weekly/backlog")}
+        />
+      )}
       {route === "executive" && canAccessExecutive && <ExecutiveDashboardPage />}
       {route === "admin" && isAdmin && <AdminDashboardPage />}
     </div>

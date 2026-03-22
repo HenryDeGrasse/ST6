@@ -1,0 +1,419 @@
+/**
+ * TeamManagementPage – CSS Module
+ */
+
+.page {
+  padding:        var(--wc-space-md) var(--wc-space-lg);
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--wc-space-lg);
+  min-height:     100vh;
+  box-sizing:     border-box;
+}
+
+.pageHeader {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  flex-wrap:       wrap;
+  gap:             var(--wc-space-sm);
+}
+
+.pageTitle {
+  font-size:   1.2rem;
+  font-weight: 700;
+  color:       var(--wc-color-text, #E8DCC8);
+}
+
+.backBtn {
+  background: none;
+  border:     none;
+  cursor:     pointer;
+  color:      var(--wc-color-text-muted, #9C8B7A);
+  font-size:  0.82rem;
+  padding:    0;
+}
+
+.backBtn:hover {
+  color: var(--wc-color-accent, #C9A962);
+}
+
+/* ── Section ──────────────────────────────────────────────────────────────── */
+
+.section {
+  background:    var(--wc-color-surface, #2A2118);
+  border:        1px solid var(--wc-color-border, #4A3F35);
+  border-radius: 0.5rem;
+  padding:       var(--wc-space-md) var(--wc-space-lg);
+  display:       flex;
+  flex-direction: column;
+  gap:           var(--wc-space-sm);
+}
+
+.sectionHeader {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  flex-wrap:       wrap;
+  gap:             var(--wc-space-sm);
+  margin-bottom:   var(--wc-space-xs);
+}
+
+.sectionTitle {
+  font-size:      0.82rem;
+  font-weight:    700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color:          var(--wc-color-text-muted, #9C8B7A);
+}
+
+/* ── Team detail form ─────────────────────────────────────────────────────── */
+
+.fieldGroup {
+  display:       flex;
+  flex-direction: column;
+  gap:           0.25rem;
+}
+
+.fieldLabel {
+  font-size:   0.72rem;
+  font-weight: 600;
+  color:       var(--wc-color-text-muted, #9C8B7A);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.fieldValue {
+  font-size: 0.9rem;
+  color:     var(--wc-color-text, #E8DCC8);
+}
+
+.fieldRow {
+  display:     flex;
+  align-items: center;
+  gap:         var(--wc-space-sm);
+  flex-wrap:   wrap;
+}
+
+.fieldInput {
+  flex:        1;
+  min-width:   12rem;
+  padding:     0.35rem 0.6rem;
+  font-size:   0.85rem;
+  color:       var(--wc-color-text, #E8DCC8);
+  background:  var(--wc-color-bg, #1A1510);
+  border:      1px solid var(--wc-color-border, #4A3F35);
+  border-radius: 0.25rem;
+}
+
+.fieldInput:focus {
+  outline:      none;
+  border-color: var(--wc-color-accent, #C9A962);
+}
+
+.fieldTextarea {
+  composes: fieldInput;
+  min-height: 4rem;
+  resize:     vertical;
+}
+
+/* ── Members table ────────────────────────────────────────────────────────── */
+
+.memberTable {
+  width:           100%;
+  border-collapse: collapse;
+  font-size:       0.82rem;
+}
+
+.memberTable th {
+  padding:        0.45rem 0.65rem;
+  text-align:     left;
+  font-size:      0.68rem;
+  font-weight:    700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color:          var(--wc-color-text-muted, #9C8B7A);
+  border-bottom:  1px solid var(--wc-color-border, #4A3F35);
+  white-space:    nowrap;
+}
+
+.memberTable td {
+  padding:       0.45rem 0.65rem;
+  border-bottom: 1px solid var(--wc-color-border, #4A3F35);
+  color:         var(--wc-color-text, #E8DCC8);
+  vertical-align: middle;
+}
+
+.memberTable tr:last-child td {
+  border-bottom: none;
+}
+
+.roleBadge {
+  display:        inline-flex;
+  align-items:    center;
+  padding:        0.1rem 0.4rem;
+  border-radius:  0.2rem;
+  font-size:      0.65rem;
+  font-weight:    700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space:    nowrap;
+}
+
+.roleOwner  { background-color: #6B4F2A; color: #EDD8B0; }
+.roleMember { background-color: #3D5470; color: #C8DCEF; }
+
+.removeBtn {
+  background: none;
+  border:     none;
+  cursor:     pointer;
+  color:      var(--wc-color-text-muted, #9C8B7A);
+  font-size:  0.75rem;
+  padding:    0.15rem 0.4rem;
+  border-radius: 0.2rem;
+}
+
+.removeBtn:hover {
+  color:      #E87575;
+  background: rgba(232, 117, 117, 0.1);
+}
+
+/* ── Add member form ──────────────────────────────────────────────────────── */
+
+.addMemberForm {
+  display:     flex;
+  align-items: center;
+  gap:         var(--wc-space-sm);
+  flex-wrap:   wrap;
+  margin-top:  var(--wc-space-sm);
+}
+
+.addMemberInput {
+  flex:      1;
+  min-width: 12rem;
+  padding:   0.35rem 0.6rem;
+  font-size: 0.85rem;
+  color:     var(--wc-color-text, #E8DCC8);
+  background: var(--wc-color-bg, #1A1510);
+  border:    1px solid var(--wc-color-border, #4A3F35);
+  border-radius: 0.25rem;
+}
+
+.addMemberInput:focus {
+  outline:      none;
+  border-color: var(--wc-color-accent, #C9A962);
+}
+
+/* ── Access requests ──────────────────────────────────────────────────────── */
+
+.requestRow {
+  display:       flex;
+  align-items:   center;
+  gap:           var(--wc-space-sm);
+  padding:       0.45rem 0;
+  border-bottom: 1px solid var(--wc-color-border, #4A3F35);
+  flex-wrap:     wrap;
+}
+
+.requestRow:last-child {
+  border-bottom: none;
+}
+
+.requestUser {
+  flex:      1;
+  font-size: 0.85rem;
+  color:     var(--wc-color-text, #E8DCC8);
+}
+
+.requestDate {
+  font-size: 0.72rem;
+  color:     var(--wc-color-text-muted, #9C8B7A);
+}
+
+.requestStatus {
+  display:        inline-flex;
+  align-items:    center;
+  padding:        0.1rem 0.4rem;
+  border-radius:  0.2rem;
+  font-size:      0.65rem;
+  font-weight:    700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statusPending  { background-color: #6B4F2A; color: #EDD8B0; }
+.statusApproved { background-color: #4A6741; color: #D8EDD5; }
+.statusDenied   { background-color: #5A2A2A; color: #EFCDC8; }
+
+.approveBtn {
+  padding:       0.2rem 0.55rem;
+  font-size:     0.72rem;
+  font-weight:   600;
+  background:    #4A6741;
+  color:         #D8EDD5;
+  border:        none;
+  border-radius: 0.25rem;
+  cursor:        pointer;
+}
+
+.approveBtn:hover {
+  background: #5A7750;
+}
+
+.denyBtn {
+  padding:       0.2rem 0.55rem;
+  font-size:     0.72rem;
+  font-weight:   600;
+  background:    #5A2A2A;
+  color:         #EFCDC8;
+  border:        none;
+  border-radius: 0.25rem;
+  cursor:        pointer;
+}
+
+.denyBtn:hover {
+  background: #6A3535;
+}
+
+/* ── Request access button ────────────────────────────────────────────────── */
+
+.requestAccessSection {
+  display:     flex;
+  align-items: center;
+  gap:         var(--wc-space-sm);
+  flex-wrap:   wrap;
+}
+
+.requestAccessBtn {
+  padding:       0.35rem 0.85rem;
+  font-size:     0.82rem;
+  font-weight:   600;
+  background:    var(--wc-color-accent, #C9A962);
+  color:         #1A1510;
+  border:        none;
+  border-radius: 0.25rem;
+  cursor:        pointer;
+}
+
+.requestAccessBtn:hover {
+  background: #D9B972;
+}
+
+.requestAccessBtn:disabled {
+  opacity: 0.5;
+  cursor:  not-allowed;
+}
+
+/* ── Create team modal ────────────────────────────────────────────────────── */
+
+.modalOverlay {
+  position:         fixed;
+  inset:            0;
+  background:       rgba(0, 0, 0, 0.55);
+  z-index:          150;
+  display:          flex;
+  align-items:      center;
+  justify-content:  center;
+}
+
+.modal {
+  background:    var(--wc-color-surface, #2A2118);
+  border:        1px solid var(--wc-color-border, #4A3F35);
+  border-radius: 0.5rem;
+  padding:       var(--wc-space-md) var(--wc-space-lg);
+  width:         min(480px, 95vw);
+  max-height:    85vh;
+  overflow-y:    auto;
+}
+
+.modalHeader {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  margin-bottom:   var(--wc-space-md);
+}
+
+.modalTitle {
+  font-size:   1rem;
+  font-weight: 700;
+  color:       var(--wc-color-text, #E8DCC8);
+}
+
+.closeBtn {
+  background: none;
+  border:     none;
+  cursor:     pointer;
+  color:      var(--wc-color-text-muted, #9C8B7A);
+  font-size:  1rem;
+}
+
+.closeBtn:hover {
+  color: var(--wc-color-text, #E8DCC8);
+}
+
+.formGroup {
+  display:       flex;
+  flex-direction: column;
+  gap:           0.35rem;
+  margin-bottom: var(--wc-space-sm);
+}
+
+.formLabel {
+  font-size:      0.72rem;
+  font-weight:    600;
+  color:          var(--wc-color-text-muted, #9C8B7A);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.formInput {
+  padding:       0.4rem 0.6rem;
+  font-size:     0.9rem;
+  color:         var(--wc-color-text, #E8DCC8);
+  background:    var(--wc-color-bg, #1A1510);
+  border:        1px solid var(--wc-color-border, #4A3F35);
+  border-radius: 0.25rem;
+  width:         100%;
+  box-sizing:    border-box;
+}
+
+.formInput:focus {
+  outline:      none;
+  border-color: var(--wc-color-accent, #C9A962);
+}
+
+.formHint {
+  font-size: 0.7rem;
+  color:     var(--wc-color-text-muted, #9C8B7A);
+}
+
+.formActions {
+  display:         flex;
+  justify-content: flex-end;
+  gap:             var(--wc-space-sm);
+  margin-top:      var(--wc-space-md);
+}
+
+/* ── Empty / loading states ───────────────────────────────────────────────── */
+
+.emptyText {
+  font-size: 0.82rem;
+  color:     var(--wc-color-text-muted, #9C8B7A);
+  padding:   var(--wc-space-sm) 0;
+}
+
+.loadingText {
+  font-size: 0.82rem;
+  color:     var(--wc-color-text-muted, #9C8B7A);
+  font-style: italic;
+  padding:   var(--wc-space-sm) 0;
+}
+
+/* ── Prefix hint ──────────────────────────────────────────────────────────── */
+
+.prefixPreview {
+  font-size:   0.8rem;
+  font-family: monospace;
+  color:       var(--wc-color-accent, #C9A962);
+  margin-top:  0.15rem;
+}

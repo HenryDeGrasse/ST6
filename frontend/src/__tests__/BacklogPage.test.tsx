@@ -278,4 +278,15 @@ describe("BacklogPage", () => {
       "createdAt",
     );
   });
+
+  it("passes the selected team ID to the team management callback", () => {
+    const onManageTeam = vi.fn();
+    mockTeamsHook.teams = [mockTeam];
+
+    render(<BacklogPage onManageTeam={onManageTeam} />);
+
+    fireEvent.click(screen.getByTestId("backlog-manage-team-btn"));
+
+    expect(onManageTeam).toHaveBeenCalledWith("team-1");
+  });
 });
