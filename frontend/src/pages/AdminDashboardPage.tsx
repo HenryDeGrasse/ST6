@@ -949,9 +949,6 @@ export const AdminDashboardPage: React.FC = () => {
       <GlassPanel className={styles.contentPanel}>
         <div className={styles.header}>
           <div>
-            <span className="wc-volume-label" aria-hidden="true">
-              Admin
-            </span>
             <h2 className={styles.heading}>Admin Dashboard</h2>
             <p className={styles.subheading}>
               Organisation-level analytics and configuration

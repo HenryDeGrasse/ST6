@@ -597,11 +597,7 @@ export const WeeklyPlanPage: React.FC = () => {
 
   return (
     <div data-testid="weekly-plan-page" className={styles.page}>
-      <span className="wc-volume-label" aria-hidden="true">
-        Volume I
-      </span>
       <h2 className={styles.heading}>Weekly Commitments</h2>
-      <div className="wc-ornate-divider" role="separator" aria-hidden="true" />
 
       <WeekSelector selectedWeek={selectedWeek} onWeekChange={handleWeekChange} />
 

@@ -132,7 +132,6 @@ export const DigestPreferencesSection: React.FC = () => {
     <section data-testid="digest-preferences-section" className={styles.section} aria-labelledby="digest-preferences-title">
       <div className={styles.header}>
         <div>
-          <span className="wc-volume-label">Admin</span>
           <h3 id="digest-preferences-title" className={styles.title}>
             Weekly Digest Preferences
           </h3>

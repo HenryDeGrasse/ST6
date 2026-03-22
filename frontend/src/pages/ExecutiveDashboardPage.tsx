@@ -98,15 +98,11 @@ export const ExecutiveDashboardPage: React.FC = () => {
       <GlassPanel className={styles.contentPanel}>
         <div className={styles.header}>
           <div>
-            <span className="wc-volume-label" aria-hidden="true">
-              Volume V
-            </span>
             <h2 className={styles.heading}>Executive Dashboard</h2>
             <p className={styles.description}>
               Strategic-health forecasting, planning coverage, and the executive AI briefing for the selected week.
             </p>
           </div>
-          <div aria-hidden="true" className="wc-ornate-divider" role="separator" />
         </div>
 
         <WeekSelector selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} />

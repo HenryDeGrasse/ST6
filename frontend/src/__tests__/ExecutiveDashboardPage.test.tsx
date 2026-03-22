@@ -138,7 +138,6 @@ describe("ExecutiveDashboardPage", () => {
     render(<ExecutiveDashboardPage />);
 
     expect(screen.getByTestId("executive-dashboard-page")).toBeInTheDocument();
-    expect(screen.getByRole("separator", { hidden: true })).toBeInTheDocument();
     expect(screen.getByTestId("executive-summary-stats")).toBeInTheDocument();
     expect(screen.getByTestId("executive-capacity-bar")).toBeInTheDocument();
     expect(screen.getByTestId("executive-rally-cries")).toBeInTheDocument();

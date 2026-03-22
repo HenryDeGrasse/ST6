@@ -46,10 +46,9 @@ export interface AppProps {
 }
 
 const NAV_BUTTON_STYLE = {
-  fontFamily: "'Cinzel', serif",
-  fontSize: "0.7rem",
-  textTransform: "uppercase" as const,
-  letterSpacing: "0.2em",
+  fontFamily: "'Inter', sans-serif",
+  fontSize: "0.8125rem",
+  letterSpacing: "0.01em",
   background: "none",
   border: "none",
   paddingBottom: "0.5rem",
@@ -95,8 +94,8 @@ const AppShell: React.FC<{
       style={{
         ...NAV_BUTTON_STYLE,
         fontWeight: route === targetRoute ? 700 : 500,
-        color: route === targetRoute ? "#C9A962" : "#9C8B7A",
-        borderBottom: route === targetRoute ? "2px solid #C9A962" : "2px solid transparent",
+        color: route === targetRoute ? "#2563eb" : "#64748b",
+        borderBottom: route === targetRoute ? "2px solid #2563eb" : "2px solid transparent",
       }}
     >
       {label}
@@ -112,7 +111,7 @@ const AppShell: React.FC<{
             alignItems: "center",
             gap: "1.5rem",
             padding: "0.75rem 1rem",
-            borderBottom: "1px solid #4A3F35",
+            borderBottom: "1px solid #e2e5ea",
             marginBottom: "0.5rem",
           }}
         >

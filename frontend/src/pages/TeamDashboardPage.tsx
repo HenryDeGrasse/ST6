@@ -393,9 +393,6 @@ export const TeamDashboardPage: React.FC = () => {
       <GlassPanel className={styles.contentPanel}>
         <div className={styles.header}>
           <div>
-            <span className="wc-volume-label" aria-hidden="true">
-              Volume II
-            </span>
             <h2 className={styles.heading}>Team Dashboard</h2>
           </div>
           <NotificationBell
@@ -466,9 +463,6 @@ export const TeamDashboardPage: React.FC = () => {
                   <div data-testid="forecasting-panel" className={styles.phase5Column}>
                     <div className={styles.phase5Header}>
                       <div>
-                        <span className="wc-volume-label" aria-hidden="true">
-                          Forecasting
-                        </span>
                         <h3 className={styles.phase5Title}>Target-date Forecasts</h3>
                       </div>
                       <button
@@ -588,7 +582,6 @@ export const TeamDashboardPage: React.FC = () => {
             {flags.useIssueBacklog && backlogHealth && (
               <section data-testid="backlog-health-section" className={styles.backlogHealthSection}>
                 <div className={styles.backlogHealthHeader}>
-                  <span className="wc-volume-label" aria-hidden="true">Backlog</span>
                   <h3 className={styles.backlogHealthTitle}>Backlog Health</h3>
                 </div>
                 <div className={styles.backlogHealthGrid}>

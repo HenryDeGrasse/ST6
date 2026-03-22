@@ -136,9 +136,7 @@ export const MyInsightsPage: React.FC = () => {
 
   return (
     <div className={styles.page} data-testid="my-insights-page">
-      <span aria-hidden="true" className="wc-volume-label">Volume II</span>
       <h2 className={styles.heading}>My Insights</h2>
-      <div aria-hidden="true" className="wc-ornate-divider" role="separator" />
 
       {loading && (
         <div className={styles.loadingState}>Loading your insights...</div>
