@@ -1,5 +1,5 @@
 /**
- * ErrorBoundary – CSS Module (Academia / Classical)
+ * ErrorBoundary – CSS Module (Enterprise)
  */
 
 .card {
@@ -14,18 +14,16 @@
 
 .title {
   margin:      0 0 var(--wc-space-sm);
-  font-family: var(--wc-font-heading);
-  font-size:   1.375rem;
-  font-weight: 500;
+  font-size:   1.25rem;
+  font-weight: 600;
   line-height: 1.2;
   color:       inherit;
 }
 
 .detail {
   margin:      0 0 var(--wc-space-lg);
-  font-family: var(--wc-font-body);
-  font-size:   1rem;
-  line-height: 1.625;
+  font-size:   0.9375rem;
+  line-height: 1.5;
   color:       var(--wc-color-text-secondary);
 }
 
@@ -35,14 +33,11 @@
   gap:              var(--wc-space-xs);
   padding:          0.5rem 1.5rem;
   border-radius:    var(--wc-radius-sm);
-  border:           2px solid var(--wc-color-accent);
+  border:           1px solid var(--wc-color-accent);
   background-color: transparent;
   color:            var(--wc-color-accent);
-  font-family:      var(--wc-font-display);
-  font-size:        0.6875rem;
-  font-weight:      600;
-  text-transform:   uppercase;
-  letter-spacing:   0.15em;
+  font-size:        0.875rem;
+  font-weight:      500;
   cursor:           pointer;
   transition:
     background-color var(--wc-transition-base),
@@ -50,12 +45,11 @@
 }
 
 .resetBtn:hover {
-  background-color: var(--wc-color-accent-secondary);
-  border-color:     var(--wc-color-accent-secondary);
-  color:            var(--wc-color-text-primary);
+  background-color: var(--wc-color-accent-muted);
+  color:            var(--wc-color-accent-hover);
 }
 
 .resetBtn:focus-visible {
-  outline: 2px solid var(--wc-color-accent);
+  outline:        2px solid var(--wc-color-accent);
   outline-offset: 2px;
 }

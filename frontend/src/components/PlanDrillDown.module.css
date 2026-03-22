@@ -1,5 +1,5 @@
 /**
- * PlanDrillDown – CSS Module (Academia / Classical)
+ * PlanDrillDown – CSS Module (Enterprise)
  */
 
 .container { padding: var(--wc-space-sm); }
@@ -7,47 +7,46 @@
 .backBtn {
   display: inline-flex; align-items: center; gap: var(--wc-space-xs);
   padding: 0.3rem 0.75rem; border-radius: var(--wc-radius-sm);
-  border: 1px solid var(--wc-color-border); background-color: var(--wc-color-bg-tertiary);
-  color: var(--wc-color-text-primary); font-family: var(--wc-font-body);
-  font-size: 0.875rem; font-weight: 500; cursor: pointer; margin-bottom: var(--wc-space-md);
-  transition: background-color var(--wc-transition-fast), border-color var(--wc-transition-fast);
+  border: 1px solid var(--wc-color-border); background-color: var(--wc-color-bg-secondary);
+  color: var(--wc-color-text-secondary); font-size: 0.875rem; font-weight: 500; cursor: pointer; margin-bottom: var(--wc-space-md);
+  transition: background-color var(--wc-transition-fast), border-color var(--wc-transition-fast), color var(--wc-transition-fast);
 }
-.backBtn:hover { background-color: var(--wc-color-accent-muted); border-color: var(--wc-color-accent); }
+.backBtn:hover { background-color: var(--wc-color-bg-tertiary); border-color: var(--wc-color-accent); color: var(--wc-color-text-primary); }
 .backBtn:focus-visible { outline: 2px solid var(--wc-color-accent); outline-offset: 2px; }
 
 .planHeader { margin-bottom: var(--wc-space-md); }
-.planHeading { margin: 0 0 var(--wc-space-xs); font-family: var(--wc-font-heading); font-size: 1.25rem; font-weight: 500; color: var(--wc-color-text-primary); }
+.planHeading { margin: 0 0 var(--wc-space-xs); font-size: 1.25rem; font-weight: 600; color: var(--wc-color-text-primary); }
 .planMeta { margin: 0; color: var(--wc-color-text-secondary); font-size: 0.875rem; }
 
-.sectionTitle { margin: 0 0 var(--wc-space-sm); font-family: var(--wc-font-heading); font-size: 1.125rem; font-weight: 500; color: var(--wc-color-text-primary); }
+.sectionTitle { margin: 0 0 var(--wc-space-sm); font-size: 1rem; font-weight: 600; color: var(--wc-color-text-primary); }
 
-.noCommits { color: var(--wc-color-text-muted); font-size: 0.875rem; margin: 0; font-style: italic; }
+.noCommits { color: var(--wc-color-text-muted); font-size: 0.875rem; margin: 0; }
 
 /* Scrollable wrapper */
 .tableWrap { overflow-x: auto; margin: 0 calc(-1 * var(--wc-space-sm)); padding: 0 var(--wc-space-sm); }
 
-.table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; font-family: var(--wc-font-body); min-width: 600px; }
+.table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; min-width: 600px; }
 
 .thead { background-color: var(--wc-color-bg-tertiary); }
 
 .th {
   padding: var(--wc-space-xs) var(--wc-space-sm); text-align: left;
-  font-family: var(--wc-font-display); font-size: 0.5rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.12em;
+  font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
   color: var(--wc-color-text-secondary); border-bottom: 2px solid var(--wc-color-border); white-space: nowrap;
 }
 
 .tr { border-bottom: 1px solid var(--wc-color-border-muted); transition: background-color var(--wc-transition-fast); }
 .tr:hover { background-color: var(--wc-color-bg-tertiary); }
 
-.rowDone      { background-color: rgba(122,175,122,0.08); }
-.rowDone:hover { background-color: rgba(122,175,122,0.14); }
-.rowPartially      { background-color: rgba(212,184,114,0.08); }
-.rowPartially:hover { background-color: rgba(212,184,114,0.14); }
-.rowNotDone      { background-color: rgba(196,122,122,0.08); }
-.rowNotDone:hover { background-color: rgba(196,122,122,0.14); }
-.rowDropped      { background-color: rgba(196,122,122,0.06); }
-.rowDropped:hover { background-color: rgba(196,122,122,0.12); }
+.rowDone          { background-color: var(--wc-color-success-bg); }
+.rowDone:hover    { background-color: #e0faf0; }
+.rowPartially     { background-color: var(--wc-color-warning-bg); }
+.rowPartially:hover { background-color: #fef0c0; }
+.rowNotDone       { background-color: var(--wc-color-error-bg); }
+.rowNotDone:hover { background-color: #fee8e8; }
+.rowDropped       { background-color: var(--wc-color-bg-tertiary); }
+.rowDropped:hover { background-color: #eaedf0; }
 
 .td { padding: var(--wc-space-xs) var(--wc-space-sm); color: var(--wc-color-text-primary); vertical-align: top; }
 
@@ -55,11 +54,11 @@
   display: inline-block; margin-left: var(--wc-space-sm); padding: 0.05rem 0.35rem;
   border-radius: var(--wc-radius-sm); background-color: var(--wc-state-draft-bg);
   border: 1px solid var(--wc-state-draft-border); color: var(--wc-state-draft-text);
-  font-family: var(--wc-font-display); font-size: 0.5625rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.08em;
+  font-size: 0.625rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
 }
 
-.nonStrategicText { display: block; color: var(--wc-color-text-muted); font-style: italic; font-size: 0.8125rem; }
+.nonStrategicText { display: block; color: var(--wc-color-text-muted); font-size: 0.8125rem; }
 
 /* Skeleton */
 .skeletonWrapper {
@@ -68,7 +67,7 @@
   border: 1px solid var(--wc-color-border);
 }
 
-.skeletonOverlay { position: absolute; inset: 0; background: rgba(28, 23, 20, 0.75); }
+.skeletonOverlay { position: absolute; inset: 0; background: rgba(248, 249, 251, 0.85); }
 
 .skeletonContent { position: relative; display: grid; gap: var(--wc-space-sm); }
 
@@ -79,9 +78,9 @@
 .skeletonBlock { width: 100%; height: 7rem; border-radius: var(--wc-radius-md); background-color: var(--wc-color-bg-tertiary); animation: skeletonPulse 1.4s ease-in-out infinite; }
 .skeletonBlock:nth-child(4) { animation-delay: 0.2s; }
 
-@keyframes skeletonPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes skeletonPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-.skeletonLoadingText { text-align: center; color: var(--wc-color-text-muted); font-weight: 500; font-style: italic; }
+.skeletonLoadingText { text-align: center; color: var(--wc-color-text-muted); font-weight: 500; }
 
 /* Error */
 .errorWrapper {
@@ -94,11 +93,11 @@
 .errorBackBtn {
   flex-shrink: 0; display: inline-flex; align-items: center;
   padding: 0.25rem 0.625rem; border-radius: var(--wc-radius-sm);
-  border: 1px solid var(--wc-color-border); background-color: var(--wc-color-bg-tertiary);
+  border: 1px solid var(--wc-color-border); background-color: var(--wc-color-bg-secondary);
   color: var(--wc-color-text-primary); font-size: 0.8125rem; cursor: pointer;
   transition: background-color var(--wc-transition-fast), border-color var(--wc-transition-fast);
 }
-.errorBackBtn:hover { background-color: var(--wc-color-accent-muted); border-color: var(--wc-color-accent); }
+.errorBackBtn:hover { background-color: var(--wc-color-bg-tertiary); border-color: var(--wc-color-accent); }
 
 /* No-plan */
 .noPlanWrapper { padding: var(--wc-space-md); border-radius: var(--wc-radius-md); background-color: var(--wc-color-bg-secondary); border: 1px solid var(--wc-color-border); }
@@ -107,9 +106,9 @@
 .noPlanBackBtn {
   display: inline-flex; align-items: center; gap: var(--wc-space-xs);
   padding: 0.3rem 0.75rem; border-radius: var(--wc-radius-sm);
-  border: 1px solid var(--wc-color-border); background-color: var(--wc-color-bg-tertiary);
-  color: var(--wc-color-text-primary); font-size: 0.875rem; font-weight: 500; cursor: pointer;
-  transition: background-color var(--wc-transition-fast), border-color var(--wc-transition-fast);
+  border: 1px solid var(--wc-color-border); background-color: var(--wc-color-bg-secondary);
+  color: var(--wc-color-text-secondary); font-size: 0.875rem; font-weight: 500; cursor: pointer;
+  transition: background-color var(--wc-transition-fast), border-color var(--wc-transition-fast), color var(--wc-transition-fast);
 }
-.noPlanBackBtn:hover { background-color: var(--wc-color-accent-muted); border-color: var(--wc-color-accent); }
+.noPlanBackBtn:hover { background-color: var(--wc-color-bg-tertiary); border-color: var(--wc-color-accent); color: var(--wc-color-text-primary); }
 .noPlanBackBtn:focus-visible { outline: 2px solid var(--wc-color-accent); outline-offset: 2px; }

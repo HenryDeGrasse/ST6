@@ -1,14 +1,14 @@
 /**
- * MyTrendsPanel – CSS Module (Academia / Classical)
- * Collapsible IC cross-week trends panel using the same ai-insight
- * design tokens as AiManagerInsightsPanel.
+ * MyTrendsPanel – CSS Module (Enterprise)
+ * Collapsible IC cross-week trends panel using ai-insight design tokens.
  */
 
 .panel {
   padding:          var(--wc-space-sm) var(--wc-space-md);
-  border:           1.5px dashed var(--wc-ai-insight-border);
+  border:           1px solid var(--wc-color-border);
   border-radius:    var(--wc-radius-md);
-  background-color: var(--wc-ai-insight-bg);
+  background-color: var(--wc-color-bg-secondary);
+  box-shadow:       var(--wc-shadow-sm);
   margin-bottom:    var(--wc-space-md);
 }
 
@@ -30,17 +30,16 @@
 }
 
 .chartIcon {
-  color:       var(--wc-ai-insight-text);
+  color:       var(--wc-color-accent);
   flex-shrink: 0;
 }
 
 .title {
-  font-family:    var(--wc-font-display);
-  font-size:      0.6875rem;
+  font-size:      0.75rem;
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color:          var(--wc-ai-insight-text);
+  letter-spacing: 0.06em;
+  color:          var(--wc-color-text-primary);
   white-space:    nowrap;
 }
 
@@ -50,20 +49,21 @@
   gap:              var(--wc-space-xs);
   padding:          0.3rem 0.75rem;
   border-radius:    var(--wc-radius-sm);
-  border:           1px solid var(--wc-ai-insight-border);
+  border:           1px solid var(--wc-color-border);
   background-color: var(--wc-color-bg-secondary);
-  color:            var(--wc-ai-insight-text);
-  font-family:      var(--wc-font-body);
+  color:            var(--wc-color-text-secondary);
   font-size:        0.875rem;
   font-weight:      500;
   cursor:           pointer;
   transition:       background-color var(--wc-transition-fast),
-                    border-color var(--wc-transition-fast);
+                    border-color var(--wc-transition-fast),
+                    color var(--wc-transition-fast);
 }
 
 .toggleButton:hover {
-  background-color: var(--wc-ai-insight-bg);
+  background-color: var(--wc-color-bg-tertiary);
   border-color:     var(--wc-color-accent);
+  color:            var(--wc-color-text-primary);
 }
 
 .toggleButton:focus-visible {
@@ -103,23 +103,21 @@
 
 .metricCard {
   padding:          var(--wc-space-xs) var(--wc-space-sm);
-  border:           1px solid var(--wc-ai-insight-border);
+  border:           1px solid var(--wc-color-border);
   border-radius:    var(--wc-radius-sm);
-  background-color: var(--wc-color-bg-secondary);
+  background-color: var(--wc-color-bg-tertiary);
 }
 
 .metricLabel {
-  font-family:    var(--wc-font-display);
-  font-size:      0.5625rem;
+  font-size:      0.6875rem;
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   color:          var(--wc-color-text-muted);
   margin-bottom:  0.15rem;
 }
 
 .metricValue {
-  font-family: var(--wc-font-body);
   font-size:   1rem;
   font-weight: 600;
   color:       var(--wc-color-text-primary);
@@ -156,10 +154,9 @@
   align-items:   center;
   padding:       0.1rem 0.4rem;
   border-radius: var(--wc-radius-sm);
-  font-family:   var(--wc-font-display);
-  font-size:     0.5625rem;
+  font-size:     0.625rem;
   font-weight:   600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   white-space:    nowrap;
   flex-shrink:    0;
@@ -167,21 +164,21 @@
 }
 
 .badgeInfo {
-  background-color: rgba(139, 170, 176, 0.15);
-  color:            #8BAAB0;
-  border:           1px solid rgba(139, 170, 176, 0.3);
+  background-color: var(--wc-color-bg-tertiary);
+  color:            var(--wc-color-text-secondary);
+  border:           1px solid var(--wc-color-border);
 }
 
 .badgeWarning {
-  background-color: rgba(var(--wc-color-warning-rgb, 200, 140, 0), 0.12);
+  background-color: var(--wc-color-warning-bg);
   color:            var(--wc-color-warning);
-  border:           1px solid rgba(var(--wc-color-warning-rgb, 200, 140, 0), 0.25);
+  border:           1px solid var(--wc-color-warning-border);
 }
 
 .badgePositive {
-  background-color: rgba(var(--wc-color-success-rgb, 80, 160, 100), 0.12);
+  background-color: var(--wc-color-success-bg);
   color:            var(--wc-color-success);
-  border:           1px solid rgba(var(--wc-color-success-rgb, 80, 160, 100), 0.25);
+  border:           1px solid var(--wc-color-success-border);
 }
 
 .insightMessage {

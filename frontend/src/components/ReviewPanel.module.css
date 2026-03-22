@@ -1,5 +1,5 @@
 /**
- * ReviewPanel – CSS Module (Academia / Classical)
+ * ReviewPanel – CSS Module (Enterprise)
  */
 
 .panel {
@@ -16,47 +16,45 @@
   color: var(--wc-color-success); font-weight: 500;
 }
 
-.heading { margin: 0 0 var(--wc-space-sm); font-family: var(--wc-font-heading); font-size: 1.125rem; font-weight: 500; color: var(--wc-color-text-primary); }
+.heading { margin: 0 0 var(--wc-space-sm); font-size: 1.0625rem; font-weight: 600; color: var(--wc-color-text-primary); }
 .fieldRow { margin-bottom: var(--wc-space-sm); }
 
 .label {
-  display: block; font-family: var(--wc-font-display); font-size: 0.625rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.15em; color: var(--wc-color-text-secondary); margin-bottom: 0.25rem;
+  display: block; font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--wc-color-text-secondary); margin-bottom: 0.25rem;
 }
 
 .textarea {
   width: 100%; padding: 0.5rem var(--wc-space-sm); border-radius: var(--wc-radius-sm);
   border: 1px solid var(--wc-color-border); background-color: var(--wc-color-bg-secondary);
   color: var(--wc-color-text-primary); font-family: var(--wc-font-body);
-  font-size: 0.9375rem; line-height: 1.625; resize: vertical; box-sizing: border-box;
+  font-size: 0.9375rem; line-height: 1.5; resize: vertical; box-sizing: border-box;
   transition: border-color var(--wc-transition-fast);
 }
-.textarea:focus { outline: 2px solid var(--wc-color-accent); outline-offset: 2px; border-color: var(--wc-color-accent); }
-.textarea::placeholder { color: var(--wc-color-text-muted); font-style: italic; }
+.textarea:focus { outline: none; border-color: var(--wc-color-accent); box-shadow: var(--wc-shadow-glow); }
+.textarea::placeholder { color: var(--wc-color-text-muted); }
 
 .actionRow { display: flex; gap: var(--wc-space-sm); align-items: center; flex-wrap: wrap; }
 
 .btn {
   display: inline-flex; align-items: center; padding: 0.5rem 1rem; border-radius: var(--wc-radius-sm);
-  border: none; font-family: var(--wc-font-display); font-size: 0.6875rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer;
-  transition: filter var(--wc-transition-fast), box-shadow var(--wc-transition-fast), opacity var(--wc-transition-fast);
+  border: none; font-size: 0.875rem; font-weight: 500; cursor: pointer;
+  transition: background-color var(--wc-transition-fast), box-shadow var(--wc-transition-fast), opacity var(--wc-transition-fast);
 }
 .btn:focus-visible { outline: 2px solid var(--wc-color-accent); outline-offset: 2px; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .approveBtn {
-  background: var(--wc-brass-gradient); color: var(--wc-color-accent-foreground);
-  text-shadow: var(--wc-text-engraved);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.25);
-}
-.approveBtn:hover:not(:disabled) { filter: brightness(1.1); box-shadow: var(--wc-shadow-glow); }
-
-.requestChangesBtn {
-  background: var(--wc-color-accent-secondary); color: var(--wc-color-text-primary);
+  background: var(--wc-primary-gradient); color: var(--wc-color-accent-foreground);
   box-shadow: var(--wc-shadow-sm);
 }
-.requestChangesBtn:hover:not(:disabled) { filter: brightness(1.15); box-shadow: var(--wc-shadow-md); }
+.approveBtn:hover:not(:disabled) { box-shadow: var(--wc-shadow-md); filter: brightness(1.05); }
+
+.requestChangesBtn {
+  background: var(--wc-color-bg-secondary); color: var(--wc-color-text-primary);
+  border: 1px solid var(--wc-color-border); box-shadow: var(--wc-shadow-sm);
+}
+.requestChangesBtn:hover:not(:disabled) { background-color: var(--wc-color-bg-tertiary); }
 
 .requestChangesBtnMuted {
   background: var(--wc-color-bg-tertiary); color: var(--wc-color-text-muted);
@@ -64,4 +62,4 @@
 }
 .requestChangesBtnMuted:hover { filter: none; }
 
-.warning { margin: var(--wc-space-sm) 0 0; color: var(--wc-color-warning); font-size: 0.875rem; line-height: 1.625; font-style: italic; }
+.warning { margin: var(--wc-space-sm) 0 0; color: var(--wc-color-warning); font-size: 0.875rem; line-height: 1.5; }

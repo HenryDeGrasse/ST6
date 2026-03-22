@@ -1,141 +1,141 @@
 /**
- * DigestPreferencesSection – CSS Module (Academia / Classical)
+ * DigestPreferencesSection – CSS Module (Enterprise)
  */
 
 .section {
-  margin-bottom: var(--wc-space-lg);
-  padding: var(--wc-space-md);
-  border: 1px solid color-mix(in srgb, var(--wc-color-accent) 35%, transparent);
-  border-radius: var(--wc-radius-md);
-  background: color-mix(in srgb, var(--wc-color-surface) 88%, transparent);
+  margin-bottom:    var(--wc-space-lg);
+  padding:          var(--wc-space-md);
+  border:           1px solid var(--wc-color-border);
+  border-radius:    var(--wc-radius-md);
+  background-color: var(--wc-color-bg-secondary);
 }
 
 .header {
-  display: grid;
-  gap: var(--wc-space-xs);
+  display:       grid;
+  gap:           var(--wc-space-xs);
   margin-bottom: var(--wc-space-md);
 }
 
 .title {
-  margin: 0;
-  color: var(--wc-color-text-primary);
-  font-family: var(--wc-font-heading);
-  font-size: 1.25rem;
-  font-weight: 500;
+  margin:      0;
+  color:       var(--wc-color-text-primary);
+  font-size:   1.0625rem;
+  font-weight: 600;
 }
 
 .description {
-  margin: 0;
-  color: var(--wc-color-text-secondary);
-  font-family: var(--wc-font-body);
-  font-size: 0.9375rem;
+  margin:      0;
+  color:       var(--wc-color-text-secondary);
+  font-size:   0.9375rem;
   line-height: 1.5;
 }
 
 .error {
-  margin-bottom: var(--wc-space-sm);
-  padding: 0.75rem 1rem;
-  border-radius: var(--wc-radius-sm);
-  border: 1px solid color-mix(in srgb, #a64d4d 55%, transparent);
-  background: color-mix(in srgb, #a64d4d 12%, transparent);
-  color: var(--wc-color-text-primary);
-  font-family: var(--wc-font-body);
-  font-size: 0.9375rem;
+  margin-bottom:    var(--wc-space-sm);
+  padding:          0.75rem 1rem;
+  border-radius:    var(--wc-radius-sm);
+  border:           1px solid var(--wc-color-error-border);
+  background-color: var(--wc-color-error-bg);
+  color:            var(--wc-color-error);
+  font-size:        0.9375rem;
 }
 
 .fields {
-  display: grid;
+  display:               grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--wc-space-md);
+  gap:                   var(--wc-space-md);
 }
 
 .field {
   display: grid;
-  gap: var(--wc-space-xs);
+  gap:     var(--wc-space-xs);
 }
 
 .label {
-  color: var(--wc-color-text-secondary);
-  font-family: var(--wc-font-display);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  color:          var(--wc-color-text-secondary);
+  font-size:      0.6875rem;
+  font-weight:    600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .select,
 .input {
-  width: 100%;
-  min-height: 2.75rem;
-  padding: 0.65rem 0.8rem;
-  border: 1px solid color-mix(in srgb, var(--wc-color-accent) 35%, transparent);
-  border-radius: var(--wc-radius-sm);
-  background: color-mix(in srgb, var(--wc-color-bg-primary) 90%, transparent);
-  color: var(--wc-color-text-primary);
-  font-family: var(--wc-font-body);
-  font-size: 0.95rem;
+  width:            100%;
+  min-height:       2.75rem;
+  padding:          0.65rem 0.8rem;
+  border:           1px solid var(--wc-color-border);
+  border-radius:    var(--wc-radius-sm);
+  background-color: var(--wc-color-bg);
+  color:            var(--wc-color-text-primary);
+  font-size:        0.9375rem;
+}
+
+.select:focus,
+.input:focus {
+  outline:      none;
+  border-color: var(--wc-color-accent);
+  box-shadow:   var(--wc-shadow-glow);
 }
 
 .actions {
-  display: flex;
-  flex-wrap: wrap;
+  display:     flex;
+  flex-wrap:   wrap;
   align-items: center;
-  gap: var(--wc-space-sm);
-  margin-top: var(--wc-space-md);
+  gap:         var(--wc-space-sm);
+  margin-top:  var(--wc-space-md);
 }
 
 .saveButton,
 .secondaryButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.5rem;
-  padding: 0.55rem 1rem;
-  border-radius: var(--wc-radius-sm);
-  font-family: var(--wc-font-display);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
+  display:          inline-flex;
+  align-items:      center;
+  justify-content:  center;
+  min-height:       2.25rem;
+  padding:          0.5rem 1rem;
+  border-radius:    var(--wc-radius-sm);
+  font-size:        0.875rem;
+  font-weight:      500;
+  cursor:           pointer;
   transition:
     background-color var(--wc-transition-base),
-    border-color var(--wc-transition-base),
-    color var(--wc-transition-base),
-    opacity var(--wc-transition-base);
+    border-color     var(--wc-transition-base),
+    color            var(--wc-transition-base),
+    opacity          var(--wc-transition-base);
 }
 
 .saveButton {
-  border: 2px solid var(--wc-color-accent);
-  background: var(--wc-color-accent);
-  color: var(--wc-color-bg-primary);
+  border:      none;
+  background:  var(--wc-primary-gradient);
+  color:       var(--wc-color-accent-foreground);
+  box-shadow:  var(--wc-shadow-sm);
 }
 
 .saveButton:disabled,
 .secondaryButton:disabled {
   opacity: 0.55;
-  cursor: not-allowed;
+  cursor:  not-allowed;
 }
 
 .saveButton:hover:not(:disabled) {
-  background: var(--wc-color-accent-secondary);
-  border-color: var(--wc-color-accent-secondary);
-  color: var(--wc-color-text-primary);
+  filter:     brightness(1.05);
+  box-shadow: var(--wc-shadow-md);
 }
 
 .secondaryButton {
-  border: 2px solid color-mix(in srgb, var(--wc-color-accent) 55%, transparent);
-  background: transparent;
-  color: var(--wc-color-accent);
+  border:           1px solid var(--wc-color-border);
+  background:       transparent;
+  color:            var(--wc-color-text-secondary);
 }
 
 .secondaryButton:hover:not(:disabled) {
-  border-color: var(--wc-color-accent-secondary);
-  color: var(--wc-color-accent-secondary);
+  background-color: var(--wc-color-bg-tertiary);
+  color:            var(--wc-color-text-primary);
+  border-color:     var(--wc-color-accent);
 }
 
 .success {
-  color: var(--wc-color-text-secondary);
-  font-family: var(--wc-font-body);
+  color:     var(--wc-color-success);
   font-size: 0.9375rem;
+  font-weight: 500;
 }
