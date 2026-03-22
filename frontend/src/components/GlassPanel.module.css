@@ -1,8 +1,9 @@
 /**
- * GlassPanel – CSS Module (Academia / Classical)
+ * GlassPanel – CSS Module (Enterprise Dashboard)
  *
- * Wood-panel card with corner flourishes, warm border, and subtle shadow.
- * Replaces glassmorphism with opaque wood-panel aesthetic.
+ * Clean white card with subtle border and shadow.
+ * Decorative corner flourishes removed — structure comes from
+ * spacing and border, not ornamentation.
  */
 
 /* ─── Base panel ─────────────────────────────────────────────────────────── */
@@ -11,43 +12,11 @@
   border-radius:    var(--wc-radius-lg);
   border:           1px solid var(--wc-color-border);
   background-color: var(--wc-color-bg-secondary);
-  box-shadow:       var(--wc-shadow-md);
-}
-
-/* Corner flourishes — brass L-brackets */
-.panel::before,
-.panel::after {
-  content:        '';
-  position:       absolute;
-  width:          20px;
-  height:         20px;
-  border:         2px solid var(--wc-color-accent);
-  opacity:        0.35;
-  pointer-events: none;
-  transition:     opacity var(--wc-transition-slow);
-}
-
-.panel::before {
-  top:           -1px;
-  left:          -1px;
-  border-right:  none;
-  border-bottom: none;
-}
-
-.panel::after {
-  bottom:     -1px;
-  right:      -1px;
-  border-left: none;
-  border-top:  none;
-}
-
-.panel:hover::before,
-.panel:hover::after {
-  opacity: 0.7;
+  box-shadow:       var(--wc-shadow-sm);
 }
 
 /* ─── Elevated variant ───────────────────────────────────────────────────── */
 .elevated {
-  box-shadow:       var(--wc-shadow-lg);
+  box-shadow:       var(--wc-shadow-md);
   background-color: var(--wc-color-bg-secondary);
 }
