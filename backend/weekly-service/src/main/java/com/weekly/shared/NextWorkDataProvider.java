@@ -68,6 +68,21 @@ public interface NextWorkDataProvider {
     List<RcdoCoverageGap> getTeamCoverageGaps(
             UUID orgId, LocalDate asOf, int gapWeeksBack, int refWeeksBack);
 
+    /**
+     * Returns the chess priority distribution of the user's current-week plan.
+     *
+     * <p>If the user has a DRAFT plan for the given week, returns a map of
+     * chess priority name (e.g. "KING", "QUEEN") to the count of commits
+     * with that priority. Returns an empty map if no plan exists or the plan
+     * is not in DRAFT state.
+     *
+     * @param orgId  the organisation ID
+     * @param userId the plan owner's user ID
+     * @param asOf   the Monday of the current week
+     * @return chess priority counts; never null
+     */
+    java.util.Map<String, Integer> getCurrentPlanChessCounts(UUID orgId, UUID userId, LocalDate asOf);
+
     // ── Value objects ─────────────────────────────────────────────────────────
 
     /**

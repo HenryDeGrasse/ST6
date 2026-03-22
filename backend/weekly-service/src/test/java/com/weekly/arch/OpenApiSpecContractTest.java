@@ -78,7 +78,7 @@ class OpenApiSpecContractTest {
      * {@code /api/v1} prefix (Spring controllers add that prefix; the OpenAPI spec omits it
      * because the server URL defines the base path).
      *
-     * <p>Count: 27 operations across 8 controllers.
+     * <p>Count: 41 operations across the currently documented controllers.
      */
     private static final Set<String> EXPECTED_OPENAPI_OPERATIONS = Set.of(
             // Plans
@@ -128,6 +128,15 @@ class OpenApiSpecContractTest {
             // Admin — org policy / digest config (Wave 3, Step 17)
             "GET /admin/org-policy",
             "PATCH /admin/org-policy/digest",
+            // Phase 5 forecasting
+            "GET /outcomes/forecasts",
+            "GET /outcomes/{outcomeId}/forecast",
+            // Phase 5 planning copilot
+            "POST /ai/team-plan-suggestion",
+            "POST /ai/team-plan-suggestion/apply",
+            // Phase 5 executive dashboard
+            "GET /executive/strategic-health",
+            "POST /ai/executive-briefing",
             // Health
             "GET /health"
     );
@@ -185,13 +194,10 @@ class OpenApiSpecContractTest {
      */
     @Test
     void expectedOperationCountMatchesOpenApiSpec() {
-        // 33 operations across 8 controllers; update this when the spec grows
-        // (Wave 1 step 5 added POST /ai/plan-quality-check)
-        // (Wave 2 step 7 added POST /plans/draft-from-history)
-        // (Wave 2 step 9 added POST /ai/suggest-next-work, POST /ai/suggestion-feedback)
-        // (Wave 2 step 11 added POST /commits/{commitId}/check-in, GET /commits/{commitId}/check-ins)
-        // (Wave 3 step 17 added GET /admin/org-policy, PATCH /admin/org-policy/digest)
-        int expectedCount = 35;
+        // Update this sentinel whenever the committed OpenAPI path set changes.
+        // Recent additions include Phase 5 forecasting, planning-copilot,
+        // and executive dashboard / briefing surfaces.
+        int expectedCount = 41;
         assertTrue(
                 EXPECTED_OPENAPI_OPERATIONS.size() == expectedCount,
                 "Expected " + expectedCount + " OpenAPI operations but found "

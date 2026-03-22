@@ -67,11 +67,39 @@ const API_PATHS = [
   "/outcomes/{outcomeId}/progress",
   "/outcomes/urgency-summary",
   "/team/strategic-slack",
+  "/outcomes/forecasts",
+  "/outcomes/{outcomeId}/forecast",
+  "/ai/team-plan-suggestion",
+  "/ai/team-plan-suggestion/apply",
+  "/executive/strategic-health",
+  "/ai/executive-briefing",
+  "/teams",
+  "/teams/{teamId}",
+  "/teams/{teamId}/members",
+  "/teams/{teamId}/members/{userId}",
+  "/teams/{teamId}/access-requests",
+  "/teams/{teamId}/access-requests/{requestId}",
+  "/teams/{teamId}/issues",
+  "/issues/{issueId}",
+  "/issues/{issueId}/assign",
+  "/issues/{issueId}/commit",
+  "/issues/{issueId}/release",
+  "/issues/{issueId}/comment",
+  "/issues/{issueId}/time-entry",
+  "/plans/{planId}/assignments",
+  "/weeks/{weekStart}/plan/assignments",
+  "/weeks/{weekStart}/plan/assignments/{assignmentId}",
+  "/ai/suggest-effort-type",
+  "/ai/rank-backlog",
+  "/ai/recommend-weekly-issues",
+  "/ai/suggest-deferrals",
+  "/ai/coverage-gap-inspirations",
+  "/ai/search-issues",
 ] as const satisfies readonly (keyof WeeklyCommitmentsApiPaths)[];
 
 describe("generated OpenAPI client", () => {
   it("covers every v1 path in the committed OpenAPI spec", () => {
-    expect(API_PATHS).toHaveLength(55);
+    expect(API_PATHS).toHaveLength(83);
   });
 
   it("creates a typed openapi-fetch client", () => {
@@ -88,22 +116,50 @@ describe("generated OpenAPI client", () => {
     expect(client).toHaveProperty("DELETE");
   });
 
-  it("exports generated schema and operation maps for consumers", () => {
+  it("exports generated schema and operation maps for legacy and Phase 6 consumers", () => {
     const weeklyPlanHasId: Assert<HasKey<WeeklyCommitmentsApiComponents["schemas"]["WeeklyPlan"], "id">> = true;
-    const weeklyPlanHasReviewStatus: Assert<
-      HasKey<WeeklyCommitmentsApiComponents["schemas"]["WeeklyPlan"], "reviewStatus">
+    const issueHasIssueKey: Assert<HasKey<WeeklyCommitmentsApiComponents["schemas"]["Issue"], "issueKey">> = true;
+    const createWeeklyAssignmentHasIssueId: Assert<
+      HasKey<WeeklyCommitmentsApiComponents["schemas"]["CreateWeeklyAssignmentRequest"], "issueId">
     > = true;
-    const suggestionResponseHasSuggestions: Assert<
-      HasKey<WeeklyCommitmentsApiComponents["schemas"]["SuggestRcdoResponse"], "suggestions">
+    const issueActivityTypeSchemaExists: Assert<
+      HasKey<WeeklyCommitmentsApiComponents["schemas"], "IssueActivityType">
     > = true;
-    const lockPlanHasResponses: Assert<HasKey<WeeklyCommitmentsApiOperations["lockPlan"], "responses">> = true;
+    const createIssueHasResponses: Assert<HasKey<WeeklyCommitmentsApiOperations["createIssue"], "responses">> = true;
+    const listTeamIssuesHasParameters: Assert<
+      HasKey<WeeklyCommitmentsApiOperations["listTeamIssues"], "parameters">
+    > = true;
+    const semanticSearchIssuesHasResponses: Assert<
+      HasKey<WeeklyCommitmentsApiOperations["semanticSearchIssues"], "responses">
+    > = true;
 
     expect(weeklyPlanHasId).toBe(true);
-    expect(weeklyPlanHasReviewStatus).toBe(true);
-    expect(suggestionResponseHasSuggestions).toBe(true);
-    expect(lockPlanHasResponses).toBe(true);
+    expect(issueHasIssueKey).toBe(true);
+    expect(createWeeklyAssignmentHasIssueId).toBe(true);
+    expect(issueActivityTypeSchemaExists).toBe(true);
+    expect(createIssueHasResponses).toBe(true);
+    expect(listTeamIssuesHasParameters).toBe(true);
+    expect(semanticSearchIssuesHasResponses).toBe(true);
 
-    expectTypeOf<WeeklyCommitmentsApiOperations["lockPlan"]>().toMatchTypeOf<object>();
+    expectTypeOf<WeeklyCommitmentsApiComponents["schemas"]["IssueActivityType"]>().toEqualTypeOf<
+      | "CREATED"
+      | "STATUS_CHANGE"
+      | "ASSIGNMENT_CHANGE"
+      | "PRIORITY_CHANGE"
+      | "EFFORT_TYPE_CHANGE"
+      | "ESTIMATE_CHANGE"
+      | "COMMENT"
+      | "TIME_ENTRY"
+      | "OUTCOME_CHANGE"
+      | "COMMITTED_TO_WEEK"
+      | "RELEASED_TO_BACKLOG"
+      | "CARRIED_FORWARD"
+      | "BLOCKED"
+      | "UNBLOCKED"
+      | "DESCRIPTION_CHANGE"
+      | "TITLE_CHANGE"
+    >();
+    expectTypeOf<WeeklyCommitmentsApiOperations["createIssue"]>().toMatchTypeOf<object>();
   });
 
   it("requires If-Match header on lock, start-reconciliation, submit-reconciliation, and carry-forward", () => {
@@ -130,5 +186,20 @@ describe("generated OpenAPI client", () => {
     expect(startRequiresIfMatch).toBe(true);
     expect(submitRequiresIfMatch).toBe(true);
     expect(carryRequiresIfMatch).toBe(true);
+  });
+
+  it("models new team backlog and weekly assignment path parameters correctly", () => {
+    type TeamIssuePathParams = WeeklyCommitmentsApiPaths["/teams/{teamId}/issues"]["get"]["parameters"]["path"];
+    type WeekAssignmentPathParams = WeeklyCommitmentsApiPaths["/weeks/{weekStart}/plan/assignments"]["post"]["parameters"]["path"];
+    type DeleteAssignmentPathParams =
+      WeeklyCommitmentsApiPaths["/weeks/{weekStart}/plan/assignments/{assignmentId}"]["delete"]["parameters"]["path"];
+
+    const teamIssuesHasTeamId: Assert<HasKey<TeamIssuePathParams, "teamId">> = true;
+    const createAssignmentHasWeekStart: Assert<HasKey<WeekAssignmentPathParams, "weekStart">> = true;
+    const removeAssignmentHasAssignmentId: Assert<HasKey<DeleteAssignmentPathParams, "assignmentId">> = true;
+
+    expect(teamIssuesHasTeamId).toBe(true);
+    expect(createAssignmentHasWeekStart).toBe(true);
+    expect(removeAssignmentHasAssignmentId).toBe(true);
   });
 });

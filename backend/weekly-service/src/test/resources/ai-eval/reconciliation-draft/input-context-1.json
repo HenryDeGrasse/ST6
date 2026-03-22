@@ -1,0 +1,84 @@
+{
+  "weekStart": "2026-03-16",
+  "planLockedAt": "2026-03-16T09:00:00Z",
+  "commits": [
+    {
+      "commitId": "d2b3c4d5-0001-0000-0000-000000000001",
+      "title": "Deploy rate-limiting middleware to production",
+      "expectedResult": "Rate limiting deployed on all public API endpoints; P99 abuse rejection rate > 99%.",
+      "progressNotes": "Deployed to prod on Tuesday. Monitoring dashboards show abuse traffic dropping from 12% to 0.3% of requests. All acceptance tests passed.",
+      "checkInHistory": [
+        {
+          "status": "ON_TRACK",
+          "note": "Staging deployment complete, tests passing."
+        },
+        {
+          "status": "ON_TRACK",
+          "note": "Production deploy in progress."
+        },
+        {
+          "status": "DONE_EARLY",
+          "note": "Deployed and verified. Monitoring looks great."
+        }
+      ],
+      "priorCompletionStatuses": [],
+      "categoryCompletionRateContext": "OPERATIONS: 88% DONE (team, last 4 wks)"
+    },
+    {
+      "commitId": "d2b3c4d5-0002-0000-0000-000000000002",
+      "title": "Migrate legacy auth module to OAuth 2.0",
+      "expectedResult": "All legacy session-based auth endpoints replaced with OAuth 2.0 token flow. Zero regressions in auth test suite.",
+      "progressNotes": "Completed the token issuance flow and access token validation. Refresh token rotation and revocation still not done. Auth test suite shows 18/24 tests passing.",
+      "checkInHistory": [
+        {
+          "status": "ON_TRACK",
+          "note": "Token issuance implemented and unit tested."
+        },
+        {
+          "status": "AT_RISK",
+          "note": "Refresh token rotation taking longer than expected. May not finish all endpoints this week."
+        },
+        {
+          "status": "AT_RISK",
+          "note": "Revocation endpoint still blocked on security review."
+        }
+      ],
+      "priorCompletionStatuses": [],
+      "categoryCompletionRateContext": "DELIVERY: 72% DONE (team, last 4 wks)"
+    },
+    {
+      "commitId": "d2b3c4d5-0003-0000-0000-000000000003",
+      "title": "Complete GDPR data deletion audit for inactive accounts",
+      "expectedResult": "Audit report identifying all inactive accounts (> 2 years) with personal data still retained. Deletion scripts reviewed by legal.",
+      "progressNotes": "Started the database query to find inactive accounts. Query is running but taking much longer than expected due to missing index. Have not yet produced the report or contacted legal.",
+      "checkInHistory": [
+        {
+          "status": "AT_RISK",
+          "note": "Query performance is poor; missing index on last_login column."
+        },
+        {
+          "status": "BLOCKED",
+          "note": "DBA review of index creation request delayed until next sprint."
+        },
+        {
+          "status": "BLOCKED",
+          "note": "Still waiting on DBA. No progress possible without the index."
+        }
+      ],
+      "priorCompletionStatuses": [
+        "PARTIALLY",
+        "NOT_DONE"
+      ],
+      "categoryCompletionRateContext": "CUSTOMER: 55% DONE (team, last 4 wks)"
+    },
+    {
+      "commitId": "d2b3c4d5-0004-0000-0000-000000000004",
+      "title": "Write runbook for database failover procedure",
+      "expectedResult": "Runbook documented in Confluence covering failover triggers, step-by-step switchover commands, rollback procedure, and post-failover verification checklist.",
+      "progressNotes": null,
+      "checkInHistory": [],
+      "priorCompletionStatuses": [],
+      "categoryCompletionRateContext": null
+    }
+  ]
+}

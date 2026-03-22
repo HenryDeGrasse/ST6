@@ -12,6 +12,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.weekly.config.OrgPolicyService;
 import com.weekly.integration.IntegrationService;
 import com.weekly.shared.NextWorkDataProvider;
 import com.weekly.shared.NextWorkDataProvider.CarryForwardItem;
@@ -26,6 +27,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -55,6 +57,7 @@ class DefaultNextWorkSuggestionServiceTest {
     private LlmClient llmClient;
     private AiCacheService cacheService;
     private AiFeatureFlags featureFlags;
+    private OrgPolicyService orgPolicyService;
     private UrgencyDataProvider urgencyDataProvider;
     private DefaultNextWorkSuggestionService service;
 
@@ -65,11 +68,15 @@ class DefaultNextWorkSuggestionServiceTest {
         feedbackRepository = mock(AiSuggestionFeedbackRepository.class);
         llmClient = mock(LlmClient.class);
         cacheService = new AiCacheService(Duration.ofHours(1));
-        featureFlags = new AiFeatureFlags(); // defaults: llmNextWorkRankingEnabled = false
+        featureFlags = new AiFeatureFlags();
+        orgPolicyService = mock(OrgPolicyService.class);
         urgencyDataProvider = mock(UrgencyDataProvider.class);
+        when(orgPolicyService.getPolicy(eq(ORG_ID)))
+                .thenReturn(OrgPolicyService.defaultPolicy());
         service = new DefaultNextWorkSuggestionService(
                 dataProvider, integrationService, feedbackRepository,
-                llmClient, cacheService, featureFlags, urgencyDataProvider);
+                llmClient, cacheService, featureFlags, orgPolicyService,
+                urgencyDataProvider);
 
         // Default stubs: return empty collections for all calls.
         // Use anyInt() for primitive int parameters to avoid null-unboxing NPE.
@@ -90,6 +97,8 @@ class DefaultNextWorkSuggestionServiceTest {
                 .thenReturn(List.of());
         when(urgencyDataProvider.getOutcomeUrgency(eq(ORG_ID), any()))
                 .thenReturn(null);
+        when(dataProvider.getCurrentPlanChessCounts(eq(ORG_ID), eq(USER_ID), any()))
+                .thenReturn(Map.of());
     }
 
     // ── Basic result structure ────────────────────────────────────────────────
@@ -514,8 +523,17 @@ class DefaultNextWorkSuggestionServiceTest {
                 eq(ORG_ID), eq(USER_ID), any(), anyInt()))
                 .thenReturn(List.of(item));
 
-        // featureFlags.isLlmNextWorkRankingEnabled() == false (default)
-        service.suggestNextWork(ORG_ID, USER_ID, WEEK_START);
+        // Construct a service with LLM ranking explicitly disabled.
+        // The service reads the flag once at construction time, so we must set it
+        // before creating the instance rather than after.
+        AiFeatureFlags rankingDisabledFlags = new AiFeatureFlags();
+        rankingDisabledFlags.setLlmNextWorkRankingEnabled(false);
+        DefaultNextWorkSuggestionService serviceWithRankingDisabled = new DefaultNextWorkSuggestionService(
+                dataProvider, integrationService, feedbackRepository,
+                llmClient, cacheService, rankingDisabledFlags, orgPolicyService,
+                urgencyDataProvider);
+
+        serviceWithRankingDisabled.suggestNextWork(ORG_ID, USER_ID, WEEK_START);
 
         verify(llmClient, never()).complete(any(), anyString());
     }
@@ -729,7 +747,8 @@ class DefaultNextWorkSuggestionServiceTest {
 
             llmEnabledService = new DefaultNextWorkSuggestionService(
                     dataProvider, integrationService, feedbackRepository,
-                    mockLlm, testCache, flags, urgencyDataProvider);
+                    mockLlm, testCache, flags, orgPolicyService,
+                    urgencyDataProvider);
         }
 
         @Test
@@ -984,6 +1003,104 @@ class DefaultNextWorkSuggestionServiceTest {
                     "LLM-ranked item should be first");
             assertEquals("Task B", result.suggestions().get(1).title(),
                     "Unranked item appended at end");
+        }
+    }
+
+    // ── Chess-aware priority downgrade ───────────────────────────────────────
+
+    @Nested
+    class ChessDowngrade {
+
+        @Test
+        void downgradesKingSuggestionWhenPlanAlreadyHasMaxKings() {
+            // Plan already has 1 KING (the max)
+            when(dataProvider.getCurrentPlanChessCounts(eq(ORG_ID), eq(USER_ID), any()))
+                    .thenReturn(Map.of("KING", 1, "ROOK", 2));
+
+            // Carry-forward item with KING priority
+            CarryForwardItem kingItem = new CarryForwardItem(
+                    UUID.randomUUID(), "Carried KING task", null,
+                    "KING", "DELIVERY",
+                    UUID.randomUUID().toString(), "Outcome A",
+                    null, "RC1", "OBJ1", null, "Expected result",
+                    1, WEEK_START.minusWeeks(1));
+            when(dataProvider.getRecentCarryForwardItems(
+                    eq(ORG_ID), eq(USER_ID), any(), anyInt()))
+                    .thenReturn(List.of(kingItem));
+
+            var result = service.suggestNextWork(ORG_ID, USER_ID, WEEK_START);
+
+            assertEquals("ok", result.status());
+            assertEquals(1, result.suggestions().size());
+            assertEquals("ROOK", result.suggestions().get(0).suggestedChessPriority(),
+                    "KING should be downgraded to ROOK when plan is at max kings");
+            assertTrue(result.suggestions().get(0).rationale().contains("Priority adjusted"),
+                    "Rationale should mention the downgrade");
+        }
+
+        @Test
+        void doesNotDowngradeWhenPlanHasRoomForKing() {
+            // Plan has 0 KINGs — room for one more
+            when(dataProvider.getCurrentPlanChessCounts(eq(ORG_ID), eq(USER_ID), any()))
+                    .thenReturn(Map.of("ROOK", 3));
+
+            CarryForwardItem kingItem = new CarryForwardItem(
+                    UUID.randomUUID(), "KING task", null,
+                    "KING", "DELIVERY",
+                    UUID.randomUUID().toString(), "Outcome A",
+                    null, "RC1", "OBJ1", null, "Expected result",
+                    1, WEEK_START.minusWeeks(1));
+            when(dataProvider.getRecentCarryForwardItems(
+                    eq(ORG_ID), eq(USER_ID), any(), anyInt()))
+                    .thenReturn(List.of(kingItem));
+
+            var result = service.suggestNextWork(ORG_ID, USER_ID, WEEK_START);
+
+            assertEquals("KING", result.suggestions().get(0).suggestedChessPriority(),
+                    "KING should remain when plan has room");
+        }
+
+        @Test
+        void downgradesQueenWhenPlanAtMaxQueens() {
+            when(dataProvider.getCurrentPlanChessCounts(eq(ORG_ID), eq(USER_ID), any()))
+                    .thenReturn(Map.of("QUEEN", 2));
+
+            CarryForwardItem queenItem = new CarryForwardItem(
+                    UUID.randomUUID(), "Carried QUEEN task", null,
+                    "QUEEN", "DELIVERY",
+                    UUID.randomUUID().toString(), "Outcome B",
+                    null, "RC1", "OBJ1", null, "Expected result",
+                    1, WEEK_START.minusWeeks(1));
+            when(dataProvider.getRecentCarryForwardItems(
+                    eq(ORG_ID), eq(USER_ID), any(), anyInt()))
+                    .thenReturn(List.of(queenItem));
+
+            var result = service.suggestNextWork(ORG_ID, USER_ID, WEEK_START);
+
+            assertEquals("ROOK", result.suggestions().get(0).suggestedChessPriority(),
+                    "QUEEN should be downgraded to ROOK when plan is at max queens");
+        }
+
+        @Test
+        void noDowngradeWhenNoDraftPlanExists() {
+            // Empty map = no DRAFT plan
+            when(dataProvider.getCurrentPlanChessCounts(eq(ORG_ID), eq(USER_ID), any()))
+                    .thenReturn(Map.of());
+
+            CarryForwardItem kingItem = new CarryForwardItem(
+                    UUID.randomUUID(), "KING task", null,
+                    "KING", "DELIVERY",
+                    UUID.randomUUID().toString(), "Outcome A",
+                    null, "RC1", "OBJ1", null, "Expected result",
+                    1, WEEK_START.minusWeeks(1));
+            when(dataProvider.getRecentCarryForwardItems(
+                    eq(ORG_ID), eq(USER_ID), any(), anyInt()))
+                    .thenReturn(List.of(kingItem));
+
+            var result = service.suggestNextWork(ORG_ID, USER_ID, WEEK_START);
+
+            assertEquals("KING", result.suggestions().get(0).suggestedChessPriority(),
+                    "KING should remain when there's no DRAFT plan to check against");
         }
     }
 }

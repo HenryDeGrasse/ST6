@@ -17,11 +17,11 @@ export interface TeamCapacityPanelProps {
 function statusLabel(level: OvercommitLevel): string {
   switch (level) {
     case "NONE":
-      return "✅ OK";
+      return "OK";
     case "MODERATE":
-      return "⚠️ MODERATE";
+      return "MODERATE";
     case "HIGH":
-      return "⛔ HIGH";
+      return "HIGH";
   }
 }
 

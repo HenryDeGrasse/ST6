@@ -422,6 +422,34 @@ public class PlanNextWorkDataProvider implements NextWorkDataProvider {
         return current.getId();
     }
 
+    // ── Current plan chess distribution ──────────────────────────────────────
+
+    /**
+     * Returns chess priority counts for the user's current-week DRAFT plan.
+     *
+     * <p>Used by the suggestion service to avoid suggesting priorities that
+     * would violate chess rules (e.g. a second KING when one already exists).
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Integer> getCurrentPlanChessCounts(
+            UUID orgId, UUID userId, LocalDate asOf) {
+        return planRepository.findByOrgIdAndOwnerUserIdAndWeekStartDate(orgId, userId, asOf)
+                .filter(plan -> plan.getState() == PlanState.DRAFT)
+                .map(plan -> {
+                    List<WeeklyCommitEntity> commits =
+                            commitRepository.findByOrgIdAndWeeklyPlanIdIn(orgId, List.of(plan.getId()));
+                    java.util.Map<String, Integer> counts = new HashMap<>();
+                    for (WeeklyCommitEntity c : commits) {
+                        if (c.getChessPriority() != null) {
+                            counts.merge(c.getChessPriority().name(), 1, Integer::sum);
+                        }
+                    }
+                    return counts;
+                })
+                .orElse(java.util.Map.of());
+    }
+
     // ── Local value types ─────────────────────────────────────────────────────
 
     /**

@@ -40,9 +40,9 @@ public class OrgGraphDevDataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         // Register display names
-        orgGraphClient.registerUser(CAROL_ID, "Carol Park");
-        orgGraphClient.registerUser(ALICE_ID, "Alice Chen");
-        orgGraphClient.registerUser(BOB_ID,   "Bob Martinez");
+        orgGraphClient.registerUser(CAROL_ID, "Carol Park", "America/Los_Angeles");
+        orgGraphClient.registerUser(ALICE_ID, "Alice Chen", "America/New_York");
+        orgGraphClient.registerUser(BOB_ID,   "Bob Martinez", "Europe/London");
 
         // Carol manages Alice and Bob
         orgGraphClient.setDirectReports(DEV_ORG_ID, CAROL_ID, List.of(ALICE_ID, BOB_ID));

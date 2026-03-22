@@ -53,11 +53,16 @@ ai:
     base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api/v1}
   features:
     suggest-rcdo-enabled: true
-    draft-reconciliation-enabled: false
-    manager-insights-enabled: false
-    plan-quality-nudge-enabled: false
-    suggest-next-work-enabled: false
-    llm-next-work-ranking-enabled: false
+    draft-reconciliation-enabled: true
+    manager-insights-enabled: true
+    plan-quality-nudge-enabled: true
+    suggest-next-work-enabled: true
+    llm-next-work-ranking-enabled: true
+    target-date-forecasting-enabled: true
+    planning-copilot-enabled: true
+    executive-dashboard-enabled: true
+    weekly-planning-agent-enabled: true
+    misalignment-agent-enabled: true
 
 analytics:
   refresh:

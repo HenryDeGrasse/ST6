@@ -25,6 +25,15 @@ import type {
   AiUsageMetrics,
   RcdoHealthReport,
   OutcomeHealthItem,
+  NotificationItem,
+  NotificationTypeValue,
+  WeeklyPlanDraftReadyNotificationPayload,
+  PlanMisalignmentBriefingNotificationPayload,
+  OutcomeForecastListResponse,
+  TeamPlanSuggestionResponse,
+  ApplyTeamPlanSuggestionResponse,
+  ExecutiveDashboardResponse,
+  ExecutiveBriefingResponse,
 } from "../api.js";
 import type { NextWorkSuggestionsResponse, SuggestionFeedbackRequest } from "../types.js";
 import { ErrorCode } from "../errors.js";
@@ -254,6 +263,59 @@ describe("NextWorkSuggestionsResponse", () => {
 
     expect(resp.suggestions[0].suggestedChessPriority).toBe("QUEEN");
     expect(feedback.action).toBe("ACCEPT");
+  });
+});
+
+describe("Phase 5 agent notification payload helpers", () => {
+  it("supports enum-backed notification items with open-ended payload objects", () => {
+    const type: NotificationTypeValue = "WEEKLY_PLAN_DRAFT_READY";
+    const notification: NotificationItem = {
+      id: "notif-1",
+      type,
+      payload: {
+        planId: "plan-1",
+        message: "Draft ready",
+      },
+      read: false,
+      createdAt: "2026-03-21T10:15:30Z",
+    };
+
+    expect(notification.type).toBe("WEEKLY_PLAN_DRAFT_READY");
+    expect(notification.payload).toHaveProperty("planId", "plan-1");
+  });
+
+  it("supports weekly-planning draft-ready payloads", () => {
+    const payload: WeeklyPlanDraftReadyNotificationPayload = {
+      planId: "plan-1",
+      weekStartDate: "2026-03-23",
+      route: "weekly",
+      message: "A draft weekly plan is ready.",
+      suggestedCommitCount: 3,
+      suggestedHours: "14.0",
+      capacityHours: "18.0",
+    };
+
+    expect(payload.suggestedCommitCount).toBe(3);
+    expect(payload.capacityHours).toBe("18.0");
+  });
+
+  it("supports misalignment briefing payloads", () => {
+    const payload: PlanMisalignmentBriefingNotificationPayload = {
+      managerId: "manager-1",
+      teamName: "Platform",
+      weekStartDate: "2026-03-23",
+      route: "weekly/team",
+      message: "Two plans over-index on non-urgent work.",
+      overloadedMembers: ["Alice"],
+      urgentOutcomesNeedingAttention: ["Reduce incident volume"],
+      highUrgencyHours: "12.0",
+      nonUrgentHours: "20.0",
+      flaggedPlanIds: ["plan-1", "plan-2"],
+      concernCount: 2,
+    };
+
+    expect(payload.flaggedPlanIds).toHaveLength(2);
+    expect(payload.concernCount).toBe(2);
   });
 });
 
@@ -521,5 +583,149 @@ describe("RcdoHealthReport", () => {
     };
 
     expect(report.staleOutcomes[0].commitCount).toBe(0);
+  });
+});
+
+
+describe("Phase 5 forecasting contracts", () => {
+  it("supports persisted outcome forecast responses", () => {
+    const resp: OutcomeForecastListResponse = {
+      forecasts: [{
+        outcomeId: "00000000-0000-0000-0000-000000000001",
+        outcomeName: "Improve activation",
+        targetDate: "2026-04-12",
+        projectedTargetDate: "2026-04-18",
+        projectedProgressPct: 72.5,
+        projectedVelocity: 5.25,
+        confidenceScore: 0.76,
+        confidenceBand: "HIGH",
+        forecastStatus: "NEEDS_ATTENTION",
+        modelVersion: "phase5-target-date-v1",
+        contributingFactors: [{ type: "capacity", label: "Capacity coverage", score: 0.82, detail: "Strategic capacity is improving." }],
+        recommendations: ["Add more mapped work"],
+        computedAt: "2026-03-21T10:15:30Z",
+      }],
+    };
+
+    expect(resp.forecasts[0].confidenceBand).toBe("HIGH");
+    expect(resp.forecasts[0].contributingFactors[0].score).toBeGreaterThan(0);
+  });
+});
+
+describe("Phase 5 planning-copilot contracts", () => {
+  it("supports team suggestion payloads", () => {
+    const resp: TeamPlanSuggestionResponse = {
+      status: "ok",
+      weekStart: "2026-03-23",
+      summary: {
+        teamCapacityHours: 40,
+        suggestedHours: 32,
+        bufferHours: 8,
+        atRiskOutcomeCount: 1,
+        criticalOutcomeCount: 0,
+        strategicFocusFloor: 0.7,
+        headline: "Healthy buffer remains.",
+      },
+      members: [{
+        userId: "user-1",
+        displayName: "Alice",
+        suggestedCommits: [{
+          title: "Advance onboarding milestone",
+          outcomeId: "outcome-1",
+          chessPriority: ChessPriority.QUEEN,
+          estimatedHours: 6,
+          rationale: "Historical strength on activation work.",
+          source: "OUTCOME_DEMAND",
+        }],
+        totalEstimated: 6,
+        realisticCapacity: 8,
+        overcommitRisk: "LOW",
+        strengthSummary: "Reliable on delivery commitments.",
+      }],
+      outcomeAllocations: [{
+        outcomeId: "outcome-1",
+        outcomeName: "Improve activation",
+        urgencyBand: "AT_RISK",
+        recommendedHours: 6,
+        members: [{ userId: "user-1", displayName: "Alice", hours: 6, title: "Advance onboarding milestone" }],
+      }],
+      llmRefined: false,
+    };
+
+    expect(resp.members[0].suggestedCommits[0].chessPriority).toBe("QUEEN");
+    expect(resp.outcomeAllocations[0].members[0].hours).toBe(6);
+  });
+
+  it("supports apply results with created draft metadata", () => {
+    const resp: ApplyTeamPlanSuggestionResponse = {
+      status: "ok",
+      weekStart: "2026-03-23",
+      members: [{
+        userId: "user-1",
+        displayName: "Alice",
+        planId: "plan-1",
+        createdPlan: true,
+        appliedCommits: [],
+      }],
+    };
+
+    expect(resp.members[0].createdPlan).toBe(true);
+  });
+});
+
+describe("Phase 5 executive contracts", () => {
+  it("supports executive dashboard rollups", () => {
+    const resp: ExecutiveDashboardResponse = {
+      weekStart: "2026-03-23",
+      summary: {
+        totalForecasts: 4,
+        onTrackForecasts: 2,
+        needsAttentionForecasts: 1,
+        offTrackForecasts: 1,
+        noDataForecasts: 0,
+        averageForecastConfidence: 0.71,
+        totalCapacityHours: 120,
+        strategicHours: 78,
+        nonStrategicHours: 42,
+        strategicCapacityUtilizationPct: 65,
+        nonStrategicCapacityUtilizationPct: 35,
+        planningCoveragePct: 92,
+      },
+      rallyCryRollups: [{
+        rallyCryId: "rc-1",
+        rallyCryName: "Growth",
+        forecastedOutcomeCount: 2,
+        onTrackCount: 1,
+        needsAttentionCount: 1,
+        offTrackCount: 0,
+        noDataCount: 0,
+        averageForecastConfidence: 0.73,
+        strategicHours: 32,
+      }],
+      teamBuckets: [{
+        bucketId: "team-a",
+        memberCount: 5,
+        planCoveragePct: 100,
+        totalCapacityHours: 40,
+        strategicHours: 28,
+        nonStrategicHours: 12,
+        strategicCapacityUtilizationPct: 70,
+        averageForecastConfidence: 0.75,
+      }],
+      teamGroupingAvailable: true,
+    };
+
+    expect(resp.summary.totalForecasts).toBe(4);
+    expect(resp.teamBuckets[0].bucketId).toBe("team-a");
+  });
+
+  it("supports executive briefing responses", () => {
+    const resp: ExecutiveBriefingResponse = {
+      status: "ok",
+      headline: "Strategic capacity remains concentrated in forecasted work.",
+      insights: [{ title: "Focus is healthy", detail: "Strategic utilization remains above 70%.", severity: "POSITIVE" }],
+    };
+
+    expect(resp.insights[0].severity).toBe("POSITIVE");
   });
 });

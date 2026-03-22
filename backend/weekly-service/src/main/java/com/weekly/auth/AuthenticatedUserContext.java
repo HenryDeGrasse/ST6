@@ -1,5 +1,6 @@
 package com.weekly.auth;
 
+import java.time.ZoneId;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.security.core.Authentication;
@@ -43,6 +44,14 @@ public class AuthenticatedUserContext {
 
     public Set<String> roles() {
         return getPrincipal().roles();
+    }
+
+    public String timeZone() {
+        return getPrincipal().timeZone();
+    }
+
+    public ZoneId zoneId() {
+        return getPrincipal().zoneId();
     }
 
     public boolean hasRole(String role) {

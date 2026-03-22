@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 vi.mock("@weekly-commitments/contracts", async () => {
@@ -20,6 +20,11 @@ import { HostShell } from "../HostShell.js";
 describe("PA Host Stub - HostShell", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200 }));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("renders the host shell with header and persona switcher", async () => {
@@ -78,8 +83,47 @@ describe("PA Host Stub - HostShell", () => {
 
     // Dashboard tab should not be visible for IC-only users
     expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
+    expect(screen.queryByText("Executive")).not.toBeInTheDocument();
 
     // WC app should remount with Alice's context
     await screen.findByTestId("weekly-plan-page");
+  });
+
+  it("shows the Executive tab for Dana and mounts the executive dashboard", async () => {
+    render(<HostShell />);
+    await screen.findByTestId("create-plan-btn");
+
+    fireEvent.change(screen.getByTestId("persona-select"), { target: { value: "dana" } });
+
+    expect(await screen.findByTestId("host-nav-executive")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("host-nav-executive"));
+
+    expect(screen.getByTestId("wc-executive-slot")).toBeInTheDocument();
+    expect(screen.getByTestId("wc-executive-remote-mount")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("executive-dashboard-page")).toBeInTheDocument();
+    });
+  });
+
+  it("builds reset-seed auth headers from the active persona", async () => {
+    render(<HostShell />);
+    await screen.findByTestId("create-plan-btn");
+
+    fireEvent.change(screen.getByTestId("persona-select"), { target: { value: "dana" } });
+    await screen.findByTestId("host-nav-executive");
+
+    fireEvent.click(screen.getByText("Reset Data"));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/v1/dev/reset-seed",
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({
+            Authorization: "Bearer dev:c0000000-0000-0000-0000-000000000030:a0000000-0000-0000-0000-000000000001:IC,MANAGER,ADMIN",
+          }),
+        }),
+      );
+    });
   });
 });

@@ -19,8 +19,8 @@ import org.springframework.stereotype.Component;
  * compatibility during migration.
  *
  * <h3>Structured dev token format</h3>
- * <pre>dev:&lt;userId&gt;:&lt;orgId&gt;:&lt;comma-separated-roles&gt;</pre>
- * Example: {@code dev:c000…0001:a000…0001:IC,MANAGER}
+ * <pre>dev:&lt;userId&gt;:&lt;orgId&gt;:&lt;comma-separated-roles&gt;[:&lt;iana-timezone&gt;]</pre>
+ * Example: {@code dev:c000…0001:a000…0001:IC,MANAGER:America/New_York}
  *
  * <h3>Legacy header fallback</h3>
  * If no structured dev token is present the authenticator falls back to:
@@ -76,12 +76,12 @@ public class DevRequestAuthenticator implements RequestAuthenticator {
      * @throws AuthenticationException if the token is malformed
      */
     UserPrincipal parseDevToken(String token) {
-        // Format: dev:<userId>:<orgId>:<roles>
+        // Format: dev:<userId>:<orgId>:<roles>[:<timezone>]
         String payload = token.substring(DEV_TOKEN_PREFIX.length());
-        String[] parts = payload.split(":", 3);
+        String[] parts = payload.split(":", 4);
         if (parts.length < 2) {
             throw new AuthenticationException(
-                    "Malformed dev token: expected dev:<userId>:<orgId>[:<roles>]"
+                    "Malformed dev token: expected dev:<userId>:<orgId>[:<roles>[:<timezone>]]"
             );
         }
 
@@ -104,7 +104,7 @@ public class DevRequestAuthenticator implements RequestAuthenticator {
         }
 
         Set<String> roles = new HashSet<>();
-        if (parts.length == 3 && !parts[2].isBlank()) {
+        if (parts.length >= 3 && !parts[2].isBlank()) {
             for (String role : parts[2].split(",")) {
                 String trimmed = role.trim();
                 if (!trimmed.isEmpty()) {
@@ -113,7 +113,8 @@ public class DevRequestAuthenticator implements RequestAuthenticator {
             }
         }
 
-        return new UserPrincipal(userId, orgId, Set.copyOf(roles));
+        String timeZone = parts.length == 4 ? parts[3].trim() : UserPrincipal.DEFAULT_TIME_ZONE;
+        return new UserPrincipal(userId, orgId, Set.copyOf(roles), timeZone);
     }
 
     /**
@@ -161,6 +162,7 @@ public class DevRequestAuthenticator implements RequestAuthenticator {
             }
         }
 
-        return new UserPrincipal(userId, orgId, Set.copyOf(roles));
+        String timeZone = request.getHeader("X-Timezone");
+        return new UserPrincipal(userId, orgId, Set.copyOf(roles), timeZone);
     }
 }

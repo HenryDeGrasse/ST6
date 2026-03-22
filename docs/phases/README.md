@@ -13,9 +13,9 @@
 ## Phase ordering rationale
 
 ```
-Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 4 ──► Phase 5
- data         use the     add time    model       synthesize
- generation   data        pressure    capacity    everything
+Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 4 ──► Phase 5 ──► Phase 6
+ data         use the     add time    model       synthesize   persistent
+ generation   data        pressure    capacity    everything   work graph
 ```
 
 | Phase | Title | Why this order |
@@ -25,6 +25,7 @@ Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 4 ──► Phase 5
 | **3** | [RCDO Target Dates & Urgency Modeling](phase-3-rcdo-target-dates-and-urgency.md) | Adds the time dimension. "Is this strategic?" becomes "How urgent is this strategy?" Enables forecasting. |
 | **4** | [Capacity Planning & User Performance Model](phase-4-capacity-and-forecasting.md) | Benefits from weeks of accumulated Phase 1 data. Turns the user model into realistic delivery predictions. |
 | **5** | [Predictive Intelligence & AI Manager Planning](phase-5-predictive-intelligence-and-manager-planning.md) | Synthesizes all prior phases into forward-looking planning. Most complex; needs the richest foundation. |
+| **6** | [Issue Backlog, Teams & AI-Powered Work Intelligence](phase-6-issue-backlog-and-teams.md) | Replaces ephemeral commits with persistent issues, adds team backlogs, and enables AI to reason holistically over work history via RAG. |
 
 ---
 

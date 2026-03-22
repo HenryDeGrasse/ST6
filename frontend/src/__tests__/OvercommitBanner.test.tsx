@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { OvercommitBanner } from "../components/CapacityView/OvercommitBanner.js";
 import type { OvercommitLevel } from "../components/CapacityView/OvercommitBanner.js";
 import styles from "../components/CapacityView/OvercommitBanner.module.css";
@@ -91,14 +91,14 @@ describe("OvercommitBanner", () => {
     expect(screen.queryByTestId("overcommit-level-MODERATE")).not.toBeInTheDocument();
   });
 
-  it("uses the ⚠️ icon for MODERATE", () => {
+  it("uses the warning icon for MODERATE", () => {
     render(<OvercommitBanner {...defaultProps} level="MODERATE" />);
-    expect(screen.getByTestId("overcommit-banner")).toHaveTextContent("⚠️");
+    expect(within(screen.getByTestId("overcommit-banner")).getByTestId("status-icon-warning")).toBeInTheDocument();
   });
 
-  it("uses the ⛔ icon for HIGH", () => {
+  it("uses the error icon for HIGH", () => {
     render(<OvercommitBanner {...defaultProps} level="HIGH" />);
-    expect(screen.getByTestId("overcommit-banner")).toHaveTextContent("⛔");
+    expect(within(screen.getByTestId("overcommit-banner")).getByTestId("status-icon-error-x")).toBeInTheDocument();
   });
 
   it("has role=alert for screen reader accessibility", () => {

@@ -12,6 +12,7 @@ import { AiManagerInsightsPanel } from "../components/AiManagerInsightsPanel.js"
 import { GlassPanel } from "../components/GlassPanel.js";
 import { StrategicSlackBanner } from "../components/UrgencyIndicator/StrategicSlackBanner.js";
 import { OutcomeMetadataEditor } from "../components/UrgencyIndicator/OutcomeMetadataEditor.js";
+import { OutcomeRiskCard, PlanningCopilot } from "../components/Phase5/index.js";
 import {
   StrategicIntelligencePanel,
   type OutcomeInfo,
@@ -26,6 +27,7 @@ import {
   type ProgressUpdateRequest,
 } from "../hooks/useOutcomeMetadata.js";
 import { useRcdo } from "../hooks/useRcdo.js";
+import { useForecasts } from "../hooks/useForecasts.js";
 import { useFeatureFlags } from "../context/FeatureFlagContext.js";
 import { useAuth } from "../context/AuthContext.js";
 import { useApiClient } from "../api/ApiContext.js";
@@ -55,6 +57,7 @@ export const TeamDashboardPage: React.FC = () => {
 
   // Outcome Targets collapsible section state
   const [showOutcomeTargets, setShowOutcomeTargets] = useState(false);
+  const [selectedForecastOutcomeId, setSelectedForecastOutcomeId] = useState<string | null>(null);
 
   const client = useApiClient();
   const flags = useFeatureFlags();
@@ -104,6 +107,7 @@ export const TeamDashboardPage: React.FC = () => {
   } = useOutcomeMetadata();
 
   const { tree: rcdoTree, fetchTree } = useRcdo();
+  const { forecasts, loadingList: forecastsLoading, errorList: forecastsError, fetchForecasts } = useForecasts();
 
   // Flatten RCDO tree into { outcomeId, outcomeName } for the editor dropdown.
   const outcomes = useMemo(
@@ -175,6 +179,45 @@ export const TeamDashboardPage: React.FC = () => {
       setActiveTab("overview");
     }
   }, [activeTab, strategicIntelligenceEnabled]);
+
+  useEffect(() => {
+    if (flags.targetDateForecasting) {
+      void fetchForecasts();
+    }
+  }, [fetchForecasts, flags.targetDateForecasting]);
+
+  const featuredForecasts = useMemo(() => {
+    return [...forecasts]
+      .sort((left, right) => {
+        const statusWeight = (status: string | null | undefined): number => {
+          switch (status) {
+            case "AT_RISK":
+              return 0;
+            case "NEEDS_ATTENTION":
+              return 1;
+            case "ON_TRACK":
+              return 2;
+            default:
+              return 3;
+          }
+        };
+
+        return statusWeight(left.forecastStatus) - statusWeight(right.forecastStatus);
+      })
+      .slice(0, 3);
+  }, [forecasts]);
+
+  useEffect(() => {
+    if (!flags.targetDateForecasting || featuredForecasts.length === 0) {
+      setSelectedForecastOutcomeId(null);
+      return;
+    }
+
+    const selectionStillVisible = featuredForecasts.some((forecast) => forecast.outcomeId === selectedForecastOutcomeId);
+    if (!selectionStillVisible) {
+      setSelectedForecastOutcomeId(featuredForecasts[0]?.outcomeId ?? null);
+    }
+  }, [featuredForecasts, flags.targetDateForecasting, selectedForecastOutcomeId]);
 
   const handleWeekChange = useCallback((week: string) => {
     setSelectedWeek(week);
@@ -355,6 +398,76 @@ export const TeamDashboardPage: React.FC = () => {
                 atRiskCount={strategicSlack.atRiskCount}
                 criticalCount={strategicSlack.criticalCount}
               />
+            )}
+
+            {(flags.targetDateForecasting || flags.planningCopilot) && (
+              <section data-testid="phase5-manager-panels" className={styles.phase5Section}>
+                {flags.targetDateForecasting && (
+                  <div data-testid="forecasting-panel" className={styles.phase5Column}>
+                    <div className={styles.phase5Header}>
+                      <div>
+                        <span className="wc-volume-label" aria-hidden="true">
+                          Forecasting
+                        </span>
+                        <h3 className={styles.phase5Title}>Target-date Forecasts</h3>
+                      </div>
+                      <button
+                        type="button"
+                        data-testid="forecasting-refresh"
+                        className={styles.outcomeTargetsToggle}
+                        onClick={() => {
+                          void fetchForecasts();
+                        }}
+                      >
+                        Refresh Forecasts
+                      </button>
+                    </div>
+
+                    {forecastsError && <ErrorBanner message={forecastsError} onDismiss={() => undefined} />}
+                    {forecastsLoading && featuredForecasts.length === 0 && (
+                      <div data-testid="forecasting-loading" className={styles.loading}>
+                        Loading forecasts…
+                      </div>
+                    )}
+                    {!forecastsLoading && featuredForecasts.length === 0 && !forecastsError && (
+                      <div data-testid="forecasting-empty" className={styles.phase5Empty}>
+                        No persisted forecasts are available yet.
+                      </div>
+                    )}
+
+                    {featuredForecasts.length > 0 && (
+                      <>
+                        <div data-testid="forecasting-picker" className={styles.forecastPicker}>
+                          {featuredForecasts.map((forecast) => {
+                            const isActive = selectedForecastOutcomeId === forecast.outcomeId;
+                            return (
+                              <button
+                                key={forecast.outcomeId}
+                                type="button"
+                                data-testid={`forecast-select-${forecast.outcomeId}`}
+                                className={`${styles.forecastButton} ${isActive ? styles.forecastButtonActive : ""}`}
+                                onClick={() => {
+                                  setSelectedForecastOutcomeId(forecast.outcomeId);
+                                }}
+                              >
+                                <span>{forecast.outcomeName}</span>
+                                <span className={styles.forecastStatus}>{forecast.forecastStatus ?? "UNKNOWN"}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {selectedForecastOutcomeId && <OutcomeRiskCard outcomeId={selectedForecastOutcomeId} />}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {flags.planningCopilot && (
+                  <div data-testid="planning-copilot-panel" className={styles.phase5Column}>
+                    <PlanningCopilot weekStart={selectedWeek} />
+                  </div>
+                )}
+              </section>
             )}
 
             {dashLoading && !summary && (

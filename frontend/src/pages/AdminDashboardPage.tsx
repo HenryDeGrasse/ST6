@@ -119,6 +119,31 @@ const FLAG_META: FlagMeta[] = [
     label: "Strategic Slack",
     description: "Strategic focus floor recommendations based on outcome urgency.",
   },
+  {
+    key: "targetDateForecasting",
+    label: "Target-date Forecasting",
+    description: "Persisted outcome forecasting cards and risk summaries for managers.",
+  },
+  {
+    key: "planningCopilot",
+    label: "Planning Copilot",
+    description: "Manager planning-copilot suggestions and apply flow for weekly draft plans.",
+  },
+  {
+    key: "executiveDashboard",
+    label: "Executive Dashboard",
+    description: "Executive strategic-health dashboard and AI briefing surfaces.",
+  },
+  {
+    key: "weeklyPlanningAgent",
+    label: "Weekly Planning Agent",
+    description: "Proactive weekly-planning agent notifications and draft-ready surfaces.",
+  },
+  {
+    key: "misalignmentAgent",
+    label: "Misalignment Agent",
+    description: "Manager briefing notifications when team planning signals drift out of alignment.",
+  },
 ];
 
 // ─── Sub-panel components ───────────────────────────────────────────────────

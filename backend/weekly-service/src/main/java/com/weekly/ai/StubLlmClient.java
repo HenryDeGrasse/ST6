@@ -31,6 +31,13 @@ public class StubLlmClient implements LlmClient {
             }
         }
 
+        // Executive strategic-health briefing request
+        for (Message msg : messages) {
+            if (msg.role() == Role.ASSISTANT && msg.content().contains("Executive strategic health dashboard")) {
+                return buildDefaultExecutiveBriefingResponse();
+            }
+        }
+
         // Next-work suggestion re-ranking request
         for (Message msg : messages) {
             if (msg.role() == Role.ASSISTANT
@@ -155,6 +162,26 @@ public class StubLlmClient implements LlmClient {
                     {
                       "title": "Strategic work is concentrated",
                       "detail": "A small set of outcomes appears to carry most of the team's commitments, which may indicate focus but also concentration risk.",
+                      "severity": "WARNING"
+                    }
+                  ]
+                }
+                """;
+    }
+
+    private String buildDefaultExecutiveBriefingResponse() {
+        return """
+                {
+                  "headline": "Strategic capacity is mostly aligned, but a subset of forecasts still needs intervention.",
+                  "insights": [
+                    {
+                      "title": "Strategic work remains the majority",
+                      "detail": "Most tracked capacity this week is still allocated to strategic outcomes rather than non-strategic work.",
+                      "severity": "POSITIVE"
+                    },
+                    {
+                      "title": "Forecast health is mixed",
+                      "detail": "At least one rally-cry rollup still shows outcomes needing attention or off-track forecasts.",
                       "severity": "WARNING"
                     }
                   ]

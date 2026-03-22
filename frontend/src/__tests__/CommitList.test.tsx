@@ -117,16 +117,16 @@ describe("CommitList", () => {
 
   // ── Draft source tags ───────────────────────────────────────────────────
 
-  it("shows '✏️ New' badge for a commit without a draft_source tag", () => {
+  it("shows 'New' badge for a commit without a draft_source tag", () => {
     const commit = makeCommit({ tags: [] });
     render(<CommitList {...defaultProps} commits={[commit]} />);
 
     const badge = screen.getByTestId("commit-draft-source-new");
     expect(badge).toBeInTheDocument();
-    expect(badge).toHaveTextContent("✏️ New");
+    expect(badge).toHaveTextContent("New");
   });
 
-  it("does not label carry-forward copies as '✏️ New'", () => {
+  it("does not label carry-forward copies as 'New'", () => {
     const commit = makeCommit({ tags: [], carriedFromCommitId: "commit-previous" });
     render(<CommitList {...defaultProps} commits={[commit]} />);
 
@@ -134,31 +134,31 @@ describe("CommitList", () => {
     expect(screen.getByTestId("commit-carried")).toHaveTextContent("Carried forward");
   });
 
-  it("shows '🔄 Carried forward' badge for CARRIED_FORWARD source tag", () => {
+  it("shows 'Carried forward' badge for CARRIED_FORWARD source tag", () => {
     const commit = makeCommit({ tags: ["draft_source:CARRIED_FORWARD"] });
     render(<CommitList {...defaultProps} commits={[commit]} />);
 
     const badge = screen.getByTestId("commit-draft-source-carried_forward");
     expect(badge).toBeInTheDocument();
-    expect(badge).toHaveTextContent("🔄 Carried forward");
+    expect(badge).toHaveTextContent("Carried forward");
   });
 
-  it("shows '📋 Recurring' badge for RECURRING source tag", () => {
+  it("shows 'Recurring' badge for RECURRING source tag", () => {
     const commit = makeCommit({ tags: ["draft_source:RECURRING"] });
     render(<CommitList {...defaultProps} commits={[commit]} />);
 
     const badge = screen.getByTestId("commit-draft-source-recurring");
     expect(badge).toBeInTheDocument();
-    expect(badge).toHaveTextContent("📋 Recurring");
+    expect(badge).toHaveTextContent("Recurring");
   });
 
-  it("shows '🎯 Coverage gap' badge for COVERAGE_GAP source tag", () => {
+  it("shows 'Coverage gap' badge for COVERAGE_GAP source tag", () => {
     const commit = makeCommit({ tags: ["draft_source:COVERAGE_GAP"] });
     render(<CommitList {...defaultProps} commits={[commit]} />);
 
     const badge = screen.getByTestId("commit-draft-source-coverage_gap");
     expect(badge).toBeInTheDocument();
-    expect(badge).toHaveTextContent("🎯 Coverage gap");
+    expect(badge).toHaveTextContent("Coverage gap");
   });
 
   it("ignores unknown draft_source tag values gracefully", () => {

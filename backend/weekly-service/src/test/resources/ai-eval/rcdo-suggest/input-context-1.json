@@ -1,0 +1,245 @@
+{
+  "weekStart": "2026-03-23",
+  "commits": [
+    {
+      "commitId": "c1a2b3c4-0001-0000-0000-000000000001",
+      "title": "Ship customer data export API endpoint",
+      "description": "Implement REST endpoint to allow customers to export their account data in JSON/CSV format per GDPR compliance requirement.",
+      "chessPriority": "QUEEN",
+      "category": "DELIVERY",
+      "existingOutcomeLink": {
+        "outcomeId": "out-001",
+        "outcomeName": "Enable self-service data portability for all customers"
+      }
+    },
+    {
+      "commitId": "c1a2b3c4-0002-0000-0000-000000000002",
+      "title": "Reduce P95 API latency below 200ms",
+      "description": "Profile and optimize the three highest-latency API routes identified in the last on-call report. Focus on database query plans.",
+      "chessPriority": "KING",
+      "category": "OPERATIONS",
+      "existingOutcomeLink": {
+        "outcomeId": "out-005",
+        "outcomeName": "Achieve sub-200ms P95 latency across all core APIs"
+      }
+    },
+    {
+      "commitId": "c1a2b3c4-0003-0000-0000-000000000003",
+      "title": "Draft onboarding email sequence for new trial users",
+      "description": "Write 3-email drip sequence for users who sign up for a trial but do not activate within 48 hours.",
+      "chessPriority": "ROOK",
+      "category": "GTM",
+      "existingOutcomeLink": null
+    }
+  ],
+  "rcdoTree": {
+    "rallyCries": [
+      {
+        "rallyCryId": "rc-001",
+        "rallyCryName": "Win enterprise customers",
+        "objectives": [
+          {
+            "objectiveId": "obj-001",
+            "objectiveName": "Deliver enterprise-grade compliance features",
+            "outcomes": [
+              {
+                "outcomeId": "out-001",
+                "outcomeName": "Enable self-service data portability for all customers"
+              },
+              {
+                "outcomeId": "out-002",
+                "outcomeName": "Achieve SOC 2 Type II certification by Q3"
+              }
+            ]
+          },
+          {
+            "objectiveId": "obj-002",
+            "objectiveName": "Accelerate enterprise sales cycle",
+            "outcomes": [
+              {
+                "outcomeId": "out-003",
+                "outcomeName": "Reduce average enterprise deal close time from 90 to 60 days"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "rallyCryId": "rc-002",
+        "rallyCryName": "Build a world-class platform",
+        "objectives": [
+          {
+            "objectiveId": "obj-003",
+            "objectiveName": "Achieve top-tier reliability and performance",
+            "outcomes": [
+              {
+                "outcomeId": "out-004",
+                "outcomeName": "Maintain 99.95% uptime SLA across all production services"
+              },
+              {
+                "outcomeId": "out-005",
+                "outcomeName": "Achieve sub-200ms P95 latency across all core APIs"
+              }
+            ]
+          },
+          {
+            "objectiveId": "obj-004",
+            "objectiveName": "Scale infrastructure to 10x current load",
+            "outcomes": [
+              {
+                "outcomeId": "out-006",
+                "outcomeName": "Complete database sharding migration for user table"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "rallyCryId": "rc-003",
+        "rallyCryName": "Grow and retain customers",
+        "objectives": [
+          {
+            "objectiveId": "obj-005",
+            "objectiveName": "Improve activation and retention rates",
+            "outcomes": [
+              {
+                "outcomeId": "out-007",
+                "outcomeName": "Increase trial-to-paid conversion rate from 18% to 25%"
+              },
+              {
+                "outcomeId": "out-008",
+                "outcomeName": "Reduce 30-day churn rate from 8% to 5%"
+              },
+              {
+                "outcomeId": "out-009",
+                "outcomeName": "Launch in-app onboarding checklist for new users"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "candidateOutcomes": [
+    {
+      "outcomeId": "out-001",
+      "outcomeName": "Enable self-service data portability for all customers",
+      "objectiveName": "Deliver enterprise-grade compliance features",
+      "rallyCryName": "Win enterprise customers"
+    },
+    {
+      "outcomeId": "out-002",
+      "outcomeName": "Achieve SOC 2 Type II certification by Q3",
+      "objectiveName": "Deliver enterprise-grade compliance features",
+      "rallyCryName": "Win enterprise customers"
+    },
+    {
+      "outcomeId": "out-003",
+      "outcomeName": "Reduce average enterprise deal close time from 90 to 60 days",
+      "objectiveName": "Accelerate enterprise sales cycle",
+      "rallyCryName": "Win enterprise customers"
+    },
+    {
+      "outcomeId": "out-004",
+      "outcomeName": "Maintain 99.95% uptime SLA across all production services",
+      "objectiveName": "Achieve top-tier reliability and performance",
+      "rallyCryName": "Build a world-class platform"
+    },
+    {
+      "outcomeId": "out-005",
+      "outcomeName": "Achieve sub-200ms P95 latency across all core APIs",
+      "objectiveName": "Achieve top-tier reliability and performance",
+      "rallyCryName": "Build a world-class platform"
+    },
+    {
+      "outcomeId": "out-006",
+      "outcomeName": "Complete database sharding migration for user table",
+      "objectiveName": "Scale infrastructure to 10x current load",
+      "rallyCryName": "Build a world-class platform"
+    },
+    {
+      "outcomeId": "out-007",
+      "outcomeName": "Increase trial-to-paid conversion rate from 18% to 25%",
+      "objectiveName": "Improve activation and retention rates",
+      "rallyCryName": "Grow and retain customers"
+    },
+    {
+      "outcomeId": "out-008",
+      "outcomeName": "Reduce 30-day churn rate from 8% to 5%",
+      "objectiveName": "Improve activation and retention rates",
+      "rallyCryName": "Grow and retain customers"
+    },
+    {
+      "outcomeId": "out-009",
+      "outcomeName": "Launch in-app onboarding checklist for new users",
+      "objectiveName": "Improve activation and retention rates",
+      "rallyCryName": "Grow and retain customers"
+    }
+  ],
+  "teamOutcomeUsage": [
+    {
+      "outcomeName": "Achieve sub-200ms P95 latency across all core APIs",
+      "commitCount": 5
+    },
+    {
+      "outcomeName": "Enable self-service data portability for all customers",
+      "commitCount": 3
+    },
+    {
+      "outcomeName": "Maintain 99.95% uptime SLA across all production services",
+      "commitCount": 2
+    },
+    {
+      "outcomeName": "Increase trial-to-paid conversion rate from 18% to 25%",
+      "commitCount": 2
+    },
+    {
+      "outcomeName": "Launch in-app onboarding checklist for new users",
+      "commitCount": 1
+    }
+  ],
+  "zeroCoverageOutcomeNames": [
+    "Achieve SOC 2 Type II certification by Q3",
+    "Reduce average enterprise deal close time from 90 to 60 days",
+    "Complete database sharding migration for user table",
+    "Reduce 30-day churn rate from 8% to 5%"
+  ],
+  "candidateUrgencies": [
+    {
+      "outcomeId": "out-005",
+      "outcomeName": "Achieve sub-200ms P95 latency across all core APIs",
+      "urgencyBand": "AT_RISK",
+      "targetDate": "2026-06-30",
+      "progressPct": "22.00",
+      "expectedProgressPct": "35.00",
+      "daysRemaining": 101
+    },
+    {
+      "outcomeId": "out-007",
+      "outcomeName": "Increase trial-to-paid conversion rate from 18% to 25%",
+      "urgencyBand": "CRITICAL",
+      "targetDate": "2026-04-30",
+      "progressPct": "10.00",
+      "expectedProgressPct": "45.00",
+      "daysRemaining": 40
+    },
+    {
+      "outcomeId": "out-001",
+      "outcomeName": "Enable self-service data portability for all customers",
+      "urgencyBand": "ON_TRACK",
+      "targetDate": "2026-09-30",
+      "progressPct": "40.00",
+      "expectedProgressPct": "38.00",
+      "daysRemaining": 193
+    },
+    {
+      "outcomeId": "out-009",
+      "outcomeName": "Launch in-app onboarding checklist for new users",
+      "urgencyBand": "NEEDS_ATTENTION",
+      "targetDate": "2026-05-31",
+      "progressPct": "28.00",
+      "expectedProgressPct": "40.00",
+      "daysRemaining": 71
+    }
+  ]
+}

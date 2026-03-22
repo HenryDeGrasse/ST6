@@ -1292,10 +1292,914 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/outcomes/forecasts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get persisted target-date forecasts for all outcomes in the org
+         * @description Returns the latest persisted target-date forecast for each outcome in the
+         *     authenticated user's org.
+         */
+        get: operations["getOutcomeForecasts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outcomes/{outcomeId}/forecast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the persisted target-date forecast for a single outcome */
+        get: operations["getOutcomeForecast"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/team-plan-suggestion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Manager planning copilot team-plan suggestion
+         * @description Returns manager-scoped weekly planning suggestions for direct reports.
+         *     Returns 200 with status "unavailable" when the planningCopilot feature
+         *     flag is disabled.
+         */
+        post: operations["suggestTeamPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/team-plan-suggestion/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply planning-copilot suggestions into manager-safe draft plans
+         * @description Applies selected planning-copilot suggestions for one or more direct
+         *     reports. Creates a draft plan when needed and appends the selected
+         *     commits.
+         *     Returns 200 with status "unavailable" when the planningCopilot feature
+         *     flag is disabled.
+         */
+        post: operations["applyTeamPlanSuggestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/executive/strategic-health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the executive strategic-health dashboard
+         * @description Returns aggregate-only strategic-health metrics for the org. Available to
+         *     managers and admins only.
+         *     Returns 200 with status "unavailable" when the executiveDashboard
+         *     feature flag is disabled.
+         */
+        get: operations["getStrategicHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/executive-briefing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate an AI executive briefing from strategic-health data
+         * @description Generates an executive briefing grounded in aggregate strategic-health
+         *     metrics for the requested week.
+         *     Returns 200 with status "unavailable" when the executiveDashboard
+         *     feature flag is disabled or briefing generation is unavailable.
+         */
+        post: operations["executiveBriefing"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all teams in the organisation */
+        get: operations["listTeams"];
+        put?: never;
+        /** Create a new team */
+        post: operations["createTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teams/{teamId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a team with its members */
+        get: operations["getTeam"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a team (owner only) */
+        patch: operations["updateTeam"];
+        trace?: never;
+    };
+    "/teams/{teamId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List members of a team */
+        get: operations["listTeamMembers"];
+        put?: never;
+        /** Add a member to a team (owner only) */
+        post: operations["addTeamMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teams/{teamId}/members/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a member from a team (owner only) */
+        delete: operations["removeTeamMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teams/{teamId}/access-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List pending access requests for a team (owner only) */
+        get: operations["listTeamAccessRequests"];
+        put?: never;
+        /** Request to join a team */
+        post: operations["requestTeamAccess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teams/{teamId}/access-requests/{requestId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Approve or deny an access request (owner only) */
+        patch: operations["decideTeamAccessRequest"];
+        trace?: never;
+    };
+    "/teams/{teamId}/issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a team's backlog issues (paginated, filterable) */
+        get: operations["listTeamIssues"];
+        put?: never;
+        /** Create a new backlog issue for a team */
+        post: operations["createIssue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/issues/{issueId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get issue detail with activity log */
+        get: operations["getIssue"];
+        put?: never;
+        post?: never;
+        /** Soft-delete (archive) an issue */
+        delete: operations["archiveIssue"];
+        options?: never;
+        head?: never;
+        /** Update a backlog issue */
+        patch: operations["updateIssue"];
+        trace?: never;
+    };
+    "/issues/{issueId}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Assign or unassign an issue */
+        post: operations["assignIssue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/issues/{issueId}/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an issue to the selected week's plan as an assignment */
+        post: operations["commitIssueToWeek"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/issues/{issueId}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remove an issue from the current week's plan */
+        post: operations["releaseIssue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/issues/{issueId}/comment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a comment to an issue */
+        post: operations["addIssueComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/issues/{issueId}/time-entry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Log time spent on an issue */
+        post: operations["logIssueTime"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plans/{planId}/assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List weekly assignments for a plan */
+        get: operations["listPlanAssignments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/weeks/{weekStart}/plan/assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an issue to the selected week's plan */
+        post: operations["createWeeklyAssignment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/weeks/{weekStart}/plan/assignments/{assignmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove an issue assignment from the selected week's plan */
+        delete: operations["removeWeeklyAssignment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/suggest-effort-type": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** AI-suggest an effort type for an issue */
+        post: operations["suggestEffortType"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/rank-backlog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** AI-rank backlog issues for a team */
+        post: operations["rankBacklog"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/recommend-weekly-issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** AI-recommend issues to commit to for the week */
+        post: operations["recommendWeeklyIssues"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/suggest-deferrals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** AI-suggest issues to defer when overcommitted */
+        post: operations["suggestDeferrals"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/coverage-gap-inspirations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** AI-generate issue inspirations for uncovered RCDO outcomes */
+        get: operations["getCoverageGapInspirations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/search-issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Semantic search over the issue backlog (RAG via Pinecone) */
+        post: operations["semanticSearchIssues"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description Classifies the type of effort an issue represents
+         * @enum {string}
+         */
+        EffortType: "BUILD" | "MAINTAIN" | "COLLABORATE" | "LEARN";
+        /**
+         * @description Lifecycle status for a backlog issue
+         * @enum {string}
+         */
+        IssueStatus: "OPEN" | "IN_PROGRESS" | "DONE" | "ARCHIVED";
+        /**
+         * @description Role of a user within a team
+         * @enum {string}
+         */
+        TeamRole: "OWNER" | "MEMBER";
+        /**
+         * @description Status of a team access request
+         * @enum {string}
+         */
+        AccessRequestStatus: "PENDING" | "APPROVED" | "DENIED";
+        /**
+         * @description Audit activity type recorded on an issue
+         * @enum {string}
+         */
+        IssueActivityType: "CREATED" | "STATUS_CHANGE" | "ASSIGNMENT_CHANGE" | "PRIORITY_CHANGE" | "EFFORT_TYPE_CHANGE" | "ESTIMATE_CHANGE" | "COMMENT" | "TIME_ENTRY" | "OUTCOME_CHANGE" | "COMMITTED_TO_WEEK" | "RELEASED_TO_BACKLOG" | "CARRIED_FORWARD" | "BLOCKED" | "UNBLOCKED" | "DESCRIPTION_CHANGE" | "TITLE_CHANGE";
+        Issue: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            orgId: string;
+            /** Format: uuid */
+            teamId: string;
+            /** @description Human-readable key, e.g. "ENG-42" */
+            issueKey: string;
+            sequenceNumber: number;
+            title: string;
+            description?: string | null;
+            effortType?: components["schemas"]["EffortType"];
+            /** Format: double */
+            estimatedHours?: number | null;
+            chessPriority?: components["schemas"]["ChessPriority"];
+            /** Format: uuid */
+            outcomeId?: string | null;
+            nonStrategicReason?: string | null;
+            /** Format: uuid */
+            creatorUserId: string;
+            /** Format: uuid */
+            assigneeUserId?: string | null;
+            /** Format: uuid */
+            blockedByIssueId?: string | null;
+            status: components["schemas"]["IssueStatus"];
+            /** Format: double */
+            aiRecommendedRank?: number | null;
+            aiRankRationale?: string | null;
+            aiSuggestedEffortType?: components["schemas"]["EffortType"];
+            version: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            archivedAt?: string | null;
+        };
+        WeeklyAssignment: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            orgId: string;
+            /** Format: uuid */
+            weeklyPlanId: string;
+            /** Format: uuid */
+            issueId: string;
+            chessPriorityOverride?: components["schemas"]["ChessPriority"];
+            expectedResult?: string | null;
+            /** Format: double */
+            confidence?: number | null;
+            /** Format: uuid */
+            snapshotRallyCryId?: string | null;
+            snapshotRallyCryName?: string | null;
+            /** Format: uuid */
+            snapshotObjectiveId?: string | null;
+            snapshotObjectiveName?: string | null;
+            /** Format: uuid */
+            snapshotOutcomeId?: string | null;
+            snapshotOutcomeName?: string | null;
+            tags: string[];
+            version: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        WeeklyAssignmentActual: {
+            /** Format: uuid */
+            assignmentId: string;
+            /** Format: uuid */
+            orgId: string;
+            actualResult?: string | null;
+            completionStatus: components["schemas"]["CompletionStatus"];
+            deltaReason?: string | null;
+            /** Format: double */
+            hoursSpent?: number | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        IssueActivity: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            orgId: string;
+            /** Format: uuid */
+            issueId: string;
+            /** Format: uuid */
+            actorUserId: string;
+            activityType: components["schemas"]["IssueActivityType"];
+            oldValue?: string | null;
+            newValue?: string | null;
+            commentText?: string | null;
+            /** Format: double */
+            hoursLogged?: number | null;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        Team: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            orgId: string;
+            name: string;
+            /** @description Short prefix used in issue keys, e.g. "ENG" */
+            keyPrefix: string;
+            description?: string | null;
+            /** Format: uuid */
+            ownerUserId: string;
+            /** @description Current issue sequence counter */
+            issueSequence: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        TeamMember: {
+            /** Format: uuid */
+            teamId: string;
+            /** Format: uuid */
+            userId: string;
+            /** Format: uuid */
+            orgId: string;
+            role: components["schemas"]["TeamRole"];
+            /** Format: date-time */
+            joinedAt: string;
+        };
+        TeamAccessRequest: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            teamId: string;
+            /** Format: uuid */
+            requesterUserId: string;
+            /** Format: uuid */
+            orgId: string;
+            status: components["schemas"]["AccessRequestStatus"];
+            /** Format: uuid */
+            decidedByUserId?: string | null;
+            /** Format: date-time */
+            decidedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CreateTeamRequest: {
+            name: string;
+            keyPrefix: string;
+            description?: string | null;
+        };
+        UpdateTeamRequest: {
+            name?: string;
+            description?: string | null;
+        };
+        AddTeamMemberRequest: {
+            /** Format: uuid */
+            userId: string;
+            role?: components["schemas"]["TeamRole"];
+        };
+        TeamListResponse: {
+            teams: components["schemas"]["Team"][];
+        };
+        TeamDetailResponse: {
+            team: components["schemas"]["Team"];
+            members: components["schemas"]["TeamMember"][];
+        };
+        TeamAccessRequestAction: {
+            status: components["schemas"]["AccessRequestStatus"];
+        };
+        TeamAccessRequestListResponse: {
+            requests: components["schemas"]["TeamAccessRequest"][];
+        };
+        CreateIssueRequest: {
+            title: string;
+            description?: string | null;
+            effortType?: components["schemas"]["EffortType"];
+            /** Format: double */
+            estimatedHours?: number | null;
+            chessPriority?: components["schemas"]["ChessPriority"];
+            /** Format: uuid */
+            outcomeId?: string | null;
+            nonStrategicReason?: string | null;
+            /** Format: uuid */
+            assigneeUserId?: string | null;
+            /** Format: uuid */
+            blockedByIssueId?: string | null;
+        };
+        UpdateIssueRequest: {
+            title?: string;
+            description?: string | null;
+            effortType?: components["schemas"]["EffortType"];
+            /** Format: double */
+            estimatedHours?: number | null;
+            chessPriority?: components["schemas"]["ChessPriority"];
+            /** Format: uuid */
+            outcomeId?: string | null;
+            nonStrategicReason?: string | null;
+            /** Format: uuid */
+            assigneeUserId?: string | null;
+            /** Format: uuid */
+            blockedByIssueId?: string | null;
+            status?: components["schemas"]["IssueStatus"];
+            version?: number;
+        };
+        IssueListResponse: {
+            content: components["schemas"]["Issue"][];
+            page: number;
+            size: number;
+            totalElements: number;
+            totalPages: number;
+        };
+        IssueDetailResponse: {
+            issue: components["schemas"]["Issue"];
+            activities: components["schemas"]["IssueActivity"][];
+        };
+        AssignIssueRequest: {
+            /** Format: uuid */
+            assigneeUserId: string | null;
+        };
+        CommitIssueToWeekRequest: {
+            /**
+             * Format: date
+             * @description ISO date (Monday) of the target week
+             */
+            weekStart: string;
+            chessPriorityOverride?: components["schemas"]["ChessPriority"];
+            expectedResult?: string | null;
+            /** Format: double */
+            confidence?: number | null;
+        };
+        CreateWeeklyAssignmentRequest: {
+            /** Format: uuid */
+            issueId: string;
+            chessPriorityOverride?: components["schemas"]["ChessPriority"];
+            expectedResult?: string | null;
+            /** Format: double */
+            confidence?: number | null;
+        };
+        ReleaseIssueRequest: {
+            /** Format: uuid */
+            weeklyPlanId: string;
+        };
+        AddCommentRequest: {
+            commentText: string;
+        };
+        LogTimeEntryRequest: {
+            /** Format: double */
+            hoursLogged: number;
+            note?: string | null;
+        };
+        WeeklyAssignmentWithActual: {
+            actual?: components["schemas"]["WeeklyAssignmentActual"];
+            issue?: components["schemas"]["Issue"];
+        } & components["schemas"]["WeeklyAssignment"];
+        WeeklyAssignmentsResponse: {
+            assignments: components["schemas"]["WeeklyAssignmentWithActual"][];
+        };
+        SuggestEffortTypeRequest: {
+            /** Format: uuid */
+            issueId?: string | null;
+            title: string;
+            description?: string | null;
+        };
+        SuggestEffortTypeResponse: {
+            /** @enum {string} */
+            status: "ok" | "unavailable";
+            suggestedEffortType?: components["schemas"]["EffortType"];
+            rationale?: string | null;
+            /** Format: double */
+            confidence?: number | null;
+        };
+        RankBacklogRequest: {
+            /** Format: uuid */
+            teamId: string;
+            issueIds?: string[];
+        };
+        RankedIssue: {
+            /** Format: uuid */
+            issueId: string;
+            /** Format: double */
+            rank: number;
+            rationale: string;
+        };
+        RankBacklogResponse: {
+            /** @enum {string} */
+            status: "ok" | "unavailable";
+            rankedIssues: components["schemas"]["RankedIssue"][];
+        };
+        RecommendWeeklyIssuesRequest: {
+            /** Format: date */
+            weekStart: string;
+            /** Format: uuid */
+            teamId?: string | null;
+            maxItems?: number | null;
+        };
+        RecommendedIssue: {
+            /** Format: uuid */
+            issueId: string;
+            issueKey: string;
+            title: string;
+            effortType?: components["schemas"]["EffortType"];
+            chessPriority?: components["schemas"]["ChessPriority"];
+            rationale: string;
+            /** Format: double */
+            confidence: number;
+        };
+        RecommendWeeklyIssuesResponse: {
+            /** @enum {string} */
+            status: "ok" | "unavailable";
+            recommendations: components["schemas"]["RecommendedIssue"][];
+        };
+        SuggestDeferralsRequest: {
+            /** Format: uuid */
+            weeklyPlanId: string;
+        };
+        DeferralSuggestion: {
+            /** Format: uuid */
+            issueId: string;
+            issueKey: string;
+            title: string;
+            reason: string;
+            impactIfDeferred: string;
+        };
+        SuggestDeferralsResponse: {
+            /** @enum {string} */
+            status: "ok" | "unavailable";
+            suggestions: components["schemas"]["DeferralSuggestion"][];
+        };
+        CoverageGapInspirationItem: {
+            /** Format: uuid */
+            outcomeId?: string | null;
+            outcomeName?: string | null;
+            suggestedTitle: string;
+            rationale: string;
+            suggestedEffortType?: components["schemas"]["EffortType"];
+        };
+        CoverageGapInspirationsResponse: {
+            /** @enum {string} */
+            status: "ok" | "unavailable";
+            inspirations: components["schemas"]["CoverageGapInspirationItem"][];
+        };
+        SemanticSearchRequest: {
+            query: string;
+            /** Format: uuid */
+            teamId?: string | null;
+            effortType?: components["schemas"]["EffortType"];
+            status?: components["schemas"]["IssueStatus"];
+            limit?: number | null;
+        };
+        SemanticSearchHit: {
+            /** Format: uuid */
+            issueId: string;
+            issueKey: string;
+            title: string;
+            /** Format: double */
+            score: number;
+            effortType?: components["schemas"]["EffortType"];
+            status: components["schemas"]["IssueStatus"];
+        };
+        SemanticSearchResponse: {
+            /** @enum {string} */
+            status: "ok" | "unavailable";
+            hits: components["schemas"]["SemanticSearchHit"][];
+        };
         /** @enum {string} */
         PlanState: "DRAFT" | "LOCKED" | "RECONCILING" | "RECONCILED" | "CARRY_FORWARD";
         /** @enum {string} */
@@ -1507,11 +2411,15 @@ export interface components {
             knightCount: number;
             pawnCount: number;
         };
+        /** @enum {string} */
+        NotificationType: "PLAN_STILL_DRAFT" | "PLAN_STILL_LOCKED" | "RECONCILIATION_OVERDUE" | "RECONCILIATION_SUBMITTED" | "CHANGES_REQUESTED" | "WEEKLY_DIGEST" | "WEEKLY_PLAN_DRAFT_READY" | "PLAN_MISALIGNMENT_BRIEFING";
         Notification: {
             /** Format: uuid */
             id: string;
-            type: string;
-            payload: Record<string, never>;
+            type: components["schemas"]["NotificationType"];
+            payload: {
+                [key: string]: unknown;
+            };
             read: boolean;
             /** Format: date-time */
             createdAt: string;
@@ -1900,6 +2808,229 @@ export interface components {
             type: string;
             /** @description Human-readable explanation */
             message: string;
+            /** @enum {string} */
+            severity: "INFO" | "WARNING" | "POSITIVE";
+        };
+        /** @enum {string} */
+        OutcomeUrgencyBand: "NO_TARGET" | "ON_TRACK" | "NEEDS_ATTENTION" | "AT_RISK" | "CRITICAL";
+        /** @enum {string} */
+        StrategicSlackBand: "HIGH_SLACK" | "MODERATE_SLACK" | "LOW_SLACK" | "NO_SLACK";
+        /** @enum {string} */
+        ForecastConfidenceBand: "LOW" | "MEDIUM" | "HIGH";
+        /** @enum {string} */
+        ForecastStatus: "NO_DATA" | "NO_TARGET_DATE" | "COMPLETE" | "ON_TRACK" | "NEEDS_ATTENTION" | "AT_RISK";
+        OutcomeForecastFactor: {
+            type: string;
+            label: string;
+            /** Format: double */
+            score: number;
+            detail: string;
+        };
+        OutcomeForecastResponse: {
+            /** Format: uuid */
+            outcomeId: string;
+            outcomeName: string;
+            /** Format: date */
+            targetDate: string | null;
+            /** Format: date */
+            projectedTargetDate: string | null;
+            /** Format: double */
+            projectedProgressPct: number | null;
+            /** Format: double */
+            projectedVelocity: number | null;
+            /** Format: double */
+            confidenceScore: number | null;
+            confidenceBand: components["schemas"]["ForecastConfidenceBand"] | null;
+            forecastStatus: components["schemas"]["ForecastStatus"] | null;
+            modelVersion: string | null;
+            contributingFactors: components["schemas"]["OutcomeForecastFactor"][];
+            recommendations: string[];
+            /** Format: date-time */
+            computedAt: string | null;
+        };
+        OutcomeForecastListResponse: {
+            forecasts: components["schemas"]["OutcomeForecastResponse"][];
+        };
+        TeamPlanSuggestionRequest: {
+            /** Format: date */
+            weekStart: string;
+        };
+        TeamPlanSuggestionUnavailableResponse: {
+            /** @enum {string} */
+            status: "unavailable";
+        };
+        TeamPlanSuggestionResponse: {
+            /** @enum {string} */
+            status: "ok";
+            /** Format: date */
+            weekStart: string;
+            summary: components["schemas"]["TeamPlanSummary"];
+            members: components["schemas"]["TeamMemberPlanSuggestion"][];
+            outcomeAllocations: components["schemas"]["OutcomeAllocationSuggestion"][];
+            llmRefined: boolean;
+        };
+        TeamPlanSummary: {
+            /** Format: double */
+            teamCapacityHours: number | null;
+            /** Format: double */
+            suggestedHours: number | null;
+            /** Format: double */
+            bufferHours: number | null;
+            atRiskOutcomeCount: number;
+            criticalOutcomeCount: number;
+            /** Format: double */
+            strategicFocusFloor: number | null;
+            headline: string | null;
+        };
+        OutcomeAllocationSuggestion: {
+            /** Format: uuid */
+            outcomeId: string;
+            outcomeName: string;
+            urgencyBand: components["schemas"]["OutcomeUrgencyBand"];
+            /** Format: double */
+            recommendedHours: number | null;
+            members: components["schemas"]["MemberOutcomeSlice"][];
+        };
+        MemberOutcomeSlice: {
+            /** Format: uuid */
+            userId: string;
+            displayName: string | null;
+            /** Format: double */
+            hours: number | null;
+            title: string | null;
+        };
+        TeamMemberPlanSuggestion: {
+            /** Format: uuid */
+            userId: string;
+            displayName: string | null;
+            suggestedCommits: components["schemas"]["PlanningCopilotSuggestedCommit"][];
+            /** Format: double */
+            totalEstimated: number | null;
+            /** Format: double */
+            realisticCapacity: number | null;
+            overcommitRisk: string | null;
+            strengthSummary: string | null;
+        };
+        PlanningCopilotSuggestedCommit: {
+            title: string;
+            /** Format: uuid */
+            outcomeId: string | null;
+            chessPriority: components["schemas"]["ChessPriority"] | null;
+            /** Format: double */
+            estimatedHours: number | null;
+            rationale: string | null;
+            source: string | null;
+        };
+        ApplyTeamPlanSuggestionRequest: {
+            /** Format: date */
+            weekStart: string;
+            members: components["schemas"]["TeamMemberApplyRequest"][];
+        };
+        TeamMemberApplyRequest: {
+            /** Format: uuid */
+            userId: string;
+            suggestedCommits: components["schemas"]["SuggestedCommitApplyRequest"][];
+        };
+        SuggestedCommitApplyRequest: {
+            title: string;
+            /** Format: uuid */
+            outcomeId?: string | null;
+            rationale?: string | null;
+            chessPriority: components["schemas"]["ChessPriority"];
+            /** Format: double */
+            estimatedHours?: number | null;
+        };
+        ApplyTeamPlanSuggestionResponse: {
+            /** @enum {string} */
+            status: "ok";
+            /** Format: date */
+            weekStart: string;
+            members: components["schemas"]["MemberDraftApplyResult"][];
+        };
+        MemberDraftApplyResult: {
+            /** Format: uuid */
+            userId: string;
+            displayName: string | null;
+            /** Format: uuid */
+            planId: string;
+            createdPlan: boolean;
+            appliedCommits: components["schemas"]["WeeklyCommit"][];
+        };
+        ExecutiveDashboardUnavailableResponse: {
+            /** @enum {string} */
+            status: "unavailable";
+        };
+        ExecutiveDashboardResponse: {
+            /** Format: date */
+            weekStart: string;
+            summary: components["schemas"]["ExecutiveSummary"];
+            rallyCryRollups: components["schemas"]["RallyCryHealthRollup"][];
+            teamBuckets: components["schemas"]["TeamBucketComparison"][];
+            teamGroupingAvailable: boolean;
+        };
+        ExecutiveSummary: {
+            totalForecasts: number;
+            onTrackForecasts: number;
+            needsAttentionForecasts: number;
+            offTrackForecasts: number;
+            noDataForecasts: number;
+            /** Format: double */
+            averageForecastConfidence: number | null;
+            /** Format: double */
+            totalCapacityHours: number | null;
+            /** Format: double */
+            strategicHours: number | null;
+            /** Format: double */
+            nonStrategicHours: number | null;
+            /** Format: double */
+            strategicCapacityUtilizationPct: number | null;
+            /** Format: double */
+            nonStrategicCapacityUtilizationPct: number | null;
+            /** Format: double */
+            planningCoveragePct: number | null;
+        };
+        RallyCryHealthRollup: {
+            rallyCryId: string | null;
+            rallyCryName: string;
+            forecastedOutcomeCount: number;
+            onTrackCount: number;
+            needsAttentionCount: number;
+            offTrackCount: number;
+            noDataCount: number;
+            /** Format: double */
+            averageForecastConfidence: number | null;
+            /** Format: double */
+            strategicHours: number | null;
+        };
+        TeamBucketComparison: {
+            bucketId: string;
+            memberCount: number;
+            /** Format: double */
+            planCoveragePct: number | null;
+            /** Format: double */
+            totalCapacityHours: number | null;
+            /** Format: double */
+            strategicHours: number | null;
+            /** Format: double */
+            nonStrategicHours: number | null;
+            /** Format: double */
+            strategicCapacityUtilizationPct: number | null;
+            /** Format: double */
+            averageForecastConfidence: number | null;
+        };
+        ExecutiveBriefingRequest: {
+            /** Format: date */
+            weekStart: string;
+        };
+        ExecutiveBriefingResponse: {
+            /** @enum {string} */
+            status: "ok" | "unavailable";
+            headline: string | null;
+            insights: components["schemas"]["ExecutiveBriefingItem"][];
+        };
+        ExecutiveBriefingItem: {
+            title: string;
+            detail: string;
             /** @enum {string} */
             severity: "INFO" | "WARNING" | "POSITIVE";
         };
@@ -2842,11 +3973,8 @@ export interface components {
              *     is set.
              */
             expectedProgressPct?: number | null;
-            /**
-             * @description Computed urgency classification for this outcome
-             * @enum {string}
-             */
-            urgencyBand: "NO_TARGET" | "ON_TRACK" | "NEEDS_ATTENTION" | "AT_RISK" | "CRITICAL";
+            /** @description Computed urgency classification for this outcome */
+            urgencyBand: components["schemas"]["OutcomeUrgencyBand"];
             /**
              * @description Calendar days from today to the target date. Negative when the
              *     target date is in the past (overdue). Set to the minimum integer
@@ -4559,6 +5687,935 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StrategicSlackResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getOutcomeForecasts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Outcome forecasts returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutcomeForecastListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getOutcomeForecast: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description UUID of the RCDO outcome */
+                outcomeId: components["parameters"]["OutcomeIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Outcome forecast returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutcomeForecastResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    suggestTeamPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeamPlanSuggestionRequest"];
+            };
+        };
+        responses: {
+            /** @description Team-plan suggestion returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamPlanSuggestionResponse"] | components["schemas"]["TeamPlanSuggestionUnavailableResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    applyTeamPlanSuggestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyTeamPlanSuggestionRequest"];
+            };
+        };
+        responses: {
+            /** @description Team-plan suggestion applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplyTeamPlanSuggestionResponse"] | components["schemas"]["TeamPlanSuggestionUnavailableResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getStrategicHealth: {
+        parameters: {
+            query?: {
+                /** @description Optional ISO date of the week to summarize. */
+                weekStart?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Executive dashboard returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExecutiveDashboardResponse"] | components["schemas"]["ExecutiveDashboardUnavailableResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    executiveBriefing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExecutiveBriefingRequest"];
+            };
+        };
+        responses: {
+            /** @description Executive briefing returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExecutiveBriefingResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listTeams: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of teams */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTeamRequest"];
+            };
+        };
+        responses: {
+            /** @description Team created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Team"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Team detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamDetailResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTeamRequest"];
+            };
+        };
+        responses: {
+            /** @description Team updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Team"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listTeamMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Team member list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamMember"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    addTeamMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddTeamMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description Member added */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamMember"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    removeTeamMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Member removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listTeamAccessRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Access request list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamAccessRequestListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    requestTeamAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Access request submitted */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamAccessRequest"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    decideTeamAccessRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeamAccessRequestAction"];
+            };
+        };
+        responses: {
+            /** @description Access request decided */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamAccessRequest"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listTeamIssues: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["IssueStatus"];
+                effortType?: components["schemas"]["EffortType"];
+                assigneeUserId?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated issue list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssueListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createIssue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateIssueRequest"];
+            };
+        };
+        responses: {
+            /** @description Issue created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Issue"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getIssue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                issueId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Issue detail with activities */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssueDetailResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    archiveIssue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                issueId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Issue archived */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Issue"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateIssue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                issueId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateIssueRequest"];
+            };
+        };
+        responses: {
+            /** @description Issue updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Issue"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    assignIssue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                issueId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignIssueRequest"];
+            };
+        };
+        responses: {
+            /** @description Issue assignment updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Issue"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    commitIssueToWeek: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                issueId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommitIssueToWeekRequest"];
+            };
+        };
+        responses: {
+            /** @description Assignment created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyAssignment"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    releaseIssue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                issueId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReleaseIssueRequest"];
+            };
+        };
+        responses: {
+            /** @description Issue released from week */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Issue"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    addIssueComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                issueId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCommentRequest"];
+            };
+        };
+        responses: {
+            /** @description Comment added */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssueActivity"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    logIssueTime: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                issueId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogTimeEntryRequest"];
+            };
+        };
+        responses: {
+            /** @description Time entry logged */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssueActivity"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listPlanAssignments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: components["parameters"]["PlanIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Assignments for the plan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyAssignmentsResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createWeeklyAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ISO date of the Monday that starts the week (e.g., 2026-03-09) */
+                weekStart: components["parameters"]["WeekStartPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWeeklyAssignmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Assignment created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyAssignment"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    removeWeeklyAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ISO date of the Monday that starts the week (e.g., 2026-03-09) */
+                weekStart: components["parameters"]["WeekStartPath"];
+                assignmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Assignment removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    suggestEffortType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuggestEffortTypeRequest"];
+            };
+        };
+        responses: {
+            /** @description Effort type suggestion */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuggestEffortTypeResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    rankBacklog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RankBacklogRequest"];
+            };
+        };
+        responses: {
+            /** @description Ranked backlog */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankBacklogResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    recommendWeeklyIssues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecommendWeeklyIssuesRequest"];
+            };
+        };
+        responses: {
+            /** @description Weekly issue recommendations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecommendWeeklyIssuesResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    suggestDeferrals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuggestDeferralsRequest"];
+            };
+        };
+        responses: {
+            /** @description Deferral suggestions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuggestDeferralsResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getCoverageGapInspirations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Coverage gap inspirations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverageGapInspirationsResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    semanticSearchIssues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SemanticSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Semantic search results */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SemanticSearchResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];

@@ -1,6 +1,7 @@
 package com.weekly.auth;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -40,6 +41,53 @@ public interface OrgGraphClient {
         return getDirectReports(orgId, managerId).stream()
                 .map(id -> new DirectReport(id, id.toString()))
                 .toList();
+    }
+
+    /**
+     * Returns the best-available org roster for the given organisation.
+     *
+     * <p>This is the seam used by timezone-aware scheduled agents and future
+     * executive rollups. Implementations that only support manager-local lookups
+     * may safely return an empty list.
+     */
+    default List<OrgRosterEntry> getOrgRoster(UUID orgId) {
+        return List.of();
+    }
+
+    /**
+     * Returns org-wide team groupings keyed by manager.
+     *
+     * <p>The default implementation derives groups from {@link #getOrgRoster(UUID)}.
+     * When no org roster is available, the safe fallback is an empty map.
+     */
+    default Map<UUID, OrgTeamGroup> getOrgTeamGroups(UUID orgId) {
+        List<OrgRosterEntry> roster = getOrgRoster(orgId);
+
+        Map<UUID, List<OrgRosterEntry>> reportsByManager = roster.stream()
+                .filter(entry -> entry.managerId() != null)
+                .collect(java.util.stream.Collectors.groupingBy(
+                        OrgRosterEntry::managerId,
+                        java.util.LinkedHashMap::new,
+                        java.util.stream.Collectors.toList()));
+
+        Map<UUID, OrgRosterEntry> rosterByUserId = roster.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        OrgRosterEntry::userId,
+                        entry -> entry,
+                        (left, right) -> left,
+                        java.util.LinkedHashMap::new));
+
+        Map<UUID, OrgTeamGroup> groups = new java.util.LinkedHashMap<>();
+        for (Map.Entry<UUID, List<OrgRosterEntry>> entry : reportsByManager.entrySet()) {
+            OrgRosterEntry manager = rosterByUserId.get(entry.getKey());
+            String managerDisplayName = manager != null
+                    ? manager.displayName()
+                    : entry.getKey().toString();
+            groups.put(
+                    entry.getKey(),
+                    new OrgTeamGroup(entry.getKey(), managerDisplayName, List.copyOf(entry.getValue())));
+        }
+        return groups;
     }
 
     /**

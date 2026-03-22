@@ -1,0 +1,225 @@
+{
+  "weekStart": "2026-03-16",
+  "reviewCounts": {
+    "pending": 1,
+    "approved": 2,
+    "changesRequested": 1
+  },
+  "teamMembers": [
+    {
+      "userId": "user-alex-chen",
+      "state": "LOCKED",
+      "reviewStatus": "APPROVED",
+      "commitCount": 5,
+      "incompleteCount": 0,
+      "issueCount": 0,
+      "nonStrategicCount": 1,
+      "kingCount": 2,
+      "queenCount": 2,
+      "stale": false,
+      "lateLock": false
+    },
+    {
+      "userId": "user-brianna-watts",
+      "state": "LOCKED",
+      "reviewStatus": "CHANGES_REQUESTED",
+      "commitCount": 4,
+      "incompleteCount": 1,
+      "issueCount": 1,
+      "nonStrategicCount": 2,
+      "kingCount": 1,
+      "queenCount": 1,
+      "stale": false,
+      "lateLock": true
+    },
+    {
+      "userId": "user-carlos-mendez",
+      "state": "LOCKED",
+      "reviewStatus": "APPROVED",
+      "commitCount": 6,
+      "incompleteCount": 2,
+      "issueCount": 2,
+      "nonStrategicCount": 4,
+      "kingCount": 0,
+      "queenCount": 1,
+      "stale": false,
+      "lateLock": false
+    },
+    {
+      "userId": "user-dana-torres",
+      "state": "PENDING",
+      "reviewStatus": null,
+      "commitCount": 0,
+      "incompleteCount": 0,
+      "issueCount": 0,
+      "nonStrategicCount": 0,
+      "kingCount": 0,
+      "queenCount": 0,
+      "stale": true,
+      "lateLock": false
+    }
+  ],
+  "rcdoFocuses": [
+    {
+      "outcomeId": "out-005",
+      "outcomeName": "Achieve sub-200ms P95 latency across all core APIs",
+      "objectiveName": "Achieve top-tier reliability and performance",
+      "rallyCryName": "Build a world-class platform",
+      "commitCount": 7,
+      "kingCount": 2,
+      "queenCount": 3
+    },
+    {
+      "outcomeId": "out-001",
+      "outcomeName": "Enable self-service data portability for all customers",
+      "objectiveName": "Deliver enterprise-grade compliance features",
+      "rallyCryName": "Win enterprise customers",
+      "commitCount": 4,
+      "kingCount": 1,
+      "queenCount": 2
+    },
+    {
+      "outcomeId": "out-007",
+      "outcomeName": "Increase trial-to-paid conversion rate from 18% to 25%",
+      "objectiveName": "Improve activation and retention rates",
+      "rallyCryName": "Grow and retain customers",
+      "commitCount": 2,
+      "kingCount": 0,
+      "queenCount": 1
+    }
+  ],
+  "diagnosticContext": {
+    "categoryShifts": [
+      {
+        "userId": "user-carlos-mendez",
+        "currentPeriod": {
+          "DELIVERY": 0.33,
+          "OPERATIONS": 0.17,
+          "TECH_DEBT": 0.5
+        },
+        "priorPeriod": {
+          "DELIVERY": 0.6,
+          "OPERATIONS": 0.25,
+          "TECH_DEBT": 0.15
+        }
+      }
+    ],
+    "outcomeCoverages": [
+      {
+        "userId": "user-carlos-mendez",
+        "outcomes": [
+          {
+            "outcomeId": "out-005",
+            "weekStart": "2026-03-09",
+            "commitCount": 2
+          },
+          {
+            "outcomeId": "out-005",
+            "weekStart": "2026-03-16",
+            "commitCount": 1
+          }
+        ]
+      }
+    ],
+    "blockerFrequencies": [
+      {
+        "userId": "user-brianna-watts",
+        "atRiskCount": 4,
+        "blockedCount": 2,
+        "totalCheckIns": 12
+      },
+      {
+        "userId": "user-carlos-mendez",
+        "atRiskCount": 5,
+        "blockedCount": 3,
+        "totalCheckIns": 14
+      }
+    ]
+  },
+  "outcomeUrgencies": [
+    {
+      "outcomeId": "out-005",
+      "outcomeName": "Achieve sub-200ms P95 latency across all core APIs",
+      "urgencyBand": "AT_RISK",
+      "targetDate": "2026-06-30",
+      "progressPct": "22.00",
+      "expectedProgressPct": "35.00",
+      "daysRemaining": 106
+    },
+    {
+      "outcomeId": "out-007",
+      "outcomeName": "Increase trial-to-paid conversion rate from 18% to 25%",
+      "urgencyBand": "CRITICAL",
+      "targetDate": "2026-04-30",
+      "progressPct": "10.00",
+      "expectedProgressPct": "45.00",
+      "daysRemaining": 45
+    },
+    {
+      "outcomeId": "out-001",
+      "outcomeName": "Enable self-service data portability for all customers",
+      "urgencyBand": "ON_TRACK",
+      "targetDate": "2026-09-30",
+      "progressPct": "40.00",
+      "expectedProgressPct": "38.00",
+      "daysRemaining": 198
+    }
+  ],
+  "strategicSlackContext": {
+    "slackBand": "LOW_SLACK",
+    "strategicFocusFloor": "0.75",
+    "atRiskCount": 1,
+    "criticalCount": 1
+  },
+  "carryForwardStreaks": [
+    {
+      "userId": "user-carlos-mendez",
+      "streakWeeks": 2,
+      "carriedItemTitles": [
+        "Complete GDPR data deletion audit for inactive accounts",
+        "Write performance testing runbook"
+      ]
+    }
+  ],
+  "outcomeCoverageTrends": [
+    {
+      "outcomeId": "out-007",
+      "outcomeName": "Increase trial-to-paid conversion rate from 18% to 25%",
+      "weekCounts": [
+        {
+          "weekStart": "2026-03-09",
+          "commitCount": 3
+        },
+        {
+          "weekStart": "2026-03-16",
+          "commitCount": 2
+        }
+      ]
+    },
+    {
+      "outcomeId": "out-005",
+      "outcomeName": "Achieve sub-200ms P95 latency across all core APIs",
+      "weekCounts": [
+        {
+          "weekStart": "2026-03-09",
+          "commitCount": 6
+        },
+        {
+          "weekStart": "2026-03-16",
+          "commitCount": 7
+        }
+      ]
+    }
+  ],
+  "lateLockPatterns": [
+    {
+      "userId": "user-brianna-watts",
+      "lateLockWeeks": 2,
+      "windowWeeks": 2
+    }
+  ],
+  "reviewTurnaroundStats": {
+    "avgDaysToReview": 1.8,
+    "sampleSize": 8
+  }
+}

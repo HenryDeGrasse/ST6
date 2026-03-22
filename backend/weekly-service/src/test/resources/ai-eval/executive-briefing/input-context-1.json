@@ -1,0 +1,85 @@
+{
+  "weekStart": "2026-03-16",
+  "summary": {
+    "totalForecasts": 24,
+    "onTrackForecasts": 10,
+    "needsAttentionForecasts": 8,
+    "offTrackForecasts": 4,
+    "noDataForecasts": 2,
+    "averageForecastConfidence": "0.6200",
+    "totalCapacityHours": "840.0",
+    "strategicHours": "462.0",
+    "nonStrategicHours": "378.0",
+    "strategicCapacityUtilizationPct": "55.00",
+    "nonStrategicCapacityUtilizationPct": "45.00",
+    "planningCoveragePct": "78.00"
+  },
+  "rallyCryRollups": [
+    {
+      "rallyCryId": "rc-001",
+      "rallyCryName": "Win enterprise customers",
+      "forecastedOutcomeCount": 8,
+      "onTrackCount": 2,
+      "needsAttentionCount": 4,
+      "offTrackCount": 2,
+      "noDataCount": 0,
+      "averageForecastConfidence": "0.4800",
+      "strategicHours": "126.0"
+    },
+    {
+      "rallyCryId": "rc-002",
+      "rallyCryName": "Build a world-class platform",
+      "forecastedOutcomeCount": 10,
+      "onTrackCount": 5,
+      "needsAttentionCount": 3,
+      "offTrackCount": 2,
+      "noDataCount": 0,
+      "averageForecastConfidence": "0.6500",
+      "strategicHours": "210.0"
+    },
+    {
+      "rallyCryId": "rc-003",
+      "rallyCryName": "Grow and retain customers",
+      "forecastedOutcomeCount": 6,
+      "onTrackCount": 3,
+      "needsAttentionCount": 1,
+      "offTrackCount": 0,
+      "noDataCount": 2,
+      "averageForecastConfidence": "0.7400",
+      "strategicHours": "126.0"
+    }
+  ],
+  "teamBuckets": [
+    {
+      "bucketId": "engineering",
+      "memberCount": 24,
+      "planCoveragePct": "88.00",
+      "totalCapacityHours": "480.0",
+      "strategicHours": "312.0",
+      "nonStrategicHours": "168.0",
+      "strategicCapacityUtilizationPct": "65.00",
+      "averageForecastConfidence": "0.6800"
+    },
+    {
+      "bucketId": "product",
+      "memberCount": 8,
+      "planCoveragePct": "75.00",
+      "totalCapacityHours": "160.0",
+      "strategicHours": "96.0",
+      "nonStrategicHours": "64.0",
+      "strategicCapacityUtilizationPct": "60.00",
+      "averageForecastConfidence": "0.5900"
+    },
+    {
+      "bucketId": "go-to-market",
+      "memberCount": 10,
+      "planCoveragePct": "60.00",
+      "totalCapacityHours": "200.0",
+      "strategicHours": "54.0",
+      "nonStrategicHours": "146.0",
+      "strategicCapacityUtilizationPct": "27.00",
+      "averageForecastConfidence": "0.5200"
+    }
+  ],
+  "teamGroupingAvailable": true
+}

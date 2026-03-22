@@ -35,7 +35,7 @@ function renderPanel(rollup: RcdoRollupResponse | null, loading: boolean, flags?
   return render(
     <AuthProvider user={DEFAULT_USER} token="dev-manager-token">
       <ApiProvider baseUrl="https://example.test/api/v1">
-        <FeatureFlagProvider flags={flags}>
+        <FeatureFlagProvider flags={{ outcomeUrgency: false, ...flags }}>
           <RcdoRollupPanel rollup={rollup} loading={loading} />
         </FeatureFlagProvider>
       </ApiProvider>

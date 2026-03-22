@@ -1,4 +1,6 @@
 import React from "react";
+import { StatusIcon } from "../icons/StatusIcon.js";
+import type { StatusIconName } from "../icons/StatusIcon.js";
 import styles from "./OvercommitBanner.module.css";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -26,8 +28,8 @@ export interface OvercommitBannerProps {
  * Displays a warning banner when the user is overcommitted for the week.
  *
  * - Renders nothing for level === 'NONE'.
- * - MODERATE: yellow/amber banner with ⚠️ icon.
- * - HIGH: red banner with ⛔ icon.
+ * - MODERATE: yellow/amber banner with warning icon.
+ * - HIGH: red banner with stop icon.
  *
  * Uses `data-testid="overcommit-banner"` for test queries.
  */
@@ -39,7 +41,7 @@ export const OvercommitBanner: React.FC<OvercommitBannerProps> = ({
 }) => {
   if (level === "NONE") return null;
 
-  const icon = level === "HIGH" ? "⛔" : "⚠️";
+  const icon: StatusIconName = level === "HIGH" ? "error-x" : "warning";
   const bannerClass = level === "HIGH" ? `${styles.banner} ${styles.high}` : `${styles.banner} ${styles.moderate}`;
 
   return (
@@ -50,7 +52,7 @@ export const OvercommitBanner: React.FC<OvercommitBannerProps> = ({
       aria-live="polite"
     >
       <span className={styles.icon} aria-hidden="true">
-        {icon}
+        <StatusIcon icon={icon} size={18} />
       </span>
       <div className={styles.content}>
         <span className={styles.message}>{message}</span>

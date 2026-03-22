@@ -39,7 +39,17 @@ export type StatusIconName =
   | "error-x"
   | "target"
   | "pin"
-  | "robot";
+  | "robot"
+  | "sparkle"
+  | "bolt"
+  | "blocked"
+  | "celebrate"
+  | "clipboard"
+  | "chart"
+  | "circle-alert"
+  | "circle-dot"
+  | "refresh"
+  | "trending-up";
 
 export interface StatusIconProps {
   /** Which icon to render. */
@@ -194,6 +204,99 @@ function IconPaths({ icon }: { icon: StatusIconName }): React.ReactElement {
           <line x1="3" y1="15" x2="1" y2="15" />
           <line x1="21" y1="11" x2="23" y2="11" />
           <line x1="21" y1="15" x2="23" y2="15" />
+        </>
+      );
+
+    // ── Sparkle (AI / magic) ───────────────────────────────────────────────────
+    case "sparkle":
+      return (
+        <>
+          <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z" />
+        </>
+      );
+
+    // ── Bolt (quick action / energy) ───────────────────────────────────────────
+    case "bolt":
+      return (
+        <>
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </>
+      );
+
+    // ── Blocked (stop / no entry) ──────────────────────────────────────────────
+    case "blocked":
+      return (
+        <>
+          <circle cx="12" cy="12" r="10" />
+          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+        </>
+      );
+
+    // ── Celebrate (success / party) ────────────────────────────────────────────
+    case "celebrate":
+      return (
+        <>
+          <path d="M5.8 11.3L2 22l10.7-3.8" />
+          <path d="M4 3h.01M22 8h.01M15 2h.01M22 20h.01M7 21h.01" />
+          <path d="M9.1 8.9l5.7 5.7" />
+          <path d="M16.2 3.8a2.4 2.4 0 0 0-3.4 0L9.1 7.5a2.4 2.4 0 0 0 0 3.4l4 4a2.4 2.4 0 0 0 3.4 0l3.7-3.7a2.4 2.4 0 0 0 0-3.4z" />
+        </>
+      );
+
+    // ── Clipboard (copy / recurring) ───────────────────────────────────────────
+    case "clipboard":
+      return (
+        <>
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+        </>
+      );
+
+    // ── Chart (analytics / stats) ──────────────────────────────────────────────
+    case "chart":
+      return (
+        <>
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+        </>
+      );
+
+    // ── Circle alert (attention) ───────────────────────────────────────────────
+    case "circle-alert":
+      return (
+        <>
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </>
+      );
+
+    // ── Circle dot (status indicator) ──────────────────────────────────────────
+    case "circle-dot":
+      return (
+        <>
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="1" />
+        </>
+      );
+
+    // ── Refresh (sync / carry-forward) ─────────────────────────────────────────
+    case "refresh":
+      return (
+        <>
+          <polyline points="23 4 23 10 17 10" />
+          <polyline points="1 20 1 14 7 14" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+        </>
+      );
+
+    // ── Trending up (improvement) ──────────────────────────────────────────────
+    case "trending-up":
+      return (
+        <>
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+          <polyline points="17 6 23 6 23 12" />
         </>
       );
   }

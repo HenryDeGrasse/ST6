@@ -1,0 +1,455 @@
+/**
+ * MyInsightsPage – CSS Module (Academia / Classical)
+ *
+ * Elite dashboard layout: stat cards with sparklines, distribution charts,
+ * profile bars, and habit panels. Muted gold/amber accents on dark ground.
+ */
+
+/* ── Page frame ─────────────────────────────────────────────────────────── */
+
+.page {
+  padding: 1rem 1.5rem 3rem;
+  max-width: 72rem;
+  margin: 0 auto;
+}
+
+.heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.75rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--wc-color-text, #E8DFD4);
+  margin: 0 0 0.25rem;
+}
+
+.loadingState,
+.errorState,
+.emptyState {
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.95rem;
+  color: var(--wc-color-muted, #9C8B7A);
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.errorState {
+  color: #C47A84;
+}
+
+/* ── Sections ───────────────────────────────────────────────────────────── */
+
+.section {
+  margin-top: 2.25rem;
+}
+
+.section + .section {
+  padding-top: 0.5rem;
+}
+
+.sectionTitle {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--wc-color-accent, #C9A962);
+  margin: 0 0 0.35rem;
+}
+
+.sectionSub {
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.8rem;
+  color: var(--wc-color-muted, #9C8B7A);
+  margin: 0 0 1rem;
+}
+
+/* ── Stat Card Grid ─────────────────────────────────────────────────────── */
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+@media (min-width: 900px) {
+  .statGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.statCard {
+  background: rgba(60, 50, 40, 0.35);
+  border: 1px solid rgba(201, 169, 98, 0.15);
+  border-radius: 6px;
+  padding: 0.875rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.statTop {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.statLabel {
+  font-family: 'Cinzel', serif;
+  font-size: 0.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--wc-color-muted, #9C8B7A);
+}
+
+.statValue {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--wc-color-text, #E8DFD4);
+  line-height: 1.15;
+}
+
+.statSub {
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.75rem;
+  color: var(--wc-color-muted, #9C8B7A);
+  margin-top: 0.05rem;
+}
+
+/* ── Distribution section ───────────────────────────────────────────────── */
+
+.distGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .distGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.distCard {
+  background: rgba(60, 50, 40, 0.25);
+  border: 1px solid rgba(201, 169, 98, 0.1);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  overflow: hidden;
+}
+
+.priorityBars {
+  margin-top: 0.75rem;
+}
+
+/* ── Hours Comparison ───────────────────────────────────────────────────── */
+
+.hoursChart {
+  margin-top: 0.5rem;
+  background: rgba(60, 50, 40, 0.2);
+  border: 1px solid rgba(201, 169, 98, 0.08);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+}
+
+.hoursLegendRow {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.hoursLegendItem {
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.75rem;
+  color: var(--wc-color-muted, #9C8B7A);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.hoursLegendBar {
+  display: inline-block;
+  width: 12px;
+  height: 6px;
+  border-radius: 2px;
+}
+
+.hoursBarGroup {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  height: 130px;
+  padding-bottom: 0;
+  border-bottom: 1px solid rgba(201, 169, 98, 0.1);
+}
+
+.hoursPair {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.hoursBarWrap {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+  height: 100px;
+  width: 100%;
+  justify-content: center;
+}
+
+.hoursBarEst {
+  width: 40%;
+  max-width: 16px;
+  background: var(--wc-color-accent, #C9A962);
+  border-radius: 2px 2px 0 0;
+  transition: height 0.5s ease-out;
+  min-height: 2px;
+}
+
+.hoursBarAct {
+  width: 40%;
+  max-width: 16px;
+  background: #7A8C6E;
+  border-radius: 2px 2px 0 0;
+  transition: height 0.5s ease-out;
+  min-height: 2px;
+}
+
+.hoursWeekLabel {
+  font-family: 'Cinzel', serif;
+  font-size: 0.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--wc-color-muted, #9C8B7A);
+  white-space: nowrap;
+}
+
+/* ── Profile Grid ───────────────────────────────────────────────────────── */
+
+.profileGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.profileCard {
+  background: rgba(60, 50, 40, 0.25);
+  border: 1px solid rgba(201, 169, 98, 0.1);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  overflow: hidden;
+}
+
+.cardTitle {
+  font-family: 'Cinzel', serif;
+  font-size: 0.55rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--wc-color-accent, #C9A962);
+  margin: 0 0 0.75rem;
+}
+
+.profileMetricRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid rgba(201, 169, 98, 0.08);
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.85rem;
+  gap: 1rem;
+}
+
+.profileMetricRow:last-child {
+  border-bottom: none;
+}
+
+.profileMetricRow span {
+  color: var(--wc-color-muted, #9C8B7A);
+}
+
+.profileMetricRow strong {
+  color: var(--wc-color-text, #E8DFD4);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* ── Habits Grid ────────────────────────────────────────────────────────── */
+
+.habitsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.habitCard {
+  background: rgba(60, 50, 40, 0.25);
+  border: 1px solid rgba(201, 169, 98, 0.1);
+  border-radius: 6px;
+  padding: 0.875rem 1rem;
+  overflow: hidden;
+  min-width: 0;
+  /* Grow to fill row, but shrink-to-content as baseline */
+  flex: 0 1 auto;
+}
+
+.habitLabel {
+  display: block;
+  font-family: 'Cinzel', serif;
+  font-size: 0.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--wc-color-muted, #9C8B7A);
+  margin-bottom: 0.4rem;
+}
+
+.habitValue {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--wc-color-text, #E8DFD4);
+}
+
+.dayChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+
+.dayChip {
+  font-family: 'Cinzel', serif;
+  font-size: 0.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.25rem 0.6rem;
+  border-radius: 3px;
+  background: rgba(60, 50, 40, 0.4);
+  color: var(--wc-color-muted, #9C8B7A);
+  border: 1px solid rgba(201, 169, 98, 0.08);
+  flex-shrink: 0;
+}
+
+.dayActive {
+  background: rgba(201, 169, 98, 0.15);
+  color: var(--wc-color-accent, #C9A962);
+  border-color: rgba(201, 169, 98, 0.3);
+}
+
+.recurringList {
+  list-style: none;
+  padding: 0;
+  margin: 0.25rem 0 0;
+}
+
+.recurringList li {
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.8rem;
+  color: var(--wc-color-muted, #9C8B7A);
+  padding: 0.25rem 0;
+  border-bottom: 1px solid rgba(201, 169, 98, 0.06);
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.recurringList li:last-child {
+  border-bottom: none;
+}
+
+/* ── Trend & Insight Badges ─────────────────────────────────────────────── */
+
+.signalsRow {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.trendBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.trendBadge {
+  font-family: 'Cinzel', serif;
+  font-size: 0.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 0.3rem 0.75rem;
+  border-radius: 3px;
+  border: 1px solid rgba(201, 169, 98, 0.2);
+  color: var(--wc-color-muted, #9C8B7A);
+}
+
+.trendImproving {
+  background: rgba(122, 140, 110, 0.15);
+  border-color: rgba(122, 140, 110, 0.35);
+  color: #9AB88C;
+}
+
+.trendStable {
+  background: rgba(201, 169, 98, 0.1);
+  border-color: rgba(201, 169, 98, 0.25);
+  color: #C9A962;
+}
+
+.trendWorsening {
+  background: rgba(196, 122, 132, 0.12);
+  border-color: rgba(196, 122, 132, 0.3);
+  color: #C47A84;
+}
+
+.insightList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.insightItem {
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.85rem;
+  color: var(--wc-color-muted, #9C8B7A);
+  padding: 0.5rem 0.85rem;
+  border-radius: 4px;
+  background: rgba(60, 50, 40, 0.2);
+  border-left: 3px solid transparent;
+  line-height: 1.4;
+}
+
+.insightPositive {
+  border-left-color: #7A8C6E;
+}
+
+.insightInfo {
+  border-left-color: #6E7A8C;
+}
+
+.insightWarning {
+  border-left-color: #C47A84;
+}
+
+.insightSeverity {
+  font-family: 'Cinzel', serif;
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-right: 0.5rem;
+  color: var(--wc-color-text, #E8DFD4);
+}

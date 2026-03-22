@@ -11,12 +11,12 @@ export interface ChessPickerProps {
 }
 
 const CHESS_LABELS: Record<ChessPriority, string> = {
-  [ChessPriority.KING]: "♚ King – Must happen",
-  [ChessPriority.QUEEN]: "♛ Queen – High leverage",
-  [ChessPriority.ROOK]: "♜ Rook – Strong execution",
-  [ChessPriority.BISHOP]: "♝ Bishop – Support/enablement",
-  [ChessPriority.KNIGHT]: "♞ Knight – Exploration",
-  [ChessPriority.PAWN]: "♟ Pawn – Small task/hygiene",
+  [ChessPriority.KING]: "King – Must happen",
+  [ChessPriority.QUEEN]: "Queen – High leverage",
+  [ChessPriority.ROOK]: "Rook – Strong execution",
+  [ChessPriority.BISHOP]: "Bishop – Support/enablement",
+  [ChessPriority.KNIGHT]: "Knight – Exploration",
+  [ChessPriority.PAWN]: "Pawn – Small task/hygiene",
 };
 
 /** Maps a ChessPriority to a ChessPiece for the icon. */

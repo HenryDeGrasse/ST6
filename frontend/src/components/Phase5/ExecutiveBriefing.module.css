@@ -1,0 +1,60 @@
+/**
+ * ExecutiveBriefing – enhanced styling for the AI-generated briefing section.
+ *
+ * Headline uses Cormorant Garamond; insights are severity-accented cards
+ * matching the MyInsightsPage signals section pattern.
+ */
+
+.headline {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--wc-color-text, #E8DFD4);
+  line-height: 1.4;
+  margin: 0 0 1rem;
+  font-style: italic;
+}
+
+/* ── Insight cards ──────────────────────────────────────────────────────── */
+
+.insightList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.insightItem {
+  background: rgba(60, 50, 40, 0.25);
+  border-radius: 4px;
+  border-left: 3px solid transparent;
+  padding: 0.6rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  line-height: 1.4;
+}
+
+.insightSeverity {
+  font-family: 'Cinzel', serif;
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--wc-color-text, #E8DFD4);
+}
+
+.insightTitle {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--wc-color-text, #E8DFD4);
+}
+
+.insightDetail {
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.85rem;
+  color: var(--wc-color-muted, #9C8B7A);
+}

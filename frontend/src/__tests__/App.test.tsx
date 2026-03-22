@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { App } from "../App.js";
 
 // Mock the API client to prevent real network calls
@@ -16,6 +16,10 @@ vi.mock("@weekly-commitments/contracts", async () => {
     }),
   };
 });
+
+vi.mock("../pages/ExecutiveDashboardPage.js", () => ({
+  ExecutiveDashboardPage: () => <div data-testid="executive-dashboard-page">Executive Dashboard</div>,
+}));
 
 describe("App", () => {
   beforeEach(() => {
@@ -54,5 +58,22 @@ describe("App", () => {
     render(<App user={customUser} token="test-token" />);
     expect(screen.getByTestId("weekly-plan-page")).toBeInTheDocument();
     await screen.findByTestId("create-plan-btn");
+  });
+
+  it("shows executive navigation for admins when the feature flag is enabled", async () => {
+    const executiveUser = {
+      userId: "exec-user-id",
+      orgId: "test-org-id",
+      displayName: "Executive User",
+      roles: ["ADMIN"],
+      timezone: "UTC",
+    };
+
+    render(<App user={executiveUser} initialRoute="admin" featureFlags={{ executiveDashboard: true }} />);
+
+    fireEvent.click(screen.getByTestId("nav-executive"));
+
+    expect(screen.getByTestId("executive-dashboard-page")).toBeInTheDocument();
+    expect(screen.getByText("Executive Dashboard")).toBeInTheDocument();
   });
 });

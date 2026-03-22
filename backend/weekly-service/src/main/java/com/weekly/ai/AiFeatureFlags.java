@@ -3,20 +3,23 @@ package com.weekly.ai;
 /**
  * Feature flags for AI-assisted workflows.
  *
- * <p>Per PRD §4: RCDO auto-suggest is MVP ship, reconciliation draft
- * and manager insight summaries are MVP beta (behind flags).
- * Wave 1 adds plan quality nudge (data-driven, behind flag).
- * Wave 2 adds next-work suggestions (data-driven, behind flag).
- * Wave 3 adds LLM-ranked next-work suggestions (behind flag).
+ * <p>Feature flags for AI-assisted workflows. In the current local/runtime
+ * defaults all product-facing AI flags are enabled, while still remaining
+ * individually overrideable via configuration binding.
  */
 public class AiFeatureFlags {
 
     private boolean suggestRcdoEnabled = true;
-    private boolean draftReconciliationEnabled = false;
-    private boolean managerInsightsEnabled = false;
-    private boolean planQualityNudgeEnabled = false;
-    private boolean suggestNextWorkEnabled = false;
-    private boolean llmNextWorkRankingEnabled = false;
+    private boolean draftReconciliationEnabled = true;
+    private boolean managerInsightsEnabled = true;
+    private boolean planQualityNudgeEnabled = true;
+    private boolean suggestNextWorkEnabled = true;
+    private boolean llmNextWorkRankingEnabled = true;
+    private boolean targetDateForecastingEnabled = true;
+    private boolean planningCopilotEnabled = true;
+    private boolean executiveDashboardEnabled = true;
+    private boolean weeklyPlanningAgentEnabled = true;
+    private boolean misalignmentAgentEnabled = true;
 
     /**
      * Whether the RCDO auto-suggest endpoint is active.
@@ -32,7 +35,6 @@ public class AiFeatureFlags {
 
     /**
      * Whether the AI reconciliation draft endpoint is active.
-     * MVP beta: disabled by default, behind feature flag.
      */
     public boolean isDraftReconciliationEnabled() {
         return draftReconciliationEnabled;
@@ -44,7 +46,6 @@ public class AiFeatureFlags {
 
     /**
      * Whether manager AI insight summaries are active.
-     * MVP beta: disabled by default, behind feature flag.
      */
     public boolean isManagerInsightsEnabled() {
         return managerInsightsEnabled;
@@ -56,7 +57,6 @@ public class AiFeatureFlags {
 
     /**
      * Whether the lock-time AI plan quality nudge endpoint is active.
-     * Wave 1: disabled by default, behind feature flag {@code ai.features.plan-quality-nudge-enabled}.
      */
     public boolean isPlanQualityNudgeEnabled() {
         return planQualityNudgeEnabled;
@@ -68,8 +68,6 @@ public class AiFeatureFlags {
 
     /**
      * Whether the AI next-work suggestion endpoints are active.
-     * Wave 2: disabled by default, behind feature flag
-     * {@code ai.features.suggest-next-work-enabled}.
      */
     public boolean isSuggestNextWorkEnabled() {
         return suggestNextWorkEnabled;
@@ -82,8 +80,6 @@ public class AiFeatureFlags {
     /**
      * Whether LLM-based re-ranking is applied on top of the data-driven
      * next-work candidate set.
-     * Wave 3 / Phase 2: disabled by default, behind feature flag
-     * {@code ai.features.llm-next-work-ranking-enabled}.
      *
      * <p>When disabled the data-driven Phase 1 order is returned directly.
      * When enabled the Phase 1 candidate set is sent to the LLM for
@@ -96,5 +92,60 @@ public class AiFeatureFlags {
 
     public void setLlmNextWorkRankingEnabled(boolean enabled) {
         this.llmNextWorkRankingEnabled = enabled;
+    }
+
+    /**
+     * Whether persisted target-date forecasting is enabled.
+     */
+    public boolean isTargetDateForecastingEnabled() {
+        return targetDateForecastingEnabled;
+    }
+
+    public void setTargetDateForecastingEnabled(boolean enabled) {
+        this.targetDateForecastingEnabled = enabled;
+    }
+
+    /**
+     * Whether the manager planning copilot suggestion engine is enabled.
+     */
+    public boolean isPlanningCopilotEnabled() {
+        return planningCopilotEnabled;
+    }
+
+    public void setPlanningCopilotEnabled(boolean enabled) {
+        this.planningCopilotEnabled = enabled;
+    }
+
+    /**
+     * Whether the executive strategic health dashboard surfaces are enabled.
+     */
+    public boolean isExecutiveDashboardEnabled() {
+        return executiveDashboardEnabled;
+    }
+
+    public void setExecutiveDashboardEnabled(boolean enabled) {
+        this.executiveDashboardEnabled = enabled;
+    }
+
+    /**
+     * Whether the proactive weekly-planning agent is enabled.
+     */
+    public boolean isWeeklyPlanningAgentEnabled() {
+        return weeklyPlanningAgentEnabled;
+    }
+
+    public void setWeeklyPlanningAgentEnabled(boolean enabled) {
+        this.weeklyPlanningAgentEnabled = enabled;
+    }
+
+    /**
+     * Whether the proactive misalignment agent is enabled.
+     */
+    public boolean isMisalignmentAgentEnabled() {
+        return misalignmentAgentEnabled;
+    }
+
+    public void setMisalignmentAgentEnabled(boolean enabled) {
+        this.misalignmentAgentEnabled = enabled;
     }
 }

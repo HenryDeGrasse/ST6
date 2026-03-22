@@ -1,4 +1,16 @@
-import type { PlanState, ReviewStatus, ChessPriority, CompletionStatus, LockType, CommitCategory } from "./enums.js";
+import type {
+  PlanState,
+  ReviewStatus,
+  ChessPriority,
+  CompletionStatus,
+  LockType,
+  CommitCategory,
+  EffortType,
+  IssueStatus,
+  TeamRole,
+  AccessRequestStatus,
+  IssueActivityType,
+} from "./enums.js";
 
 // ─── Weekly Plan ────────────────────────────────────────────
 
@@ -234,4 +246,125 @@ export interface TrendsResponse {
   weekPoints: WeekTrendPoint[];
   /** Structured insights for notable patterns. */
   insights: TrendInsight[];
+}
+
+// ─── Phase 6: Issue Backlog, Teams & AI Work Intelligence ───
+
+/** A persistent backlog issue within a team's issue tracker */
+export interface Issue {
+  id: string;
+  orgId: string;
+  teamId: string;
+  /** Human-readable key, e.g. "ENG-42" */
+  issueKey: string;
+  /** Monotonically increasing sequence number within the team */
+  sequenceNumber: number;
+  title: string;
+  description: string | null;
+  effortType: EffortType | null;
+  estimatedHours: number | null;
+  chessPriority: ChessPriority | null;
+  outcomeId: string | null;
+  nonStrategicReason: string | null;
+  creatorUserId: string;
+  assigneeUserId: string | null;
+  blockedByIssueId: string | null;
+  status: IssueStatus;
+  /** AI-computed rank within the backlog (lower = higher priority) */
+  aiRecommendedRank: number | null;
+  /** Human-readable rationale for the AI rank */
+  aiRankRationale: string | null;
+  /** AI-suggested effort type */
+  aiSuggestedEffortType: EffortType | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  archivedAt: string | null;
+}
+
+/** A weekly assignment linking a backlog issue to a weekly plan */
+export interface WeeklyAssignment {
+  id: string;
+  orgId: string;
+  weeklyPlanId: string;
+  issueId: string;
+  chessPriorityOverride: ChessPriority | null;
+  expectedResult: string | null;
+  confidence: number | null;
+
+  // RCDO snapshot (populated at plan lock time)
+  snapshotRallyCryId: string | null;
+  snapshotRallyCryName: string | null;
+  snapshotObjectiveId: string | null;
+  snapshotObjectiveName: string | null;
+  snapshotOutcomeId: string | null;
+  snapshotOutcomeName: string | null;
+
+  tags: string[];
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Actuals recorded for a weekly assignment after reconciliation */
+export interface WeeklyAssignmentActual {
+  assignmentId: string;
+  orgId: string;
+  actualResult: string | null;
+  completionStatus: CompletionStatus;
+  deltaReason: string | null;
+  hoursSpent: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** An audit activity event recorded on an issue */
+export interface IssueActivity {
+  id: string;
+  orgId: string;
+  issueId: string;
+  actorUserId: string;
+  activityType: IssueActivityType;
+  oldValue: string | null;
+  newValue: string | null;
+  commentText: string | null;
+  hoursLogged: number | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+/** A team that owns a set of backlog issues */
+export interface Team {
+  id: string;
+  orgId: string;
+  name: string;
+  /** Short prefix used in issue keys, e.g. "ENG" */
+  keyPrefix: string;
+  description: string | null;
+  ownerUserId: string;
+  /** Current issue sequence counter (auto-incremented on issue creation) */
+  issueSequence: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Membership of a user in a team */
+export interface TeamMember {
+  teamId: string;
+  userId: string;
+  orgId: string;
+  role: TeamRole;
+  joinedAt: string;
+}
+
+/** A request from a user to join a team */
+export interface TeamAccessRequest {
+  id: string;
+  teamId: string;
+  requesterUserId: string;
+  orgId: string;
+  status: AccessRequestStatus;
+  decidedByUserId: string | null;
+  decidedAt: string | null;
+  createdAt: string;
 }

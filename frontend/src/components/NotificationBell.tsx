@@ -94,6 +94,25 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
                     {formatDigestMessage(n.payload)}
                   </div>
                 )}
+                {n.type === "WEEKLY_PLAN_DRAFT_READY" && (
+                  <div
+                    data-testid={`draft-ready-summary-${n.id}`}
+                    className={styles.notificationDigestSummary}
+                  >
+                    {formatDraftReadyMessage(n.payload)}
+                  </div>
+                )}
+                {n.type === "PLAN_MISALIGNMENT_BRIEFING" && (
+                  <div
+                    data-testid={`misalignment-summary-${n.id}`}
+                    className={styles.notificationDigestSummary}
+                  >
+                    {formatMisalignmentMessage(n.payload)}
+                  </div>
+                )}
+                {!["WEEKLY_DIGEST", "WEEKLY_PLAN_DRAFT_READY", "PLAN_MISALIGNMENT_BRIEFING"].includes(n.type) && typeof n.payload.message === "string" && n.payload.message.trim().length > 0 && (
+                  <div className={styles.notificationDigestSummary}>{n.payload.message.trim()}</div>
+                )}
                 <div className={styles.notificationTime}>{new Date(n.createdAt).toLocaleString()}</div>
               </div>
               <button
@@ -121,6 +140,8 @@ function formatNotificationType(type: string): string {
     RECONCILIATION_SUBMITTED: "Reconciliation submitted for review",
     CHANGES_REQUESTED: "Manager requested changes",
     WEEKLY_DIGEST: "Weekly team digest",
+    WEEKLY_PLAN_DRAFT_READY: "Your draft weekly plan is ready",
+    PLAN_MISALIGNMENT_BRIEFING: "Team planning misalignment briefing",
   };
   return labels[type] ?? type.replace(/_/g, " ").toLowerCase();
 }
@@ -130,6 +151,53 @@ function formatNotificationType(type: string): string {
  * Returns the pre-built `message` field when present, otherwise reconstructs a digest
  * summary from the structured payload fields before falling back to a generic label.
  */
+export function formatDraftReadyMessage(payload: Record<string, unknown>): string {
+  if (typeof payload.message === "string" && payload.message.trim().length > 0) {
+    return payload.message.trim();
+  }
+
+  const commitCount = readNumericField(payload.suggestedCommitCount);
+  const hours = typeof payload.suggestedHours === "string" ? payload.suggestedHours : null;
+  const capacity = typeof payload.capacityHours === "string" ? payload.capacityHours : null;
+  const weekStartDate = typeof payload.weekStartDate === "string" ? payload.weekStartDate : null;
+
+  if (commitCount === null) {
+    return "Your weekly draft plan is ready";
+  }
+
+  let summary = `Draft ready with ${commitCount} suggested ${commitCount === 1 ? "commit" : "commits"}`;
+  if (hours) {
+    summary += ` covering ${hours}h`;
+  }
+  if (capacity) {
+    summary += ` against ${capacity}h capacity`;
+  }
+  if (weekStartDate) {
+    summary += ` for week of ${weekStartDate}`;
+  }
+
+  return `${summary}.`;
+}
+
+export function formatMisalignmentMessage(payload: Record<string, unknown>): string {
+  if (typeof payload.message === "string" && payload.message.trim().length > 0) {
+    return payload.message.trim();
+  }
+
+  const teamName = typeof payload.teamName === "string" ? payload.teamName : "team";
+  const concernCount = readNumericField(payload.concernCount);
+  const overloaded = Array.isArray(payload.overloadedMembers) ? payload.overloadedMembers.length : 0;
+  const urgent = Array.isArray(payload.urgentOutcomesNeedingAttention)
+    ? payload.urgentOutcomesNeedingAttention.length
+    : 0;
+
+  if (concernCount === null) {
+    return `Planning misalignment briefing available for ${teamName}`;
+  }
+
+  return `${teamName} has ${concernCount} planning concern${concernCount === 1 ? "" : "s"}, including ${overloaded} overloaded member${overloaded === 1 ? "" : "s"} and ${urgent} urgent outcome${urgent === 1 ? "" : "s"} needing attention.`;
+}
+
 export function formatDigestMessage(payload: Record<string, unknown>): string {
   if (typeof payload.message === "string" && payload.message.trim().length > 0) {
     return payload.message.trim();

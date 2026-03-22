@@ -48,10 +48,10 @@ export interface QuickUpdateFlowProps {
 // The four values match the ProgressStatus enum: ON_TRACK | AT_RISK | BLOCKED | DONE_EARLY.
 
 export const STATUS_MAP: Record<string, { label: string; emoji: string }> = {
-  ON_TRACK: { label: "On Track", emoji: "✅" },
-  AT_RISK: { label: "At Risk", emoji: "⚠️" },
-  BLOCKED: { label: "Blocked", emoji: "🚫" },
-  DONE_EARLY: { label: "Done Early", emoji: "🎉" },
+  ON_TRACK: { label: "On Track", emoji: "check" },
+  AT_RISK: { label: "At Risk", emoji: "warning" },
+  BLOCKED: { label: "Blocked", emoji: "blocked" },
+  DONE_EARLY: { label: "Done Early", emoji: "celebrate" },
 };
 
 const ALL_STATUS_KEYS = ["ON_TRACK", "AT_RISK", "BLOCKED", "DONE_EARLY"] as const satisfies readonly QuickUpdateItem["status"][];
@@ -59,12 +59,12 @@ const ALL_STATUS_KEYS = ["ON_TRACK", "AT_RISK", "BLOCKED", "DONE_EARLY"] as cons
 // ─── Chess-priority labels ──────────────────────────────────────────────────
 
 const CHESS_LABELS: Record<string, string> = {
-  KING: "♔ King",
-  QUEEN: "♛ Queen",
-  ROOK: "♜ Rook",
-  BISHOP: "♝ Bishop",
-  KNIGHT: "♞ Knight",
-  PAWN: "♟ Pawn",
+  KING: "King",
+  QUEEN: "Queen",
+  ROOK: "Rook",
+  BISHOP: "Bishop",
+  KNIGHT: "Knight",
+  PAWN: "Pawn",
 };
 
 type CommitUpdateDraft = {
@@ -318,7 +318,7 @@ export const QuickUpdateFlow: React.FC<QuickUpdateFlowProps> = ({
         onClick={onClose}
         aria-label="Close quick update"
       >
-        ✕
+        Close
       </button>
 
       <div data-testid="quick-update-card" className={styles.card}>

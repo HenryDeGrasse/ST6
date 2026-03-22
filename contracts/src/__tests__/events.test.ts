@@ -55,7 +55,12 @@ describe("NotificationType enum", () => {
     expect(NotificationType.WEEKLY_DIGEST).toBe("WEEKLY_DIGEST");
   });
 
-  it("has 6 notification types", () => {
-    expect(Object.values(NotificationType)).toHaveLength(6);
+  it("contains Phase 5 agent notification types", () => {
+    expect(NotificationType.WEEKLY_PLAN_DRAFT_READY).toBe("WEEKLY_PLAN_DRAFT_READY");
+    expect(NotificationType.PLAN_MISALIGNMENT_BRIEFING).toBe("PLAN_MISALIGNMENT_BRIEFING");
+  });
+
+  it("has 8 notification types", () => {
+    expect(Object.values(NotificationType)).toHaveLength(8);
   });
 });

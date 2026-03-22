@@ -8,7 +8,7 @@ import type {
   SuggestionFeedbackRequest,
   CheckInRequest,
 } from "@weekly-commitments/contracts";
-import { PlanState, CompletionStatus } from "@weekly-commitments/contracts";
+import { PlanState, CompletionStatus, ChessPriority } from "@weekly-commitments/contracts";
 import { WeekSelector } from "../components/WeekSelector.js";
 import { PlanHeader } from "../components/PlanHeader.js";
 import { CommitList } from "../components/CommitList.js";
@@ -20,23 +20,23 @@ import { AiReconciliationDraft } from "../components/AiReconciliationDraft.js";
 import { ConfirmDialog } from "../components/ConfirmDialog.js";
 import { ErrorBanner } from "../components/ErrorBanner.js";
 import { GlassPanel } from "../components/GlassPanel.js";
-import { MyTrendsPanel } from "../components/MyTrendsPanel.js";
 import { PlanQualityNudge } from "../components/PlanQualityNudge.js";
 import { NextWorkSuggestionPanel } from "../components/NextWorkSuggestionPanel.js";
 import { DigestPreferencesSection } from "../components/DigestPreferencesSection.js";
 import { QuickUpdateFlow } from "../components/QuickUpdate/QuickUpdateFlow.js";
 import type { QuickUpdateCommitment } from "../components/QuickUpdate/QuickUpdateFlow.js";
-import { UserProfilePanel } from "../components/UserProfile/UserProfilePanel.js";
-import { useUserProfile } from "../hooks/useUserProfile.js";
+import { OvercommitBanner } from "../components/CapacityView/OvercommitBanner.js";
+import type { OvercommitLevel } from "../components/CapacityView/OvercommitBanner.js";
+import { StatusIcon } from "../components/icons/StatusIcon.js";
 import { usePlan } from "../hooks/usePlan.js";
 import { useCommits } from "../hooks/useCommits.js";
 import { useRcdo } from "../hooks/useRcdo.js";
 import { useAiSuggestions } from "../hooks/useAiSuggestions.js";
-import { useTrends } from "../hooks/useTrends.js";
 import { usePlanQualityCheck } from "../hooks/usePlanQualityCheck.js";
 import { useDraftFromHistory } from "../hooks/useDraftFromHistory.js";
 import { useNextWorkSuggestions } from "../hooks/useNextWorkSuggestions.js";
 import { useCheckIn } from "../hooks/useCheckIn.js";
+import { useCapacityProfile } from "../hooks/useCapacity.js";
 import { getWeekStart, isPastWeek, isFutureWeek, isCreateAllowedForWeek } from "../utils/week.js";
 import { useToast } from "../context/ToastContext.js";
 import { useFeatureFlags } from "../context/FeatureFlagContext.js";
@@ -114,15 +114,6 @@ export const WeeklyPlanPage: React.FC = () => {
   } = useAiSuggestions();
 
   const {
-    trends,
-    loading: trendsLoading,
-    error: trendsError,
-    fetchTrends,
-  } = useTrends();
-
-  const { profile, loading: profileLoading, error: profileError, fetchProfile } = useUserProfile();
-
-  const {
     nudges: qualityNudges,
     status: qualityStatus,
     checkQuality,
@@ -145,6 +136,8 @@ export const WeeklyPlanPage: React.FC = () => {
     clearSuggestions: clearNextWorkSuggestions,
   } = useNextWorkSuggestions();
 
+  const { profile: capacityProfile, fetchProfile: fetchCapacityProfile } = useCapacityProfile();
+
   const flags = useFeatureFlags();
 
   const [checkInOpenForId, setCheckInOpenForId] = useState<string | null>(null);
@@ -162,22 +155,6 @@ export const WeeklyPlanPage: React.FC = () => {
   useEffect(() => {
     void fetchPlan(selectedWeek);
   }, [selectedWeek, fetchPlan]);
-
-  // Load trends on mount when the flag is enabled
-  useEffect(() => {
-    if (flags.icTrends) {
-      void fetchTrends();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flags.icTrends]);
-
-  // Load user profile on mount when the flag is enabled
-  useEffect(() => {
-    if (flags.userProfile) {
-      void fetchProfile();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flags.userProfile]);
 
   // Load commits when plan is available
   useEffect(() => {
@@ -210,6 +187,36 @@ export const WeeklyPlanPage: React.FC = () => {
     plan?.state,
     selectedWeek,
   ]);
+
+  // Fetch capacity profile when plan is in DRAFT state
+  useEffect(() => {
+    if (plan?.state === PlanState.DRAFT) {
+      void fetchCapacityProfile();
+    }
+  }, [plan?.state, fetchCapacityProfile]);
+
+  // ── Overcommit computation ────────────────────────────────────────────────
+
+  const adjustedTotal = commits.reduce((sum, c) => sum + (c.estimatedHours ?? 0), 0);
+  const realisticCap = capacityProfile?.realisticWeeklyCap ?? null;
+
+  let overcommitLevel: OvercommitLevel = "NONE";
+  if (realisticCap !== null) {
+    if (adjustedTotal > realisticCap * 1.2) {
+      overcommitLevel = "HIGH";
+    } else if (adjustedTotal > realisticCap) {
+      overcommitLevel = "MODERATE";
+    }
+  }
+
+  let overcommitMessage = "";
+  if (overcommitLevel === "HIGH") {
+    overcommitMessage = `You're significantly over your realistic weekly capacity. Consider deferring some commitments to avoid burnout.`;
+  } else if (overcommitLevel === "MODERATE") {
+    overcommitMessage = `You're slightly over your realistic weekly capacity. Review your commitments before locking.`;
+  }
+
+  // ── Event handlers ────────────────────────────────────────────────────────
 
   const handleWeekChange = useCallback((week: string) => {
     setSelectedWeek(week);
@@ -395,9 +402,23 @@ export const WeeklyPlanPage: React.FC = () => {
       if (!plan) {
         return false;
       }
+
+      // Chess-aware safety net: downgrade priority if it would violate chess rules.
+      // Backend should already handle this, but guard against stale suggestions.
+      let chessPriority = suggestion.suggestedChessPriority;
+      if (chessPriority) {
+        const kingCount = commits.filter((c) => c.chessPriority === ChessPriority.KING).length;
+        const queenCount = commits.filter((c) => c.chessPriority === ChessPriority.QUEEN).length;
+        if (chessPriority === ChessPriority.KING && kingCount >= 1) {
+          chessPriority = ChessPriority.ROOK;
+        } else if (chessPriority === ChessPriority.QUEEN && queenCount >= 2) {
+          chessPriority = ChessPriority.ROOK;
+        }
+      }
+
       const req: CreateCommitRequest = {
         title: suggestion.title,
-        chessPriority: suggestion.suggestedChessPriority,
+        chessPriority,
         outcomeId: suggestion.suggestedOutcomeId ?? null,
         tags: [getNextWorkDraftSourceTag(suggestion)],
       };
@@ -407,7 +428,7 @@ export const WeeklyPlanPage: React.FC = () => {
       }
       return created !== null;
     },
-    [plan, createCommit, dismissNextWorkSuggestion, getNextWorkDraftSourceTag],
+    [plan, commits, createCommit, dismissNextWorkSuggestion, getNextWorkDraftSourceTag],
   );
 
   const handleNextWorkFeedback = useCallback(
@@ -489,8 +510,6 @@ export const WeeklyPlanPage: React.FC = () => {
 
       <ErrorBanner message={error} onDismiss={clearError} />
 
-      <DigestPreferencesSection />
-
       {loading && !plan && (
         <div data-testid="loading-indicator" className={styles.loading}>
           Loading…
@@ -500,8 +519,11 @@ export const WeeklyPlanPage: React.FC = () => {
       {!loading && !plan && (
         <div data-testid="no-plan" className={styles.noPlan}>
           {isCreateAllowedForWeek(selectedWeek) && (
-            <>
-              <p>No plan for this week yet.</p>
+            <div className={styles.noPlanCard}>
+              <p className={styles.noPlanHeading}>No plan for this week yet.</p>
+              <p className={styles.noPlanDescription}>
+                Create a fresh plan or start from your previous week's commitments.
+              </p>
               <div className={styles.noPlanActions}>
                 <button
                   data-testid="create-plan-btn"
@@ -518,11 +540,11 @@ export const WeeklyPlanPage: React.FC = () => {
                     onClick={() => void handleStartFromLastWeek()}
                     disabled={draftLoading}
                   >
-                    {draftLoading ? "Building your plan…" : "✨ Start from Last Week"}
+                    {draftLoading ? "Building your plan…" : "Start from Last Week"}
                   </button>
                 )}
               </div>
-            </>
+            </div>
           )}
           {isPastWeek(selectedWeek) && (
             <p data-testid="no-plan-past" className={styles.noPlanMuted}>
@@ -555,21 +577,14 @@ export const WeeklyPlanPage: React.FC = () => {
               className={styles.quickUpdateButton}
               onClick={() => setShowQuickUpdate(true)}
             >
-              ⚡ Quick Update
+              <StatusIcon icon="refresh" size={14} />
+              Quick Update
             </button>
           )}
 
           <PlanSummaryStrip commits={commits} />
 
           {plan.state === PlanState.DRAFT && <ValidationPanel commits={commits} />}
-
-          <MyTrendsPanel
-            trends={trends}
-            loading={trendsLoading}
-            error={trendsError}
-          />
-
-          <UserProfilePanel profile={profile} loading={profileLoading} error={profileError} />
 
           {flags.suggestNextWork && plan.state === PlanState.DRAFT && (
             <NextWorkSuggestionPanel
@@ -579,6 +594,15 @@ export const WeeklyPlanPage: React.FC = () => {
               onFeedback={handleNextWorkFeedback}
               onRefresh={handleNextWorkRefresh}
               resolveOutcomeLabel={resolveNextWorkOutcomeLabel}
+            />
+          )}
+
+          {plan.state === PlanState.DRAFT && (
+            <OvercommitBanner
+              level={overcommitLevel}
+              message={overcommitMessage}
+              adjustedTotal={adjustedTotal}
+              realisticCap={realisticCap ?? 0}
             />
           )}
 
@@ -649,6 +673,8 @@ export const WeeklyPlanPage: React.FC = () => {
               onClose={() => setShowQuickUpdate(false)}
             />
           )}
+
+          <DigestPreferencesSection />
         </GlassPanel>
       )}
       {/* Plan quality nudge — shown before lock confirm dialog when flag is enabled */}

@@ -24,6 +24,11 @@ const FlagDisplay: React.FC = () => {
       <span data-testid="predictions">{String(flags.predictions)}</span>
       <span data-testid="outcomeUrgency">{String(flags.outcomeUrgency)}</span>
       <span data-testid="strategicSlack">{String(flags.strategicSlack)}</span>
+      <span data-testid="targetDateForecasting">{String(flags.targetDateForecasting)}</span>
+      <span data-testid="planningCopilot">{String(flags.planningCopilot)}</span>
+      <span data-testid="executiveDashboard">{String(flags.executiveDashboard)}</span>
+      <span data-testid="weeklyPlanningAgent">{String(flags.weeklyPlanningAgent)}</span>
+      <span data-testid="misalignmentAgent">{String(flags.misalignmentAgent)}</span>
     </div>
   );
 };
@@ -37,26 +42,31 @@ describe("FeatureFlagContext", () => {
     window.localStorage.clear();
   });
 
-  it("provides correct defaults (MVP features enabled, beta AI features disabled)", () => {
+  it("provides all feature flags enabled by default", () => {
     render(
       <FeatureFlagProvider>
         <FlagDisplay />
       </FeatureFlagProvider>,
     );
     expect(screen.getByTestId("suggest").textContent).toBe("true");
-    expect(screen.getByTestId("draft").textContent).toBe("false");
-    expect(screen.getByTestId("insights").textContent).toBe("false");
+    expect(screen.getByTestId("draft").textContent).toBe("true");
+    expect(screen.getByTestId("insights").textContent).toBe("true");
     expect(screen.getByTestId("trends").textContent).toBe("true");
-    expect(screen.getByTestId("quality").textContent).toBe("false");
-    expect(screen.getByTestId("startMyWeek").textContent).toBe("false");
-    expect(screen.getByTestId("suggestNextWork").textContent).toBe("false");
-    expect(screen.getByTestId("dailyCheckIn").textContent).toBe("false");
-    expect(screen.getByTestId("capacityTracking").textContent).toBe("false");
-    expect(screen.getByTestId("estimationCoaching").textContent).toBe("false");
-    expect(screen.getByTestId("strategicIntelligence").textContent).toBe("false");
-    expect(screen.getByTestId("predictions").textContent).toBe("false");
-    expect(screen.getByTestId("outcomeUrgency").textContent).toBe("false");
-    expect(screen.getByTestId("strategicSlack").textContent).toBe("false");
+    expect(screen.getByTestId("quality").textContent).toBe("true");
+    expect(screen.getByTestId("startMyWeek").textContent).toBe("true");
+    expect(screen.getByTestId("suggestNextWork").textContent).toBe("true");
+    expect(screen.getByTestId("dailyCheckIn").textContent).toBe("true");
+    expect(screen.getByTestId("capacityTracking").textContent).toBe("true");
+    expect(screen.getByTestId("estimationCoaching").textContent).toBe("true");
+    expect(screen.getByTestId("strategicIntelligence").textContent).toBe("true");
+    expect(screen.getByTestId("predictions").textContent).toBe("true");
+    expect(screen.getByTestId("outcomeUrgency").textContent).toBe("true");
+    expect(screen.getByTestId("strategicSlack").textContent).toBe("true");
+    expect(screen.getByTestId("targetDateForecasting").textContent).toBe("true");
+    expect(screen.getByTestId("planningCopilot").textContent).toBe("true");
+    expect(screen.getByTestId("executiveDashboard").textContent).toBe("true");
+    expect(screen.getByTestId("weeklyPlanningAgent").textContent).toBe("true");
+    expect(screen.getByTestId("misalignmentAgent").textContent).toBe("true");
   });
 
   it("loads persisted overrides from localStorage", () => {
@@ -71,6 +81,11 @@ describe("FeatureFlagContext", () => {
         predictions: true,
         outcomeUrgency: true,
         strategicSlack: true,
+        targetDateForecasting: true,
+        planningCopilot: true,
+        executiveDashboard: true,
+        weeklyPlanningAgent: true,
+        misalignmentAgent: true,
       }),
     );
 
@@ -84,11 +99,16 @@ describe("FeatureFlagContext", () => {
     expect(screen.getByTestId("draft").textContent).toBe("true");
     expect(screen.getByTestId("dailyCheckIn").textContent).toBe("true");
     expect(screen.getByTestId("capacityTracking").textContent).toBe("true");
-    expect(screen.getByTestId("estimationCoaching").textContent).toBe("false");
+    expect(screen.getByTestId("estimationCoaching").textContent).toBe("true");
     expect(screen.getByTestId("strategicIntelligence").textContent).toBe("true");
     expect(screen.getByTestId("predictions").textContent).toBe("true");
     expect(screen.getByTestId("outcomeUrgency").textContent).toBe("true");
     expect(screen.getByTestId("strategicSlack").textContent).toBe("true");
+    expect(screen.getByTestId("targetDateForecasting").textContent).toBe("true");
+    expect(screen.getByTestId("planningCopilot").textContent).toBe("true");
+    expect(screen.getByTestId("executiveDashboard").textContent).toBe("true");
+    expect(screen.getByTestId("weeklyPlanningAgent").textContent).toBe("true");
+    expect(screen.getByTestId("misalignmentAgent").textContent).toBe("true");
     expect(screen.getByTestId("trends").textContent).toBe("true");
   });
 
@@ -119,7 +139,7 @@ describe("FeatureFlagContext", () => {
     );
     expect(screen.getByTestId("suggest").textContent).toBe("true");
     expect(screen.getByTestId("draft").textContent).toBe("true");
-    expect(screen.getByTestId("insights").textContent).toBe("false");
+    expect(screen.getByTestId("insights").textContent).toBe("true");
     expect(screen.getByTestId("trends").textContent).toBe("true");
     expect(screen.getByTestId("quality").textContent).toBe("true");
   });
@@ -195,5 +215,26 @@ describe("FeatureFlagContext", () => {
     );
     expect(screen.getByTestId("outcomeUrgency").textContent).toBe("true");
     expect(screen.getByTestId("strategicSlack").textContent).toBe("true");
+  });
+
+  it("enables Phase 5 flags when overridden", () => {
+    render(
+      <FeatureFlagProvider
+        flags={{
+          targetDateForecasting: true,
+          planningCopilot: true,
+          executiveDashboard: true,
+          weeklyPlanningAgent: true,
+          misalignmentAgent: true,
+        }}
+      >
+        <FlagDisplay />
+      </FeatureFlagProvider>,
+    );
+    expect(screen.getByTestId("targetDateForecasting").textContent).toBe("true");
+    expect(screen.getByTestId("planningCopilot").textContent).toBe("true");
+    expect(screen.getByTestId("executiveDashboard").textContent).toBe("true");
+    expect(screen.getByTestId("weeklyPlanningAgent").textContent).toBe("true");
+    expect(screen.getByTestId("misalignmentAgent").textContent).toBe("true");
   });
 });

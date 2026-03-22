@@ -43,6 +43,18 @@ class DevRequestAuthenticatorTest {
             assertEquals(2, principal.roles().size());
             assertTrue(principal.hasRole("MANAGER"));
             assertTrue(principal.hasRole("IC"));
+            assertEquals(UserPrincipal.DEFAULT_TIME_ZONE, principal.timeZone());
+        }
+
+        @Test
+        void extractsOptionalTimeZoneFromDevToken() {
+            MockHttpServletRequest request = new MockHttpServletRequest();
+            String token = "dev:" + USER_ID + ":" + ORG_ID + ":MANAGER:America/New_York";
+            request.addHeader("Authorization", "Bearer " + token);
+
+            UserPrincipal principal = authenticator.authenticate(request);
+
+            assertEquals("America/New_York", principal.timeZone());
         }
 
         @Test
@@ -122,11 +134,12 @@ class DevRequestAuthenticatorTest {
     class LegacyHeaders {
 
         @Test
-        void extractsOrgIdUserIdAndRoles() {
+        void extractsOrgIdUserIdRolesAndTimeZone() {
             MockHttpServletRequest request = new MockHttpServletRequest();
             request.addHeader("X-Org-Id", ORG_ID.toString());
             request.addHeader("X-User-Id", USER_ID.toString());
             request.addHeader("X-Roles", "MANAGER, IC");
+            request.addHeader("X-Timezone", "Europe/London");
 
             UserPrincipal principal = authenticator.authenticate(request);
 
@@ -135,6 +148,7 @@ class DevRequestAuthenticatorTest {
             assertEquals(2, principal.roles().size());
             assertTrue(principal.hasRole("MANAGER"));
             assertTrue(principal.hasRole("IC"));
+            assertEquals("Europe/London", principal.timeZone());
         }
 
         @Test

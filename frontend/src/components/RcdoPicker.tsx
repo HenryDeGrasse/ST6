@@ -108,7 +108,7 @@ export const RcdoPicker: React.FC<RcdoPickerProps> = ({
               data-testid="rcdo-clear"
               aria-label="Clear RCDO selection"
             >
-              ✕
+              Close
             </button>
           )}
         </div>

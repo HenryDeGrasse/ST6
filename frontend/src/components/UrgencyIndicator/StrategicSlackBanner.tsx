@@ -1,4 +1,6 @@
 import React from "react";
+import { StatusIcon } from "../icons/StatusIcon.js";
+import type { StatusIconName } from "../icons/StatusIcon.js";
 import type { SlackBand } from "../../hooks/useOutcomeMetadata.js";
 import styles from "./StrategicSlackBanner.module.css";
 
@@ -24,7 +26,7 @@ interface BandConfig {
   /** Short label used in the headline text, e.g. "HIGH", "LOW". */
   label: string;
   /** Icon rendered at the start of the banner. */
-  icon: string;
+  icon: StatusIconName;
   /** CSS modifier class applied to the root element. */
   className: string;
 }
@@ -32,29 +34,29 @@ interface BandConfig {
 const BAND_CONFIG: Record<SlackBand, BandConfig> = {
   HIGH_SLACK: {
     label: "HIGH",
-    icon: "✅",
+    icon: "check",
     className: styles.highSlack,
   },
   MODERATE_SLACK: {
     label: "MODERATE",
-    icon: "⚠️",
+    icon: "warning",
     className: styles.moderate,
   },
   LOW_SLACK: {
     label: "LOW",
-    icon: "🟠",
+    icon: "circle-alert",
     className: styles.low,
   },
   NO_SLACK: {
     label: "NO SLACK",
-    icon: "🔴",
+    icon: "error-x",
     className: styles.noSlack,
   },
 };
 
 const FALLBACK_CONFIG: BandConfig = {
   label: "UNKNOWN",
-  icon: "ℹ️",
+  icon: "partial",
   className: styles.moderate,
 };
 
@@ -130,7 +132,7 @@ export const StrategicSlackBanner: React.FC<StrategicSlackBannerProps> = ({
       aria-label={`Strategic slack: ${config.label}`}
     >
       <span className={styles.icon} aria-hidden="true">
-        {config.icon}
+        <StatusIcon icon={config.icon} size={18} />
       </span>
 
       <div className={styles.content}>

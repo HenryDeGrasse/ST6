@@ -21,22 +21,22 @@ interface BandConfig {
 
 const BAND_CONFIG: Record<UrgencyBand, BandConfig> = {
   ON_TRACK: {
-    label: "✓ On Track",
+    label: "On Track",
     ariaLabel: "On Track",
     className: styles.onTrack,
   },
   NEEDS_ATTENTION: {
-    label: "⚠ Attention",
+    label: "Attention",
     ariaLabel: "Needs Attention",
     className: styles.needsAttention,
   },
   AT_RISK: {
-    label: "⚠ At Risk",
+    label: "At Risk",
     ariaLabel: "At Risk",
     className: styles.atRisk,
   },
   CRITICAL: {
-    label: "🔴 Critical",
+    label: "Critical",
     ariaLabel: "Critical",
     className: styles.critical,
   },
@@ -62,10 +62,10 @@ const FALLBACK_CONFIG: BandConfig = {
  * outcome.  Colour-coded with accessible aria-label and data attributes for
  * test queries.
  *
- * - ON_TRACK       → green background, '✓ On Track'
- * - NEEDS_ATTENTION → yellow background, '⚠ Attention'
- * - AT_RISK         → orange background, '⚠ At Risk'
- * - CRITICAL        → red background, '🔴 Critical'
+ * - ON_TRACK       → green background, 'On Track'
+ * - NEEDS_ATTENTION → yellow background, 'Attention'
+ * - AT_RISK         → orange background, 'At Risk'
+ * - CRITICAL        → red background, 'Critical'
  * - NO_TARGET       → gray background, 'No Target'
  */
 export const UrgencyBadge: React.FC<UrgencyBadgeProps> = ({ urgencyBand, size = "md" }) => {

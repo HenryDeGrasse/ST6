@@ -224,7 +224,7 @@ describe("AdminDashboardPage", () => {
   });
 
   it("shows the outcome targets guidance when the feature flag is disabled", () => {
-    renderPage();
+    renderPage(ADMIN_USER, { outcomeUrgency: false });
 
     fireEvent.click(screen.getByTestId("admin-tab-outcome-targets"));
 

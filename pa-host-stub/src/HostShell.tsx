@@ -83,13 +83,26 @@ const PERSONAS: Persona[] = [
     },
     token: "dev-token-bob",
   },
+  {
+    key: "dana",
+    label: "Dana Torres",
+    description: "Admin + Manager — org-wide visibility, executive dashboard",
+    user: {
+      userId: "c0000000-0000-0000-0000-000000000030",
+      orgId: ORG_ID,
+      displayName: "Dana Torres",
+      roles: ["IC", "MANAGER", "ADMIN"],
+      timezone: "America/Chicago",
+    },
+    token: "dev-token-dana",
+  },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const HostShell: React.FC = () => {
   const [personaKey, setPersonaKey] = useState("carol");
-  const [activeTab, setActiveTab] = useState<"weekly" | "dashboard">("weekly");
+  const [activeTab, setActiveTab] = useState<"weekly" | "dashboard" | "executive">("weekly");
   const [resetting, setResetting] = useState(false);
   // Bump this key to force-remount the micro-frontend on persona switch
   const [mountKey, setMountKey] = useState(0);
@@ -99,6 +112,7 @@ export const HostShell: React.FC = () => {
 
   const persona = PERSONAS.find((p) => p.key === personaKey) ?? PERSONAS[0];
   const isManager = persona.user.roles.includes("MANAGER");
+  const isAdmin = persona.user.roles.includes("ADMIN");
 
   const handlePersonaChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const newKey = e.target.value;
@@ -132,7 +146,7 @@ export const HostShell: React.FC = () => {
     } finally {
       setResetting(false);
     }
-  }, [resetting]);
+  }, [persona, resetting]);
 
   return (
     <div
@@ -306,6 +320,28 @@ export const HostShell: React.FC = () => {
             Dashboard
           </button>
         )}
+        {isAdmin && (
+          <button
+            data-testid="host-nav-executive"
+            onClick={() => setActiveTab("executive")}
+            style={{
+              fontFamily: "'Cinzel', serif",
+              fontSize: "0.65rem",
+              fontWeight: activeTab === "executive" ? 700 : 500,
+              textTransform: "uppercase" as const,
+              letterSpacing: "0.2em",
+              color: activeTab === "executive" ? "#C9A962" : "#9C8B7A",
+              background: "none",
+              border: "none",
+              borderBottom: activeTab === "executive" ? "2px solid #C9A962" : "2px solid transparent",
+              paddingBottom: "0.5rem",
+              cursor: "pointer",
+              transition: "color 300ms ease-out, border-color 300ms ease-out",
+            }}
+          >
+            Executive
+          </button>
+        )}
 
         {/* Persona description hint */}
         <span
@@ -362,6 +398,28 @@ export const HostShell: React.FC = () => {
                 token={persona.token}
                 apiBaseUrl="/api/v1"
                 initialRoute="weekly/team"
+                featureFlags={testFeatureFlags}
+              />
+            </section>
+          </div>
+        )}
+        {activeTab === "executive" && isAdmin && (
+          <div data-testid="wc-executive-slot">
+            <section
+              data-testid="wc-executive-remote-mount"
+              style={{
+                marginTop: "0.5rem",
+                borderRadius: "6px",
+                border: "1px solid #4A3F35",
+                overflow: "hidden",
+              }}
+            >
+              <WeeklyCommitmentsApp
+                key={mountKey + 2000}
+                user={persona.user}
+                token={persona.token}
+                apiBaseUrl="/api/v1"
+                initialRoute="executive"
                 featureFlags={testFeatureFlags}
               />
             </section>

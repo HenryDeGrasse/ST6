@@ -1,0 +1,192 @@
+/**
+ * charts.module.css — Shared chart component styles
+ *
+ * Extracted from MyInsightsPage.module.css plus new styles for StackedBar
+ * and ProgressRing. All chart primitives share these CSS modules.
+ */
+
+/* ── Sparkline ─────────────────────────────────────────────────────────── */
+
+.sparkline {
+  margin-top: auto;
+  width: 100%;
+  height: auto;
+  max-height: 36px;
+  display: block;
+}
+
+/* ── Horizontal Bar ────────────────────────────────────────────────────── */
+
+.hbar {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr 2.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.hbarLabel {
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.8rem;
+  color: var(--wc-color-muted, #9C8B7A);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hbarTrack {
+  height: 6px;
+  background: rgba(60, 50, 40, 0.5);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.hbarFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease-out;
+}
+
+.hbarValue {
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--wc-color-text, #E8DFD4);
+  letter-spacing: 0.05em;
+  text-align: right;
+}
+
+/* ── Donut Chart ────────────────────────────────────────────────────────── */
+
+.donutWrap {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.75rem 0;
+}
+
+.donutSvg {
+  flex-shrink: 0;
+}
+
+.donutLegend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.8rem;
+  min-width: 0;
+}
+
+.legendSwatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legendLabel {
+  color: var(--wc-color-muted, #9C8B7A);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.legendValue {
+  color: var(--wc-color-text, #E8DFD4);
+  font-weight: 600;
+  margin-left: auto;
+  flex-shrink: 0;
+  padding-left: 0.5rem;
+}
+
+/* ── Stacked Bar ────────────────────────────────────────────────────────── */
+
+.stackedBar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.stackedBarTrack {
+  display: flex;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgba(60, 50, 40, 0.4);
+}
+
+.stackedBarSegment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.6s ease-out;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.stackedBarSegmentLabel {
+  font-family: 'Cinzel', serif;
+  font-size: 0.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(232, 223, 212, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 0.35rem;
+}
+
+.stackedBarLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.stackedBarLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.75rem;
+  color: var(--wc-color-muted, #9C8B7A);
+}
+
+.stackedBarLegendSwatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Progress Ring ──────────────────────────────────────────────────────── */
+
+.progressRingWrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.progressRingSvg {
+  display: block;
+}
+
+.progressRingLabel {
+  font-family: 'Cinzel', serif;
+  font-size: 0.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--wc-color-muted, #9C8B7A);
+  text-align: center;
+}

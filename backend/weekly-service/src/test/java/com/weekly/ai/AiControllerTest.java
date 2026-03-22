@@ -147,7 +147,7 @@ class AiControllerTest {
 
         @Test
         void returnsUnavailableWhenFeatureDisabled() {
-            // Default: draftReconciliationEnabled = false
+            featureFlags.setDraftReconciliationEnabled(false);
             var request = new AiController.DraftReconciliationRequest(UUID.randomUUID().toString());
 
             ResponseEntity<?> response = controller.draftReconciliation(request);
@@ -205,7 +205,7 @@ class AiControllerTest {
 
         @Test
         void returnsUnavailableWhenFeatureDisabled() {
-            // Default: planQualityNudgeEnabled = false
+            featureFlags.setPlanQualityNudgeEnabled(false);
             var request = new AiController.PlanQualityCheckRequest(UUID.randomUUID().toString());
 
             ResponseEntity<?> response = controller.planQualityCheck(request);
@@ -280,6 +280,7 @@ class AiControllerTest {
 
         @Test
         void returnsUnavailableWhenFeatureDisabled() {
+            featureFlags.setManagerInsightsEnabled(false);
             var request = new AiController.ManagerInsightsRequest("2026-03-09");
 
             ResponseEntity<?> response = controller.managerInsights(request);
@@ -324,7 +325,7 @@ class AiControllerTest {
 
         @Test
         void returnsUnavailableWhenFeatureDisabled() {
-            // Default: suggestNextWorkEnabled = false
+            featureFlags.setSuggestNextWorkEnabled(false);
             var request = new AiController.SuggestNextWorkRequest(null);
 
             ResponseEntity<?> response = controller.suggestNextWork(request);
@@ -412,6 +413,7 @@ class AiControllerTest {
 
         @Test
         void returnsUnavailableWhenFeatureDisabled() {
+            featureFlags.setSuggestNextWorkEnabled(false);
             var request = new AiController.SuggestionFeedbackRequest(
                     UUID.randomUUID().toString(), "DECLINE", null, null, null);
 

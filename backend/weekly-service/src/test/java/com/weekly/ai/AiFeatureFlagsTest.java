@@ -19,34 +19,18 @@ class AiFeatureFlagsTest {
     }
 
     @Test
-    void draftReconciliationDisabledByDefault() {
+    void nonSuggestFlagsEnabledByDefault() {
         AiFeatureFlags flags = new AiFeatureFlags();
-        assertFalse(flags.isDraftReconciliationEnabled(), "Draft reconciliation is beta, should be disabled");
-    }
-
-    @Test
-    void managerInsightsDisabledByDefault() {
-        AiFeatureFlags flags = new AiFeatureFlags();
-        assertFalse(flags.isManagerInsightsEnabled(), "Manager insights is beta, should be disabled");
-    }
-
-    @Test
-    void planQualityNudgeDisabledByDefault() {
-        AiFeatureFlags flags = new AiFeatureFlags();
-        assertFalse(flags.isPlanQualityNudgeEnabled(), "Plan quality nudge is Wave 1, should be disabled by default");
-    }
-
-    @Test
-    void suggestNextWorkDisabledByDefault() {
-        AiFeatureFlags flags = new AiFeatureFlags();
-        assertFalse(flags.isSuggestNextWorkEnabled(), "Next-work suggestions are Wave 2, should be disabled by default");
-    }
-
-    @Test
-    void llmNextWorkRankingDisabledByDefault() {
-        AiFeatureFlags flags = new AiFeatureFlags();
-        assertFalse(flags.isLlmNextWorkRankingEnabled(),
-                "LLM re-ranking is Wave 3, should be disabled by default");
+        assertTrue(flags.isDraftReconciliationEnabled());
+        assertTrue(flags.isManagerInsightsEnabled());
+        assertTrue(flags.isPlanQualityNudgeEnabled());
+        assertTrue(flags.isSuggestNextWorkEnabled());
+        assertTrue(flags.isLlmNextWorkRankingEnabled());
+        assertTrue(flags.isTargetDateForecastingEnabled());
+        assertTrue(flags.isPlanningCopilotEnabled());
+        assertTrue(flags.isExecutiveDashboardEnabled());
+        assertTrue(flags.isWeeklyPlanningAgentEnabled());
+        assertTrue(flags.isMisalignmentAgentEnabled());
     }
 
     @Test
@@ -66,5 +50,16 @@ class AiFeatureFlagsTest {
 
         flags.setLlmNextWorkRankingEnabled(true);
         assertTrue(flags.isLlmNextWorkRankingEnabled());
+
+        flags.setTargetDateForecastingEnabled(true);
+        flags.setPlanningCopilotEnabled(true);
+        flags.setExecutiveDashboardEnabled(true);
+        flags.setWeeklyPlanningAgentEnabled(true);
+        flags.setMisalignmentAgentEnabled(true);
+        assertTrue(flags.isTargetDateForecastingEnabled());
+        assertTrue(flags.isPlanningCopilotEnabled());
+        assertTrue(flags.isExecutiveDashboardEnabled());
+        assertTrue(flags.isWeeklyPlanningAgentEnabled());
+        assertTrue(flags.isMisalignmentAgentEnabled());
     }
 }

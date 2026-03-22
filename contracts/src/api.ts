@@ -5,7 +5,18 @@
  * They are derived from the OpenAPI spec and PRD §11.
  */
 
-import type { ChessPriority, CommitCategory, CompletionStatus, PlanState, ReviewStatus } from "./enums.js";
+import type {
+  ChessPriority,
+  CommitCategory,
+  CompletionStatus,
+  PlanState,
+  ReviewStatus,
+  EffortType,
+  IssueStatus,
+  TeamRole,
+  AccessRequestStatus,
+} from "./enums.js";
+import type { NotificationType } from "./events.js";
 import type { ErrorCode } from "./errors.js";
 import type {
   WeeklyPlan,
@@ -15,6 +26,13 @@ import type {
   RcdoCry,
   CheckInStatus,
   CheckInEntry,
+  Issue,
+  WeeklyAssignment,
+  WeeklyAssignmentActual,
+  IssueActivity,
+  Team,
+  TeamMember,
+  TeamAccessRequest,
 } from "./types.js";
 
 // ─── Standard Error Envelope ────────────────────────────────
@@ -219,9 +237,37 @@ export interface RcdoRollupResponse {
 
 // ─── Notification Endpoints ─────────────────────────────────
 
+export type NotificationTypeValue = `${NotificationType}`;
+
+/** Payload emitted when the weekly-planning agent creates a draft plan. */
+export interface WeeklyPlanDraftReadyNotificationPayload {
+  planId: string;
+  weekStartDate: string;
+  route: string;
+  message: string;
+  suggestedCommitCount: number;
+  suggestedHours: string;
+  capacityHours: string;
+}
+
+/** Payload emitted when the misalignment agent briefs a manager on team risk. */
+export interface PlanMisalignmentBriefingNotificationPayload {
+  managerId: string;
+  teamName: string;
+  weekStartDate: string;
+  route: string;
+  message: string;
+  overloadedMembers: string[];
+  urgentOutcomesNeedingAttention: string[];
+  highUrgencyHours: string;
+  nonUrgentHours: string;
+  flaggedPlanIds: string[];
+  concernCount: number;
+}
+
 export interface NotificationItem {
   id: string;
-  type: string;
+  type: NotificationTypeValue;
   payload: Record<string, unknown>;
   read: boolean;
   createdAt: string;
@@ -466,6 +512,197 @@ export interface UrgencySummaryResponse {
 
 export interface StrategicSlackResponse {
   slack: SlackInfo;
+}
+
+// ─── Phase 5: Forecasting & Planning Intelligence ───────────
+
+export type ForecastConfidenceBand = "LOW" | "MEDIUM" | "HIGH";
+export type ForecastStatus = "NO_DATA" | "NO_TARGET_DATE" | "COMPLETE" | "ON_TRACK" | "NEEDS_ATTENTION" | "AT_RISK";
+
+export interface OutcomeForecastFactor {
+  type: string;
+  label: string;
+  score: number;
+  detail: string;
+}
+
+export interface OutcomeForecastResponse {
+  outcomeId: string;
+  outcomeName: string;
+  targetDate: string | null;
+  projectedTargetDate: string | null;
+  projectedProgressPct: number | null;
+  projectedVelocity: number | null;
+  confidenceScore: number | null;
+  confidenceBand: ForecastConfidenceBand | null;
+  forecastStatus: ForecastStatus | null;
+  modelVersion: string | null;
+  contributingFactors: OutcomeForecastFactor[];
+  recommendations: string[];
+  computedAt: string | null;
+}
+
+export interface OutcomeForecastListResponse {
+  forecasts: OutcomeForecastResponse[];
+}
+
+export interface TeamPlanSuggestionRequest {
+  weekStart: string;
+}
+
+export interface TeamPlanSuggestionUnavailableResponse {
+  status: "unavailable";
+}
+
+export interface TeamPlanSummary {
+  teamCapacityHours: number | null;
+  suggestedHours: number | null;
+  bufferHours: number | null;
+  atRiskOutcomeCount: number;
+  criticalOutcomeCount: number;
+  strategicFocusFloor: number | null;
+  headline: string | null;
+}
+
+export interface MemberOutcomeSlice {
+  userId: string;
+  displayName: string | null;
+  hours: number | null;
+  title: string | null;
+}
+
+export interface OutcomeAllocationSuggestion {
+  outcomeId: string;
+  outcomeName: string;
+  urgencyBand: OutcomeUrgencyBand;
+  recommendedHours: number | null;
+  members: MemberOutcomeSlice[];
+}
+
+export interface PlanningCopilotSuggestedCommit {
+  title: string;
+  outcomeId: string | null;
+  chessPriority: ChessPriority | null;
+  estimatedHours: number | null;
+  rationale: string | null;
+  source: string | null;
+}
+
+export interface TeamMemberPlanSuggestion {
+  userId: string;
+  displayName: string | null;
+  suggestedCommits: PlanningCopilotSuggestedCommit[];
+  totalEstimated: number | null;
+  realisticCapacity: number | null;
+  overcommitRisk: string | null;
+  strengthSummary: string | null;
+}
+
+export interface TeamPlanSuggestionResponse {
+  status: "ok";
+  weekStart: string;
+  summary: TeamPlanSummary;
+  members: TeamMemberPlanSuggestion[];
+  outcomeAllocations: OutcomeAllocationSuggestion[];
+  llmRefined: boolean;
+}
+
+export interface SuggestedCommitApplyRequest {
+  title: string;
+  outcomeId?: string | null;
+  rationale?: string | null;
+  chessPriority: ChessPriority;
+  estimatedHours?: number | null;
+}
+
+export interface TeamMemberApplyRequest {
+  userId: string;
+  suggestedCommits: SuggestedCommitApplyRequest[];
+}
+
+export interface ApplyTeamPlanSuggestionRequest {
+  weekStart: string;
+  members: TeamMemberApplyRequest[];
+}
+
+export interface MemberDraftApplyResult {
+  userId: string;
+  displayName: string | null;
+  planId: string;
+  createdPlan: boolean;
+  appliedCommits: WeeklyCommit[];
+}
+
+export interface ApplyTeamPlanSuggestionResponse {
+  status: "ok";
+  weekStart: string;
+  members: MemberDraftApplyResult[];
+}
+
+export interface ExecutiveDashboardUnavailableResponse {
+  status: "unavailable";
+}
+
+export interface ExecutiveSummary {
+  totalForecasts: number;
+  onTrackForecasts: number;
+  needsAttentionForecasts: number;
+  offTrackForecasts: number;
+  noDataForecasts: number;
+  averageForecastConfidence: number | null;
+  totalCapacityHours: number | null;
+  strategicHours: number | null;
+  nonStrategicHours: number | null;
+  strategicCapacityUtilizationPct: number | null;
+  nonStrategicCapacityUtilizationPct: number | null;
+  planningCoveragePct: number | null;
+}
+
+export interface RallyCryHealthRollup {
+  rallyCryId: string | null;
+  rallyCryName: string;
+  forecastedOutcomeCount: number;
+  onTrackCount: number;
+  needsAttentionCount: number;
+  offTrackCount: number;
+  noDataCount: number;
+  averageForecastConfidence: number | null;
+  strategicHours: number | null;
+}
+
+export interface TeamBucketComparison {
+  bucketId: string;
+  memberCount: number;
+  planCoveragePct: number | null;
+  totalCapacityHours: number | null;
+  strategicHours: number | null;
+  nonStrategicHours: number | null;
+  strategicCapacityUtilizationPct: number | null;
+  averageForecastConfidence: number | null;
+}
+
+export interface ExecutiveDashboardResponse {
+  weekStart: string;
+  summary: ExecutiveSummary;
+  rallyCryRollups: RallyCryHealthRollup[];
+  teamBuckets: TeamBucketComparison[];
+  teamGroupingAvailable: boolean;
+}
+
+export interface ExecutiveBriefingRequest {
+  weekStart: string;
+}
+
+export interface ExecutiveBriefingItem {
+  title: string;
+  detail: string;
+  severity: "INFO" | "WARNING" | "POSITIVE";
+}
+
+export interface ExecutiveBriefingResponse {
+  status: "ok" | "unavailable";
+  headline: string | null;
+  insights: ExecutiveBriefingItem[];
 }
 
 // ─── Capacity Planning (Phase 4) ───────────────────────────
@@ -742,3 +979,238 @@ export interface WebhookResponse {
 
 // Re-export entity types for convenience
 export type { WeeklyPlan, WeeklyCommit, WeeklyCommitActual, ManagerReview };
+
+// ─── Phase 6: Issue Backlog, Teams & AI Work Intelligence ───
+
+// Issue CRUD
+
+export interface CreateIssueRequest {
+  title: string;
+  description?: string | null;
+  effortType?: EffortType | null;
+  estimatedHours?: number | null;
+  chessPriority?: ChessPriority | null;
+  outcomeId?: string | null;
+  nonStrategicReason?: string | null;
+  assigneeUserId?: string | null;
+  blockedByIssueId?: string | null;
+}
+
+export interface UpdateIssueRequest {
+  title?: string;
+  description?: string | null;
+  effortType?: EffortType | null;
+  estimatedHours?: number | null;
+  chessPriority?: ChessPriority | null;
+  outcomeId?: string | null;
+  nonStrategicReason?: string | null;
+  assigneeUserId?: string | null;
+  blockedByIssueId?: string | null;
+  status?: IssueStatus;
+  version?: number;
+}
+
+/** Paginated list of issues, with optional activity audit trail */
+export interface IssueListResponse {
+  content: Issue[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface IssueDetailResponse {
+  issue: Issue;
+  activities: IssueActivity[];
+}
+
+// Issue action requests
+
+export interface AssignIssueRequest {
+  assigneeUserId: string | null;
+}
+
+export interface CommitIssueToWeekRequest {
+  weekStart: string;
+  chessPriorityOverride?: ChessPriority | null;
+  expectedResult?: string | null;
+  confidence?: number | null;
+}
+
+export interface CreateWeeklyAssignmentRequest {
+  issueId: string;
+  chessPriorityOverride?: ChessPriority | null;
+  expectedResult?: string | null;
+  confidence?: number | null;
+}
+
+export interface ReleaseIssueRequest {
+  weeklyPlanId: string;
+}
+
+export interface AddCommentRequest {
+  commentText: string;
+}
+
+export interface LogTimeEntryRequest {
+  hoursLogged: number;
+  note?: string | null;
+}
+
+// Weekly assignment responses
+
+export interface WeeklyAssignmentWithActual extends WeeklyAssignment {
+  actual?: WeeklyAssignmentActual | null;
+  issue?: Issue | null;
+}
+
+export interface WeeklyAssignmentsResponse {
+  assignments: WeeklyAssignmentWithActual[];
+}
+
+// Team management
+
+export interface CreateTeamRequest {
+  name: string;
+  keyPrefix: string;
+  description?: string | null;
+}
+
+export interface UpdateTeamRequest {
+  name?: string;
+  description?: string | null;
+}
+
+export interface AddTeamMemberRequest {
+  userId: string;
+  role?: TeamRole;
+}
+
+export interface TeamListResponse {
+  teams: Team[];
+}
+
+export interface TeamDetailResponse {
+  team: Team;
+  members: TeamMember[];
+}
+
+export interface TeamAccessRequestAction {
+  status: AccessRequestStatus;
+}
+
+export interface TeamAccessRequestListResponse {
+  requests: TeamAccessRequest[];
+}
+
+// AI: Suggest effort type
+
+export interface SuggestEffortTypeRequest {
+  issueId?: string | null;
+  title: string;
+  description?: string | null;
+}
+
+export interface SuggestEffortTypeResponse {
+  status: AiSuggestionStatus;
+  suggestedEffortType: EffortType | null;
+  rationale: string | null;
+  confidence: number | null;
+}
+
+// AI: Backlog ranking
+
+export interface RankBacklogRequest {
+  teamId: string;
+  issueIds?: string[];
+}
+
+export interface RankedIssue {
+  issueId: string;
+  rank: number;
+  rationale: string;
+}
+
+export interface RankBacklogResponse {
+  status: AiSuggestionStatus;
+  rankedIssues: RankedIssue[];
+}
+
+// AI: Recommend weekly issues
+
+export interface RecommendWeeklyIssuesRequest {
+  weekStart: string;
+  teamId?: string | null;
+  maxItems?: number | null;
+}
+
+export interface RecommendedIssue {
+  issueId: string;
+  issueKey: string;
+  title: string;
+  effortType: EffortType | null;
+  chessPriority: ChessPriority | null;
+  rationale: string;
+  confidence: number;
+}
+
+export interface RecommendWeeklyIssuesResponse {
+  status: AiSuggestionStatus;
+  recommendations: RecommendedIssue[];
+}
+
+// AI: Suggest deferrals (overcommit detection)
+
+export interface SuggestDeferralsRequest {
+  weeklyPlanId: string;
+}
+
+export interface DeferralSuggestion {
+  issueId: string;
+  issueKey: string;
+  title: string;
+  reason: string;
+  impactIfDeferred: string;
+}
+
+export interface SuggestDeferralsResponse {
+  status: AiSuggestionStatus;
+  suggestions: DeferralSuggestion[];
+}
+
+// AI: Coverage gap inspirations
+
+export interface CoverageGapInspirationsResponse {
+  status: AiSuggestionStatus;
+  inspirations: Array<{
+    outcomeId: string | null;
+    outcomeName: string | null;
+    suggestedTitle: string;
+    rationale: string;
+    suggestedEffortType: EffortType | null;
+  }>;
+}
+
+// Semantic search (RAG)
+
+export interface SemanticSearchRequest {
+  query: string;
+  teamId?: string | null;
+  effortType?: EffortType | null;
+  status?: IssueStatus | null;
+  limit?: number | null;
+}
+
+export interface SemanticSearchHit {
+  issueId: string;
+  issueKey: string;
+  title: string;
+  score: number;
+  effortType: EffortType | null;
+  status: IssueStatus;
+}
+
+export interface SemanticSearchResponse {
+  status: AiSuggestionStatus;
+  hits: SemanticSearchHit[];
+}

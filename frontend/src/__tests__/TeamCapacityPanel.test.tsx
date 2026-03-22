@@ -219,7 +219,7 @@ describe("TeamCapacityPanel", () => {
       clearError: vi.fn(),
     });
     render(<TeamCapacityPanel weekStart="2026-03-16" />);
-    expect(screen.getByTestId("team-capacity-status-0")).toHaveTextContent("✅ OK");
+    expect(screen.getByTestId("team-capacity-status-0")).toHaveTextContent("OK");
   });
 
   it("shows correct status icon for MODERATE overcommit level", () => {
@@ -234,7 +234,7 @@ describe("TeamCapacityPanel", () => {
       clearError: vi.fn(),
     });
     render(<TeamCapacityPanel weekStart="2026-03-16" />);
-    expect(screen.getByTestId("team-capacity-status-0")).toHaveTextContent("⚠️ MODERATE");
+    expect(screen.getByTestId("team-capacity-status-0")).toHaveTextContent("MODERATE");
   });
 
   it("shows correct status icon for HIGH overcommit level", () => {
@@ -249,7 +249,7 @@ describe("TeamCapacityPanel", () => {
       clearError: vi.fn(),
     });
     render(<TeamCapacityPanel weekStart="2026-03-16" />);
-    expect(screen.getByTestId("team-capacity-status-0")).toHaveTextContent("⛔ HIGH");
+    expect(screen.getByTestId("team-capacity-status-0")).toHaveTextContent("HIGH");
   });
 
   // ── Team totals row ───────────────────────────────────────────────────────
@@ -306,7 +306,7 @@ describe("TeamCapacityPanel", () => {
       clearError: vi.fn(),
     });
     render(<TeamCapacityPanel weekStart="2026-03-16" />);
-    expect(screen.getByTestId("team-capacity-totals-status")).toHaveTextContent("⛔ HIGH");
+    expect(screen.getByTestId("team-capacity-totals-status")).toHaveTextContent("HIGH");
   });
 
   it("shows MODERATE status in totals row when worst level is MODERATE", () => {
@@ -322,7 +322,7 @@ describe("TeamCapacityPanel", () => {
       clearError: vi.fn(),
     });
     render(<TeamCapacityPanel weekStart="2026-03-16" />);
-    expect(screen.getByTestId("team-capacity-totals-status")).toHaveTextContent("⚠️ MODERATE");
+    expect(screen.getByTestId("team-capacity-totals-status")).toHaveTextContent("MODERATE");
   });
 
   it("shows NONE status in totals row when all members are NONE", () => {
@@ -338,7 +338,7 @@ describe("TeamCapacityPanel", () => {
       clearError: vi.fn(),
     });
     render(<TeamCapacityPanel weekStart="2026-03-16" />);
-    expect(screen.getByTestId("team-capacity-totals-status")).toHaveTextContent("✅ OK");
+    expect(screen.getByTestId("team-capacity-totals-status")).toHaveTextContent("OK");
   });
 
   it("does not show totals row when members list is empty", () => {

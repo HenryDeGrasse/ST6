@@ -51,7 +51,7 @@ describe("NextWorkSuggestionPanel", () => {
 
     expect(screen.getByTestId("next-work-idle")).toBeInTheDocument();
     expect(screen.getByTestId("next-work-fetch-btn")).toBeInTheDocument();
-    expect(screen.getByText("✨ Show AI suggestions")).toBeInTheDocument();
+    expect(screen.getByText("Show AI suggestions")).toBeInTheDocument();
   });
 
   it("calls onRefresh when the fetch button is clicked in idle state", () => {
@@ -112,7 +112,7 @@ describe("NextWorkSuggestionPanel", () => {
     expect(screen.getByTestId(`next-work-suggestion-${suggestion.suggestionId}`)).toBeInTheDocument();
     expect(screen.getByText("Complete Q2 planning document")).toBeInTheDocument();
     expect(screen.getByTestId(`next-work-priority-${suggestion.suggestionId}`)).toBeInTheDocument();
-    expect(screen.getByText(/♛ Queen/i)).toBeInTheDocument();
+    expect(screen.getByText(/Queen/i)).toBeInTheDocument();
     expect(screen.getByText(/Carry-forward/i)).toBeInTheDocument();
   });
 

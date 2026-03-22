@@ -6,6 +6,11 @@ import {
   CompletionStatus,
   LockType,
   CommitCategory,
+  EffortType,
+  IssueStatus,
+  TeamRole,
+  AccessRequestStatus,
+  IssueActivityType,
   ErrorCode,
   ERROR_HTTP_STATUS,
   EventType,
@@ -29,10 +34,15 @@ describe("contracts public API completeness", () => {
     expect(Object.values(CompletionStatus)).toHaveLength(4);
     expect(Object.values(LockType)).toHaveLength(2);
     expect(Object.values(CommitCategory)).toHaveLength(7);
+    expect(Object.values(EffortType)).toHaveLength(4);
+    expect(Object.values(IssueStatus)).toHaveLength(4);
+    expect(Object.values(TeamRole)).toHaveLength(2);
+    expect(Object.values(AccessRequestStatus)).toHaveLength(3);
+    expect(Object.values(IssueActivityType)).toHaveLength(16);
     expect(Object.keys(ErrorCode)).toHaveLength(21);
     expect(Object.values(EventType)).toHaveLength(11);
     expect(Object.values(AggregateType)).toHaveLength(3);
-    expect(Object.values(NotificationType)).toHaveLength(6);
+    expect(Object.values(NotificationType)).toHaveLength(8);
   });
 
   it("exports ERROR_HTTP_STATUS with entries for every ErrorCode", () => {
@@ -66,6 +76,31 @@ describe("contracts public API completeness", () => {
   it("CommitCategory values match backend enum names exactly", () => {
     const expected = ["DELIVERY", "OPERATIONS", "CUSTOMER", "GTM", "PEOPLE", "LEARNING", "TECH_DEBT"];
     expect(Object.values(CommitCategory)).toEqual(expected);
+  });
+
+  it("Phase 6 enum values match the migration plan exactly", () => {
+    expect(Object.values(EffortType)).toEqual(["BUILD", "MAINTAIN", "COLLABORATE", "LEARN"]);
+    expect(Object.values(IssueStatus)).toEqual(["OPEN", "IN_PROGRESS", "DONE", "ARCHIVED"]);
+    expect(Object.values(TeamRole)).toEqual(["OWNER", "MEMBER"]);
+    expect(Object.values(AccessRequestStatus)).toEqual(["PENDING", "APPROVED", "DENIED"]);
+    expect(Object.values(IssueActivityType)).toEqual([
+      "CREATED",
+      "STATUS_CHANGE",
+      "ASSIGNMENT_CHANGE",
+      "PRIORITY_CHANGE",
+      "EFFORT_TYPE_CHANGE",
+      "ESTIMATE_CHANGE",
+      "COMMENT",
+      "TIME_ENTRY",
+      "OUTCOME_CHANGE",
+      "COMMITTED_TO_WEEK",
+      "RELEASED_TO_BACKLOG",
+      "CARRIED_FORWARD",
+      "BLOCKED",
+      "UNBLOCKED",
+      "DESCRIPTION_CHANGE",
+      "TITLE_CHANGE",
+    ]);
   });
 
   it("ErrorCode values match backend enum names exactly", () => {

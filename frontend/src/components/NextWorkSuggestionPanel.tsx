@@ -33,12 +33,12 @@ const SOURCE_LABEL: Record<string, string> = {
 };
 
 const PRIORITY_LABEL: Record<string, string> = {
-  KING: "♔ King",
-  QUEEN: "♛ Queen",
-  ROOK: "♜ Rook",
-  BISHOP: "♝ Bishop",
-  KNIGHT: "♞ Knight",
-  PAWN: "♟ Pawn",
+  KING: "King",
+  QUEEN: "Queen",
+  ROOK: "Rook",
+  BISHOP: "Bishop",
+  KNIGHT: "Knight",
+  PAWN: "Pawn",
 };
 
 /**
@@ -211,7 +211,7 @@ export const NextWorkSuggestionPanel: React.FC<NextWorkSuggestionPanelProps> = (
             className={styles.fetchButton}
             onClick={onRefresh}
           >
-            ✨ Show AI suggestions
+            Show AI suggestions
           </button>
         </div>
       )}

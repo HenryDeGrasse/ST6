@@ -97,8 +97,10 @@ const mockFetchNextWorkSuggestions = vi.fn();
 const mockSubmitNextWorkFeedback = vi.fn();
 const mockDismissNextWorkSuggestion = vi.fn();
 const mockClearNextWorkSuggestions = vi.fn();
+const mockFetchCapacityProfile = vi.fn();
 let mockNextWorkSuggestions: NextWorkSuggestion[] = [];
 let mockNextWorkStatus: "idle" | "loading" | "ok" | "unavailable" | "rate_limited" = "idle";
+let mockCapacityProfile: { realisticWeeklyCap: number | null } | null = null;
 
 vi.mock("../hooks/usePlan.js", () => ({
   usePlan: () => ({
@@ -220,6 +222,16 @@ vi.mock("../hooks/useUserProfile.js", () => ({
   }),
 }));
 
+vi.mock("../hooks/useCapacity.js", () => ({
+  useCapacityProfile: () => ({
+    profile: mockCapacityProfile,
+    loading: false,
+    error: null,
+    fetchProfile: mockFetchCapacityProfile,
+    clearError: vi.fn(),
+  }),
+}));
+
 function renderWeeklyPlanPage(
   flags?: Partial<{
     planQualityNudge: boolean;
@@ -227,7 +239,7 @@ function renderWeeklyPlanPage(
   }>,
 ) {
   return render(
-    <FeatureFlagProvider flags={flags}>
+    <FeatureFlagProvider flags={{ planQualityNudge: false, suggestNextWork: false, ...flags }}>
       <WeeklyPlanPage />
     </FeatureFlagProvider>,
   );
@@ -244,6 +256,8 @@ describe("WeeklyPlanPage confirmation dialogs", () => {
     mockQualityStatus = "idle";
     mockNextWorkSuggestions = [];
     mockNextWorkStatus = "idle";
+    mockCapacityProfile = null;
+    mockFetchCapacityProfile.mockResolvedValue(undefined);
     mockSubmitNextWorkFeedback.mockResolvedValue(true);
   });
 
@@ -368,6 +382,27 @@ describe("WeeklyPlanPage confirmation dialogs", () => {
       fireEvent.click(screen.getByTestId("confirm-dialog-cancel"));
       expect(screen.queryByTestId("confirm-dialog")).not.toBeInTheDocument();
       expect(mockSubmitReconciliation).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Draft plan capacity warnings", () => {
+    it("fetches the capacity profile and renders an overcommit banner for draft plans", async () => {
+      mockPlan = makePlan({ state: PlanState.DRAFT });
+      mockCommits = [
+        makeCommit({ id: "c-1", estimatedHours: 12 }),
+        makeCommit({ id: "c-2", estimatedHours: 10 }),
+      ];
+      mockCapacityProfile = { realisticWeeklyCap: 18 };
+
+      renderWeeklyPlanPage();
+
+      await waitFor(() => {
+        expect(mockFetchCapacityProfile).toHaveBeenCalledTimes(1);
+      });
+
+      expect(screen.getByTestId("overcommit-banner")).toBeInTheDocument();
+      expect(screen.getByTestId("overcommit-level-HIGH")).toBeInTheDocument();
+      expect(screen.getByText("22h committed · 18h cap")).toBeInTheDocument();
     });
   });
 

@@ -45,6 +45,7 @@ export const MOCK_ORG_ID            = '00000000-0000-0000-0000-000000000099';
 export const MOCK_USER_ID           = '00000000-0000-0000-0000-000000000001';
 export const MOCK_MANAGER_USER_ID   = '00000000-0000-0000-0000-000000000101';
 export const MOCK_REPORT_USER_ID    = '00000000-0000-0000-0000-000000000202';
+export const MOCK_ADMIN_USER_ID     = 'c0000000-0000-0000-0000-000000000030';
 export const MOCK_PLAN_ID           = '10000000-0000-0000-0000-000000000001';
 export const MOCK_COMMIT_ID         = '20000000-0000-0000-0000-000000000001';
 export const MOCK_OUTCOME_ID        = '30000000-0000-0000-0000-000000000001';
@@ -427,6 +428,205 @@ export function apiError(message: string, code = 'VALIDATION_ERROR'): Record<str
 // 10. Mock API installer (golden-path / full-lifecycle browser pattern)
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ── Mock response builders ───────────────────────────────────────────────
+
+/**
+ * Builds a realistic TrendsResponse with 4 week points.
+ */
+export function buildTrendsResponse(): Record<string, unknown> {
+  const weeks = [
+    mondayIso(-3),
+    mondayIso(-2),
+    mondayIso(-1),
+    mondayIso(0),
+  ];
+  return {
+    weeksAnalyzed: 4,
+    windowStart: weeks[0],
+    windowEnd: weeks[3],
+    strategicAlignmentRate: 0.82,
+    teamStrategicAlignmentRate: 0.74,
+    avgCarryForwardPerWeek: 0.5,
+    carryForwardStreak: 0,
+    avgConfidence: 3.8,
+    completionAccuracy: 0.85,
+    confidenceAccuracyGap: -0.05,
+    avgEstimatedHoursPerWeek: 32.0,
+    avgActualHoursPerWeek: 28.5,
+    hoursAccuracyRatio: 0.89,
+    priorityDistribution: { KING: 0.2, QUEEN: 0.35, ROOK: 0.25, BISHOP: 0.15, KNIGHT: 0.05, PAWN: 0.0 },
+    categoryDistribution: { DELIVERY: 0.55, PLANNING: 0.2, COLLABORATION: 0.15, LEARNING: 0.1 },
+    weekPoints: weeks.map((weekStart, i) => ({
+      weekStart,
+      totalCommits: 5 + i,
+      strategicCommits: 4 + i,
+      carryForwardCommits: i === 0 ? 1 : 0,
+      avgConfidence: 3.5 + i * 0.1,
+      completionRate: 0.8 + i * 0.03,
+      hasActuals: i < 3,
+      priorityCounts: { KING: 1, QUEEN: 2, ROOK: 1, BISHOP: 1, KNIGHT: 0, PAWN: 0 },
+      categoryCounts: { DELIVERY: 3, PLANNING: 1, COLLABORATION: 1, LEARNING: 0 },
+      estimatedHours: 30 + i * 2,
+      actualHours: i < 3 ? 27 + i * 2 : null,
+      hoursAccuracyRatio: i < 3 ? 0.9 : null,
+    })),
+    insights: [
+      {
+        type: 'HIGH_STRATEGIC_ALIGNMENT',
+        message: 'Your strategic alignment rate (82%) is above team average (74%).',
+        severity: 'POSITIVE',
+      },
+      {
+        type: 'CONSISTENT_COMPLETION',
+        message: 'You have maintained above 80% completion rate for 4 consecutive weeks.',
+        severity: 'POSITIVE',
+      },
+    ],
+  };
+}
+
+/**
+ * Builds a UserProfileResponse with 6 weeks analyzed, performance profile,
+ * preferences, and trends.
+ */
+export function buildUserProfileResponse(): Record<string, unknown> {
+  return {
+    userId: MOCK_USER_ID,
+    weeksAnalyzed: 6,
+    performanceProfile: {
+      estimationAccuracy: 0.87,
+      completionReliability: 0.88,
+      avgCommitsPerWeek: 5.5,
+      avgCarryForwardPerWeek: 0.4,
+      topCategories: ['DELIVERY', 'PLANNING'],
+      categoryCompletionRates: {
+        DELIVERY: 0.91,
+        PLANNING: 0.83,
+        COLLABORATION: 0.78,
+        LEARNING: 0.70,
+      },
+      priorityCompletionRates: {
+        KING: 0.97,
+        QUEEN: 0.89,
+        ROOK: 0.83,
+        BISHOP: 0.75,
+        KNIGHT: 0.65,
+        PAWN: 0.50,
+      },
+    },
+    preferences: {
+      typicalPriorityPattern: 'Balanced — 1 KING, 2 QUEENs, 2 ROOKs',
+      recurringCommitTitles: ['Weekly sync prep', 'Code review'],
+      avgCheckInsPerWeek: 2.3,
+      preferredUpdateDays: ['Tuesday', 'Thursday'],
+    },
+    trends: {
+      strategicAlignmentTrend: 'IMPROVING',
+      completionTrend: 'STABLE',
+      carryForwardTrend: 'IMPROVING',
+    },
+  };
+}
+
+/**
+ * Builds an ExecutiveDashboardResponse with summary, 2 rally cry rollups,
+ * and 2 team buckets.
+ */
+export function buildExecutiveDashboardResponse(): Record<string, unknown> {
+  return {
+    weekStart: mondayIso(),
+    summary: {
+      totalForecasts: 12,
+      onTrackForecasts: 7,
+      needsAttentionForecasts: 3,
+      offTrackForecasts: 2,
+      noDataForecasts: 0,
+      averageForecastConfidence: 0.72,
+      totalCapacityHours: 320,
+      strategicHours: 224,
+      nonStrategicHours: 96,
+      strategicCapacityUtilizationPct: 0.70,
+      nonStrategicCapacityUtilizationPct: 0.30,
+      planningCoveragePct: 0.88,
+    },
+    rallyCryRollups: [
+      {
+        rallyCryId: 'rc-1',
+        rallyCryName: 'Scale Revenue',
+        forecastedOutcomeCount: 7,
+        onTrackCount: 4,
+        needsAttentionCount: 2,
+        offTrackCount: 1,
+        noDataCount: 0,
+        averageForecastConfidence: 0.75,
+        strategicHours: 140,
+      },
+      {
+        rallyCryId: 'rc-2',
+        rallyCryName: 'Platform Reliability',
+        forecastedOutcomeCount: 5,
+        onTrackCount: 3,
+        needsAttentionCount: 1,
+        offTrackCount: 1,
+        noDataCount: 0,
+        averageForecastConfidence: 0.68,
+        strategicHours: 84,
+      },
+    ],
+    teamBuckets: [
+      {
+        bucketId: 'engineering',
+        memberCount: 8,
+        planCoveragePct: 0.92,
+        totalCapacityHours: 200,
+        strategicHours: 144,
+        nonStrategicHours: 56,
+        strategicCapacityUtilizationPct: 0.72,
+        averageForecastConfidence: 0.74,
+      },
+      {
+        bucketId: 'product',
+        memberCount: 4,
+        planCoveragePct: 0.80,
+        totalCapacityHours: 120,
+        strategicHours: 80,
+        nonStrategicHours: 40,
+        strategicCapacityUtilizationPct: 0.67,
+        averageForecastConfidence: 0.69,
+      },
+    ],
+    teamGroupingAvailable: true,
+  };
+}
+
+/**
+ * Builds an ExecutiveBriefingResponse with status 'ok', a headline, and
+ * 3 insights (one each of INFO, WARNING, POSITIVE severity).
+ */
+export function buildExecutiveBriefingResponse(): Record<string, unknown> {
+  return {
+    status: 'ok',
+    headline: '7 of 12 outcomes are on track; 2 outcomes need attention this week.',
+    insights: [
+      {
+        title: 'Strong strategic alignment',
+        detail: '82% of commits this week are linked to strategic outcomes, above the 74% team average.',
+        severity: 'POSITIVE',
+      },
+      {
+        title: 'Forecast confidence dipping',
+        detail: '3 outcomes have forecast confidence below 60%. Consider reviewing scope or timelines.',
+        severity: 'WARNING',
+      },
+      {
+        title: 'Planning coverage at 88%',
+        detail: '88% of team members have submitted a plan for the current week.',
+        severity: 'INFO',
+      },
+    ],
+  };
+}
+
 export interface MockApiOptions {
   /** Initial state of the current user's plan (null → 404 on GET /plans/me). */
   initialPlan?: Record<string, unknown> | null;
@@ -442,6 +642,10 @@ export interface MockApiOptions {
   denyManagerDrillDown?: boolean;
   /** When true, createPlan seeds one default commit if the list is empty. */
   createPlanSeedsCommits?: boolean;
+  /** Override executive dashboard response (null → 404). */
+  executiveDashboard?: Record<string, unknown> | null;
+  /** Override executive briefing response (null → 404). */
+  executiveBriefing?: Record<string, unknown> | null;
 }
 
 /**
@@ -462,6 +666,18 @@ export interface MockApiOptions {
  *   GET  /api/v1/notifications/unread
  *   POST /api/v1/notifications/read-all
  *   POST /api/v1/ai/manager-insights
+ *   GET  /api/v1/users/me/trends
+ *   GET  /api/v1/users/me/profile
+ *   GET  /api/v1/users/me/capacity
+ *   GET  /api/v1/admin/org-policy
+ *   PATCH /api/v1/admin/org-policy/digest
+ *   GET  /api/v1/executive/strategic-health
+ *   POST /api/v1/ai/executive-briefing
+ *   POST /api/v1/ai/plan-quality-check
+ *   GET  /api/v1/plans/{id}/quality-check
+ *   POST /api/v1/ai/suggest-next-work
+ *   GET  /api/v1/suggestions/next-work
+ *   POST /api/v1/ai/suggestion-feedback
  *   GET  /api/v1/weeks/{week}/plans/{userId}       (manager drill-down)
  *   GET  /api/v1/weeks/{week}/plans/{userId}/commits (manager drill-down commits)
  *   POST /api/v1/plans/{id}/review
@@ -497,6 +713,19 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
         isLateLock: false,
       },
     ],
+    orgPolicy: {
+      chessKingRequired: true,
+      chessMaxKing: 1,
+      chessMaxQueen: 2,
+      lockDay: 'MONDAY',
+      lockTime: '10:00',
+      reconcileDay: 'FRIDAY',
+      reconcileTime: '16:00',
+      blockLockOnStaleRcdo: false,
+      rcdoStalenessThresholdMinutes: 1440,
+      digestDay: 'FRIDAY',
+      digestTime: '17:00',
+    },
     actuals: new Map<string, Record<string, unknown>>(),
   };
 
@@ -701,6 +930,97 @@ export async function installMockApi(page: Page, options: MockApiOptions = {}): 
         comments: 'Looks good.',
         createdAt: MOCK_NOW,
       });
+    }
+
+    // ── User trends ───────────────────────────────────────────────────────
+    if (method === 'GET' && path === '/api/v1/users/me/trends') {
+      return json(route, 200, buildTrendsResponse());
+    }
+
+    // ── User profile ──────────────────────────────────────────────────────
+    if (method === 'GET' && path === '/api/v1/users/me/profile') {
+      return json(route, 200, buildUserProfileResponse());
+    }
+
+    // ── User capacity ─────────────────────────────────────────────────────
+    if (method === 'GET' && path === '/api/v1/users/me/capacity') {
+      return json(route, 200, {
+        orgId: MOCK_ORG_ID,
+        userId: MOCK_USER_ID,
+        weeksAnalyzed: 6,
+        avgEstimatedHours: 32.0,
+        avgActualHours: 28.5,
+        estimationBias: 0.89,
+        realisticWeeklyCap: 30.0,
+        categoryBiasJson: null,
+        priorityCompletionJson: null,
+        confidenceLevel: 'MEDIUM',
+        computedAt: MOCK_NOW,
+      });
+    }
+
+    // ── Digest preferences ────────────────────────────────────────────────
+    if (method === 'GET' && path === '/api/v1/users/me/digest-preferences') {
+      return json(route, 200, {});
+    }
+
+    // ── Admin org policy / digest config ──────────────────────────────────
+    if (method === 'GET' && path === '/api/v1/admin/org-policy') {
+      return json(route, 200, state.orgPolicy);
+    }
+
+    if (method === 'PATCH' && path === '/api/v1/admin/org-policy/digest') {
+      const body = (request.postDataJSON() as Record<string, unknown> | null) ?? {};
+      state.orgPolicy = {
+        ...state.orgPolicy,
+        digestDay: typeof body.digestDay === 'string' ? body.digestDay : state.orgPolicy.digestDay,
+        digestTime: typeof body.digestTime === 'string' ? body.digestTime : state.orgPolicy.digestTime,
+      };
+      return json(route, 200, state.orgPolicy);
+    }
+
+    // ── Executive strategic health ─────────────────────────────────────────
+    if (method === 'GET' && path === '/api/v1/executive/strategic-health') {
+      if (options.executiveDashboard === null) {
+        return json(route, 404, apiError('Executive dashboard not found', 'NOT_FOUND'));
+      }
+      return json(route, 200, options.executiveDashboard ?? buildExecutiveDashboardResponse());
+    }
+
+    // ── Executive briefing ────────────────────────────────────────────────
+    if (method === 'POST' && path === '/api/v1/ai/executive-briefing') {
+      if (options.executiveBriefing === null) {
+        return json(route, 404, apiError('Executive briefing not found', 'NOT_FOUND'));
+      }
+      return json(route, 200, options.executiveBriefing ?? buildExecutiveBriefingResponse());
+    }
+
+    // ── AI suggest-rcdo ───────────────────────────────────────────────────
+    if (method === 'POST' && path === '/api/v1/ai/suggest-rcdo') {
+      return json(route, 200, { status: 'ok', suggestions: [] });
+    }
+
+    // ── AI plan quality check ─────────────────────────────────────────────
+    if (method === 'POST' && path === '/api/v1/ai/plan-quality-check') {
+      return json(route, 200, { status: 'ok', nudges: [] });
+    }
+
+    // ── Plan quality check ────────────────────────────────────────────────
+    if (method === 'GET' && /^\/api\/v1\/plans\/[^/]+\/quality-check$/.test(path)) {
+      return json(route, 200, { status: 'ok', nudges: [] });
+    }
+
+    // ── Next work suggestions ─────────────────────────────────────────────
+    if (
+      (method === 'GET' && path === '/api/v1/suggestions/next-work') ||
+      (method === 'POST' && path === '/api/v1/ai/suggest-next-work')
+    ) {
+      return json(route, 200, { status: 'ok', suggestions: [] });
+    }
+
+    // ── Next work suggestion feedback ─────────────────────────────────────
+    if (method === 'POST' && path === '/api/v1/ai/suggestion-feedback') {
+      return json(route, 200, { status: 'ok' });
     }
 
     return json(route, 404, apiError(`Unhandled mock route: ${method} ${path}`, 'NOT_FOUND'));

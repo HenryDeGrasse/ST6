@@ -12,7 +12,9 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Ticker;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +38,11 @@ class CachingOrgGraphClientDecoratorTest {
             new DirectReport(REPORT_1, "Ada"),
             new DirectReport(REPORT_2, "Grace")
     );
+    private static final List<OrgRosterEntry> ROSTER = List.of(
+            new OrgRosterEntry(MANAGER_ID, "Grace Hopper", null, "America/New_York"),
+            new OrgRosterEntry(REPORT_1, "Ada Lovelace", MANAGER_ID, "Europe/London"),
+            new OrgRosterEntry(REPORT_2, "Katherine Johnson", MANAGER_ID, "America/Chicago")
+    );
 
     private OrgGraphClient delegate;
     private CachingOrgGraphClientDecorator decorator;
@@ -46,14 +53,10 @@ class CachingOrgGraphClientDecoratorTest {
         decorator = new CachingOrgGraphClientDecorator(delegate);
     }
 
-    // ── getDelegate ──────────────────────────────────────────────────────────
-
     @Test
     void getDelegateReturnsWrappedClient() {
         assertSame(delegate, decorator.getDelegate());
     }
-
-    // ── write-through on success ─────────────────────────────────────────────
 
     @Nested
     class WriteThroughOnSuccess {
@@ -86,20 +89,25 @@ class CachingOrgGraphClientDecoratorTest {
             assertEquals(REPORTS_WITH_NAMES, result);
             verify(delegate, times(1)).getDirectReportsWithNames(ORG_ID, MANAGER_ID);
         }
-    }
 
-    // ── fallback on delegate failure ─────────────────────────────────────────
+        @Test
+        void getOrgRosterDelegatesAndCachesRoster() {
+            when(delegate.getOrgRoster(ORG_ID)).thenReturn(ROSTER);
+
+            List<OrgRosterEntry> result = decorator.getOrgRoster(ORG_ID);
+
+            assertEquals(ROSTER, result);
+        }
+    }
 
     @Nested
     class FallbackOnDelegateFailure {
 
         @Test
         void getDirectReportsDelegateFailsReturnsCachedReportsOnHit() {
-            // Seed the cache via a successful call.
             when(delegate.getDirectReports(ORG_ID, MANAGER_ID)).thenReturn(REPORTS);
             decorator.getDirectReports(ORG_ID, MANAGER_ID);
 
-            // Now simulate delegate failure.
             when(delegate.getDirectReports(ORG_ID, MANAGER_ID))
                     .thenThrow(new RuntimeException("Upstream down"));
 
@@ -125,11 +133,9 @@ class CachingOrgGraphClientDecoratorTest {
             when(delegate.getDirectReports(ORG_ID, MANAGER_ID)).thenReturn(REPORTS);
             when(delegate.getDirectReports(ORG_ID, manager2)).thenReturn(reports2);
 
-            // Seed both entries.
             decorator.getDirectReports(ORG_ID, MANAGER_ID);
             decorator.getDirectReports(ORG_ID, manager2);
 
-            // Both delegates fail.
             when(delegate.getDirectReports(ORG_ID, MANAGER_ID))
                     .thenThrow(new RuntimeException("down"));
             when(delegate.getDirectReports(ORG_ID, manager2))
@@ -149,9 +155,35 @@ class CachingOrgGraphClientDecoratorTest {
 
             assertEquals(REPORTS_WITH_NAMES, decorator.getDirectReportsWithNames(ORG_ID, MANAGER_ID));
         }
-    }
 
-    // ── TTL expiry ───────────────────────────────────────────────────────────
+        @Test
+        void getOrgRosterFallsBackToCachedRoster() {
+            when(delegate.getOrgRoster(ORG_ID)).thenReturn(ROSTER);
+            decorator.getOrgRoster(ORG_ID);
+
+            when(delegate.getOrgRoster(ORG_ID)).thenThrow(new RuntimeException("Upstream down"));
+
+            assertEquals(ROSTER, decorator.getOrgRoster(ORG_ID));
+        }
+
+        @Test
+        void getOrgTeamGroupsFallsBackToCachedRosterWhenGroupCallFails() {
+            Map<UUID, OrgTeamGroup> teamGroups = new LinkedHashMap<>();
+            teamGroups.put(MANAGER_ID, new OrgTeamGroup(MANAGER_ID, "Grace Hopper", List.of(ROSTER.get(1), ROSTER.get(2))));
+            when(delegate.getOrgRoster(ORG_ID)).thenReturn(ROSTER);
+            when(delegate.getOrgTeamGroups(ORG_ID)).thenReturn(teamGroups);
+
+            decorator.getOrgRoster(ORG_ID);
+            decorator.getOrgTeamGroups(ORG_ID);
+
+            when(delegate.getOrgTeamGroups(ORG_ID)).thenThrow(new RuntimeException("Upstream down"));
+
+            Map<UUID, OrgTeamGroup> fallback = decorator.getOrgTeamGroups(ORG_ID);
+            assertEquals(1, fallback.size());
+            assertEquals("Grace Hopper", fallback.get(MANAGER_ID).managerDisplayName());
+            assertEquals(2, fallback.get(MANAGER_ID).members().size());
+        }
+    }
 
     @Nested
     class TtlExpiry {
@@ -174,7 +206,6 @@ class CachingOrgGraphClientDecoratorTest {
             when(delegate.getDirectReports(ORG_ID, MANAGER_ID)).thenReturn(REPORTS);
             timedDecorator.getDirectReports(ORG_ID, MANAGER_ID);
 
-            // Advance past TTL.
             nanoTime.set(Duration.ofSeconds(61L).toNanos());
 
             when(delegate.getDirectReports(ORG_ID, MANAGER_ID))
@@ -202,7 +233,6 @@ class CachingOrgGraphClientDecoratorTest {
             when(delegate.getDirectReports(ORG_ID, MANAGER_ID)).thenReturn(REPORTS);
             timedDecorator.getDirectReports(ORG_ID, MANAGER_ID);
 
-            // Advance to just before TTL expiry.
             nanoTime.set(Duration.ofSeconds(59L).toNanos());
 
             when(delegate.getDirectReports(ORG_ID, MANAGER_ID))

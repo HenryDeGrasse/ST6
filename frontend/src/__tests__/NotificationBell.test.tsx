@@ -1,7 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { NotificationBell, formatDigestMessage } from "../components/NotificationBell.js";
+import {
+  NotificationBell,
+  formatDigestMessage,
+  formatDraftReadyMessage,
+  formatMisalignmentMessage,
+} from "../components/NotificationBell.js";
 import type { NotificationItem } from "@weekly-commitments/contracts";
 
 describe("NotificationBell", () => {
@@ -159,6 +164,63 @@ describe("WEEKLY_DIGEST notification rendering", () => {
 
 // ─── formatDigestMessage unit tests ────────────────────────────────────────────
 
+describe("Phase 5 notification rendering", () => {
+  it("renders draft-ready summaries", async () => {
+    const notification: NotificationItem = {
+      id: "draft-1",
+      type: "WEEKLY_PLAN_DRAFT_READY",
+      payload: {
+        suggestedCommitCount: 3,
+        suggestedHours: "18",
+        capacityHours: "24",
+      },
+      read: false,
+      createdAt: "2026-03-20T17:00:00Z",
+    };
+
+    render(
+      <NotificationBell
+        notifications={[notification]}
+        unreadCount={1}
+        onMarkRead={vi.fn().mockResolvedValue(undefined)}
+        onMarkAllRead={vi.fn().mockResolvedValue(undefined)}
+        onFetchUnread={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
+
+    await userEvent.click(screen.getByTestId("notification-bell-btn"));
+    expect(screen.getByTestId("draft-ready-summary-draft-1")).toHaveTextContent("3 suggested commits");
+  });
+
+  it("renders misalignment summaries", async () => {
+    const notification: NotificationItem = {
+      id: "brief-1",
+      type: "PLAN_MISALIGNMENT_BRIEFING",
+      payload: {
+        teamName: "Platform",
+        concernCount: 2,
+        overloadedMembers: ["Ava"],
+        urgentOutcomesNeedingAttention: ["Outcome 1", "Outcome 2"],
+      },
+      read: false,
+      createdAt: "2026-03-20T17:00:00Z",
+    };
+
+    render(
+      <NotificationBell
+        notifications={[notification]}
+        unreadCount={1}
+        onMarkRead={vi.fn().mockResolvedValue(undefined)}
+        onMarkAllRead={vi.fn().mockResolvedValue(undefined)}
+        onFetchUnread={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
+
+    await userEvent.click(screen.getByTestId("notification-bell-btn"));
+    expect(screen.getByTestId("misalignment-summary-brief-1")).toHaveTextContent("Platform has 2 planning concerns");
+  });
+});
+
 describe("formatDigestMessage", () => {
   it("returns the message field when present and non-empty", () => {
     const result = formatDigestMessage({ message: "Team is 80% on track." });
@@ -194,5 +256,29 @@ describe("formatDigestMessage", () => {
   it("returns fallback when payload is empty", () => {
     const result = formatDigestMessage({});
     expect(result).toBe("Weekly team digest available");
+  });
+});
+
+describe("Phase 5 notification formatters", () => {
+  it("builds draft-ready summaries", () => {
+    expect(
+      formatDraftReadyMessage({
+        suggestedCommitCount: 2,
+        suggestedHours: "12",
+        capacityHours: "20",
+        weekStartDate: "2026-03-16",
+      }),
+    ).toBe("Draft ready with 2 suggested commits covering 12h against 20h capacity for week of 2026-03-16.");
+  });
+
+  it("builds misalignment summaries", () => {
+    expect(
+      formatMisalignmentMessage({
+        teamName: "Revenue",
+        concernCount: 3,
+        overloadedMembers: ["A", "B"],
+        urgentOutcomesNeedingAttention: ["O1"],
+      }),
+    ).toBe("Revenue has 3 planning concerns, including 2 overloaded members and 1 urgent outcome needing attention.");
   });
 });

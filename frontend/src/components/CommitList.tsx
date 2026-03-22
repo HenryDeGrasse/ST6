@@ -241,7 +241,7 @@ export const CommitList: React.FC<CommitListProps> = ({
                       aria-expanded={checkIn.openForId === commit.id}
                       aria-controls={`check-in-panel-${commit.id}`}
                     >
-                      {checkIn.openForId === commit.id ? "✕ Close" : "📝 Check in"}
+                      {checkIn.openForId === commit.id ? "Close" : "Check in"}
                     </button>
                   )}
                 </div>

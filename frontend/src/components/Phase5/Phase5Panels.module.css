@@ -1,0 +1,149 @@
+.panel {
+  padding: var(--wc-space-lg);
+  border: 1px solid var(--wc-glass-border, rgba(255,255,255,0.12));
+  border-radius: var(--wc-radius-md, 0.75rem);
+  background: rgba(255,255,255,0.03);
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--wc-space-sm);
+  margin-bottom: var(--wc-space-md);
+}
+
+.eyebrow,
+.metricLabel {
+  display: block;
+  font-family: var(--wc-font-display);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--wc-color-text-muted);
+}
+
+.title,
+.sectionTitle {
+  margin: 0;
+  font-family: var(--wc-font-heading);
+  color: var(--wc-color-text-primary);
+}
+
+.sectionTitle {
+  margin-bottom: var(--wc-space-sm);
+  font-size: 1rem;
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--wc-space-sm);
+}
+
+.metricCard,
+.memberCard {
+  padding: var(--wc-space-sm);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--wc-radius-sm, 0.5rem);
+  background: rgba(255,255,255,0.02);
+}
+
+.metricValueSmall,
+.metricBody,
+.headline {
+  color: var(--wc-color-text-primary);
+}
+
+.metricBody,
+.subtle,
+.listItem,
+.loading,
+.empty,
+.error,
+.success {
+  font-family: var(--wc-font-body);
+}
+
+.metricBody,
+.listItem,
+.headline {
+  line-height: 1.5;
+}
+
+.statusBadge,
+.primaryButton,
+.secondaryButton {
+  border-radius: var(--wc-radius-sm, 0.5rem);
+}
+
+.statusBadge {
+  padding: 0.25rem 0.5rem;
+  background: rgba(201,169,98,0.12);
+  color: var(--wc-color-accent, #C9A962);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.section {
+  margin-top: var(--wc-space-md);
+}
+
+.list {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.listItem + .listItem {
+  margin-top: 0.5rem;
+}
+
+.memberHeader,
+.actions,
+.checkboxRow {
+  display: flex;
+}
+
+.memberHeader,
+.actions {
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--wc-space-sm);
+}
+
+.checkboxRow {
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.subtle,
+.loading,
+.empty {
+  color: var(--wc-color-text-muted);
+  font-size: 0.875rem;
+}
+
+.error {
+  color: var(--wc-color-error, #E66450);
+}
+
+.success {
+  margin-top: var(--wc-space-md);
+  color: #7bd88f;
+}
+
+.primaryButton,
+.secondaryButton {
+  border: 1px solid var(--wc-color-border, rgba(255,255,255,0.12));
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  background: rgba(255,255,255,0.03);
+  color: var(--wc-color-text-primary);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

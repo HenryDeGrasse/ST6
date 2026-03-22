@@ -81,7 +81,7 @@ export const EstimationCoaching: React.FC<EstimationCoachingProps> = ({ planId }
     return (
       <div data-testid="estimation-coaching" className={styles.card}>
         <div className={styles.header}>
-          <span className={styles.icon} aria-hidden="true">📊</span>
+          <span className={styles.icon} aria-hidden="true"></span>
           <h3 className={styles.title}>Estimation Coaching</h3>
         </div>
         <div data-testid="estimation-coaching-loading" className={styles.loading}>
@@ -96,7 +96,7 @@ export const EstimationCoaching: React.FC<EstimationCoachingProps> = ({ planId }
     return (
       <div data-testid="estimation-coaching" className={styles.card}>
         <div className={styles.header}>
-          <span className={styles.icon} aria-hidden="true">📊</span>
+          <span className={styles.icon} aria-hidden="true"></span>
           <h3 className={styles.title}>Estimation Coaching</h3>
         </div>
         <div data-testid="estimation-coaching-error" className={styles.errorMsg}>
@@ -118,7 +118,7 @@ export const EstimationCoaching: React.FC<EstimationCoachingProps> = ({ planId }
     <div data-testid="estimation-coaching" className={styles.card}>
       {/* ── Header ── */}
       <div className={styles.header}>
-        <span className={styles.icon} aria-hidden="true">📊</span>
+        <span className={styles.icon} aria-hidden="true"></span>
         <h3 className={styles.title}>Estimation Coaching</h3>
         <span
           data-testid="estimation-coaching-confidence"

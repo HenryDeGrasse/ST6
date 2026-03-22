@@ -47,4 +47,8 @@ export enum NotificationType {
   CHANGES_REQUESTED = "CHANGES_REQUESTED",
   /** Wave 3 — weekly digest summary sent to managers. */
   WEEKLY_DIGEST = "WEEKLY_DIGEST",
+  /** Phase 5 — proactive draft created by the weekly-planning agent. */
+  WEEKLY_PLAN_DRAFT_READY = "WEEKLY_PLAN_DRAFT_READY",
+  /** Phase 5 — manager briefing raised by the misalignment agent. */
+  PLAN_MISALIGNMENT_BRIEFING = "PLAN_MISALIGNMENT_BRIEFING",
 }

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.ZoneId;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,29 @@ class UserPrincipalTest {
     void isAdminReturnsTrueForAdminRole() {
         UserPrincipal admin = new UserPrincipal(USER_ID, ORG_ID, Set.of("ADMIN"));
         assertTrue(admin.isAdmin());
+    }
+
+    @Test
+    void defaultsTimeZoneToUtc() {
+        UserPrincipal principal = new UserPrincipal(USER_ID, ORG_ID, Set.of("IC"));
+
+        assertEquals(UserPrincipal.DEFAULT_TIME_ZONE, principal.timeZone());
+        assertEquals(ZoneId.of("UTC"), principal.zoneId());
+    }
+
+    @Test
+    void normalizesTimeZoneWhenProvided() {
+        UserPrincipal principal = new UserPrincipal(USER_ID, ORG_ID, Set.of("IC"), "America/New_York");
+
+        assertEquals("America/New_York", principal.timeZone());
+        assertEquals(ZoneId.of("America/New_York"), principal.zoneId());
+    }
+
+    @Test
+    void fallsBackToUtcForInvalidTimeZone() {
+        UserPrincipal principal = new UserPrincipal(USER_ID, ORG_ID, Set.of("IC"), "Not/A_Timezone");
+
+        assertEquals(UserPrincipal.DEFAULT_TIME_ZONE, principal.timeZone());
     }
 
     @Test

@@ -3,23 +3,9 @@ import React, { createContext, useContext, useMemo } from "react";
 /**
  * Feature flags for AI-assisted, analytics, and dashboard workflows.
  *
- * Per PRD §4:
- * - suggestRcdo: MVP ship (enabled by default)
- * - draftReconciliation: MVP beta (disabled by default)
- * - managerInsights: MVP beta (disabled by default)
- * - icTrends: Wave 1 — cross-week IC trend panel (enabled by default)
- * - planQualityNudge: Wave 1 — lock-time AI quality nudge (disabled by default)
- * - startMyWeek: Wave 2 — "Start from Last Week" draft-from-history flow (disabled by default)
- * - suggestNextWork: Wave 2 — AI next-work suggestions panel (disabled by default)
- * - dailyCheckIn: Wave 2 — quick daily check-in on locked commits (disabled by default)
- * - quickUpdate: Phase 1 — rapid-fire batch check-in flow (disabled by default)
- * - userProfile: Phase 1 — user model profile panel (disabled by default)
- * - capacityTracking: Phase 4 — estimated/actual hours tracking per commitment (disabled by default)
- * - estimationCoaching: Phase 4 — post-reconciliation estimation coaching feedback (disabled by default)
- * - strategicIntelligence: Analytics — multi-week strategic intelligence panel on the manager dashboard (disabled by default)
- * - predictions: Analytics — rule-based prediction alerts on the manager dashboard (disabled by default)
- * - outcomeUrgency: Phase 3 — urgency bands and target-date tracking for RCDO outcomes (disabled by default)
- * - strategicSlack: Phase 3 — strategic focus floor recommendations based on outcome urgency (disabled by default)
+ * Per PRD §4, all currently shipped product flags are enabled by default in
+ * local app runtime. Callers can still override individual flags via props or
+ * persisted localStorage values.
  */
 export interface FeatureFlags {
   suggestRcdo: boolean;
@@ -38,27 +24,37 @@ export interface FeatureFlags {
   predictions: boolean;
   outcomeUrgency: boolean;
   strategicSlack: boolean;
+  targetDateForecasting: boolean;
+  planningCopilot: boolean;
+  executiveDashboard: boolean;
+  weeklyPlanningAgent: boolean;
+  misalignmentAgent: boolean;
 }
 
 export const FEATURE_FLAGS_STORAGE_KEY = "wc-feature-flags";
 
 const DEFAULT_FLAGS: FeatureFlags = {
   suggestRcdo: true,
-  draftReconciliation: false,
-  managerInsights: false,
+  draftReconciliation: true,
+  managerInsights: true,
   icTrends: true,
-  planQualityNudge: false,
-  startMyWeek: false,
-  suggestNextWork: false,
-  dailyCheckIn: false,
-  quickUpdate: false,
-  userProfile: false,
-  capacityTracking: false,
-  estimationCoaching: false,
-  strategicIntelligence: false,
-  predictions: false,
-  outcomeUrgency: false,
-  strategicSlack: false,
+  planQualityNudge: true,
+  startMyWeek: true,
+  suggestNextWork: true,
+  dailyCheckIn: true,
+  quickUpdate: true,
+  userProfile: true,
+  capacityTracking: true,
+  estimationCoaching: true,
+  strategicIntelligence: true,
+  predictions: true,
+  outcomeUrgency: true,
+  strategicSlack: true,
+  targetDateForecasting: true,
+  planningCopilot: true,
+  executiveDashboard: true,
+  weeklyPlanningAgent: true,
+  misalignmentAgent: true,
 };
 
 const FeatureFlagContext = createContext<FeatureFlags>(DEFAULT_FLAGS);

@@ -7,10 +7,10 @@ export const DRAFT_SOURCE_PREFIX = "draft_source:";
 export type CommitDraftSource = CommitSourceType | "NEW";
 
 export const COMMIT_DRAFT_SOURCE_LABELS: Record<CommitDraftSource, string> = {
-  CARRIED_FORWARD: "🔄 Carried forward",
-  RECURRING: "📋 Recurring",
-  COVERAGE_GAP: "🎯 Coverage gap",
-  NEW: "✏️ New",
+  CARRIED_FORWARD: "Carried forward",
+  RECURRING: "Recurring",
+  COVERAGE_GAP: "Coverage gap",
+  NEW: "New",
 };
 
 /**

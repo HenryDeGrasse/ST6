@@ -30,10 +30,10 @@ const STATUS_LABELS: Record<CheckInStatus, string> = {
 };
 
 const STATUS_EMOJI: Record<CheckInStatus, string> = {
-  ON_TRACK: "✅",
-  AT_RISK: "⚠️",
-  BLOCKED: "🚫",
-  DONE_EARLY: "🎉",
+  ON_TRACK: "check",
+  AT_RISK: "warning",
+  BLOCKED: "blocked",
+  DONE_EARLY: "celebrate",
 };
 
 const ALL_STATUSES: CheckInStatus[] = ["ON_TRACK", "AT_RISK", "BLOCKED", "DONE_EARLY"];
@@ -131,7 +131,7 @@ export const QuickCheckIn: React.FC<QuickCheckInProps> = ({
           onClick={onClose}
           aria-label="Close check-in"
         >
-          ✕
+          Close
         </button>
       </div>
 
@@ -206,7 +206,7 @@ export const QuickCheckIn: React.FC<QuickCheckInProps> = ({
         </button>
         {lastSaved && !error && (
           <span data-testid="check-in-success" className={styles.successText} aria-live="polite">
-            ✓ Saved
+            Saved
           </span>
         )}
       </div>

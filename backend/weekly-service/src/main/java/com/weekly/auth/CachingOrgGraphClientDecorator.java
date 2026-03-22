@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -22,10 +23,20 @@ public class CachingOrgGraphClientDecorator implements OrgGraphClient {
     private final OrgGraphClient delegate;
     private final Cache<String, List<UUID>> directReportsCache;
     private final Cache<String, List<DirectReport>> directReportsWithNamesCache;
+    private final Cache<UUID, List<OrgRosterEntry>> orgRosterCache;
+    private final Cache<UUID, Map<UUID, OrgTeamGroup>> orgTeamGroupsCache;
 
     public CachingOrgGraphClientDecorator(OrgGraphClient delegate) {
         this(
                 delegate,
+                Caffeine.newBuilder()
+                        .maximumSize(MAX_SIZE)
+                        .expireAfterWrite(Duration.ofSeconds(TTL_SECONDS))
+                        .build(),
+                Caffeine.newBuilder()
+                        .maximumSize(MAX_SIZE)
+                        .expireAfterWrite(Duration.ofSeconds(TTL_SECONDS))
+                        .build(),
                 Caffeine.newBuilder()
                         .maximumSize(MAX_SIZE)
                         .expireAfterWrite(Duration.ofSeconds(TTL_SECONDS))
@@ -48,16 +59,28 @@ public class CachingOrgGraphClientDecorator implements OrgGraphClient {
                 Caffeine.newBuilder()
                         .maximumSize(MAX_SIZE)
                         .expireAfterWrite(Duration.ofSeconds(TTL_SECONDS))
+                        .build(),
+                Caffeine.newBuilder()
+                        .maximumSize(MAX_SIZE)
+                        .expireAfterWrite(Duration.ofSeconds(TTL_SECONDS))
+                        .build(),
+                Caffeine.newBuilder()
+                        .maximumSize(MAX_SIZE)
+                        .expireAfterWrite(Duration.ofSeconds(TTL_SECONDS))
                         .build());
     }
 
     CachingOrgGraphClientDecorator(
             OrgGraphClient delegate,
             Cache<String, List<UUID>> directReportsCache,
-            Cache<String, List<DirectReport>> directReportsWithNamesCache) {
+            Cache<String, List<DirectReport>> directReportsWithNamesCache,
+            Cache<UUID, List<OrgRosterEntry>> orgRosterCache,
+            Cache<UUID, Map<UUID, OrgTeamGroup>> orgTeamGroupsCache) {
         this.delegate = delegate;
         this.directReportsCache = directReportsCache;
         this.directReportsWithNamesCache = directReportsWithNamesCache;
+        this.orgRosterCache = orgRosterCache;
+        this.orgTeamGroupsCache = orgTeamGroupsCache;
     }
 
     /**
@@ -108,7 +131,74 @@ public class CachingOrgGraphClientDecorator implements OrgGraphClient {
         }
     }
 
+    @Override
+    public List<OrgRosterEntry> getOrgRoster(UUID orgId) {
+        try {
+            List<OrgRosterEntry> roster = List.copyOf(delegate.getOrgRoster(orgId));
+            orgRosterCache.put(orgId, roster);
+            return roster;
+        } catch (Exception e) {
+            List<OrgRosterEntry> cached = orgRosterCache.getIfPresent(orgId);
+            if (cached != null) {
+                return cached;
+            }
+            throw e;
+        }
+    }
+
+    @Override
+    public Map<UUID, OrgTeamGroup> getOrgTeamGroups(UUID orgId) {
+        try {
+            Map<UUID, OrgTeamGroup> groups = Map.copyOf(delegate.getOrgTeamGroups(orgId));
+            orgTeamGroupsCache.put(orgId, groups);
+            return groups;
+        } catch (Exception e) {
+            Map<UUID, OrgTeamGroup> cachedGroups = orgTeamGroupsCache.getIfPresent(orgId);
+            if (cachedGroups != null) {
+                return cachedGroups;
+            }
+
+            List<OrgRosterEntry> cachedRoster = orgRosterCache.getIfPresent(orgId);
+            if (cachedRoster != null) {
+                return deriveTeamGroups(cachedRoster);
+            }
+            throw e;
+        }
+    }
+
     private String cacheKey(UUID orgId, UUID managerId) {
         return orgId + ":" + managerId;
+    }
+
+    private Map<UUID, OrgTeamGroup> deriveTeamGroups(List<OrgRosterEntry> roster) {
+        Map<UUID, OrgRosterEntry> rosterByUserId = roster.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        OrgRosterEntry::userId,
+                        entry -> entry,
+                        (left, right) -> left,
+                        java.util.LinkedHashMap::new));
+
+        return roster.stream()
+                .filter(entry -> entry.managerId() != null)
+                .collect(java.util.stream.Collectors.groupingBy(
+                        OrgRosterEntry::managerId,
+                        java.util.LinkedHashMap::new,
+                        java.util.stream.Collectors.toList()))
+                .entrySet()
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> {
+                            OrgRosterEntry manager = rosterByUserId.get(entry.getKey());
+                            String managerDisplayName = manager != null
+                                    ? manager.displayName()
+                                    : entry.getKey().toString();
+                            return new OrgTeamGroup(
+                                    entry.getKey(),
+                                    managerDisplayName,
+                                    List.copyOf(entry.getValue()));
+                        },
+                        (left, right) -> left,
+                        java.util.LinkedHashMap::new));
     }
 }

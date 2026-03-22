@@ -50,6 +50,12 @@ tags:
     description: |
       Urgency summary and strategic slack APIs for the RCDO outcome portfolio
       (Phase 3).
+  - name: Teams
+    description: Team management — create teams, manage members, and handle access requests (Phase 6)
+  - name: Issues
+    description: Persistent backlog issue CRUD and action endpoints (Phase 6)
+  - name: Backlog
+    description: AI-powered backlog ranking, effort-type suggestions, and semantic search (Phase 6)
 paths:
   "/weeks/{weekStart}/plans":
     post:
@@ -1862,6 +1868,976 @@ paths:
                 $ref: "#/components/schemas/StrategicSlackResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /outcomes/forecasts:
+    get:
+      operationId: getOutcomeForecasts
+      summary: Get persisted target-date forecasts for all outcomes in the org
+      description: |
+        Returns the latest persisted target-date forecast for each outcome in the
+        authenticated user's org.
+      tags:
+        - Outcome Metadata
+        - AI
+      responses:
+        "200":
+          description: Outcome forecasts returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutcomeForecastListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /outcomes/{outcomeId}/forecast:
+    get:
+      operationId: getOutcomeForecast
+      summary: Get the persisted target-date forecast for a single outcome
+      tags:
+        - Outcome Metadata
+        - AI
+      parameters:
+        - $ref: "#/components/parameters/OutcomeIdPath"
+      responses:
+        "200":
+          description: Outcome forecast returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutcomeForecastResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /ai/team-plan-suggestion:
+    post:
+      operationId: suggestTeamPlan
+      summary: Manager planning copilot team-plan suggestion
+      description: |
+        Returns manager-scoped weekly planning suggestions for direct reports.
+        Returns 200 with status "unavailable" when the planningCopilot feature
+        flag is disabled.
+      tags:
+        - AI
+        - Manager
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamPlanSuggestionRequest"
+      responses:
+        "200":
+          description: Team-plan suggestion returned
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/TeamPlanSuggestionResponse"
+                  - $ref: "#/components/schemas/TeamPlanSuggestionUnavailableResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          description: Rate limit exceeded
+  /ai/team-plan-suggestion/apply:
+    post:
+      operationId: applyTeamPlanSuggestion
+      summary: Apply planning-copilot suggestions into manager-safe draft plans
+      description: |
+        Applies selected planning-copilot suggestions for one or more direct
+        reports. Creates a draft plan when needed and appends the selected
+        commits.
+        Returns 200 with status "unavailable" when the planningCopilot feature
+        flag is disabled.
+      tags:
+        - AI
+        - Manager
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplyTeamPlanSuggestionRequest"
+      responses:
+        "200":
+          description: Team-plan suggestion applied
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ApplyTeamPlanSuggestionResponse"
+                  - $ref: "#/components/schemas/TeamPlanSuggestionUnavailableResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          description: Rate limit exceeded
+  /executive/strategic-health:
+    get:
+      operationId: getStrategicHealth
+      summary: Get the executive strategic-health dashboard
+      description: |
+        Returns aggregate-only strategic-health metrics for the org. Available to
+        managers and admins only.
+        Returns 200 with status "unavailable" when the executiveDashboard
+        feature flag is disabled.
+      tags:
+        - AI
+        - Manager
+      parameters:
+        - name: weekStart
+          in: query
+          required: false
+          description: Optional ISO date of the week to summarize.
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Executive dashboard returned
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ExecutiveDashboardResponse"
+                  - $ref: "#/components/schemas/ExecutiveDashboardUnavailableResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /ai/executive-briefing:
+    post:
+      operationId: executiveBriefing
+      summary: Generate an AI executive briefing from strategic-health data
+      description: |
+        Generates an executive briefing grounded in aggregate strategic-health
+        metrics for the requested week.
+        Returns 200 with status "unavailable" when the executiveDashboard
+        feature flag is disabled or briefing generation is unavailable.
+      tags:
+        - AI
+        - Manager
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExecutiveBriefingRequest"
+      responses:
+        "200":
+          description: Executive briefing returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExecutiveBriefingResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          description: Rate limit exceeded
+
+  # ── Phase 6: Teams ─────────────────────────────────────────
+  "/teams":
+    get:
+      operationId: listTeams
+      summary: List all teams in the organisation
+      tags:
+        - Teams
+      responses:
+        "200":
+          description: List of teams
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createTeam
+      summary: Create a new team
+      tags:
+        - Teams
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTeamRequest"
+      responses:
+        "201":
+          description: Team created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  "/teams/{teamId}":
+    get:
+      operationId: getTeam
+      summary: Get a team with its members
+      tags:
+        - Teams
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Team detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamDetailResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateTeam
+      summary: Update a team (owner only)
+      tags:
+        - Teams
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTeamRequest"
+      responses:
+        "200":
+          description: Team updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  "/teams/{teamId}/members":
+    get:
+      operationId: listTeamMembers
+      summary: List members of a team
+      tags:
+        - Teams
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Team member list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamMember"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: addTeamMember
+      summary: Add a member to a team (owner only)
+      tags:
+        - Teams
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddTeamMemberRequest"
+      responses:
+        "201":
+          description: Member added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  "/teams/{teamId}/members/{userId}":
+    delete:
+      operationId: removeTeamMember
+      summary: Remove a member from a team (owner only)
+      tags:
+        - Teams
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Member removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  "/teams/{teamId}/access-requests":
+    get:
+      operationId: listTeamAccessRequests
+      summary: List pending access requests for a team (owner only)
+      tags:
+        - Teams
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Access request list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamAccessRequestListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: requestTeamAccess
+      summary: Request to join a team
+      tags:
+        - Teams
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Access request submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamAccessRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  "/teams/{teamId}/access-requests/{requestId}":
+    patch:
+      operationId: decideTeamAccessRequest
+      summary: Approve or deny an access request (owner only)
+      tags:
+        - Teams
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamAccessRequestAction"
+      responses:
+        "200":
+          description: Access request decided
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamAccessRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── Phase 6: Issues ─────────────────────────────────────────
+  "/teams/{teamId}/issues":
+    get:
+      operationId: listTeamIssues
+      summary: List a team's backlog issues (paginated, filterable)
+      tags:
+        - Issues
+        - Teams
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/IssueStatus"
+        - name: effortType
+          in: query
+          schema:
+            $ref: "#/components/schemas/EffortType"
+        - name: assigneeUserId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated issue list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: createIssue
+      summary: Create a new backlog issue for a team
+      tags:
+        - Issues
+        - Teams
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateIssueRequest"
+      responses:
+        "201":
+          description: Issue created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Issue"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  "/issues/{issueId}":
+    get:
+      operationId: getIssue
+      summary: Get issue detail with activity log
+      tags:
+        - Issues
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Issue detail with activities
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueDetailResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateIssue
+      summary: Update a backlog issue
+      tags:
+        - Issues
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateIssueRequest"
+      responses:
+        "200":
+          description: Issue updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Issue"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: archiveIssue
+      summary: Soft-delete (archive) an issue
+      tags:
+        - Issues
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Issue archived
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Issue"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  "/issues/{issueId}/assign":
+    post:
+      operationId: assignIssue
+      summary: Assign or unassign an issue
+      tags:
+        - Issues
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignIssueRequest"
+      responses:
+        "200":
+          description: Issue assignment updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Issue"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  "/issues/{issueId}/commit":
+    post:
+      operationId: commitIssueToWeek
+      summary: Add an issue to the selected week's plan as an assignment
+      tags:
+        - Issues
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommitIssueToWeekRequest"
+      responses:
+        "201":
+          description: Assignment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklyAssignment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  "/issues/{issueId}/release":
+    post:
+      operationId: releaseIssue
+      summary: Remove an issue from the current week's plan
+      tags:
+        - Issues
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReleaseIssueRequest"
+      responses:
+        "200":
+          description: Issue released from week
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Issue"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  "/issues/{issueId}/comment":
+    post:
+      operationId: addIssueComment
+      summary: Add a comment to an issue
+      tags:
+        - Issues
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddCommentRequest"
+      responses:
+        "201":
+          description: Comment added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueActivity"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  "/issues/{issueId}/time-entry":
+    post:
+      operationId: logIssueTime
+      summary: Log time spent on an issue
+      tags:
+        - Issues
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogTimeEntryRequest"
+      responses:
+        "201":
+          description: Time entry logged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueActivity"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── Phase 6: Weekly Plan Assignment Integration ──────────────
+  "/plans/{planId}/assignments":
+    get:
+      operationId: listPlanAssignments
+      summary: List weekly assignments for a plan
+      tags:
+        - Issues
+        - Plans
+      parameters:
+        - $ref: "#/components/parameters/PlanIdPath"
+      responses:
+        "200":
+          description: Assignments for the plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklyAssignmentsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  "/weeks/{weekStart}/plan/assignments":
+    post:
+      operationId: createWeeklyAssignment
+      summary: Add an issue to the selected week's plan
+      tags:
+        - Issues
+        - Plans
+      parameters:
+        - $ref: "#/components/parameters/WeekStartPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWeeklyAssignmentRequest"
+      responses:
+        "201":
+          description: Assignment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklyAssignment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  "/weeks/{weekStart}/plan/assignments/{assignmentId}":
+    delete:
+      operationId: removeWeeklyAssignment
+      summary: Remove an issue assignment from the selected week's plan
+      tags:
+        - Issues
+        - Plans
+      parameters:
+        - $ref: "#/components/parameters/WeekStartPath"
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Assignment removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── Phase 6: Backlog AI Endpoints ────────────────────────────
+  "/ai/suggest-effort-type":
+    post:
+      operationId: suggestEffortType
+      summary: AI-suggest an effort type for an issue
+      tags:
+        - Backlog
+        - AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuggestEffortTypeRequest"
+      responses:
+        "200":
+          description: Effort type suggestion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestEffortTypeResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  "/ai/rank-backlog":
+    post:
+      operationId: rankBacklog
+      summary: AI-rank backlog issues for a team
+      tags:
+        - Backlog
+        - AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RankBacklogRequest"
+      responses:
+        "200":
+          description: Ranked backlog
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RankBacklogResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  "/ai/recommend-weekly-issues":
+    post:
+      operationId: recommendWeeklyIssues
+      summary: AI-recommend issues to commit to for the week
+      tags:
+        - Backlog
+        - AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecommendWeeklyIssuesRequest"
+      responses:
+        "200":
+          description: Weekly issue recommendations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendWeeklyIssuesResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  "/ai/suggest-deferrals":
+    post:
+      operationId: suggestDeferrals
+      summary: AI-suggest issues to defer when overcommitted
+      tags:
+        - Backlog
+        - AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuggestDeferralsRequest"
+      responses:
+        "200":
+          description: Deferral suggestions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestDeferralsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  "/ai/coverage-gap-inspirations":
+    get:
+      operationId: getCoverageGapInspirations
+      summary: AI-generate issue inspirations for uncovered RCDO outcomes
+      tags:
+        - Backlog
+        - AI
+      responses:
+        "200":
+          description: Coverage gap inspirations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoverageGapInspirationsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  "/ai/search-issues":
+    post:
+      operationId: semanticSearchIssues
+      summary: Semantic search over the issue backlog (RAG via Pinecone)
+      tags:
+        - Backlog
+        - AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SemanticSearchRequest"
+      responses:
+        "200":
+          description: Semantic search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SemanticSearchResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
 components:
   securitySchemes:
     BearerAuth:
@@ -1914,6 +2890,963 @@ components:
         type: string
         format: uuid
   schemas:
+    # ── Phase 6 Enums ───────────────────────────────────────────
+    EffortType:
+      type: string
+      enum:
+        - BUILD
+        - MAINTAIN
+        - COLLABORATE
+        - LEARN
+      description: Classifies the type of effort an issue represents
+    IssueStatus:
+      type: string
+      enum:
+        - OPEN
+        - IN_PROGRESS
+        - DONE
+        - ARCHIVED
+      description: Lifecycle status for a backlog issue
+    TeamRole:
+      type: string
+      enum:
+        - OWNER
+        - MEMBER
+      description: Role of a user within a team
+    AccessRequestStatus:
+      type: string
+      enum:
+        - PENDING
+        - APPROVED
+        - DENIED
+      description: Status of a team access request
+    IssueActivityType:
+      type: string
+      enum:
+        - CREATED
+        - STATUS_CHANGE
+        - ASSIGNMENT_CHANGE
+        - PRIORITY_CHANGE
+        - EFFORT_TYPE_CHANGE
+        - ESTIMATE_CHANGE
+        - COMMENT
+        - TIME_ENTRY
+        - OUTCOME_CHANGE
+        - COMMITTED_TO_WEEK
+        - RELEASED_TO_BACKLOG
+        - CARRIED_FORWARD
+        - BLOCKED
+        - UNBLOCKED
+        - DESCRIPTION_CHANGE
+        - TITLE_CHANGE
+      description: Audit activity type recorded on an issue
+
+    # ── Phase 6 Entity Schemas ───────────────────────────────────
+    Issue:
+      type: object
+      required:
+        - id
+        - orgId
+        - teamId
+        - issueKey
+        - sequenceNumber
+        - title
+        - creatorUserId
+        - status
+        - version
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        orgId:
+          type: string
+          format: uuid
+        teamId:
+          type: string
+          format: uuid
+        issueKey:
+          type: string
+          description: Human-readable key, e.g. "ENG-42"
+        sequenceNumber:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        effortType:
+          $ref: "#/components/schemas/EffortType"
+          nullable: true
+        estimatedHours:
+          type: number
+          format: double
+          nullable: true
+        chessPriority:
+          $ref: "#/components/schemas/ChessPriority"
+          nullable: true
+        outcomeId:
+          type: string
+          format: uuid
+          nullable: true
+        nonStrategicReason:
+          type: string
+          nullable: true
+        creatorUserId:
+          type: string
+          format: uuid
+        assigneeUserId:
+          type: string
+          format: uuid
+          nullable: true
+        blockedByIssueId:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          $ref: "#/components/schemas/IssueStatus"
+        aiRecommendedRank:
+          type: number
+          format: double
+          nullable: true
+        aiRankRationale:
+          type: string
+          nullable: true
+        aiSuggestedEffortType:
+          $ref: "#/components/schemas/EffortType"
+          nullable: true
+        version:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        archivedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    WeeklyAssignment:
+      type: object
+      required:
+        - id
+        - orgId
+        - weeklyPlanId
+        - issueId
+        - tags
+        - version
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        orgId:
+          type: string
+          format: uuid
+        weeklyPlanId:
+          type: string
+          format: uuid
+        issueId:
+          type: string
+          format: uuid
+        chessPriorityOverride:
+          $ref: "#/components/schemas/ChessPriority"
+          nullable: true
+        expectedResult:
+          type: string
+          nullable: true
+        confidence:
+          type: number
+          format: double
+          nullable: true
+        snapshotRallyCryId:
+          type: string
+          format: uuid
+          nullable: true
+        snapshotRallyCryName:
+          type: string
+          nullable: true
+        snapshotObjectiveId:
+          type: string
+          format: uuid
+          nullable: true
+        snapshotObjectiveName:
+          type: string
+          nullable: true
+        snapshotOutcomeId:
+          type: string
+          format: uuid
+          nullable: true
+        snapshotOutcomeName:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        version:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    WeeklyAssignmentActual:
+      type: object
+      required:
+        - assignmentId
+        - orgId
+        - completionStatus
+        - createdAt
+        - updatedAt
+      properties:
+        assignmentId:
+          type: string
+          format: uuid
+        orgId:
+          type: string
+          format: uuid
+        actualResult:
+          type: string
+          nullable: true
+        completionStatus:
+          $ref: "#/components/schemas/CompletionStatus"
+        deltaReason:
+          type: string
+          nullable: true
+        hoursSpent:
+          type: number
+          format: double
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    IssueActivity:
+      type: object
+      required:
+        - id
+        - orgId
+        - issueId
+        - actorUserId
+        - activityType
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        orgId:
+          type: string
+          format: uuid
+        issueId:
+          type: string
+          format: uuid
+        actorUserId:
+          type: string
+          format: uuid
+        activityType:
+          $ref: "#/components/schemas/IssueActivityType"
+        oldValue:
+          type: string
+          nullable: true
+        newValue:
+          type: string
+          nullable: true
+        commentText:
+          type: string
+          nullable: true
+        hoursLogged:
+          type: number
+          format: double
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    Team:
+      type: object
+      required:
+        - id
+        - orgId
+        - name
+        - keyPrefix
+        - ownerUserId
+        - issueSequence
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        orgId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        keyPrefix:
+          type: string
+          description: Short prefix used in issue keys, e.g. "ENG"
+        description:
+          type: string
+          nullable: true
+        ownerUserId:
+          type: string
+          format: uuid
+        issueSequence:
+          type: integer
+          description: Current issue sequence counter
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TeamMember:
+      type: object
+      required:
+        - teamId
+        - userId
+        - orgId
+        - role
+        - joinedAt
+      properties:
+        teamId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        orgId:
+          type: string
+          format: uuid
+        role:
+          $ref: "#/components/schemas/TeamRole"
+        joinedAt:
+          type: string
+          format: date-time
+
+    TeamAccessRequest:
+      type: object
+      required:
+        - id
+        - teamId
+        - requesterUserId
+        - orgId
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        teamId:
+          type: string
+          format: uuid
+        requesterUserId:
+          type: string
+          format: uuid
+        orgId:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/AccessRequestStatus"
+        decidedByUserId:
+          type: string
+          format: uuid
+          nullable: true
+        decidedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    # ── Phase 6 Request/Response Schemas ─────────────────────────
+    CreateTeamRequest:
+      type: object
+      required:
+        - name
+        - keyPrefix
+      properties:
+        name:
+          type: string
+        keyPrefix:
+          type: string
+        description:
+          type: string
+          nullable: true
+
+    UpdateTeamRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+
+    AddTeamMemberRequest:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+          format: uuid
+        role:
+          $ref: "#/components/schemas/TeamRole"
+
+    TeamListResponse:
+      type: object
+      required:
+        - teams
+      properties:
+        teams:
+          type: array
+          items:
+            $ref: "#/components/schemas/Team"
+
+    TeamDetailResponse:
+      type: object
+      required:
+        - team
+        - members
+      properties:
+        team:
+          $ref: "#/components/schemas/Team"
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamMember"
+
+    TeamAccessRequestAction:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: "#/components/schemas/AccessRequestStatus"
+
+    TeamAccessRequestListResponse:
+      type: object
+      required:
+        - requests
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamAccessRequest"
+
+    CreateIssueRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        effortType:
+          $ref: "#/components/schemas/EffortType"
+          nullable: true
+        estimatedHours:
+          type: number
+          format: double
+          nullable: true
+        chessPriority:
+          $ref: "#/components/schemas/ChessPriority"
+          nullable: true
+        outcomeId:
+          type: string
+          format: uuid
+          nullable: true
+        nonStrategicReason:
+          type: string
+          nullable: true
+        assigneeUserId:
+          type: string
+          format: uuid
+          nullable: true
+        blockedByIssueId:
+          type: string
+          format: uuid
+          nullable: true
+
+    UpdateIssueRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        effortType:
+          $ref: "#/components/schemas/EffortType"
+          nullable: true
+        estimatedHours:
+          type: number
+          format: double
+          nullable: true
+        chessPriority:
+          $ref: "#/components/schemas/ChessPriority"
+          nullable: true
+        outcomeId:
+          type: string
+          format: uuid
+          nullable: true
+        nonStrategicReason:
+          type: string
+          nullable: true
+        assigneeUserId:
+          type: string
+          format: uuid
+          nullable: true
+        blockedByIssueId:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          $ref: "#/components/schemas/IssueStatus"
+        version:
+          type: integer
+
+    IssueListResponse:
+      type: object
+      required:
+        - content
+        - page
+        - size
+        - totalElements
+        - totalPages
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/Issue"
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+
+    IssueDetailResponse:
+      type: object
+      required:
+        - issue
+        - activities
+      properties:
+        issue:
+          $ref: "#/components/schemas/Issue"
+        activities:
+          type: array
+          items:
+            $ref: "#/components/schemas/IssueActivity"
+
+    AssignIssueRequest:
+      type: object
+      required:
+        - assigneeUserId
+      properties:
+        assigneeUserId:
+          type: string
+          format: uuid
+          nullable: true
+
+    CommitIssueToWeekRequest:
+      type: object
+      required:
+        - weekStart
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: ISO date (Monday) of the target week
+        chessPriorityOverride:
+          $ref: "#/components/schemas/ChessPriority"
+          nullable: true
+        expectedResult:
+          type: string
+          nullable: true
+        confidence:
+          type: number
+          format: double
+          nullable: true
+
+    CreateWeeklyAssignmentRequest:
+      type: object
+      required:
+        - issueId
+      properties:
+        issueId:
+          type: string
+          format: uuid
+        chessPriorityOverride:
+          $ref: "#/components/schemas/ChessPriority"
+          nullable: true
+        expectedResult:
+          type: string
+          nullable: true
+        confidence:
+          type: number
+          format: double
+          nullable: true
+
+    ReleaseIssueRequest:
+      type: object
+      required:
+        - weeklyPlanId
+      properties:
+        weeklyPlanId:
+          type: string
+          format: uuid
+
+    AddCommentRequest:
+      type: object
+      required:
+        - commentText
+      properties:
+        commentText:
+          type: string
+
+    LogTimeEntryRequest:
+      type: object
+      required:
+        - hoursLogged
+      properties:
+        hoursLogged:
+          type: number
+          format: double
+        note:
+          type: string
+          nullable: true
+
+    WeeklyAssignmentWithActual:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/WeeklyAssignment"
+      properties:
+        actual:
+          $ref: "#/components/schemas/WeeklyAssignmentActual"
+          nullable: true
+        issue:
+          $ref: "#/components/schemas/Issue"
+          nullable: true
+
+    WeeklyAssignmentsResponse:
+      type: object
+      required:
+        - assignments
+      properties:
+        assignments:
+          type: array
+          items:
+            $ref: "#/components/schemas/WeeklyAssignmentWithActual"
+
+    SuggestEffortTypeRequest:
+      type: object
+      required:
+        - title
+      properties:
+        issueId:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+
+    SuggestEffortTypeResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - unavailable
+        suggestedEffortType:
+          $ref: "#/components/schemas/EffortType"
+          nullable: true
+        rationale:
+          type: string
+          nullable: true
+        confidence:
+          type: number
+          format: double
+          nullable: true
+
+    RankBacklogRequest:
+      type: object
+      required:
+        - teamId
+      properties:
+        teamId:
+          type: string
+          format: uuid
+        issueIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    RankedIssue:
+      type: object
+      required:
+        - issueId
+        - rank
+        - rationale
+      properties:
+        issueId:
+          type: string
+          format: uuid
+        rank:
+          type: number
+          format: double
+        rationale:
+          type: string
+
+    RankBacklogResponse:
+      type: object
+      required:
+        - status
+        - rankedIssues
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - unavailable
+        rankedIssues:
+          type: array
+          items:
+            $ref: "#/components/schemas/RankedIssue"
+
+    RecommendWeeklyIssuesRequest:
+      type: object
+      required:
+        - weekStart
+      properties:
+        weekStart:
+          type: string
+          format: date
+        teamId:
+          type: string
+          format: uuid
+          nullable: true
+        maxItems:
+          type: integer
+          nullable: true
+
+    RecommendedIssue:
+      type: object
+      required:
+        - issueId
+        - issueKey
+        - title
+        - rationale
+        - confidence
+      properties:
+        issueId:
+          type: string
+          format: uuid
+        issueKey:
+          type: string
+        title:
+          type: string
+        effortType:
+          $ref: "#/components/schemas/EffortType"
+          nullable: true
+        chessPriority:
+          $ref: "#/components/schemas/ChessPriority"
+          nullable: true
+        rationale:
+          type: string
+        confidence:
+          type: number
+          format: double
+
+    RecommendWeeklyIssuesResponse:
+      type: object
+      required:
+        - status
+        - recommendations
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - unavailable
+        recommendations:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecommendedIssue"
+
+    SuggestDeferralsRequest:
+      type: object
+      required:
+        - weeklyPlanId
+      properties:
+        weeklyPlanId:
+          type: string
+          format: uuid
+
+    DeferralSuggestion:
+      type: object
+      required:
+        - issueId
+        - issueKey
+        - title
+        - reason
+        - impactIfDeferred
+      properties:
+        issueId:
+          type: string
+          format: uuid
+        issueKey:
+          type: string
+        title:
+          type: string
+        reason:
+          type: string
+        impactIfDeferred:
+          type: string
+
+    SuggestDeferralsResponse:
+      type: object
+      required:
+        - status
+        - suggestions
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - unavailable
+        suggestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeferralSuggestion"
+
+    CoverageGapInspirationItem:
+      type: object
+      required:
+        - suggestedTitle
+        - rationale
+      properties:
+        outcomeId:
+          type: string
+          format: uuid
+          nullable: true
+        outcomeName:
+          type: string
+          nullable: true
+        suggestedTitle:
+          type: string
+        rationale:
+          type: string
+        suggestedEffortType:
+          $ref: "#/components/schemas/EffortType"
+          nullable: true
+
+    CoverageGapInspirationsResponse:
+      type: object
+      required:
+        - status
+        - inspirations
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - unavailable
+        inspirations:
+          type: array
+          items:
+            $ref: "#/components/schemas/CoverageGapInspirationItem"
+
+    SemanticSearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+        teamId:
+          type: string
+          format: uuid
+          nullable: true
+        effortType:
+          $ref: "#/components/schemas/EffortType"
+          nullable: true
+        status:
+          $ref: "#/components/schemas/IssueStatus"
+          nullable: true
+        limit:
+          type: integer
+          nullable: true
+
+    SemanticSearchHit:
+      type: object
+      required:
+        - issueId
+        - issueKey
+        - title
+        - score
+        - status
+      properties:
+        issueId:
+          type: string
+          format: uuid
+        issueKey:
+          type: string
+        title:
+          type: string
+        score:
+          type: number
+          format: double
+        effortType:
+          $ref: "#/components/schemas/EffortType"
+          nullable: true
+        status:
+          $ref: "#/components/schemas/IssueStatus"
+
+    SemanticSearchResponse:
+      type: object
+      required:
+        - status
+        - hits
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - unavailable
+        hits:
+          type: array
+          items:
+            $ref: "#/components/schemas/SemanticSearchHit"
+
     PlanState:
       type: string
       enum:
@@ -2447,6 +4380,17 @@ components:
           type: integer
         pawnCount:
           type: integer
+    NotificationType:
+      type: string
+      enum:
+        - PLAN_STILL_DRAFT
+        - PLAN_STILL_LOCKED
+        - RECONCILIATION_OVERDUE
+        - RECONCILIATION_SUBMITTED
+        - CHANGES_REQUESTED
+        - WEEKLY_DIGEST
+        - WEEKLY_PLAN_DRAFT_READY
+        - PLAN_MISALIGNMENT_BRIEFING
     Notification:
       type: object
       required:
@@ -2460,9 +4404,10 @@ components:
           type: string
           format: uuid
         type:
-          type: string
+          $ref: "#/components/schemas/NotificationType"
         payload:
           type: object
+          additionalProperties: true
         read:
           type: boolean
         createdAt:
@@ -3185,6 +5130,615 @@ components:
         message:
           type: string
           description: Human-readable explanation
+        severity:
+          type: string
+          enum:
+            - INFO
+            - WARNING
+            - POSITIVE
+    OutcomeUrgencyBand:
+      type: string
+      enum:
+        - NO_TARGET
+        - ON_TRACK
+        - NEEDS_ATTENTION
+        - AT_RISK
+        - CRITICAL
+    StrategicSlackBand:
+      type: string
+      enum:
+        - HIGH_SLACK
+        - MODERATE_SLACK
+        - LOW_SLACK
+        - NO_SLACK
+    ForecastConfidenceBand:
+      type: string
+      enum:
+        - LOW
+        - MEDIUM
+        - HIGH
+    ForecastStatus:
+      type: string
+      enum:
+        - NO_DATA
+        - NO_TARGET_DATE
+        - COMPLETE
+        - ON_TRACK
+        - NEEDS_ATTENTION
+        - AT_RISK
+    OutcomeForecastFactor:
+      type: object
+      required:
+        - type
+        - label
+        - score
+        - detail
+      properties:
+        type:
+          type: string
+        label:
+          type: string
+        score:
+          type: number
+          format: double
+        detail:
+          type: string
+    OutcomeForecastResponse:
+      type: object
+      required:
+        - outcomeId
+        - outcomeName
+        - targetDate
+        - projectedTargetDate
+        - projectedProgressPct
+        - projectedVelocity
+        - confidenceScore
+        - confidenceBand
+        - forecastStatus
+        - modelVersion
+        - contributingFactors
+        - recommendations
+        - computedAt
+      properties:
+        outcomeId:
+          type: string
+          format: uuid
+        outcomeName:
+          type: string
+        targetDate:
+          type: string
+          format: date
+          nullable: true
+        projectedTargetDate:
+          type: string
+          format: date
+          nullable: true
+        projectedProgressPct:
+          type: number
+          format: double
+          nullable: true
+        projectedVelocity:
+          type: number
+          format: double
+          nullable: true
+        confidenceScore:
+          type: number
+          format: double
+          nullable: true
+        confidenceBand:
+          allOf:
+            - $ref: "#/components/schemas/ForecastConfidenceBand"
+          nullable: true
+        forecastStatus:
+          allOf:
+            - $ref: "#/components/schemas/ForecastStatus"
+          nullable: true
+        modelVersion:
+          type: string
+          nullable: true
+        contributingFactors:
+          type: array
+          items:
+            $ref: "#/components/schemas/OutcomeForecastFactor"
+        recommendations:
+          type: array
+          items:
+            type: string
+        computedAt:
+          type: string
+          format: date-time
+          nullable: true
+    OutcomeForecastListResponse:
+      type: object
+      required:
+        - forecasts
+      properties:
+        forecasts:
+          type: array
+          items:
+            $ref: "#/components/schemas/OutcomeForecastResponse"
+    TeamPlanSuggestionRequest:
+      type: object
+      required:
+        - weekStart
+      properties:
+        weekStart:
+          type: string
+          format: date
+    TeamPlanSuggestionUnavailableResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - unavailable
+    TeamPlanSuggestionResponse:
+      type: object
+      required:
+        - status
+        - weekStart
+        - summary
+        - members
+        - outcomeAllocations
+        - llmRefined
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+        weekStart:
+          type: string
+          format: date
+        summary:
+          $ref: "#/components/schemas/TeamPlanSummary"
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamMemberPlanSuggestion"
+        outcomeAllocations:
+          type: array
+          items:
+            $ref: "#/components/schemas/OutcomeAllocationSuggestion"
+        llmRefined:
+          type: boolean
+    TeamPlanSummary:
+      type: object
+      required:
+        - teamCapacityHours
+        - suggestedHours
+        - bufferHours
+        - atRiskOutcomeCount
+        - criticalOutcomeCount
+        - strategicFocusFloor
+        - headline
+      properties:
+        teamCapacityHours:
+          type: number
+          format: double
+          nullable: true
+        suggestedHours:
+          type: number
+          format: double
+          nullable: true
+        bufferHours:
+          type: number
+          format: double
+          nullable: true
+        atRiskOutcomeCount:
+          type: integer
+        criticalOutcomeCount:
+          type: integer
+        strategicFocusFloor:
+          type: number
+          format: double
+          nullable: true
+        headline:
+          type: string
+          nullable: true
+    OutcomeAllocationSuggestion:
+      type: object
+      required:
+        - outcomeId
+        - outcomeName
+        - urgencyBand
+        - recommendedHours
+        - members
+      properties:
+        outcomeId:
+          type: string
+          format: uuid
+        outcomeName:
+          type: string
+        urgencyBand:
+          $ref: "#/components/schemas/OutcomeUrgencyBand"
+        recommendedHours:
+          type: number
+          format: double
+          nullable: true
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemberOutcomeSlice"
+    MemberOutcomeSlice:
+      type: object
+      required:
+        - userId
+        - displayName
+        - hours
+        - title
+      properties:
+        userId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+          nullable: true
+        hours:
+          type: number
+          format: double
+          nullable: true
+        title:
+          type: string
+          nullable: true
+    TeamMemberPlanSuggestion:
+      type: object
+      required:
+        - userId
+        - displayName
+        - suggestedCommits
+        - totalEstimated
+        - realisticCapacity
+        - overcommitRisk
+        - strengthSummary
+      properties:
+        userId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+          nullable: true
+        suggestedCommits:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlanningCopilotSuggestedCommit"
+        totalEstimated:
+          type: number
+          format: double
+          nullable: true
+        realisticCapacity:
+          type: number
+          format: double
+          nullable: true
+        overcommitRisk:
+          type: string
+          nullable: true
+        strengthSummary:
+          type: string
+          nullable: true
+    PlanningCopilotSuggestedCommit:
+      type: object
+      required:
+        - title
+        - outcomeId
+        - chessPriority
+        - estimatedHours
+        - rationale
+        - source
+      properties:
+        title:
+          type: string
+        outcomeId:
+          type: string
+          format: uuid
+          nullable: true
+        chessPriority:
+          allOf:
+            - $ref: "#/components/schemas/ChessPriority"
+          nullable: true
+        estimatedHours:
+          type: number
+          format: double
+          nullable: true
+        rationale:
+          type: string
+          nullable: true
+        source:
+          type: string
+          nullable: true
+    ApplyTeamPlanSuggestionRequest:
+      type: object
+      required:
+        - weekStart
+        - members
+      properties:
+        weekStart:
+          type: string
+          format: date
+        members:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/TeamMemberApplyRequest"
+    TeamMemberApplyRequest:
+      type: object
+      required:
+        - userId
+        - suggestedCommits
+      properties:
+        userId:
+          type: string
+          format: uuid
+        suggestedCommits:
+          type: array
+          items:
+            $ref: "#/components/schemas/SuggestedCommitApplyRequest"
+    SuggestedCommitApplyRequest:
+      type: object
+      required:
+        - title
+        - chessPriority
+      properties:
+        title:
+          type: string
+        outcomeId:
+          type: string
+          format: uuid
+          nullable: true
+        rationale:
+          type: string
+          nullable: true
+        chessPriority:
+          $ref: "#/components/schemas/ChessPriority"
+        estimatedHours:
+          type: number
+          format: double
+          minimum: 0
+          nullable: true
+    ApplyTeamPlanSuggestionResponse:
+      type: object
+      required:
+        - status
+        - weekStart
+        - members
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+        weekStart:
+          type: string
+          format: date
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemberDraftApplyResult"
+    MemberDraftApplyResult:
+      type: object
+      required:
+        - userId
+        - displayName
+        - planId
+        - createdPlan
+        - appliedCommits
+      properties:
+        userId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+          nullable: true
+        planId:
+          type: string
+          format: uuid
+        createdPlan:
+          type: boolean
+        appliedCommits:
+          type: array
+          items:
+            $ref: "#/components/schemas/WeeklyCommit"
+    ExecutiveDashboardUnavailableResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - unavailable
+    ExecutiveDashboardResponse:
+      type: object
+      required:
+        - weekStart
+        - summary
+        - rallyCryRollups
+        - teamBuckets
+        - teamGroupingAvailable
+      properties:
+        weekStart:
+          type: string
+          format: date
+        summary:
+          $ref: "#/components/schemas/ExecutiveSummary"
+        rallyCryRollups:
+          type: array
+          items:
+            $ref: "#/components/schemas/RallyCryHealthRollup"
+        teamBuckets:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamBucketComparison"
+        teamGroupingAvailable:
+          type: boolean
+    ExecutiveSummary:
+      type: object
+      required:
+        - totalForecasts
+        - onTrackForecasts
+        - needsAttentionForecasts
+        - offTrackForecasts
+        - noDataForecasts
+        - averageForecastConfidence
+        - totalCapacityHours
+        - strategicHours
+        - nonStrategicHours
+        - strategicCapacityUtilizationPct
+        - nonStrategicCapacityUtilizationPct
+        - planningCoveragePct
+      properties:
+        totalForecasts:
+          type: integer
+        onTrackForecasts:
+          type: integer
+        needsAttentionForecasts:
+          type: integer
+        offTrackForecasts:
+          type: integer
+        noDataForecasts:
+          type: integer
+        averageForecastConfidence:
+          type: number
+          format: double
+          nullable: true
+        totalCapacityHours:
+          type: number
+          format: double
+          nullable: true
+        strategicHours:
+          type: number
+          format: double
+          nullable: true
+        nonStrategicHours:
+          type: number
+          format: double
+          nullable: true
+        strategicCapacityUtilizationPct:
+          type: number
+          format: double
+          nullable: true
+        nonStrategicCapacityUtilizationPct:
+          type: number
+          format: double
+          nullable: true
+        planningCoveragePct:
+          type: number
+          format: double
+          nullable: true
+    RallyCryHealthRollup:
+      type: object
+      required:
+        - rallyCryId
+        - rallyCryName
+        - forecastedOutcomeCount
+        - onTrackCount
+        - needsAttentionCount
+        - offTrackCount
+        - noDataCount
+        - averageForecastConfidence
+        - strategicHours
+      properties:
+        rallyCryId:
+          type: string
+          nullable: true
+        rallyCryName:
+          type: string
+        forecastedOutcomeCount:
+          type: integer
+        onTrackCount:
+          type: integer
+        needsAttentionCount:
+          type: integer
+        offTrackCount:
+          type: integer
+        noDataCount:
+          type: integer
+        averageForecastConfidence:
+          type: number
+          format: double
+          nullable: true
+        strategicHours:
+          type: number
+          format: double
+          nullable: true
+    TeamBucketComparison:
+      type: object
+      required:
+        - bucketId
+        - memberCount
+        - planCoveragePct
+        - totalCapacityHours
+        - strategicHours
+        - nonStrategicHours
+        - strategicCapacityUtilizationPct
+        - averageForecastConfidence
+      properties:
+        bucketId:
+          type: string
+        memberCount:
+          type: integer
+        planCoveragePct:
+          type: number
+          format: double
+          nullable: true
+        totalCapacityHours:
+          type: number
+          format: double
+          nullable: true
+        strategicHours:
+          type: number
+          format: double
+          nullable: true
+        nonStrategicHours:
+          type: number
+          format: double
+          nullable: true
+        strategicCapacityUtilizationPct:
+          type: number
+          format: double
+          nullable: true
+        averageForecastConfidence:
+          type: number
+          format: double
+          nullable: true
+    ExecutiveBriefingRequest:
+      type: object
+      required:
+        - weekStart
+      properties:
+        weekStart:
+          type: string
+          format: date
+    ExecutiveBriefingResponse:
+      type: object
+      required:
+        - status
+        - headline
+        - insights
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - unavailable
+        headline:
+          type: string
+          nullable: true
+        insights:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExecutiveBriefingItem"
+    ExecutiveBriefingItem:
+      type: object
+      required:
+        - title
+        - detail
+        - severity
+      properties:
+        title:
+          type: string
+        detail:
+          type: string
         severity:
           type: string
           enum:
@@ -4653,13 +7207,7 @@ components:
             progression from start to target date. Null when no target date
             is set.
         urgencyBand:
-          type: string
-          enum:
-            - NO_TARGET
-            - ON_TRACK
-            - NEEDS_ATTENTION
-            - AT_RISK
-            - CRITICAL
+          $ref: "#/components/schemas/OutcomeUrgencyBand"
           description: Computed urgency classification for this outcome
         daysRemaining:
           type: integer

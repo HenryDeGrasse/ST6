@@ -139,6 +139,16 @@ vi.mock("../hooks/useUserProfile.js", () => ({
   }),
 }));
 
+vi.mock("../hooks/useCapacity.js", () => ({
+  useCapacityProfile: () => ({
+    profile: null,
+    loading: false,
+    error: null,
+    fetchProfile: vi.fn().mockResolvedValue(undefined),
+    clearError: vi.fn(),
+  }),
+}));
+
 vi.mock("../components/WeekSelector.js", () => ({
   WeekSelector: ({ onWeekChange }: { selectedWeek: string; onWeekChange: (weekStart: string) => void }) => (
     <div data-testid="week-selector">
@@ -243,7 +253,7 @@ describe("WeeklyPlanPage no-plan UX states", () => {
 
     expect(screen.getByTestId("create-plan-btn")).toBeInTheDocument();
     expect(screen.getByTestId("start-from-last-week-btn")).toBeInTheDocument();
-    expect(screen.getByTestId("start-from-last-week-btn")).toHaveTextContent("✨ Start from Last Week");
+    expect(screen.getByTestId("start-from-last-week-btn")).toHaveTextContent("Start from Last Week");
   });
 
   it("'Start from Last Week' button is not shown for past weeks even with flag enabled", async () => {
@@ -332,11 +342,11 @@ describe("WeeklyPlanPage no-plan UX states", () => {
     expect(screen.getByTestId("start-from-last-week-btn")).toBeDisabled();
   });
 
-  it("the button text reverts to '✨ Start from Last Week' when not loading", () => {
+  it("the button text reverts to 'Start from Last Week' when not loading", () => {
     mockDraftFromHistoryStatus = "idle";
     renderPage({ startMyWeek: true });
 
-    expect(screen.getByTestId("start-from-last-week-btn")).toHaveTextContent("✨ Start from Last Week");
+    expect(screen.getByTestId("start-from-last-week-btn")).toHaveTextContent("Start from Last Week");
     expect(screen.getByTestId("start-from-last-week-btn")).not.toBeDisabled();
   });
 });

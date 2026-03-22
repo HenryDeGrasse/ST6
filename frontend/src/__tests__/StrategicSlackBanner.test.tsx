@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { StrategicSlackBanner } from "../components/UrgencyIndicator/StrategicSlackBanner.js";
 import type { SlackInfo } from "../hooks/useOutcomeMetadata.js";
 import styles from "../components/UrgencyIndicator/StrategicSlackBanner.module.css";
@@ -136,6 +136,34 @@ describe("StrategicSlackBanner", () => {
       />,
     );
     expect(screen.getByTestId("strategic-slack-band-label")).toHaveTextContent("NO SLACK");
+  });
+
+  it("renders the check icon for HIGH_SLACK", () => {
+    render(
+      <StrategicSlackBanner
+        slackBand="HIGH_SLACK"
+        strategicFocusFloor={0.8}
+        atRiskCount={0}
+        criticalCount={0}
+      />,
+    );
+    expect(
+      within(screen.getByTestId("strategic-slack-banner")).getByTestId("status-icon-check"),
+    ).toBeInTheDocument();
+  });
+
+  it("renders the error icon for NO_SLACK", () => {
+    render(
+      <StrategicSlackBanner
+        slackBand="NO_SLACK"
+        strategicFocusFloor={0.5}
+        atRiskCount={2}
+        criticalCount={1}
+      />,
+    );
+    expect(
+      within(screen.getByTestId("strategic-slack-banner")).getByTestId("status-icon-error-x"),
+    ).toBeInTheDocument();
   });
 
   // ── Floor percentage ────────────────────────────────────────────────────────

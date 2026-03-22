@@ -109,6 +109,76 @@
   border-bottom-color: var(--wc-color-text-primary);
 }
 
+/* ─── Phase 5 manager intelligence ──────────────────────────────────────── */
+.phase5Section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--wc-space-md);
+  margin: var(--wc-space-md) 0;
+  align-items: start;
+}
+
+.phase5Column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wc-space-sm);
+}
+
+.phase5Header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--wc-space-sm);
+  flex-wrap: wrap;
+}
+
+.phase5Title {
+  margin: 0;
+  font-family: var(--wc-font-heading);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--wc-color-text-primary);
+}
+
+.phase5Empty {
+  padding: var(--wc-space-lg);
+  border: 1px dashed var(--wc-color-border);
+  border-radius: var(--wc-radius-md);
+  color: var(--wc-color-text-secondary);
+}
+
+.forecastPicker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wc-space-xs);
+}
+
+.forecastButton {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--wc-space-sm);
+  width: 100%;
+  padding: var(--wc-space-sm) var(--wc-space-md);
+  border: 1px solid var(--wc-color-border);
+  border-radius: var(--wc-radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--wc-color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.forecastButtonActive {
+  border-color: var(--wc-color-accent, var(--wc-color-text-primary));
+  background: rgba(201, 169, 98, 0.08);
+}
+
+.forecastStatus {
+  color: var(--wc-color-text-secondary);
+  font-size: 0.8125rem;
+  letter-spacing: 0.05em;
+}
+
 /* ─── Outcome Targets collapsible toggle ─────────────────────────────────── */
 .outcomeTargetsToggle {
   display:         inline-flex;

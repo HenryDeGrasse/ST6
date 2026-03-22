@@ -132,17 +132,17 @@ describe("CommitEditor", () => {
     const commit = makeCommit({ tags: ["draft_source:RECURRING"] });
     render(<CommitEditor {...defaultProps} commit={commit} />);
 
-    expect(screen.getByTestId("commit-editor-draft-source-recurring")).toHaveTextContent("📋 Recurring");
+    expect(screen.getByTestId("commit-editor-draft-source-recurring")).toHaveTextContent("Recurring");
   });
 
-  it("shows a '✏️ New' badge for manually-added commits in the editor", () => {
+  it("shows a 'New' badge for manually-added commits in the editor", () => {
     const commit = makeCommit({ tags: [] });
     render(<CommitEditor {...defaultProps} commit={commit} />);
 
-    expect(screen.getByTestId("commit-editor-draft-source-new")).toHaveTextContent("✏️ New");
+    expect(screen.getByTestId("commit-editor-draft-source-new")).toHaveTextContent("New");
   });
 
-  it("does not label carry-forward copies as '✏️ New' in the editor", () => {
+  it("does not label carry-forward copies as 'New' in the editor", () => {
     const commit = makeCommit({ tags: [], carriedFromCommitId: "commit-previous" });
     render(<CommitEditor {...defaultProps} commit={commit} />);
 
@@ -154,7 +154,7 @@ describe("CommitEditor", () => {
     render(<CommitEditor {...defaultProps} commit={commit} planState={PlanState.RECONCILED} />);
 
     expect(screen.getByTestId("commit-editor-draft-source-carried_forward")).toHaveTextContent(
-      "🔄 Carried forward",
+      "Carried forward",
     );
   });
 

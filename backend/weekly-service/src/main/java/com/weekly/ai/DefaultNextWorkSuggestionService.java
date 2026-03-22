@@ -1,5 +1,7 @@
 package com.weekly.ai;
 
+import com.weekly.config.OrgPolicyService;
+import com.weekly.config.OrgPolicyService.OrgPolicy;
 import com.weekly.integration.IntegrationService;
 import com.weekly.integration.IntegrationService.UserTicketContext;
 import com.weekly.shared.NextWorkDataProvider;
@@ -101,11 +103,15 @@ public class DefaultNextWorkSuggestionService implements NextWorkSuggestionServi
     /** Number of weeks to look back when fetching external ticket data. */
     static final int EXTERNAL_TICKET_LOOKBACK_WEEKS = 4;
 
+    /** Default chess priority to assign when a suggestion's priority would violate chess rules. */
+    static final String CHESS_DOWNGRADE_PRIORITY = "ROOK";
+
     private final NextWorkDataProvider dataProvider;
     private final IntegrationService integrationService;
     private final AiSuggestionFeedbackRepository feedbackRepository;
     private final LlmClient llmClient;
     private final AiCacheService cacheService;
+    private final OrgPolicyService orgPolicyService;
     private final UrgencyDataProvider urgencyDataProvider;
     private final boolean llmRankingEnabled;
 
@@ -116,6 +122,7 @@ public class DefaultNextWorkSuggestionService implements NextWorkSuggestionServi
             LlmClient llmClient,
             AiCacheService cacheService,
             AiFeatureFlags featureFlags,
+            OrgPolicyService orgPolicyService,
             UrgencyDataProvider urgencyDataProvider
     ) {
         this.dataProvider = dataProvider;
@@ -123,6 +130,7 @@ public class DefaultNextWorkSuggestionService implements NextWorkSuggestionServi
         this.feedbackRepository = feedbackRepository;
         this.llmClient = llmClient;
         this.cacheService = cacheService;
+        this.orgPolicyService = orgPolicyService;
         this.urgencyDataProvider = urgencyDataProvider;
         this.llmRankingEnabled = featureFlags.isLlmNextWorkRankingEnabled();
     }
@@ -175,6 +183,10 @@ public class DefaultNextWorkSuggestionService implements NextWorkSuggestionServi
                         List.copyOf(suggestions), recentCommitHistory, extendedHistory,
                         coverageGaps, linkedTickets);
             }
+
+            // 8. Chess-aware priority downgrade: avoid suggesting priorities
+            //    that would violate chess rules given the user's current plan.
+            suggestions = applyChessDowngrade(orgId, userId, asOf, suggestions);
 
             return new NextWorkSuggestionsResult("ok", List.copyOf(suggestions));
         } catch (Exception e) {
@@ -399,6 +411,85 @@ public class DefaultNextWorkSuggestionService implements NextWorkSuggestionServi
         } catch (java.security.NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 not available", e);
         }
+    }
+
+    // ── Chess-aware priority downgrade ──────────────────────────────────────
+
+    /**
+     * Downgrades suggested chess priorities that would violate the org's chess
+     * rules given the user's current DRAFT plan.
+     *
+     * <p>For example, if the plan already has 1 KING commit (the max), any
+     * suggestion with {@code suggestedChessPriority == "KING"} is downgraded
+     * to {@value #CHESS_DOWNGRADE_PRIORITY}. Same logic applies to QUEEN.
+     *
+     * <p>Degrades gracefully: if the current plan cannot be loaded or no
+     * policy is available, suggestions are returned unchanged.
+     */
+    private List<NextWorkSuggestion> applyChessDowngrade(
+            UUID orgId, UUID userId, LocalDate asOf,
+            List<NextWorkSuggestion> suggestions) {
+        try {
+            Map<String, Integer> chessCounts =
+                    dataProvider.getCurrentPlanChessCounts(orgId, userId, asOf);
+            if (chessCounts.isEmpty()) {
+                return suggestions; // No DRAFT plan — nothing to check
+            }
+
+            OrgPolicy policy = orgPolicyService.getPolicy(orgId);
+            int currentKings = chessCounts.getOrDefault("KING", 0);
+            int currentQueens = chessCounts.getOrDefault("QUEEN", 0);
+
+            boolean kingsFull = currentKings >= policy.chessMaxKing();
+            boolean queensFull = currentQueens >= policy.chessMaxQueen();
+
+            if (!kingsFull && !queensFull) {
+                return suggestions; // Plenty of room — no downgrades needed
+            }
+
+            List<NextWorkSuggestion> result = new ArrayList<>(suggestions.size());
+            for (NextWorkSuggestion s : suggestions) {
+                String priority = s.suggestedChessPriority();
+                if (kingsFull && "KING".equals(priority)) {
+                    result.add(withDowngradedPriority(s, CHESS_DOWNGRADE_PRIORITY));
+                } else if (queensFull && "QUEEN".equals(priority)) {
+                    result.add(withDowngradedPriority(s, CHESS_DOWNGRADE_PRIORITY));
+                } else {
+                    result.add(s);
+                }
+            }
+            return result;
+        } catch (Exception e) {
+            LOG.debug("Could not apply chess downgrade, returning suggestions unchanged: {}",
+                    e.getMessage());
+            return suggestions;
+        }
+    }
+
+    /**
+     * Returns a copy of the suggestion with a downgraded chess priority and
+     * an amended rationale noting the downgrade.
+     */
+    private static NextWorkSuggestion withDowngradedPriority(
+            NextWorkSuggestion original, String newPriority) {
+        String amendedRationale = original.rationale() != null
+                ? original.rationale() + " (Priority adjusted from "
+                  + original.suggestedChessPriority() + " to " + newPriority
+                  + " — your plan already has the maximum allowed.)"
+                : "Priority adjusted from " + original.suggestedChessPriority()
+                  + " to " + newPriority + " — your plan already has the maximum allowed.";
+        return new NextWorkSuggestion(
+                original.suggestionId(),
+                original.title(),
+                original.suggestedOutcomeId(),
+                newPriority,
+                original.confidence(),
+                original.source(),
+                original.sourceDetail(),
+                amendedRationale,
+                original.externalTicketUrl(),
+                original.externalTicketStatus()
+        );
     }
 
     // ── Carry-forward suggestion building ────────────────────────────────────

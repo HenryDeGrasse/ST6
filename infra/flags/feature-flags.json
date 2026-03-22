@@ -5,7 +5,7 @@
       "key": "wc.module.enabled",
       "type": "boolean",
       "scope": "org/team",
-      "default": false,
+      "default": true,
       "description": "Whether the WC module is visible in the PA host navigation",
       "lifecycle": "permanent"
     },
@@ -21,7 +21,7 @@
       "key": "wc.lock.auto",
       "type": "boolean",
       "scope": "org",
-      "default": false,
+      "default": true,
       "description": "Whether plans auto-transition to RECONCILING at the configured time",
       "lifecycle": "permanent"
     },
@@ -37,7 +37,7 @@
       "key": "wc.ai.reconciliation",
       "type": "boolean",
       "scope": "org",
-      "default": false,
+      "default": true,
       "description": "Whether the AI reconciliation draft feature is available (beta)",
       "lifecycle": "temporary"
     },
@@ -45,7 +45,7 @@
       "key": "wc.ai.manager-insights",
       "type": "boolean",
       "scope": "org",
-      "default": false,
+      "default": true,
       "description": "Whether the AI manager insight summaries are shown on the dashboard",
       "lifecycle": "temporary"
     },
@@ -53,7 +53,7 @@
       "key": "wc.quick-update",
       "type": "boolean",
       "scope": "org",
-      "default": false,
+      "default": true,
       "description": "Whether the rapid-fire batch check-in (Quick Update) flow is available",
       "lifecycle": "temporary"
     },
@@ -61,7 +61,7 @@
       "key": "wc.user-profile",
       "type": "boolean",
       "scope": "org",
-      "default": false,
+      "default": true,
       "description": "Whether the user model profile panel is available",
       "lifecycle": "temporary"
     },
@@ -69,7 +69,7 @@
       "key": "wc.notifications.email",
       "type": "boolean",
       "scope": "org",
-      "default": false,
+      "default": true,
       "description": "Whether email notifications are sent (post-MVP)",
       "lifecycle": "permanent"
     },
@@ -77,7 +77,7 @@
       "key": "wc.notifications.slack",
       "type": "boolean",
       "scope": "org",
-      "default": false,
+      "default": true,
       "description": "Whether Slack notifications are sent (post-MVP)",
       "lifecycle": "permanent"
     },
@@ -85,7 +85,7 @@
       "key": "wc.capacity.tracking",
       "type": "boolean",
       "scope": "org",
-      "default": false,
+      "default": true,
       "description": "Whether capacity tracking (estimated/actual hours) is enabled",
       "lifecycle": "temporary"
     },
@@ -93,7 +93,7 @@
       "key": "wc.capacity.estimation-coaching",
       "type": "boolean",
       "scope": "org",
-      "default": false,
+      "default": true,
       "description": "Whether estimation coaching feedback is shown post-reconciliation",
       "lifecycle": "temporary"
     },
@@ -101,7 +101,7 @@
       "key": "wc.analytics.strategic-intelligence",
       "type": "boolean",
       "scope": "org",
-      "default": false,
+      "default": true,
       "description": "Whether the multi-week strategic intelligence panel is shown on the manager dashboard",
       "lifecycle": "temporary"
     },
@@ -109,7 +109,7 @@
       "key": "wc.analytics.predictions",
       "type": "boolean",
       "scope": "org",
-      "default": false,
+      "default": true,
       "description": "Whether rule-based prediction alerts are shown on the manager dashboard",
       "lifecycle": "temporary"
     },
@@ -117,7 +117,7 @@
       "key": "wc.urgency.outcome",
       "type": "boolean",
       "scope": "org",
-      "default": false,
+      "default": true,
       "description": "Whether outcome urgency bands and target-date tracking are enabled",
       "lifecycle": "temporary"
     },
@@ -125,8 +125,48 @@
       "key": "wc.urgency.strategic-slack",
       "type": "boolean",
       "scope": "org",
-      "default": false,
+      "default": true,
       "description": "Whether strategic slack computation and recommended focus floors are shown",
+      "lifecycle": "temporary"
+    },
+    {
+      "key": "wc.phase5.target-date-forecasting",
+      "type": "boolean",
+      "scope": "org",
+      "default": true,
+      "description": "Whether persisted target-date forecasting is available across outcome, manager, and executive surfaces",
+      "lifecycle": "temporary"
+    },
+    {
+      "key": "wc.phase5.planning-copilot",
+      "type": "boolean",
+      "scope": "org/team",
+      "default": true,
+      "description": "Whether the manager planning copilot suggestion and apply flows are enabled",
+      "lifecycle": "temporary"
+    },
+    {
+      "key": "wc.phase5.executive-dashboard",
+      "type": "boolean",
+      "scope": "org",
+      "default": true,
+      "description": "Whether the executive strategic health dashboard is enabled",
+      "lifecycle": "temporary"
+    },
+    {
+      "key": "wc.phase5.weekly-planning-agent",
+      "type": "boolean",
+      "scope": "org",
+      "default": true,
+      "description": "Whether the proactive weekly-planning agent is enabled",
+      "lifecycle": "temporary"
+    },
+    {
+      "key": "wc.phase5.misalignment-agent",
+      "type": "boolean",
+      "scope": "org",
+      "default": true,
+      "description": "Whether the proactive misalignment agent is enabled",
       "lifecycle": "temporary"
     }
   ],
@@ -140,7 +180,12 @@
         "wc.ai.reconciliation": true,
         "wc.ai.manager-insights": true,
         "wc.analytics.strategic-intelligence": true,
-        "wc.analytics.predictions": true
+        "wc.analytics.predictions": true,
+        "wc.phase5.target-date-forecasting": true,
+        "wc.phase5.planning-copilot": true,
+        "wc.phase5.executive-dashboard": true,
+        "wc.phase5.weekly-planning-agent": true,
+        "wc.phase5.misalignment-agent": true
       }
     },
     "phase1": {
