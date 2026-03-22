@@ -53,6 +53,31 @@ public class StubLlmClient implements LlmClient {
             }
         }
 
+        // HyDE hypothetical document generation (returns plain text, no JSON schema)
+        for (Message msg : messages) {
+            if (msg.role() == Role.SYSTEM && msg.content().contains("hypothetical ideal issue document")) {
+                return "Implement semantic caching layer for frequently-accessed API responses. "
+                        + "Build a Redis-backed cache that intercepts high-volume read endpoints, "
+                        + "reduces downstream database load, and automatically invalidates stale entries "
+                        + "when source data changes. Estimated effort: medium.";
+            }
+        }
+
+        // HyDE search query rewrite (returns plain text, no JSON schema)
+        for (Message msg : messages) {
+            if (msg.role() == Role.SYSTEM && msg.content().contains("Rewrite it as a hypothetical issue")) {
+                // Find the user query and echo it as a hypothetical issue
+                for (Message userMsg : messages) {
+                    if (userMsg.role() == Role.USER) {
+                        String query = userMsg.content().replace("Search query: ", "");
+                        return "Issue: " + query + ". This work item involves investigating and "
+                                + "resolving the described problem within the team's backlog.";
+                    }
+                }
+                return "Generic work item related to the search query.";
+            }
+        }
+
         // Extract the candidate outcomes from the ASSISTANT context message
         // and return a response suggesting the first one
         for (Message msg : messages) {

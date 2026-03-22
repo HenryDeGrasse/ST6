@@ -32,6 +32,24 @@ public interface IssueRepository extends JpaRepository<IssueEntity, UUID> {
 
     Page<IssueEntity> findAllByTeamIdAndStatus(UUID teamId, IssueStatus status, Pageable pageable);
 
+    Page<IssueEntity> findAllByOrgIdAndStatus(UUID orgId, IssueStatus status, Pageable pageable);
+
+    Page<IssueEntity> findAllByOrgIdAndStatusNot(UUID orgId, IssueStatus status, Pageable pageable);
+
+    Page<IssueEntity> findAllByOrgIdAndTeamIdInAndStatus(
+            UUID orgId,
+            java.util.Collection<UUID> teamIds,
+            IssueStatus status,
+            Pageable pageable
+    );
+
+    Page<IssueEntity> findAllByOrgIdAndTeamIdInAndStatusNot(
+            UUID orgId,
+            java.util.Collection<UUID> teamIds,
+            IssueStatus status,
+            Pageable pageable
+    );
+
     /** Returns distinct team IDs that have at least one issue in the given status. */
     @Query("SELECT DISTINCT i.teamId FROM IssueEntity i WHERE i.status = :status")
     List<UUID> findDistinctTeamIdsByStatus(@Param("status") IssueStatus status);
@@ -39,6 +57,13 @@ public interface IssueRepository extends JpaRepository<IssueEntity, UUID> {
     /** Returns distinct team IDs that have at least one issue in any of the given statuses. */
     @Query("SELECT DISTINCT i.teamId FROM IssueEntity i WHERE i.status IN :statuses")
     List<UUID> findDistinctTeamIdsByStatusIn(@Param("statuses") java.util.Collection<IssueStatus> statuses);
+
+    /** Org-scoped variant used by HyDE fallback so results never escape the caller org. */
+    @Query("SELECT DISTINCT i.teamId FROM IssueEntity i WHERE i.orgId = :orgId AND i.status IN :statuses")
+    List<UUID> findDistinctTeamIdsByOrgIdAndStatusIn(
+            @Param("orgId") UUID orgId,
+            @Param("statuses") java.util.Collection<IssueStatus> statuses
+    );
 
     /** Returns all issues for a team whose status is in the given set. */
     @Query("SELECT i FROM IssueEntity i WHERE i.teamId = :teamId AND i.status IN :statuses")

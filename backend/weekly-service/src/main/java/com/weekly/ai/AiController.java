@@ -1,6 +1,11 @@
 package com.weekly.ai;
 
+import com.weekly.ai.rag.HydeQueryService;
+import com.weekly.ai.rag.OutcomeRiskContext;
+import com.weekly.ai.rag.UserWorkContext;
 import com.weekly.auth.AuthenticatedUserContext;
+import com.weekly.issues.domain.IssueEntity;
+import com.weekly.issues.repository.IssueRepository;
 import com.weekly.shared.ApiErrorResponse;
 import com.weekly.shared.ErrorCode;
 import com.weekly.team.repository.TeamMemberRepository;
@@ -9,6 +14,7 @@ import jakarta.validation.constraints.Pattern;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +34,10 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>POST /api/v1/ai/suggestion-feedback — Wave 2, behind {@code suggestNextWork} flag.
  * <p>POST /api/v1/ai/suggest-effort-type — Phase 6, behind {@code suggestEffortType} flag.
  * <p>POST /api/v1/ai/rank-backlog — Phase 6, on-demand backlog ranking trigger.
+ * <p>POST /api/v1/ai/recommend-weekly-issues — Phase 6, HyDE-powered weekly recommendations,
+ *     behind {@code hydeRecommendationsEnabled} flag.
+ * <p>POST /api/v1/ai/search-issues — Phase 6, semantic search over issue history,
+ *     behind {@code ragSearchEnabled} flag.
  *
  * <p>Rate limited to 20 requests per user per minute (PRD §4).
  * On LLM unavailability, returns 200 with {@code status: "unavailable"}.
@@ -50,6 +60,8 @@ public class AiController {
     private final AiEffortTypeSuggestionService effortTypeSuggestionService;
     private final BacklogRankingService backlogRankingService;
     private final TeamMemberRepository teamMemberRepository;
+    private final HydeQueryService hydeQueryService;
+    private final IssueRepository issueRepository;
 
     public AiController(
             AiSuggestionService aiSuggestionService,
@@ -61,7 +73,9 @@ public class AiController {
             AuthenticatedUserContext authenticatedUserContext,
             AiEffortTypeSuggestionService effortTypeSuggestionService,
             BacklogRankingService backlogRankingService,
-            TeamMemberRepository teamMemberRepository
+            TeamMemberRepository teamMemberRepository,
+            HydeQueryService hydeQueryService,
+            IssueRepository issueRepository
     ) {
         this.aiSuggestionService = aiSuggestionService;
         this.planQualityService = planQualityService;
@@ -73,6 +87,8 @@ public class AiController {
         this.effortTypeSuggestionService = effortTypeSuggestionService;
         this.backlogRankingService = backlogRankingService;
         this.teamMemberRepository = teamMemberRepository;
+        this.hydeQueryService = hydeQueryService;
+        this.issueRepository = issueRepository;
     }
 
     /**
@@ -258,6 +274,249 @@ public class AiController {
     public record RankedIssueDto(String issueId, int rank, String rationale) {}
 
     public record RankBacklogResponse(String status, List<RankedIssueDto> rankedIssues) {}
+
+    // ─── HyDE Recommendations ─────────────────────────────────────────────────
+
+    /**
+     * POST /ai/recommend-weekly-issues
+     *
+     * <p>Uses HyDE (Hypothetical Document Embeddings) to recommend backlog issues
+     * the authenticated user should pick up this week.
+     *
+     * <p>Contract-first request shape: { weekStart, teamId?, maxItems? }.
+     * The deeper user/risk context is derived server-side over time; for now we at least
+     * enforce org/team visibility and never trust callers to provide cross-team state.
+     */
+    @PostMapping("/recommend-weekly-issues")
+    public ResponseEntity<?> recommendWeeklyIssues(
+            @RequestBody RecommendWeeklyIssuesRequest request
+    ) {
+        if (!featureFlags.isHydeRecommendationsEnabled()) {
+            return ResponseEntity.ok(new RecommendWeeklyIssuesResponse("unavailable", List.of()));
+        }
+
+        if (!rateLimiter.tryAcquire(authenticatedUserContext.userId())) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(ApiErrorResponse.of(ErrorCode.CONFLICT,
+                            "Rate limit exceeded: 20 AI requests per minute"));
+        }
+
+        if (request.weekStart() == null || request.weekStart().isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiErrorResponse.of(ErrorCode.VALIDATION_ERROR, "weekStart is required"));
+        }
+
+        List<UUID> permittedTeamIds;
+        LocalDate weekStart;
+        try {
+            permittedTeamIds = resolvePermittedTeamIds(request.teamId());
+            weekStart = LocalDate.parse(request.weekStart());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiErrorResponse.of(ErrorCode.VALIDATION_ERROR, e.getMessage()));
+        }
+        if (request.teamId() != null && !request.teamId().isBlank() && permittedTeamIds.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiErrorResponse.of(ErrorCode.FORBIDDEN,
+                            "User is not a member of the target team"));
+        }
+        if ((request.teamId() == null || request.teamId().isBlank()) && permittedTeamIds.isEmpty()) {
+            return ResponseEntity.ok(new RecommendWeeklyIssuesResponse("ok", List.of()));
+        }
+        int topK = (request.maxItems() != null && request.maxItems() > 0) ? request.maxItems() : 10;
+
+        UserWorkContext userContext = new UserWorkContext(
+                authenticatedUserContext.userId(),
+                authenticatedUserContext.orgId(),
+                weekStart,
+                40.0,
+                0.0,
+                List.of(),
+                List.of(),
+                List.of(),
+                permittedTeamIds
+        );
+
+        List<RecommendedIssue> recommendations = hydeQueryService
+                .recommendWithHyde(userContext, new OutcomeRiskContext(List.of(), List.of()), topK)
+                .stream()
+                .map(result -> issueRepository.findByOrgIdAndId(authenticatedUserContext.orgId(), result.issueId())
+                        .map(issue -> toRecommendedIssue(issue, result.score())))
+                .flatMap(java.util.Optional::stream)
+                .toList();
+
+        return ResponseEntity.ok(new RecommendWeeklyIssuesResponse("ok", recommendations));
+    }
+
+    /**
+     * POST /ai/search-issues
+     *
+     * <p>Performs semantic search over the org's issue history using HyDE.
+     * Optional filters: {@code teamId}, {@code status}, {@code effortType}.
+     */
+    @PostMapping("/search-issues")
+    public ResponseEntity<?> searchIssues(
+            @RequestBody SearchIssuesRequest request
+    ) {
+        if (!featureFlags.isRagSearchEnabled()) {
+            return ResponseEntity.ok(new SemanticSearchResponse("unavailable", List.of()));
+        }
+
+        if (!rateLimiter.tryAcquire(authenticatedUserContext.userId())) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(ApiErrorResponse.of(ErrorCode.CONFLICT,
+                            "Rate limit exceeded: 20 AI requests per minute"));
+        }
+
+        if (request.query() == null || request.query().isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiErrorResponse.of(ErrorCode.VALIDATION_ERROR, "query is required"));
+        }
+
+        List<UUID> permittedTeamIds;
+        try {
+            permittedTeamIds = resolvePermittedTeamIds(request.teamId());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiErrorResponse.of(ErrorCode.VALIDATION_ERROR, e.getMessage()));
+        }
+        if (request.teamId() != null && !request.teamId().isBlank() && permittedTeamIds.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiErrorResponse.of(ErrorCode.FORBIDDEN,
+                            "User is not a member of the target team"));
+        }
+        if ((request.teamId() == null || request.teamId().isBlank()) && permittedTeamIds.isEmpty()) {
+            return ResponseEntity.ok(new SemanticSearchResponse("ok", List.of()));
+        }
+
+        int topK = (request.limit() != null && request.limit() > 0) ? request.limit() : 10;
+        Map<String, Object> filters = buildSearchFilters(request);
+
+        List<SemanticSearchHit> hits = hydeQueryService
+                .searchWithHyde(
+                        authenticatedUserContext.orgId(),
+                        request.query(),
+                        topK,
+                        filters,
+                        permittedTeamIds)
+                .stream()
+                .map(result -> issueRepository.findByOrgIdAndId(authenticatedUserContext.orgId(), result.issueId())
+                        .map(issue -> toSemanticSearchHit(issue, result.score())))
+                .flatMap(java.util.Optional::stream)
+                .toList();
+
+        return ResponseEntity.ok(new SemanticSearchResponse("ok", hits));
+    }
+
+    private Map<String, Object> buildSearchFilters(SearchIssuesRequest request) {
+        Map<String, Object> filters = new java.util.HashMap<>();
+        if (request.teamId() != null && !request.teamId().isBlank()) {
+            filters.put("teamId", request.teamId());
+        }
+        if (request.status() != null && !request.status().isBlank()) {
+            filters.put("status", request.status());
+        }
+        if (request.effortType() != null && !request.effortType().isBlank()) {
+            filters.put("effortType", request.effortType());
+        }
+        return filters.isEmpty() ? null : filters;
+    }
+
+    private List<UUID> resolvePermittedTeamIds(String requestedTeamId) {
+        List<UUID> memberTeamIds = teamMemberRepository
+                .findAllByOrgIdAndUserId(authenticatedUserContext.orgId(), authenticatedUserContext.userId())
+                .stream()
+                .map(member -> member.getTeamId())
+                .distinct()
+                .toList();
+
+        if (requestedTeamId == null || requestedTeamId.isBlank()) {
+            return memberTeamIds;
+        }
+
+        UUID teamId = UUID.fromString(requestedTeamId);
+        return memberTeamIds.contains(teamId) ? List.of(teamId) : List.of();
+    }
+
+    private RecommendedIssue toRecommendedIssue(IssueEntity issue, float score) {
+        String rationale = issue.getAiRankRationale() != null && !issue.getAiRankRationale().isBlank()
+                ? issue.getAiRankRationale()
+                : "Semantic match generated from HyDE recommendation context";
+        return new RecommendedIssue(
+                issue.getId().toString(),
+                issue.getIssueKey(),
+                issue.getTitle(),
+                issue.getEffortType() != null ? issue.getEffortType().name() : null,
+                invokeEnumGetterName(issue, "getChessPriority"),
+                rationale,
+                score
+        );
+    }
+
+    private String invokeEnumGetterName(IssueEntity issue, String getterName) {
+        try {
+            Object value = IssueEntity.class.getMethod(getterName).invoke(issue);
+            return value instanceof Enum<?> enumValue ? enumValue.name() : null;
+        } catch (ReflectiveOperationException e) {
+            return null;
+        }
+    }
+
+    private SemanticSearchHit toSemanticSearchHit(IssueEntity issue, float score) {
+        return new SemanticSearchHit(
+                issue.getId().toString(),
+                issue.getIssueKey(),
+                issue.getTitle(),
+                score,
+                issue.getEffortType() != null ? issue.getEffortType().name() : null,
+                issue.getStatus().name()
+        );
+    }
+
+    // ─── HyDE Request / Response DTOs ─────────────────────────────────────────
+
+    public record RecommendWeeklyIssuesRequest(
+            String weekStart,
+            String teamId,
+            Integer maxItems
+    ) {}
+
+    public record RecommendedIssue(
+            String issueId,
+            String issueKey,
+            String title,
+            String effortType,
+            String chessPriority,
+            String rationale,
+            double confidence
+    ) {}
+
+    public record RecommendWeeklyIssuesResponse(
+            String status,
+            List<RecommendedIssue> recommendations
+    ) {}
+
+    public record SearchIssuesRequest(
+            String query,
+            String teamId,
+            String effortType,
+            String status,
+            Integer limit
+    ) {}
+
+    public record SemanticSearchHit(
+            String issueId,
+            String issueKey,
+            String title,
+            double score,
+            String effortType,
+            String status
+    ) {}
+
+    public record SemanticSearchResponse(
+            String status,
+            List<SemanticSearchHit> hits
+    ) {}
 
     // ─── Request / Response DTOs ────────────────────────────
 

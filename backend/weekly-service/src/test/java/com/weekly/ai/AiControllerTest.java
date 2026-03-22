@@ -5,14 +5,17 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.weekly.ai.rag.HydeQueryService;
 import com.weekly.auth.AuthenticatedUserContext;
 import com.weekly.auth.UserPrincipal;
+import com.weekly.issues.repository.IssueRepository;
 import com.weekly.team.repository.TeamMemberRepository;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -49,6 +52,8 @@ class AiControllerTest {
     private AiEffortTypeSuggestionService effortTypeSuggestionService;
     private BacklogRankingService backlogRankingService;
     private TeamMemberRepository teamMemberRepository;
+    private HydeQueryService hydeQueryService;
+    private IssueRepository issueRepository;
     private AiController controller;
 
     @BeforeEach
@@ -60,6 +65,8 @@ class AiControllerTest {
         effortTypeSuggestionService = mock(AiEffortTypeSuggestionService.class);
         backlogRankingService = mock(BacklogRankingService.class);
         teamMemberRepository = mock(TeamMemberRepository.class);
+        hydeQueryService = mock(HydeQueryService.class);
+        issueRepository = mock(IssueRepository.class);
         featureFlags = new AiFeatureFlags();
         rateLimiter = new RateLimiter(20, java.time.Duration.ofMinutes(1));
         authenticatedUserContext = new AuthenticatedUserContext();
@@ -69,7 +76,8 @@ class AiControllerTest {
         controller = new AiController(
                 aiService, planQualityService, nextWorkSuggestionService,
                 feedbackRepository, featureFlags, rateLimiter, authenticatedUserContext,
-                effortTypeSuggestionService, backlogRankingService, teamMemberRepository);
+                effortTypeSuggestionService, backlogRankingService, teamMemberRepository,
+                hydeQueryService, issueRepository);
     }
 
     @AfterEach
@@ -128,7 +136,9 @@ class AiControllerTest {
                     authenticatedUserContext,
                     effortTypeSuggestionService,
                     backlogRankingService,
-                    teamMemberRepository
+                    teamMemberRepository,
+                    hydeQueryService,
+                    issueRepository
             );
             var request = new AiController.SuggestRcdoRequest("title", null);
 
@@ -205,7 +215,9 @@ class AiControllerTest {
                     authenticatedUserContext,
                     effortTypeSuggestionService,
                     backlogRankingService,
-                    teamMemberRepository
+                    teamMemberRepository,
+                    hydeQueryService,
+                    issueRepository
             );
             var request = new AiController.DraftReconciliationRequest(UUID.randomUUID().toString());
 
@@ -266,7 +278,9 @@ class AiControllerTest {
                     authenticatedUserContext,
                     effortTypeSuggestionService,
                     backlogRankingService,
-                    teamMemberRepository
+                    teamMemberRepository,
+                    hydeQueryService,
+                    issueRepository
             );
             var request = new AiController.PlanQualityCheckRequest(UUID.randomUUID().toString());
 
@@ -403,7 +417,9 @@ class AiControllerTest {
                     authenticatedUserContext,
                     effortTypeSuggestionService,
                     backlogRankingService,
-                    teamMemberRepository
+                    teamMemberRepository,
+                    hydeQueryService,
+                    issueRepository
             );
             var request = new AiController.SuggestNextWorkRequest(null);
 
@@ -561,7 +577,9 @@ class AiControllerTest {
                     authenticatedUserContext,
                     effortTypeSuggestionService,
                     backlogRankingService,
-                    teamMemberRepository
+                    teamMemberRepository,
+                    hydeQueryService,
+                    issueRepository
             );
             var request = new AiController.SuggestEffortTypeRequest("Build login page", null, null);
 
@@ -641,7 +659,9 @@ class AiControllerTest {
                     authenticatedUserContext,
                     effortTypeSuggestionService,
                     backlogRankingService,
-                    teamMemberRepository
+                    teamMemberRepository,
+                    hydeQueryService,
+                    issueRepository
             );
 
             ResponseEntity<?> response = strictController.rankBacklog(
@@ -649,6 +669,167 @@ class AiControllerTest {
 
             assertEquals(HttpStatus.TOO_MANY_REQUESTS, response.getStatusCode());
             verify(backlogRankingService, never()).rankTeamBacklog(any(), any());
+        }
+    }
+
+    // ─── RecommendWeeklyIssues ────────────────────────────────────────────────
+
+    @Nested
+    class RecommendWeeklyIssues {
+
+        @Test
+        void returnsOkWithIssueResults() {
+            UUID issueId = UUID.randomUUID();
+            UUID teamId = UUID.randomUUID();
+            var member = mock(com.weekly.team.domain.TeamMemberEntity.class);
+            when(member.getTeamId()).thenReturn(teamId);
+            when(teamMemberRepository.findAllByOrgIdAndUserId(ORG_ID, USER_ID)).thenReturn(List.of(member));
+            when(hydeQueryService.recommendWithHyde(any(), any(), eq(10)))
+                    .thenReturn(List.of(new HydeQueryService.IssueId(issueId, 0.9f)));
+
+            var issue = new com.weekly.issues.domain.IssueEntity(
+                    issueId, ORG_ID, teamId, "PLAT-42", 42, "Optimize cache", USER_ID);
+            issue.setEffortType(com.weekly.issues.domain.EffortType.MAINTAIN);
+            issue.setChessPriority(com.weekly.plan.domain.ChessPriority.QUEEN);
+            issue.setAiRankRationale("Addresses an at-risk outcome with available capacity");
+            when(issueRepository.findByOrgIdAndId(ORG_ID, issueId)).thenReturn(java.util.Optional.of(issue));
+
+            var request = new AiController.RecommendWeeklyIssuesRequest(
+                    "2026-03-23", null, 10);
+            ResponseEntity<?> response = controller.recommendWeeklyIssues(request);
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            var body = (AiController.RecommendWeeklyIssuesResponse) response.getBody();
+            assertNotNull(body);
+            assertEquals("ok", body.status());
+            assertEquals(1, body.recommendations().size());
+            assertEquals(issueId.toString(), body.recommendations().get(0).issueId());
+            assertEquals("PLAT-42", body.recommendations().get(0).issueKey());
+            assertEquals("MAINTAIN", body.recommendations().get(0).effortType());
+            assertEquals("QUEEN", body.recommendations().get(0).chessPriority());
+        }
+
+        @Test
+        void returnsUnavailableWhenFeatureDisabled() {
+            featureFlags.setHydeRecommendationsEnabled(false);
+            var request = new AiController.RecommendWeeklyIssuesRequest(
+                    "2026-03-23", null, 10);
+            ResponseEntity<?> response = controller.recommendWeeklyIssues(request);
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            var body = (AiController.RecommendWeeklyIssuesResponse) response.getBody();
+            assertNotNull(body);
+            assertEquals("unavailable", body.status());
+        }
+
+        @Test
+        void returns429WhenRateLimited() {
+            RateLimiter strictLimiter = new RateLimiter(0, java.time.Duration.ofMinutes(1));
+            AiController strictController = new AiController(
+                    aiService, planQualityService, nextWorkSuggestionService,
+                    feedbackRepository, featureFlags, strictLimiter, authenticatedUserContext,
+                    effortTypeSuggestionService, backlogRankingService, teamMemberRepository,
+                    hydeQueryService, issueRepository
+            );
+
+            ResponseEntity<?> response = strictController.recommendWeeklyIssues(
+                    new AiController.RecommendWeeklyIssuesRequest("2026-03-23", null, 10));
+
+            assertEquals(HttpStatus.TOO_MANY_REQUESTS, response.getStatusCode());
+        }
+
+        @Test
+        void returnsForbiddenWhenFilteringToTeamUserDoesNotBelongTo() {
+            UUID foreignTeamId = UUID.randomUUID();
+            when(teamMemberRepository.findAllByOrgIdAndUserId(ORG_ID, USER_ID)).thenReturn(List.of());
+
+            ResponseEntity<?> response = controller.recommendWeeklyIssues(
+                    new AiController.RecommendWeeklyIssuesRequest("2026-03-23", foreignTeamId.toString(), 10));
+
+            assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+            verify(hydeQueryService, never()).recommendWithHyde(any(), any(), anyInt());
+        }
+    }
+
+    // ─── SearchIssues ─────────────────────────────────────────────────────────
+
+    @Nested
+    class SearchIssues {
+
+        @Test
+        void returnsOkWithSearchResults() {
+            UUID issueId = UUID.randomUUID();
+            UUID teamId = UUID.randomUUID();
+            var member = mock(com.weekly.team.domain.TeamMemberEntity.class);
+            when(member.getTeamId()).thenReturn(teamId);
+            when(teamMemberRepository.findAllByOrgIdAndUserId(ORG_ID, USER_ID)).thenReturn(List.of(member));
+            when(hydeQueryService.searchWithHyde(eq(ORG_ID), eq("caching"), eq(10), any(), any()))
+                    .thenReturn(List.of(new HydeQueryService.IssueId(issueId, 0.85f)));
+
+            var issue = new com.weekly.issues.domain.IssueEntity(
+                    issueId, ORG_ID, teamId, "PLAT-99", 99, "Implement caching", USER_ID);
+            issue.setEffortType(com.weekly.issues.domain.EffortType.BUILD);
+            when(issueRepository.findByOrgIdAndId(ORG_ID, issueId)).thenReturn(java.util.Optional.of(issue));
+
+            var request = new AiController.SearchIssuesRequest("caching", null, null, null, 10);
+            ResponseEntity<?> response = controller.searchIssues(request);
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            var body = (AiController.SemanticSearchResponse) response.getBody();
+            assertNotNull(body);
+            assertEquals("ok", body.status());
+            assertEquals(1, body.hits().size());
+            assertEquals("PLAT-99", body.hits().get(0).issueKey());
+            assertEquals("BUILD", body.hits().get(0).effortType());
+            assertEquals("OPEN", body.hits().get(0).status());
+        }
+
+        @Test
+        void returnsBadRequestWhenQueryBlank() {
+            var request = new AiController.SearchIssuesRequest("", null, null, null, 10);
+            ResponseEntity<?> response = controller.searchIssues(request);
+
+            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        }
+
+        @Test
+        void returnsUnavailableWhenFeatureDisabled() {
+            featureFlags.setRagSearchEnabled(false);
+            var request = new AiController.SearchIssuesRequest("anything", null, null, null, 10);
+            ResponseEntity<?> response = controller.searchIssues(request);
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            var body = (AiController.SemanticSearchResponse) response.getBody();
+            assertNotNull(body);
+            assertEquals("unavailable", body.status());
+        }
+
+        @Test
+        void returns429WhenRateLimited() {
+            RateLimiter strictLimiter = new RateLimiter(0, java.time.Duration.ofMinutes(1));
+            AiController strictController = new AiController(
+                    aiService, planQualityService, nextWorkSuggestionService,
+                    feedbackRepository, featureFlags, strictLimiter, authenticatedUserContext,
+                    effortTypeSuggestionService, backlogRankingService, teamMemberRepository,
+                    hydeQueryService, issueRepository
+            );
+
+            ResponseEntity<?> response = strictController.searchIssues(
+                    new AiController.SearchIssuesRequest("query", null, null, null, 10));
+
+            assertEquals(HttpStatus.TOO_MANY_REQUESTS, response.getStatusCode());
+        }
+
+        @Test
+        void returnsForbiddenWhenFilteringToTeamUserDoesNotBelongTo() {
+            UUID foreignTeamId = UUID.randomUUID();
+            when(teamMemberRepository.findAllByOrgIdAndUserId(ORG_ID, USER_ID)).thenReturn(List.of());
+
+            ResponseEntity<?> response = controller.searchIssues(
+                    new AiController.SearchIssuesRequest("query", foreignTeamId.toString(), null, null, 10));
+
+            assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+            verify(hydeQueryService, never()).searchWithHyde(any(), any(), anyInt(), any(), any());
         }
     }
 }

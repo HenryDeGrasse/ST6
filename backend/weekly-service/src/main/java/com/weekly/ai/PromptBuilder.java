@@ -960,6 +960,107 @@ public final class PromptBuilder {
         return messages;
     }
 
+    // ── HyDE (Hypothetical Document Embeddings) ───────────────────────────────
+
+    /**
+     * Builds messages for HyDE-based issue recommendation.
+     *
+     * <p>The LLM is asked to write a hypothetical ideal issue document that would
+     * perfectly match the user's current capacity, plan state, and outcome context.
+     * That hypothetical document is then embedded and used as a query vector against
+     * Pinecone — this is the core of the HyDE technique.
+     *
+     * <p>Security: user-authored text (plan item titles, carried forward titles) is
+     * placed in the USER message; structured context goes in the ASSISTANT role.
+     *
+     * @param userContext    user capacity and current plan state
+     * @param riskContext    at-risk outcomes and coverage gaps
+     * @return ordered messages for the LLM
+     */
+    public static List<LlmClient.Message> buildHydeRecommendationPrompt(
+            com.weekly.ai.rag.UserWorkContext userContext,
+            com.weekly.ai.rag.OutcomeRiskContext riskContext
+    ) {
+        List<LlmClient.Message> messages = new ArrayList<>();
+
+        messages.add(new LlmClient.Message(
+                LlmClient.Role.SYSTEM,
+                """
+                You are a work planning assistant that generates hypothetical ideal issue documents.
+                Given a user's current work context (capacity, plan state, at-risk outcomes, coverage gaps),
+                write a short description of an ideal backlog issue that would be most valuable for them
+                to pick up this week.
+
+                The document should read like a real issue title + description, not a recommendation.
+                It will be used as a semantic search query to find actual matching issues in the backlog.
+
+                Rules:
+                1. Write ONE hypothetical issue document: a title line followed by 2-4 sentences of description.
+                2. The document must reflect the user's remaining capacity, strategic focus, and risk context.
+                3. Prefer issues that address at-risk outcomes or fill coverage gaps when relevant.
+                4. Do NOT include any preamble, explanation, or metadata — just the issue document itself.
+                5. Keep the total output under 200 words.
+                """
+        ));
+
+        // ASSISTANT context block — structured planning context (not user-authored free text)
+        StringBuilder ctx = new StringBuilder();
+        ctx.append("User planning context for week of ").append(userContext.weekStart()).append(":\n\n");
+        ctx.append(String.format("Remaining capacity: %.1f hours (cap=%.1f, committed=%.1f)%n",
+                userContext.remainingCapacityHours(),
+                userContext.realisticWeeklyCapHours(),
+                userContext.alreadyCommittedHours()));
+
+        if (!userContext.recentOutcomeIds().isEmpty()) {
+            ctx.append("Recently contributing to ").append(userContext.recentOutcomeIds().size())
+                    .append(" outcome(s).\n");
+        }
+
+        if (riskContext != null && !riskContext.isEmpty()) {
+            if (riskContext.atRiskOutcomes() != null && !riskContext.atRiskOutcomes().isEmpty()) {
+                ctx.append("\nAt-risk outcomes needing attention:\n");
+                riskContext.atRiskOutcomes().stream().limit(5).forEach(o ->
+                        ctx.append(String.format("- %s [%s]%s%n",
+                                o.outcomeName(),
+                                o.urgencyBand(),
+                                o.daysRemaining() != null
+                                        ? " (" + o.daysRemaining() + " days remaining)" : ""
+                        ))
+                );
+            }
+            if (riskContext.coverageGaps() != null && !riskContext.coverageGaps().isEmpty()) {
+                ctx.append("\nOutcomes with no recent team coverage:\n");
+                riskContext.coverageGaps().stream().limit(5).forEach(g ->
+                        ctx.append(String.format("- %s (no commits for %d week(s))%n",
+                                g.outcomeName(), g.weeksMissing()))
+                );
+            }
+        }
+
+        messages.add(new LlmClient.Message(LlmClient.Role.ASSISTANT, ctx.toString()));
+
+        // USER message — user-authored context (plan items, carry-forward)
+        StringBuilder userMsg = new StringBuilder();
+        userMsg.append("My current plan already includes:\n");
+        if (userContext.currentPlanItemTitles() != null
+                && !userContext.currentPlanItemTitles().isEmpty()) {
+            userContext.currentPlanItemTitles().forEach(t ->
+                    userMsg.append("- ").append(t).append("\n"));
+        } else {
+            userMsg.append("(nothing yet)\n");
+        }
+        if (userContext.carriedForwardTitles() != null
+                && !userContext.carriedForwardTitles().isEmpty()) {
+            userMsg.append("\nI'm carrying forward:\n");
+            userContext.carriedForwardTitles().forEach(t ->
+                    userMsg.append("- ").append(t).append("\n"));
+        }
+        userMsg.append("\nWrite a hypothetical ideal issue document I should work on next.");
+        messages.add(new LlmClient.Message(LlmClient.Role.USER, userMsg.toString()));
+
+        return messages;
+    }
+
     /**
      * The JSON schema for effort type suggestion responses.
      */

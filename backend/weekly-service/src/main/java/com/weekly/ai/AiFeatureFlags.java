@@ -21,6 +21,8 @@ public class AiFeatureFlags {
     private boolean weeklyPlanningAgentEnabled = true;
     private boolean misalignmentAgentEnabled = true;
     private boolean suggestEffortTypeEnabled = true;
+    private boolean ragSearchEnabled = true;
+    private boolean hydeRecommendationsEnabled = true;
 
     /**
      * Whether the RCDO auto-suggest endpoint is active.
@@ -160,5 +162,29 @@ public class AiFeatureFlags {
 
     public void setSuggestEffortTypeEnabled(boolean enabled) {
         this.suggestEffortTypeEnabled = enabled;
+    }
+
+    /**
+     * Whether the RAG semantic search endpoint is active.
+     * Default: enabled. Configurable via {@code ai.features.rag-search-enabled}.
+     */
+    public boolean isRagSearchEnabled() {
+        return ragSearchEnabled;
+    }
+
+    public void setRagSearchEnabled(boolean enabled) {
+        this.ragSearchEnabled = enabled;
+    }
+
+    /**
+     * Whether the HyDE-powered weekly issue recommendation endpoint is active.
+     * Default: enabled. Configurable via {@code ai.features.hyde-recommendations-enabled}.
+     */
+    public boolean isHydeRecommendationsEnabled() {
+        return hydeRecommendationsEnabled;
+    }
+
+    public void setHydeRecommendationsEnabled(boolean enabled) {
+        this.hydeRecommendationsEnabled = enabled;
     }
 }

@@ -168,7 +168,10 @@ class OpenApiSpecContractTest {
             "POST /weeks/{weekStart}/plan/assignments",
             "DELETE /weeks/{weekStart}/plan/assignments/{assignmentId}",
             // Phase 6: Backlog ranking
-            "POST /ai/rank-backlog"
+            "POST /ai/rank-backlog",
+            // Phase 6: HyDE-powered recommendations and semantic search
+            "POST /ai/recommend-weekly-issues",
+            "POST /ai/search-issues"
     );
 
     // ─── 1. Path Coverage ──────────────────────────────────────────────────────
@@ -226,8 +229,9 @@ class OpenApiSpecContractTest {
     void expectedOperationCountMatchesOpenApiSpec() {
         // Update this sentinel whenever the committed OpenAPI path set changes.
         // Recent additions: Phase 5 forecasting/planning-copilot/executive,
-        // Phase 6 team management, issue/assignment endpoints, and backlog ranking.
-        int expectedCount = 66;
+        // Phase 6 team management, issue/assignment endpoints, backlog ranking,
+        // and HyDE semantic search/recommendations.
+        int expectedCount = 68;
         assertTrue(
                 EXPECTED_OPENAPI_OPERATIONS.size() == expectedCount,
                 "Expected " + expectedCount + " OpenAPI operations but found "
@@ -463,6 +467,40 @@ class OpenApiSpecContractTest {
                 .andExpect(jsonPath("$.status", is("ok")))
                 .andExpect(jsonPath("$.suggestedType", is("MAINTAIN")))
                 .andExpect(jsonPath("$.confidence", notNullValue()));
+    }
+
+    @Test
+    void recommendWeeklyIssuesResponseContainsContractFields() throws Exception {
+        String body = objectMapper.writeValueAsString(Map.of(
+                "weekStart", LocalDate.now().with(DayOfWeek.MONDAY).toString(),
+                "maxItems", 5
+        ));
+
+        mockMvc.perform(post("/api/v1/ai/recommend-weekly-issues")
+                        .header("X-Org-Id", ORG_ID)
+                        .header("X-User-Id", USER_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status", is("ok")))
+                .andExpect(jsonPath("$.recommendations").isArray());
+    }
+
+    @Test
+    void searchIssuesResponseContainsContractFields() throws Exception {
+        String body = objectMapper.writeValueAsString(Map.of(
+                "query", "caching auth flows",
+                "limit", 5
+        ));
+
+        mockMvc.perform(post("/api/v1/ai/search-issues")
+                        .header("X-Org-Id", ORG_ID)
+                        .header("X-User-Id", USER_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status", is("ok")))
+                .andExpect(jsonPath("$.hits").isArray());
     }
 
     @Test
