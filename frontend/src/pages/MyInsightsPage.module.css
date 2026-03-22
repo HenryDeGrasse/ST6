@@ -1,8 +1,8 @@
 /**
- * MyInsightsPage – CSS Module (Academia / Classical)
+ * MyInsightsPage – CSS Module (Enterprise Dashboard)
  *
  * Elite dashboard layout: stat cards with sparklines, distribution charts,
- * profile bars, and habit panels. Muted gold/amber accents on dark ground.
+ * profile bars, and habit panels.
  */
 
 /* ── Page frame ─────────────────────────────────────────────────────────── */
@@ -14,26 +14,26 @@
 }
 
 .heading {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--wc-font-heading);
   font-size: 1.75rem;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  color: var(--wc-color-text, #E8DFD4);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--wc-color-text-primary);
   margin: 0 0 0.25rem;
 }
 
 .loadingState,
 .errorState,
 .emptyState {
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--wc-font-body);
   font-size: 0.95rem;
-  color: var(--wc-color-muted, #9C8B7A);
+  color: var(--wc-color-text-muted);
   padding: 3rem 1rem;
   text-align: center;
 }
 
 .errorState {
-  color: #C47A84;
+  color: var(--wc-color-error);
 }
 
 /* ── Sections ───────────────────────────────────────────────────────────── */
@@ -47,19 +47,19 @@
 }
 
 .sectionTitle {
-  font-family: 'Cinzel', serif;
-  font-size: 0.65rem;
+  font-family: var(--wc-font-heading);
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: var(--wc-color-accent, #C9A962);
+  letter-spacing: 0.08em;
+  color: var(--wc-color-text-muted);
   margin: 0 0 0.35rem;
 }
 
 .sectionSub {
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--wc-font-body);
   font-size: 0.8rem;
-  color: var(--wc-color-muted, #9C8B7A);
+  color: var(--wc-color-text-muted);
   margin: 0 0 1rem;
 }
 
@@ -78,15 +78,16 @@
 }
 
 .statCard {
-  background: rgba(60, 50, 40, 0.35);
-  border: 1px solid rgba(201, 169, 98, 0.15);
-  border-radius: 6px;
+  background: var(--wc-color-bg-secondary);
+  border: 1px solid var(--wc-color-border);
+  border-radius: var(--wc-radius-lg);
   padding: 0.875rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   overflow: hidden;
   min-width: 0;
+  box-shadow: var(--wc-shadow-sm);
 }
 
 .statTop {
@@ -96,26 +97,26 @@
 }
 
 .statLabel {
-  font-family: 'Cinzel', serif;
-  font-size: 0.5rem;
+  font-family: var(--wc-font-heading);
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color: var(--wc-color-muted, #9C8B7A);
+  letter-spacing: 0.06em;
+  color: var(--wc-color-text-muted);
 }
 
 .statValue {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--wc-font-heading);
   font-size: 1.5rem;
-  font-weight: 500;
-  color: var(--wc-color-text, #E8DFD4);
+  font-weight: 600;
+  color: var(--wc-color-text-primary);
   line-height: 1.15;
 }
 
 .statSub {
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--wc-font-body);
   font-size: 0.75rem;
-  color: var(--wc-color-muted, #9C8B7A);
+  color: var(--wc-color-text-muted);
   margin-top: 0.05rem;
 }
 
@@ -134,11 +135,12 @@
 }
 
 .distCard {
-  background: rgba(60, 50, 40, 0.25);
-  border: 1px solid rgba(201, 169, 98, 0.1);
-  border-radius: 6px;
+  background: var(--wc-color-bg-secondary);
+  border: 1px solid var(--wc-color-border);
+  border-radius: var(--wc-radius-lg);
   padding: 1rem 1.25rem;
   overflow: hidden;
+  box-shadow: var(--wc-shadow-sm);
 }
 
 .priorityBars {
@@ -149,10 +151,11 @@
 
 .hoursChart {
   margin-top: 0.5rem;
-  background: rgba(60, 50, 40, 0.2);
-  border: 1px solid rgba(201, 169, 98, 0.08);
-  border-radius: 6px;
+  background: var(--wc-color-bg-secondary);
+  border: 1px solid var(--wc-color-border);
+  border-radius: var(--wc-radius-lg);
   padding: 1rem 1.25rem;
+  box-shadow: var(--wc-shadow-sm);
 }
 
 .hoursLegendRow {
@@ -162,9 +165,9 @@
 }
 
 .hoursLegendItem {
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--wc-font-body);
   font-size: 0.75rem;
-  color: var(--wc-color-muted, #9C8B7A);
+  color: var(--wc-color-text-muted);
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -183,7 +186,7 @@
   gap: 0.5rem;
   height: 130px;
   padding-bottom: 0;
-  border-bottom: 1px solid rgba(201, 169, 98, 0.1);
+  border-bottom: 1px solid var(--wc-color-border);
 }
 
 .hoursPair {
@@ -207,7 +210,7 @@
 .hoursBarEst {
   width: 40%;
   max-width: 16px;
-  background: var(--wc-color-accent, #C9A962);
+  background: var(--wc-color-accent);
   border-radius: 2px 2px 0 0;
   transition: height 0.5s ease-out;
   min-height: 2px;
@@ -216,19 +219,19 @@
 .hoursBarAct {
   width: 40%;
   max-width: 16px;
-  background: #7A8C6E;
+  background: var(--wc-color-accent-secondary);
   border-radius: 2px 2px 0 0;
   transition: height 0.5s ease-out;
   min-height: 2px;
 }
 
 .hoursWeekLabel {
-  font-family: 'Cinzel', serif;
-  font-size: 0.5rem;
+  font-family: var(--wc-font-heading);
+  font-size: 0.5625rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--wc-color-muted, #9C8B7A);
+  color: var(--wc-color-text-muted);
   white-space: nowrap;
 }
 
@@ -241,20 +244,21 @@
 }
 
 .profileCard {
-  background: rgba(60, 50, 40, 0.25);
-  border: 1px solid rgba(201, 169, 98, 0.1);
-  border-radius: 6px;
+  background: var(--wc-color-bg-secondary);
+  border: 1px solid var(--wc-color-border);
+  border-radius: var(--wc-radius-lg);
   padding: 1rem 1.25rem;
   overflow: hidden;
+  box-shadow: var(--wc-shadow-sm);
 }
 
 .cardTitle {
-  font-family: 'Cinzel', serif;
-  font-size: 0.55rem;
+  font-family: var(--wc-font-heading);
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color: var(--wc-color-accent, #C9A962);
+  letter-spacing: 0.06em;
+  color: var(--wc-color-text-muted);
   margin: 0 0 0.75rem;
 }
 
@@ -263,8 +267,8 @@
   justify-content: space-between;
   align-items: baseline;
   padding: 0.4rem 0;
-  border-bottom: 1px solid rgba(201, 169, 98, 0.08);
-  font-family: 'Crimson Pro', serif;
+  border-bottom: 1px solid var(--wc-color-border);
+  font-family: var(--wc-font-body);
   font-size: 0.85rem;
   gap: 1rem;
 }
@@ -274,11 +278,11 @@
 }
 
 .profileMetricRow span {
-  color: var(--wc-color-muted, #9C8B7A);
+  color: var(--wc-color-text-secondary);
 }
 
 .profileMetricRow strong {
-  color: var(--wc-color-text, #E8DFD4);
+  color: var(--wc-color-text-primary);
   font-weight: 600;
   flex-shrink: 0;
 }
@@ -292,32 +296,32 @@
 }
 
 .habitCard {
-  background: rgba(60, 50, 40, 0.25);
-  border: 1px solid rgba(201, 169, 98, 0.1);
-  border-radius: 6px;
+  background: var(--wc-color-bg-secondary);
+  border: 1px solid var(--wc-color-border);
+  border-radius: var(--wc-radius-lg);
   padding: 0.875rem 1rem;
   overflow: hidden;
   min-width: 0;
-  /* Grow to fill row, but shrink-to-content as baseline */
   flex: 0 1 auto;
+  box-shadow: var(--wc-shadow-sm);
 }
 
 .habitLabel {
   display: block;
-  font-family: 'Cinzel', serif;
-  font-size: 0.5rem;
+  font-family: var(--wc-font-heading);
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color: var(--wc-color-muted, #9C8B7A);
+  letter-spacing: 0.06em;
+  color: var(--wc-color-text-muted);
   margin-bottom: 0.4rem;
 }
 
 .habitValue {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.15rem;
+  font-family: var(--wc-font-heading);
+  font-size: 1.125rem;
   font-weight: 500;
-  color: var(--wc-color-text, #E8DFD4);
+  color: var(--wc-color-text-primary);
 }
 
 .dayChips {
@@ -328,23 +332,23 @@
 }
 
 .dayChip {
-  font-family: 'Cinzel', serif;
-  font-size: 0.5rem;
+  font-family: var(--wc-font-heading);
+  font-size: 0.5625rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   padding: 0.25rem 0.6rem;
-  border-radius: 3px;
-  background: rgba(60, 50, 40, 0.4);
-  color: var(--wc-color-muted, #9C8B7A);
-  border: 1px solid rgba(201, 169, 98, 0.08);
+  border-radius: var(--wc-radius-sm);
+  background: var(--wc-color-bg-tertiary);
+  color: var(--wc-color-text-muted);
+  border: 1px solid var(--wc-color-border);
   flex-shrink: 0;
 }
 
 .dayActive {
-  background: rgba(201, 169, 98, 0.15);
-  color: var(--wc-color-accent, #C9A962);
-  border-color: rgba(201, 169, 98, 0.3);
+  background: var(--wc-color-accent-muted);
+  color: var(--wc-color-accent);
+  border-color: var(--wc-color-accent);
 }
 
 .recurringList {
@@ -354,11 +358,11 @@
 }
 
 .recurringList li {
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--wc-font-body);
   font-size: 0.8rem;
-  color: var(--wc-color-muted, #9C8B7A);
+  color: var(--wc-color-text-secondary);
   padding: 0.25rem 0;
-  border-bottom: 1px solid rgba(201, 169, 98, 0.06);
+  border-bottom: 1px solid var(--wc-color-border);
   overflow-wrap: break-word;
   word-break: break-word;
 }
@@ -383,33 +387,33 @@
 }
 
 .trendBadge {
-  font-family: 'Cinzel', serif;
-  font-size: 0.5rem;
+  font-family: var(--wc-font-heading);
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.04em;
   padding: 0.3rem 0.75rem;
-  border-radius: 3px;
-  border: 1px solid rgba(201, 169, 98, 0.2);
-  color: var(--wc-color-muted, #9C8B7A);
+  border-radius: var(--wc-radius-sm);
+  border: 1px solid var(--wc-color-border);
+  color: var(--wc-color-text-muted);
 }
 
 .trendImproving {
-  background: rgba(122, 140, 110, 0.15);
-  border-color: rgba(122, 140, 110, 0.35);
-  color: #9AB88C;
+  background: var(--wc-color-success-bg);
+  border-color: var(--wc-color-success-border);
+  color: var(--wc-color-success);
 }
 
 .trendStable {
-  background: rgba(201, 169, 98, 0.1);
-  border-color: rgba(201, 169, 98, 0.25);
-  color: #C9A962;
+  background: var(--wc-color-accent-muted);
+  border-color: var(--wc-color-accent);
+  color: var(--wc-color-accent);
 }
 
 .trendWorsening {
-  background: rgba(196, 122, 132, 0.12);
-  border-color: rgba(196, 122, 132, 0.3);
-  color: #C47A84;
+  background: var(--wc-color-error-bg);
+  border-color: var(--wc-color-error-border);
+  color: var(--wc-color-error);
 }
 
 .insightList {
@@ -422,34 +426,34 @@
 }
 
 .insightItem {
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--wc-font-body);
   font-size: 0.85rem;
-  color: var(--wc-color-muted, #9C8B7A);
+  color: var(--wc-color-text-secondary);
   padding: 0.5rem 0.85rem;
-  border-radius: 4px;
-  background: rgba(60, 50, 40, 0.2);
+  border-radius: var(--wc-radius-md);
+  background: var(--wc-color-bg-tertiary);
   border-left: 3px solid transparent;
   line-height: 1.4;
 }
 
 .insightPositive {
-  border-left-color: #7A8C6E;
+  border-left-color: var(--wc-color-success);
 }
 
 .insightInfo {
-  border-left-color: #6E7A8C;
+  border-left-color: var(--wc-color-accent);
 }
 
 .insightWarning {
-  border-left-color: #C47A84;
+  border-left-color: var(--wc-color-error);
 }
 
 .insightSeverity {
-  font-family: 'Cinzel', serif;
-  font-size: 0.5rem;
+  font-family: var(--wc-font-heading);
+  font-size: 0.6875rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.06em;
   margin-right: 0.5rem;
-  color: var(--wc-color-text, #E8DFD4);
+  color: var(--wc-color-text-primary);
 }

@@ -144,19 +144,19 @@ export const ExecutiveDashboardPage: React.FC = () => {
                   <StatCard
                     label="On Track"
                     value={String(dashboard.summary.onTrackForecasts)}
-                    accent="#9AB88C"
+                    accent="#059669"
                     testId="exec-stat-on-track"
                   />
                   <StatCard
                     label="Needs Attention"
                     value={String(dashboard.summary.needsAttentionForecasts)}
-                    accent="#C9A962"
+                    accent="#d97706"
                     testId="exec-stat-attention"
                   />
                   <StatCard
                     label="At Risk"
                     value={String(dashboard.summary.offTrackForecasts)}
-                    accent="#C47A84"
+                    accent="#dc2626"
                     testId="exec-stat-at-risk"
                   />
                   <div className={styles.statCard} data-testid="exec-stat-coverage">
@@ -192,25 +192,25 @@ export const ExecutiveDashboardPage: React.FC = () => {
                     {
                       label: "Strategic",
                       value: dashboard.summary.strategicHours ?? 0,
-                      color: "#7A8C6E",
+                      color: "#059669",
                     },
                     {
                       label: "Non-Strategic",
                       value: dashboard.summary.nonStrategicHours ?? 0,
-                      color: "#6E7A8C",
+                      color: "#94a3b8",
                     },
                   ]}
                   height={24}
                 />
                 <div className={styles.capacityStats}>
                   <span className={styles.capacityStat}>
-                    <span className={styles.capacityStatValue} style={{ color: "#9AB88C" }}>
+                    <span className={styles.capacityStatValue} style={{ color: "#059669" }}>
                       {fmtPct((dashboard.summary.strategicCapacityUtilizationPct ?? 0) / 100)}
                     </span>
                     <span className={styles.capacityStatLabel}>Strategic Utilization</span>
                   </span>
                   <span className={styles.capacityStat}>
-                    <span className={styles.capacityStatValue} style={{ color: "#8C9AAB" }}>
+                    <span className={styles.capacityStatValue} style={{ color: "#64748b" }}>
                       {fmtPct((dashboard.summary.nonStrategicCapacityUtilizationPct ?? 0) / 100)}
                     </span>
                     <span className={styles.capacityStatLabel}>Non-Strategic Utilization</span>
@@ -244,9 +244,9 @@ export const ExecutiveDashboardPage: React.FC = () => {
                           <StackedBar
                             height={12}
                             segments={[
-                              { label: "On Track", value: rollup.onTrackCount, color: "#9AB88C" },
-                              { label: "Needs Attention", value: rollup.needsAttentionCount, color: "#C9A962" },
-                              { label: "At Risk", value: rollup.offTrackCount, color: "#C47A84" },
+                              { label: "On Track", value: rollup.onTrackCount, color: "#059669" },
+                              { label: "Needs Attention", value: rollup.needsAttentionCount, color: "#d97706" },
+                              { label: "At Risk", value: rollup.offTrackCount, color: "#dc2626" },
                             ]}
                           />
                         )}
@@ -279,12 +279,12 @@ export const ExecutiveDashboardPage: React.FC = () => {
                         <HBar
                           label="Plan Coverage"
                           value={(bucket.planCoveragePct ?? 0) / 100}
-                          color="#C9A962"
+                          color="#2563eb"
                         />
                         <HBar
                           label="Strategic Utilization"
                           value={(bucket.strategicCapacityUtilizationPct ?? 0) / 100}
-                          color="#7A8C6E"
+                          color="#059669"
                         />
                       </div>
                       {bucket.averageForecastConfidence != null && (

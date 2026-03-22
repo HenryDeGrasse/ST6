@@ -593,7 +593,7 @@ export const TeamDashboardPage: React.FC = () => {
                     <span className={styles.backlogMetricLabel}>Blocked</span>
                     <span
                       className={styles.backlogMetricValue}
-                      style={backlogHealth.blockedCount > 0 ? { color: "#C47A84" } : undefined}
+                      style={backlogHealth.blockedCount > 0 ? { color: "var(--wc-color-error)" } : undefined}
                     >
                       {backlogHealth.blockedCount}
                     </span>
@@ -624,7 +624,7 @@ export const TeamDashboardPage: React.FC = () => {
                         <div key={type} className={styles.backlogEffortItem}>
                           <span
                             className={styles.backlogEffortSwatch}
-                            style={{ backgroundColor: EFFORT_TYPE_COLORS[type] ?? "#9C8B7A" }}
+                            style={{ backgroundColor: EFFORT_TYPE_COLORS[type] ?? "var(--wc-color-text-muted)" }}
                           />
                           <span className={styles.backlogEffortType}>
                             {type.charAt(0) + type.slice(1).toLowerCase()}

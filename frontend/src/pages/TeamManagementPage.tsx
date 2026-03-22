@@ -467,7 +467,7 @@ export const TeamManagementPage: React.FC<TeamManagementPageProps> = ({
                     <span className={styles.fieldLabel}>Key Prefix</span>
                     <span
                       className={styles.fieldValue}
-                      style={{ fontFamily: "monospace", color: "var(--wc-color-accent, #C9A962)" }}
+                      style={{ fontFamily: "var(--wc-font-mono)", color: "var(--wc-color-accent)" }}
                       data-testid="team-prefix-display"
                     >
                       {selectedTeam.keyPrefix}

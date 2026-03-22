@@ -29,8 +29,8 @@ const HoursComparison: React.FC<HoursBarProps> = ({ weekPoints }) => {
   return (
     <div className={styles.hoursChart}>
       <div className={styles.hoursLegendRow}>
-        <span className={styles.hoursLegendItem}><span className={styles.hoursLegendBar} style={{ backgroundColor: "var(--wc-color-accent, #C9A962)" }} />Estimated</span>
-        <span className={styles.hoursLegendItem}><span className={styles.hoursLegendBar} style={{ backgroundColor: "#7A8C6E" }} />Actual</span>
+        <span className={styles.hoursLegendItem}><span className={styles.hoursLegendBar} style={{ backgroundColor: "var(--wc-color-accent)" }} />Estimated</span>
+        <span className={styles.hoursLegendItem}><span className={styles.hoursLegendBar} style={{ backgroundColor: "var(--wc-color-accent-secondary)" }} />Actual</span>
       </div>
       <div className={styles.hoursBarGroup}>
         {weeks.map((w, i) => {
@@ -171,7 +171,7 @@ export const MyInsightsPage: React.FC = () => {
                   value={fmtPct(trends.completionAccuracy)}
                   sub={`${trends.weeksAnalyzed} weeks`}
                   sparkData={sparks?.completion}
-                  sparkColor="#7A8C6E"
+                  sparkColor="#059669"
                   testId="stat-completion"
                 />
                 <StatCard
@@ -179,7 +179,7 @@ export const MyInsightsPage: React.FC = () => {
                   value={fmtPct(trends.strategicAlignmentRate)}
                   sub={`vs ${fmtPct(trends.teamStrategicAlignmentRate)} team`}
                   sparkData={sparks?.strategic}
-                  sparkColor="#C9A962"
+                  sparkColor="#2563eb"
                   testId="stat-alignment"
                 />
                 <StatCard
@@ -187,14 +187,14 @@ export const MyInsightsPage: React.FC = () => {
                   value={fmtPct(trends.avgConfidence)}
                   sub={trends.confidenceAccuracyGap > 0.05 ? `+${fmtPct(trends.confidenceAccuracyGap)} gap` : undefined}
                   sparkData={sparks?.confidence}
-                  sparkColor="#8B6E8C"
+                  sparkColor="#7c3aed"
                   testId="stat-confidence"
                 />
                 <StatCard
                   label="Commits / Week"
                   value={sparks?.commits.length ? (sparks.commits.reduce((a, b) => a + b, 0) / sparks.commits.length).toFixed(1) : "—"}
                   sparkData={sparks?.commits}
-                  sparkColor="#6E7A8C"
+                  sparkColor="#0f766e"
                   testId="stat-commits"
                 />
                 <StatCard
@@ -202,7 +202,7 @@ export const MyInsightsPage: React.FC = () => {
                   value={`${trends.avgCarryForwardPerWeek.toFixed(1)}/wk`}
                   sub={trends.carryForwardStreak > 0 ? `${trends.carryForwardStreak}-week streak` : undefined}
                   sparkData={sparks?.carryFwd}
-                  sparkColor="#8C6E6E"
+                  sparkColor="#d97706"
                   testId="stat-carry-forward"
                 />
                 {trends.avgEstimatedHoursPerWeek != null && trends.avgActualHoursPerWeek != null && (
@@ -258,12 +258,12 @@ export const MyInsightsPage: React.FC = () => {
                           label={p.charAt(0) + p.slice(1).toLowerCase()}
                           value={v}
                           color={
-                            p === "KING" ? "#C9A962" :
-                            p === "QUEEN" ? "#B8A050" :
-                            p === "ROOK" ? "#7A8C6E" :
-                            p === "BISHOP" ? "#6E7A8C" :
-                            p === "KNIGHT" ? "#8B6E8C" :
-                            "#9C8B7A"
+                            p === "KING"   ? "#2563eb" :
+                            p === "QUEEN"  ? "#7c3aed" :
+                            p === "ROOK"   ? "#0f766e" :
+                            p === "BISHOP" ? "#d97706" :
+                            p === "KNIGHT" ? "#059669" :
+                            "#94a3b8"
                           }
                         />
                       ))}
@@ -305,7 +305,7 @@ export const MyInsightsPage: React.FC = () => {
                         key={cat}
                         label={cat.charAt(0) + cat.slice(1).toLowerCase()}
                         value={rate}
-                        color={DONUT_COLORS[cat] ?? "#9C8B7A"}
+                        color={DONUT_COLORS[cat] ?? "#94a3b8"}
                       />
                     ))}
                 </div>

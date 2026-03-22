@@ -1,5 +1,5 @@
 /**
- * TeamManagementPage – CSS Module
+ * TeamManagementPage – CSS Module (Enterprise Dashboard)
  */
 
 .page {
@@ -20,34 +20,36 @@
 }
 
 .pageTitle {
+  font-family: var(--wc-font-heading);
   font-size:   1.2rem;
-  font-weight: 700;
-  color:       var(--wc-color-text, #E8DCC8);
+  font-weight: 600;
+  color:       var(--wc-color-text-primary);
 }
 
 .backBtn {
   background: none;
   border:     none;
   cursor:     pointer;
-  color:      var(--wc-color-text-muted, #9C8B7A);
+  color:      var(--wc-color-text-muted);
   font-size:  0.82rem;
   padding:    0;
 }
 
 .backBtn:hover {
-  color: var(--wc-color-accent, #C9A962);
+  color: var(--wc-color-accent);
 }
 
 /* ── Section ──────────────────────────────────────────────────────────────── */
 
 .section {
-  background:    var(--wc-color-surface, #2A2118);
-  border:        1px solid var(--wc-color-border, #4A3F35);
-  border-radius: 0.5rem;
+  background:    var(--wc-color-bg-secondary);
+  border:        1px solid var(--wc-color-border);
+  border-radius: var(--wc-radius-lg);
   padding:       var(--wc-space-md) var(--wc-space-lg);
   display:       flex;
   flex-direction: column;
   gap:           var(--wc-space-sm);
+  box-shadow:    var(--wc-shadow-sm);
 }
 
 .sectionHeader {
@@ -60,11 +62,12 @@
 }
 
 .sectionTitle {
-  font-size:      0.82rem;
+  font-family:    var(--wc-font-heading);
+  font-size:      0.6875rem;
   font-weight:    700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color:          var(--wc-color-text-muted, #9C8B7A);
+  letter-spacing: 0.06em;
+  color:          var(--wc-color-text-muted);
 }
 
 /* ── Team detail form ─────────────────────────────────────────────────────── */
@@ -76,16 +79,17 @@
 }
 
 .fieldLabel {
-  font-size:   0.72rem;
-  font-weight: 600;
-  color:       var(--wc-color-text-muted, #9C8B7A);
+  font-family:    var(--wc-font-heading);
+  font-size:      0.6875rem;
+  font-weight:    600;
+  color:          var(--wc-color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 .fieldValue {
   font-size: 0.9rem;
-  color:     var(--wc-color-text, #E8DCC8);
+  color:     var(--wc-color-text-primary);
 }
 
 .fieldRow {
@@ -96,19 +100,21 @@
 }
 
 .fieldInput {
-  flex:        1;
-  min-width:   12rem;
-  padding:     0.35rem 0.6rem;
-  font-size:   0.85rem;
-  color:       var(--wc-color-text, #E8DCC8);
-  background:  var(--wc-color-bg, #1A1510);
-  border:      1px solid var(--wc-color-border, #4A3F35);
-  border-radius: 0.25rem;
+  flex:          1;
+  min-width:     12rem;
+  padding:       0.35rem 0.6rem;
+  font-family:   var(--wc-font-body);
+  font-size:     0.875rem;
+  color:         var(--wc-color-text-primary);
+  background:    var(--wc-color-bg-secondary);
+  border:        1px solid var(--wc-color-border);
+  border-radius: var(--wc-radius-sm);
 }
 
 .fieldInput:focus {
   outline:      none;
-  border-color: var(--wc-color-accent, #C9A962);
+  border-color: var(--wc-color-accent);
+  box-shadow:   var(--wc-shadow-glow);
 }
 
 .fieldTextarea {
@@ -128,19 +134,20 @@
 .memberTable th {
   padding:        0.45rem 0.65rem;
   text-align:     left;
-  font-size:      0.68rem;
-  font-weight:    700;
+  font-family:    var(--wc-font-heading);
+  font-size:      0.6875rem;
+  font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color:          var(--wc-color-text-muted, #9C8B7A);
-  border-bottom:  1px solid var(--wc-color-border, #4A3F35);
+  letter-spacing: 0.06em;
+  color:          var(--wc-color-text-muted);
+  border-bottom:  1px solid var(--wc-color-border);
   white-space:    nowrap;
 }
 
 .memberTable td {
   padding:       0.45rem 0.65rem;
-  border-bottom: 1px solid var(--wc-color-border, #4A3F35);
-  color:         var(--wc-color-text, #E8DCC8);
+  border-bottom: 1px solid var(--wc-color-border);
+  color:         var(--wc-color-text-primary);
   vertical-align: middle;
 }
 
@@ -148,34 +155,47 @@
   border-bottom: none;
 }
 
+.memberTable tr:hover td {
+  background: var(--wc-color-bg-tertiary);
+}
+
 .roleBadge {
   display:        inline-flex;
   align-items:    center;
   padding:        0.1rem 0.4rem;
-  border-radius:  0.2rem;
-  font-size:      0.65rem;
+  border-radius:  var(--wc-radius-sm);
+  font-family:    var(--wc-font-heading);
+  font-size:      0.6875rem;
   font-weight:    700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space:    nowrap;
 }
 
-.roleOwner  { background-color: #6B4F2A; color: #EDD8B0; }
-.roleMember { background-color: #3D5470; color: #C8DCEF; }
+.roleOwner  {
+  background-color: var(--wc-color-accent-muted);
+  color:            var(--wc-color-accent);
+  border:           1px solid var(--wc-color-accent);
+}
+.roleMember {
+  background-color: var(--wc-color-bg-tertiary);
+  color:            var(--wc-color-text-secondary);
+  border:           1px solid var(--wc-color-border);
+}
 
 .removeBtn {
   background: none;
   border:     none;
   cursor:     pointer;
-  color:      var(--wc-color-text-muted, #9C8B7A);
+  color:      var(--wc-color-text-muted);
   font-size:  0.75rem;
   padding:    0.15rem 0.4rem;
-  border-radius: 0.2rem;
+  border-radius: var(--wc-radius-sm);
 }
 
 .removeBtn:hover {
-  color:      #E87575;
-  background: rgba(232, 117, 117, 0.1);
+  color:      var(--wc-color-error);
+  background: var(--wc-color-error-bg);
 }
 
 /* ── Add member form ──────────────────────────────────────────────────────── */
@@ -189,19 +209,21 @@
 }
 
 .addMemberInput {
-  flex:      1;
-  min-width: 12rem;
-  padding:   0.35rem 0.6rem;
-  font-size: 0.85rem;
-  color:     var(--wc-color-text, #E8DCC8);
-  background: var(--wc-color-bg, #1A1510);
-  border:    1px solid var(--wc-color-border, #4A3F35);
-  border-radius: 0.25rem;
+  flex:          1;
+  min-width:     12rem;
+  padding:       0.35rem 0.6rem;
+  font-family:   var(--wc-font-body);
+  font-size:     0.875rem;
+  color:         var(--wc-color-text-primary);
+  background:    var(--wc-color-bg-secondary);
+  border:        1px solid var(--wc-color-border);
+  border-radius: var(--wc-radius-sm);
 }
 
 .addMemberInput:focus {
   outline:      none;
-  border-color: var(--wc-color-accent, #C9A962);
+  border-color: var(--wc-color-accent);
+  box-shadow:   var(--wc-shadow-glow);
 }
 
 /* ── Access requests ──────────────────────────────────────────────────────── */
@@ -211,7 +233,7 @@
   align-items:   center;
   gap:           var(--wc-space-sm);
   padding:       0.45rem 0;
-  border-bottom: 1px solid var(--wc-color-border, #4A3F35);
+  border-bottom: 1px solid var(--wc-color-border);
   flex-wrap:     wrap;
 }
 
@@ -221,58 +243,75 @@
 
 .requestUser {
   flex:      1;
-  font-size: 0.85rem;
-  color:     var(--wc-color-text, #E8DCC8);
+  font-size: 0.875rem;
+  color:     var(--wc-color-text-primary);
 }
 
 .requestDate {
-  font-size: 0.72rem;
-  color:     var(--wc-color-text-muted, #9C8B7A);
+  font-size: 0.75rem;
+  color:     var(--wc-color-text-muted);
 }
 
 .requestStatus {
   display:        inline-flex;
   align-items:    center;
   padding:        0.1rem 0.4rem;
-  border-radius:  0.2rem;
-  font-size:      0.65rem;
+  border-radius:  var(--wc-radius-sm);
+  font-family:    var(--wc-font-heading);
+  font-size:      0.6875rem;
   font-weight:    700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.statusPending  { background-color: #6B4F2A; color: #EDD8B0; }
-.statusApproved { background-color: #4A6741; color: #D8EDD5; }
-.statusDenied   { background-color: #5A2A2A; color: #EFCDC8; }
+.statusPending  {
+  background-color: var(--wc-state-reconciling-bg);
+  color:            var(--wc-state-reconciling-text);
+  border:           1px solid var(--wc-state-reconciling-border);
+}
+.statusApproved {
+  background-color: var(--wc-state-reconciled-bg);
+  color:            var(--wc-state-reconciled-text);
+  border:           1px solid var(--wc-state-reconciled-border);
+}
+.statusDenied   {
+  background-color: var(--wc-color-error-bg);
+  color:            var(--wc-color-error);
+  border:           1px solid var(--wc-color-error-border);
+}
 
 .approveBtn {
   padding:       0.2rem 0.55rem;
-  font-size:     0.72rem;
+  font-family:   var(--wc-font-heading);
+  font-size:     0.75rem;
   font-weight:   600;
-  background:    #4A6741;
-  color:         #D8EDD5;
-  border:        none;
-  border-radius: 0.25rem;
+  background:    var(--wc-state-reconciled-bg);
+  color:         var(--wc-state-reconciled-text);
+  border:        1px solid var(--wc-state-reconciled-border);
+  border-radius: var(--wc-radius-sm);
   cursor:        pointer;
+  transition:    background-color 150ms ease-out;
 }
 
 .approveBtn:hover {
-  background: #5A7750;
+  background: var(--wc-color-success-bg);
 }
 
 .denyBtn {
   padding:       0.2rem 0.55rem;
-  font-size:     0.72rem;
+  font-family:   var(--wc-font-heading);
+  font-size:     0.75rem;
   font-weight:   600;
-  background:    #5A2A2A;
-  color:         #EFCDC8;
-  border:        none;
-  border-radius: 0.25rem;
+  background:    var(--wc-color-error-bg);
+  color:         var(--wc-color-error);
+  border:        1px solid var(--wc-color-error-border);
+  border-radius: var(--wc-radius-sm);
   cursor:        pointer;
+  transition:    background-color 150ms ease-out;
 }
 
 .denyBtn:hover {
-  background: #6A3535;
+  background: #fee2e2;
 }
 
 /* ── Request access button ────────────────────────────────────────────────── */
@@ -286,17 +325,19 @@
 
 .requestAccessBtn {
   padding:       0.35rem 0.85rem;
-  font-size:     0.82rem;
+  font-family:   var(--wc-font-heading);
+  font-size:     0.875rem;
   font-weight:   600;
-  background:    var(--wc-color-accent, #C9A962);
-  color:         #1A1510;
+  background:    var(--wc-color-accent);
+  color:         var(--wc-color-accent-foreground);
   border:        none;
-  border-radius: 0.25rem;
+  border-radius: var(--wc-radius-sm);
   cursor:        pointer;
+  transition:    background-color 150ms ease-out;
 }
 
 .requestAccessBtn:hover {
-  background: #D9B972;
+  background: var(--wc-color-accent-hover);
 }
 
 .requestAccessBtn:disabled {
@@ -307,23 +348,24 @@
 /* ── Create team modal ────────────────────────────────────────────────────── */
 
 .modalOverlay {
-  position:         fixed;
-  inset:            0;
-  background:       rgba(0, 0, 0, 0.55);
-  z-index:          150;
-  display:          flex;
-  align-items:      center;
-  justify-content:  center;
+  position:        fixed;
+  inset:           0;
+  background:      rgba(0, 0, 0, 0.4);
+  z-index:         150;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
 }
 
 .modal {
-  background:    var(--wc-color-surface, #2A2118);
-  border:        1px solid var(--wc-color-border, #4A3F35);
-  border-radius: 0.5rem;
+  background:    var(--wc-color-bg-secondary);
+  border:        1px solid var(--wc-color-border);
+  border-radius: var(--wc-radius-xl);
   padding:       var(--wc-space-md) var(--wc-space-lg);
   width:         min(480px, 95vw);
   max-height:    85vh;
   overflow-y:    auto;
+  box-shadow:    var(--wc-shadow-lg);
 }
 
 .modalHeader {
@@ -334,21 +376,22 @@
 }
 
 .modalTitle {
+  font-family: var(--wc-font-heading);
   font-size:   1rem;
-  font-weight: 700;
-  color:       var(--wc-color-text, #E8DCC8);
+  font-weight: 600;
+  color:       var(--wc-color-text-primary);
 }
 
 .closeBtn {
   background: none;
   border:     none;
   cursor:     pointer;
-  color:      var(--wc-color-text-muted, #9C8B7A);
+  color:      var(--wc-color-text-muted);
   font-size:  1rem;
 }
 
 .closeBtn:hover {
-  color: var(--wc-color-text, #E8DCC8);
+  color: var(--wc-color-text-primary);
 }
 
 .formGroup {
@@ -359,32 +402,35 @@
 }
 
 .formLabel {
-  font-size:      0.72rem;
+  font-family:    var(--wc-font-heading);
+  font-size:      0.6875rem;
   font-weight:    600;
-  color:          var(--wc-color-text-muted, #9C8B7A);
+  color:          var(--wc-color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 .formInput {
   padding:       0.4rem 0.6rem;
+  font-family:   var(--wc-font-body);
   font-size:     0.9rem;
-  color:         var(--wc-color-text, #E8DCC8);
-  background:    var(--wc-color-bg, #1A1510);
-  border:        1px solid var(--wc-color-border, #4A3F35);
-  border-radius: 0.25rem;
+  color:         var(--wc-color-text-primary);
+  background:    var(--wc-color-bg-secondary);
+  border:        1px solid var(--wc-color-border);
+  border-radius: var(--wc-radius-sm);
   width:         100%;
   box-sizing:    border-box;
 }
 
 .formInput:focus {
   outline:      none;
-  border-color: var(--wc-color-accent, #C9A962);
+  border-color: var(--wc-color-accent);
+  box-shadow:   var(--wc-shadow-glow);
 }
 
 .formHint {
-  font-size: 0.7rem;
-  color:     var(--wc-color-text-muted, #9C8B7A);
+  font-size: 0.75rem;
+  color:     var(--wc-color-text-muted);
 }
 
 .formActions {
@@ -397,23 +443,23 @@
 /* ── Empty / loading states ───────────────────────────────────────────────── */
 
 .emptyText {
-  font-size: 0.82rem;
-  color:     var(--wc-color-text-muted, #9C8B7A);
+  font-size: 0.875rem;
+  color:     var(--wc-color-text-muted);
   padding:   var(--wc-space-sm) 0;
 }
 
 .loadingText {
-  font-size: 0.82rem;
-  color:     var(--wc-color-text-muted, #9C8B7A);
+  font-size:  0.875rem;
+  color:      var(--wc-color-text-muted);
   font-style: italic;
-  padding:   var(--wc-space-sm) 0;
+  padding:    var(--wc-space-sm) 0;
 }
 
 /* ── Prefix hint ──────────────────────────────────────────────────────────── */
 
 .prefixPreview {
+  font-family: var(--wc-font-mono);
   font-size:   0.8rem;
-  font-family: monospace;
-  color:       var(--wc-color-accent, #C9A962);
+  color:       var(--wc-color-accent);
   margin-top:  0.15rem;
 }

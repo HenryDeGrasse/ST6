@@ -1,8 +1,8 @@
 /**
- * ExecutiveDashboardPage – CSS Module (Academia / Classical)
+ * ExecutiveDashboardPage – CSS Module (Enterprise Dashboard)
  *
  * Strategic health overview: stat cards, capacity bar, rally-cry rollups,
- * team comparison, and executive briefing. Matches MyInsightsPage patterns.
+ * team comparison, and executive briefing.
  */
 
 /* ── Page frame ─────────────────────────────────────────────────────────── */
@@ -23,19 +23,19 @@
 }
 
 .heading {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--wc-font-heading);
   font-size: 1.75rem;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  color: var(--wc-color-text, #E8DFD4);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--wc-color-text-primary);
   margin: 0 0 0.25rem;
 }
 
 .description {
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--wc-font-body);
   font-size: 0.9rem;
   margin: var(--wc-space-xs) 0 0;
-  color: var(--wc-color-text-secondary, #9C8B7A);
+  color: var(--wc-color-text-secondary);
   max-width: 44rem;
 }
 
@@ -54,33 +54,33 @@
 }
 
 .sectionTitle {
-  font-family: 'Cinzel', serif;
-  font-size: 0.65rem;
+  font-family: var(--wc-font-heading);
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: var(--wc-color-accent, #C9A962);
+  letter-spacing: 0.08em;
+  color: var(--wc-color-text-muted);
   margin: 0 0 0.35rem;
 }
 
 .sectionSub {
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--wc-font-body);
   font-size: 0.8rem;
-  color: var(--wc-color-muted, #9C8B7A);
+  color: var(--wc-color-text-muted);
   margin: 0 0 0.75rem;
 }
 
 .loadingState,
 .errorState {
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--wc-font-body);
   font-size: 0.95rem;
-  color: var(--wc-color-muted, #9C8B7A);
+  color: var(--wc-color-text-muted);
   padding: 2rem 1rem;
   text-align: center;
 }
 
 .errorState {
-  color: #C47A84;
+  color: var(--wc-color-error);
 }
 
 .empty {
@@ -89,8 +89,8 @@
   border: 1px dashed var(--wc-color-border);
   border-radius: var(--wc-radius-md);
   color: var(--wc-color-text-secondary);
-  background: rgba(255, 255, 255, 0.03);
-  font-family: 'Crimson Pro', serif;
+  background: var(--wc-color-bg-tertiary);
+  font-family: var(--wc-font-body);
 }
 
 /* ── Stat Cards ─────────────────────────────────────────────────────────── */
@@ -108,39 +108,40 @@
 }
 
 .statCard {
-  background: rgba(60, 50, 40, 0.35);
-  border: 1px solid rgba(201, 169, 98, 0.15);
+  background: var(--wc-color-bg-secondary);
+  border: 1px solid var(--wc-color-border);
   border-top-width: 2px;
-  border-radius: 6px;
+  border-radius: var(--wc-radius-lg);
   padding: 0.875rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   overflow: hidden;
   min-width: 0;
+  box-shadow: var(--wc-shadow-sm);
 }
 
 .statLabel {
-  font-family: 'Cinzel', serif;
-  font-size: 0.5rem;
+  font-family: var(--wc-font-heading);
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color: var(--wc-color-muted, #9C8B7A);
+  letter-spacing: 0.06em;
+  color: var(--wc-color-text-muted);
 }
 
 .statValue {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--wc-font-heading);
   font-size: 1.5rem;
-  font-weight: 500;
-  color: var(--wc-color-text, #E8DFD4);
+  font-weight: 600;
+  color: var(--wc-color-text-primary);
   line-height: 1.15;
 }
 
 .statSub {
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--wc-font-body);
   font-size: 0.75rem;
-  color: var(--wc-color-muted, #9C8B7A);
+  color: var(--wc-color-text-muted);
   margin-top: 0.05rem;
 }
 
@@ -165,19 +166,19 @@
 }
 
 .capacityStatValue {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--wc-font-heading);
   font-size: 1.25rem;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.15;
 }
 
 .capacityStatLabel {
-  font-family: 'Cinzel', serif;
-  font-size: 0.5rem;
+  font-family: var(--wc-font-heading);
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--wc-color-muted, #9C8B7A);
+  letter-spacing: 0.06em;
+  color: var(--wc-color-text-muted);
 }
 
 /* ── Rally Cry Cards ────────────────────────────────────────────────────── */
@@ -189,14 +190,15 @@
 }
 
 .rallyCryCard {
-  background: rgba(60, 50, 40, 0.25);
-  border: 1px solid rgba(201, 169, 98, 0.1);
-  border-radius: 6px;
+  background: var(--wc-color-bg-secondary);
+  border: 1px solid var(--wc-color-border);
+  border-radius: var(--wc-radius-lg);
   padding: 0.875rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
   overflow: hidden;
+  box-shadow: var(--wc-shadow-sm);
 }
 
 .rallyCryHeader {
@@ -207,29 +209,29 @@
 }
 
 .rallyCryName {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1rem;
+  font-family: var(--wc-font-heading);
+  font-size: 0.9375rem;
   font-weight: 500;
-  color: var(--wc-color-text, #E8DFD4);
+  color: var(--wc-color-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .rallyCryConfidence {
-  font-family: 'Cinzel', serif;
-  font-size: 0.5rem;
+  font-family: var(--wc-font-heading);
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--wc-color-muted, #9C8B7A);
+  letter-spacing: 0.06em;
+  color: var(--wc-color-text-muted);
   flex-shrink: 0;
 }
 
 .rallyCryMeta {
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--wc-font-body);
   font-size: 0.75rem;
-  color: var(--wc-color-muted, #9C8B7A);
+  color: var(--wc-color-text-muted);
 }
 
 /* ── Team Comparison Cards ──────────────────────────────────────────────── */
@@ -241,14 +243,15 @@
 }
 
 .teamCard {
-  background: rgba(60, 50, 40, 0.25);
-  border: 1px solid rgba(201, 169, 98, 0.1);
-  border-radius: 6px;
+  background: var(--wc-color-bg-secondary);
+  border: 1px solid var(--wc-color-border);
+  border-radius: var(--wc-radius-lg);
   padding: 0.875rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
   overflow: hidden;
+  box-shadow: var(--wc-shadow-sm);
 }
 
 .teamCardHeader {
@@ -259,26 +262,26 @@
 }
 
 .teamBucketName {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1rem;
+  font-family: var(--wc-font-heading);
+  font-size: 0.9375rem;
   font-weight: 500;
-  color: var(--wc-color-text, #E8DFD4);
+  color: var(--wc-color-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .teamMemberBadge {
-  font-family: 'Cinzel', serif;
-  font-size: 0.5rem;
+  font-family: var(--wc-font-heading);
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   padding: 0.25rem 0.6rem;
-  border-radius: 3px;
-  background: rgba(201, 169, 98, 0.12);
-  color: var(--wc-color-accent, #C9A962);
-  border: 1px solid rgba(201, 169, 98, 0.2);
+  border-radius: var(--wc-radius-sm);
+  background: var(--wc-color-accent-muted);
+  color: var(--wc-color-accent);
+  border: 1px solid var(--wc-color-accent);
   flex-shrink: 0;
 }
 
@@ -289,7 +292,7 @@
 }
 
 .teamConfidence {
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--wc-font-body);
   font-size: 0.75rem;
-  color: var(--wc-color-muted, #9C8B7A);
+  color: var(--wc-color-text-muted);
 }
