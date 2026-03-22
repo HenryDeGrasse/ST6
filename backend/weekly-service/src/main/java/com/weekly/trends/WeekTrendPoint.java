@@ -20,6 +20,8 @@ import java.util.Map;
  * @param estimatedHours      summed estimated hours for the week, or {@code null} when absent
  * @param actualHours         summed actual hours for the week, or {@code null} when absent
  * @param hoursAccuracyRatio  {@code actualHours / estimatedHours}, or {@code null} when unavailable
+ * @param effortTypeCounts    raw counts per EffortType name (BUILD/MAINTAIN/COLLABORATE/LEARN);
+ *                            derived from CommitCategory via EffortTypeMapper (Phase 6, additive)
  */
 public record WeekTrendPoint(
         String weekStart,
@@ -33,11 +35,47 @@ public record WeekTrendPoint(
         Map<String, Integer> categoryCounts,
         Double estimatedHours,
         Double actualHours,
-        Double hoursAccuracyRatio
+        Double hoursAccuracyRatio,
+        Map<String, Integer> effortTypeCounts
 ) {
     /**
+     * Backwards-compatible constructor for call sites that do not yet provide
+     * effort-type counts. Sets {@code effortTypeCounts} to an empty map.
+     */
+    public WeekTrendPoint(
+            String weekStart,
+            int totalCommits,
+            int strategicCommits,
+            int carryForwardCommits,
+            double avgConfidence,
+            double completionRate,
+            boolean hasActuals,
+            Map<String, Integer> priorityCounts,
+            Map<String, Integer> categoryCounts,
+            Double estimatedHours,
+            Double actualHours,
+            Double hoursAccuracyRatio
+    ) {
+        this(
+                weekStart,
+                totalCommits,
+                strategicCommits,
+                carryForwardCommits,
+                avgConfidence,
+                completionRate,
+                hasActuals,
+                priorityCounts,
+                categoryCounts,
+                estimatedHours,
+                actualHours,
+                hoursAccuracyRatio,
+                Map.of()
+        );
+    }
+
+    /**
      * Backwards-compatible constructor for existing call sites that do not yet provide
-     * hours-based metrics.
+     * hours-based metrics or effort-type counts.
      */
     public WeekTrendPoint(
             String weekStart,
@@ -62,7 +100,8 @@ public record WeekTrendPoint(
                 categoryCounts,
                 null,
                 null,
-                null
+                null,
+                Map.of()
         );
     }
 }

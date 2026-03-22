@@ -2,6 +2,8 @@ package com.weekly.capacity;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.weekly.issues.domain.EffortType;
+import com.weekly.issues.domain.EffortTypeMapper;
 import com.weekly.plan.domain.ChessPriority;
 import com.weekly.plan.domain.CommitCategory;
 import com.weekly.plan.domain.CompletionStatus;
@@ -242,6 +244,57 @@ public class CapacityProfileService {
         return toJson(result);
     }
 
+    /**
+     * Computes per-effort-type estimation bias, parallel to
+     * {@link #computeCategoryBiasJson(List, Map)} but using the 4-value
+     * {@link EffortType} taxonomy derived via {@link EffortTypeMapper}.
+     *
+     * <p>Only commits whose {@link com.weekly.plan.domain.CommitCategory} maps to a
+     * non-null {@link EffortType} are included (currently all 7 categories map to one of
+     * the 4 effort types, so exclusion is purely defensive).
+     *
+     * @param commits            all commits in the rolling window
+     * @param actualsByCommitId  map of commit-id → actuals entity
+     * @return JSON array of {@link EffortTypeBias} records, serialised as a string
+     */
+    String computeEffortTypeBiasJson(
+            List<WeeklyCommitEntity> commits,
+            Map<UUID, WeeklyCommitActualEntity> actualsByCommitId) {
+
+        List<EffortTypeBias> result = new ArrayList<>();
+        for (EffortType effortType : EffortType.values()) {
+            List<WeeklyCommitEntity> etCommits = commits.stream()
+                    .filter(c -> c.getCategory() != null
+                            && effortType == EffortTypeMapper.fromCommitCategory(c.getCategory()))
+                    .toList();
+            if (etCommits.isEmpty()) {
+                continue;
+            }
+            List<BigDecimal> estimatedValues = etCommits.stream()
+                    .filter(c -> c.getEstimatedHours() != null)
+                    .map(WeeklyCommitEntity::getEstimatedHours)
+                    .toList();
+            List<BigDecimal> actualValues = etCommits.stream()
+                    .map(c -> {
+                        WeeklyCommitActualEntity a = actualsByCommitId.get(c.getId());
+                        return (a != null) ? a.getActualHours() : null;
+                    })
+                    .filter(v -> v != null)
+                    .toList();
+
+            BigDecimal rawAvgEst = mean(estimatedValues);
+            BigDecimal rawAvgAct = mean(actualValues);
+            BigDecimal avgEst = rawAvgEst.setScale(1, RoundingMode.HALF_UP);
+            BigDecimal avgAct = rawAvgAct.setScale(1, RoundingMode.HALF_UP);
+            BigDecimal bias = rawAvgEst.compareTo(BigDecimal.ZERO) > 0
+                    ? rawAvgAct.divide(rawAvgEst, 2, RoundingMode.HALF_UP)
+                    : null;
+
+            result.add(new EffortTypeBias(effortType.name(), avgEst, avgAct, bias));
+        }
+        return toJson(result);
+    }
+
     private String computePriorityCompletionJson(
             List<WeeklyCommitEntity> commits,
             Map<UUID, WeeklyCommitActualEntity> actualsByCommitId) {
@@ -366,5 +419,20 @@ public class CapacityProfileService {
             BigDecimal doneRate,
             BigDecimal avgHours,
             int sampleSize) {
+    }
+
+    /**
+     * Per-effort-type estimation bias data (Phase 6, additive).
+     *
+     * @param effortType        the effort type name (BUILD / MAINTAIN / COLLABORATE / LEARN)
+     * @param avgEstimatedHours mean estimated hours for commits in this effort type
+     * @param avgActualHours    mean actual hours for commits in this effort type
+     * @param bias              ratio of avgActual / avgEstimated, or {@code null} if uncomputable
+     */
+    record EffortTypeBias(
+            String effortType,
+            BigDecimal avgEstimatedHours,
+            BigDecimal avgActualHours,
+            BigDecimal bias) {
     }
 }

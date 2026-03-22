@@ -388,6 +388,45 @@ class CapacityProfileServiceTest {
         }
     }
 
+    // ── effort-type bias helper ───────────────────────────────────────────────
+
+    @Nested
+    class EffortTypeBias {
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void groupsLegacyCategoriesIntoSharedEffortTypes() throws Exception {
+            WeeklyCommitEntity delivery = commit(UUID.randomUUID(), CommitCategory.DELIVERY, ChessPriority.QUEEN, "8.0");
+            WeeklyCommitEntity gtm = commit(UUID.randomUUID(), CommitCategory.GTM, ChessPriority.QUEEN, "4.0");
+            WeeklyCommitEntity ops = commit(UUID.randomUUID(), CommitCategory.OPERATIONS, ChessPriority.ROOK, "6.0");
+
+            Map<UUID, WeeklyCommitActualEntity> actuals = Map.of(
+                    delivery.getId(), actual(delivery.getId(), "10.0", CompletionStatus.DONE),
+                    gtm.getId(), actual(gtm.getId(), "2.0", CompletionStatus.DONE),
+                    ops.getId(), actual(ops.getId(), "9.0", CompletionStatus.DONE)
+            );
+
+            String json = service.computeEffortTypeBiasJson(List.of(delivery, gtm, ops), actuals);
+            List<Map<String, Object>> rows = new ObjectMapper().readValue(json, List.class);
+
+            Map<String, Object> buildEntry = rows.stream()
+                    .filter(entry -> "BUILD".equals(entry.get("effortType")))
+                    .findFirst()
+                    .orElseThrow();
+            Map<String, Object> maintainEntry = rows.stream()
+                    .filter(entry -> "MAINTAIN".equals(entry.get("effortType")))
+                    .findFirst()
+                    .orElseThrow();
+
+            assertEquals(6.0, ((Number) buildEntry.get("avgEstimatedHours")).doubleValue(), 0.001);
+            assertEquals(6.0, ((Number) buildEntry.get("avgActualHours")).doubleValue(), 0.001);
+            assertEquals(1.0, ((Number) buildEntry.get("bias")).doubleValue(), 0.001);
+            assertEquals(6.0, ((Number) maintainEntry.get("avgEstimatedHours")).doubleValue(), 0.001);
+            assertEquals(9.0, ((Number) maintainEntry.get("avgActualHours")).doubleValue(), 0.001);
+            assertEquals(1.5, ((Number) maintainEntry.get("bias")).doubleValue(), 0.001);
+        }
+    }
+
     // ── getProfile ────────────────────────────────────────────────────────────
 
     @Nested

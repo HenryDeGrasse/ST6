@@ -2766,6 +2766,10 @@ export interface components {
             weekPoints: components["schemas"]["WeekTrendPoint"][];
             /** @description Structured insights for notable patterns */
             insights: components["schemas"]["TrendInsight"][];
+            /** @description Fraction of commits per EffortType (BUILD, MAINTAIN, COLLABORATE, LEARN); derived from CommitCategory via EffortTypeMapper. Phase 6 additive field. */
+            effortTypeDistribution?: {
+                [key: string]: number;
+            };
         };
         WeekTrendPoint: {
             /** Format: date */
@@ -2799,6 +2803,10 @@ export interface components {
              * @description actualHours / estimatedHours for the week, or null when unavailable
              */
             hoursAccuracyRatio: number | null;
+            /** @description Raw counts per EffortType name (BUILD/MAINTAIN/COLLABORATE/LEARN) derived from CommitCategory via EffortTypeMapper. Phase 6 additive field. */
+            effortTypeCounts?: {
+                [key: string]: number;
+            };
         };
         TrendInsight: {
             /**

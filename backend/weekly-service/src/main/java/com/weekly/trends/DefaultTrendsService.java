@@ -2,6 +2,8 @@ package com.weekly.trends;
 
 import com.weekly.capacity.CapacityProfileEntity;
 import com.weekly.capacity.CapacityProfileService;
+import com.weekly.issues.domain.EffortType;
+import com.weekly.issues.domain.EffortTypeMapper;
 import com.weekly.plan.domain.ChessPriority;
 import com.weekly.plan.domain.CommitCategory;
 import com.weekly.plan.domain.CompletionStatus;
@@ -122,6 +124,7 @@ public class DefaultTrendsService implements TrendsService {
         Double hoursAccuracyRatio = computeHoursAccuracyRatio(weekPoints);
         Map<String, Double> priorityDist = computePriorityDistribution(allUserCommits);
         Map<String, Double> categoryDist = computeCategoryDistribution(allUserCommits);
+        Map<String, Double> effortTypeDist = computeEffortTypeDistribution(allUserCommits);
 
         double teamStrategicRate = computeTeamStrategicRate(orgId, windowStart, windowEnd);
         Optional<CapacityProfileEntity> capacityProfile = capacityProfileService.getProfile(orgId, userId);
@@ -159,7 +162,8 @@ public class DefaultTrendsService implements TrendsService {
                 priorityDist,
                 categoryDist,
                 weekPoints,
-                insights
+                insights,
+                effortTypeDist
         );
     }
 
@@ -205,6 +209,7 @@ public class DefaultTrendsService implements TrendsService {
 
         Map<String, Integer> priorityCounts = new LinkedHashMap<>();
         Map<String, Integer> categoryCounts = new LinkedHashMap<>();
+        Map<String, Integer> effortTypeCounts = new LinkedHashMap<>();
 
         for (WeeklyCommitEntity commit : commits) {
             if (commit.getOutcomeId() != null) {
@@ -226,6 +231,10 @@ public class DefaultTrendsService implements TrendsService {
             }
             if (commit.getCategory() != null) {
                 categoryCounts.merge(commit.getCategory().name(), 1, Integer::sum);
+                EffortType effortType = EffortTypeMapper.fromCommitCategory(commit.getCategory());
+                if (effortType != null) {
+                    effortTypeCounts.merge(effortType.name(), 1, Integer::sum);
+                }
             }
 
             WeeklyCommitActualEntity actual = actualsByCommitId.get(commit.getId());
@@ -262,7 +271,8 @@ public class DefaultTrendsService implements TrendsService {
                 categoryCounts,
                 estimatedHours,
                 actualHours,
-                hoursAccuracyRatio
+                hoursAccuracyRatio,
+                effortTypeCounts
         );
     }
 
@@ -395,6 +405,46 @@ public class DefaultTrendsService implements TrendsService {
                         .filter(c -> c.getCategory() == category)
                         .count();
                 result.put(category.name(), (double) count / withCategory);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Computes the fraction of commits per {@link EffortType} value
+     * (BUILD / MAINTAIN / COLLABORATE / LEARN) mapped from {@link CommitCategory}
+     * via {@link EffortTypeMapper}.
+     *
+     * <p>Only commits with a non-null category are included in the denominator.
+     * Commits whose category maps to {@code null} (currently impossible but
+     * defensive) are excluded from both numerator and denominator.
+     *
+     * @param commits all commits in the rolling window
+     * @return map of effort-type name → fraction (0.0 when no categorised commits)
+     */
+    Map<String, Double> computeEffortTypeDistribution(List<WeeklyCommitEntity> commits) {
+        Map<String, Double> result = new LinkedHashMap<>();
+        // Build mapped counts first
+        Map<EffortType, Long> rawCounts = new java.util.EnumMap<>(EffortType.class);
+        for (EffortType et : EffortType.values()) {
+            rawCounts.put(et, 0L);
+        }
+        long total = 0;
+        for (WeeklyCommitEntity commit : commits) {
+            if (commit.getCategory() == null) {
+                continue;
+            }
+            EffortType effortType = EffortTypeMapper.fromCommitCategory(commit.getCategory());
+            if (effortType != null) {
+                rawCounts.merge(effortType, 1L, Long::sum);
+                total++;
+            }
+        }
+        for (EffortType et : EffortType.values()) {
+            if (total == 0) {
+                result.put(et.name(), 0.0);
+            } else {
+                result.put(et.name(), (double) rawCounts.get(et) / total);
             }
         }
         return result;

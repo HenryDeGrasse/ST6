@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import com.weekly.capacity.CapacityProfileEntity;
 import com.weekly.capacity.CapacityProfileService;
+import com.weekly.issues.domain.EffortType;
 import com.weekly.plan.domain.ChessPriority;
 import com.weekly.plan.domain.CommitCategory;
 import com.weekly.plan.domain.CompletionStatus;
@@ -639,6 +640,130 @@ class TrendsServiceTest {
             // Expect no insights
             assertTrue(insights.isEmpty(),
                     "Expected no insights for neutral data but got: " + insights);
+        }
+    }
+
+    // ─── EffortType distribution ──────────────────────────────────────────────
+
+    @Nested
+    class EffortTypeDistribution {
+
+        private WeeklyCommitEntity makeCommitWithCategory(UUID planId, CommitCategory category) {
+            WeeklyCommitEntity commit = new WeeklyCommitEntity(
+                    UUID.randomUUID(), ORG_ID, planId, "Task");
+            commit.setCategory(category);
+            return commit;
+        }
+
+        @Test
+        void computesEffortTypeDistributionCorrectly() {
+            UUID planId = UUID.randomUUID();
+            // DELIVERY → BUILD (×2), OPERATIONS → MAINTAIN (×1)
+            List<WeeklyCommitEntity> commits = List.of(
+                    makeCommitWithCategory(planId, CommitCategory.DELIVERY),
+                    makeCommitWithCategory(planId, CommitCategory.DELIVERY),
+                    makeCommitWithCategory(planId, CommitCategory.OPERATIONS)
+            );
+
+            java.util.Map<String, Double> dist = service.computeEffortTypeDistribution(commits);
+
+            assertEquals(2.0 / 3.0, dist.get(EffortType.BUILD.name()), 0.001);
+            assertEquals(1.0 / 3.0, dist.get(EffortType.MAINTAIN.name()), 0.001);
+            assertEquals(0.0, dist.get(EffortType.COLLABORATE.name()), 0.001);
+            assertEquals(0.0, dist.get(EffortType.LEARN.name()), 0.001);
+        }
+
+        @Test
+        void allZeroWhenNoCommitsHaveCategory() {
+            UUID planId = UUID.randomUUID();
+            List<WeeklyCommitEntity> commits = List.of(
+                    new WeeklyCommitEntity(UUID.randomUUID(), ORG_ID, planId, "Task")
+            );
+
+            java.util.Map<String, Double> dist = service.computeEffortTypeDistribution(commits);
+
+            for (EffortType et : EffortType.values()) {
+                assertEquals(0.0, dist.get(et.name()), 0.001, "Expected 0.0 for " + et);
+            }
+        }
+
+        @Test
+        void allZeroForEmptyCommitList() {
+            java.util.Map<String, Double> dist = service.computeEffortTypeDistribution(List.of());
+
+            for (EffortType et : EffortType.values()) {
+                assertEquals(0.0, dist.get(et.name()), 0.001, "Expected 0.0 for " + et);
+            }
+        }
+
+        @Test
+        void gtmAlsoMapsToBuild() {
+            UUID planId = UUID.randomUUID();
+            List<WeeklyCommitEntity> commits = List.of(
+                    makeCommitWithCategory(planId, CommitCategory.GTM)
+            );
+
+            java.util.Map<String, Double> dist = service.computeEffortTypeDistribution(commits);
+
+            assertEquals(1.0, dist.get(EffortType.BUILD.name()), 0.001);
+        }
+
+        @Test
+        void computeTrendsResponseContainsEffortTypeDistribution() {
+            LocalDate monday = currentMonday();
+            UUID planId = UUID.randomUUID();
+            WeeklyPlanEntity plan = makePlan(planId, monday);
+
+            when(planRepository
+                    .findByOrgIdAndOwnerUserIdAndWeekStartDateBetweenOrderByWeekStartDateAsc(
+                            eq(ORG_ID), eq(USER_ID), any(), any()))
+                    .thenReturn(List.of(plan));
+
+            WeeklyCommitEntity commit1 = makeCommitWithCategory(planId, CommitCategory.DELIVERY);
+            WeeklyCommitEntity commit2 = makeCommitWithCategory(planId, CommitCategory.LEARNING);
+
+            when(commitRepository.findByOrgIdAndWeeklyPlanIdIn(eq(ORG_ID), any()))
+                    .thenReturn(List.of(commit1, commit2));
+            when(actualRepository.findByOrgIdAndCommitIdIn(eq(ORG_ID), any()))
+                    .thenReturn(List.of());
+
+            TrendsResponse response = service.computeTrends(ORG_ID, USER_ID, 1);
+
+            assertNotNull(response.effortTypeDistribution());
+            assertEquals(0.5, response.effortTypeDistribution().get(EffortType.BUILD.name()), 0.001);
+            assertEquals(0.0, response.effortTypeDistribution().get(EffortType.MAINTAIN.name()), 0.001);
+            assertEquals(0.0, response.effortTypeDistribution().get(EffortType.COLLABORATE.name()), 0.001);
+            assertEquals(0.5, response.effortTypeDistribution().get(EffortType.LEARN.name()), 0.001);
+        }
+
+        @Test
+        void weekPointContainsEffortTypeCounts() {
+            LocalDate monday = currentMonday();
+            UUID planId = UUID.randomUUID();
+            WeeklyPlanEntity plan = makePlan(planId, monday);
+
+            when(planRepository
+                    .findByOrgIdAndOwnerUserIdAndWeekStartDateBetweenOrderByWeekStartDateAsc(
+                            eq(ORG_ID), eq(USER_ID), any(), any()))
+                    .thenReturn(List.of(plan));
+
+            WeeklyCommitEntity commit1 = makeCommitWithCategory(planId, CommitCategory.TECH_DEBT);
+            WeeklyCommitEntity commit2 = makeCommitWithCategory(planId, CommitCategory.PEOPLE);
+
+            when(commitRepository.findByOrgIdAndWeeklyPlanIdIn(eq(ORG_ID), any()))
+                    .thenReturn(List.of(commit1, commit2));
+            when(actualRepository.findByOrgIdAndCommitIdIn(eq(ORG_ID), any()))
+                    .thenReturn(List.of());
+
+            TrendsResponse response = service.computeTrends(ORG_ID, USER_ID, 1);
+
+            WeekTrendPoint point = response.weekPoints().get(0);
+            assertNotNull(point.effortTypeCounts());
+            // TECH_DEBT → MAINTAIN, PEOPLE → COLLABORATE
+            assertEquals(1, point.effortTypeCounts().getOrDefault(EffortType.MAINTAIN.name(), 0));
+            assertEquals(1, point.effortTypeCounts().getOrDefault(EffortType.COLLABORATE.name(), 0));
+            assertEquals(0, point.effortTypeCounts().getOrDefault(EffortType.BUILD.name(), 0));
+            assertEquals(0, point.effortTypeCounts().getOrDefault(EffortType.LEARN.name(), 0));
         }
     }
 }

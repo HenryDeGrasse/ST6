@@ -35,7 +35,7 @@ import type {
   ExecutiveDashboardResponse,
   ExecutiveBriefingResponse,
 } from "../api.js";
-import type { NextWorkSuggestionsResponse, SuggestionFeedbackRequest } from "../types.js";
+import type { NextWorkSuggestionsResponse, SuggestionFeedbackRequest, TrendsResponse } from "../types.js";
 import { ErrorCode } from "../errors.js";
 import { ChessPriority, CompletionStatus, PlanState, ReviewStatus, CommitCategory } from "../enums.js";
 
@@ -670,6 +670,48 @@ describe("Phase 5 planning-copilot contracts", () => {
     };
 
     expect(resp.members[0].createdPlan).toBe(true);
+  });
+});
+
+describe("TrendsResponse", () => {
+  it("supports additive effort-type trend fields", () => {
+    const resp: TrendsResponse = {
+      weeksAnalyzed: 2,
+      windowStart: "2026-03-10",
+      windowEnd: "2026-03-17",
+      strategicAlignmentRate: 0.5,
+      teamStrategicAlignmentRate: 0.4,
+      avgCarryForwardPerWeek: 1,
+      carryForwardStreak: 1,
+      avgConfidence: 0.7,
+      completionAccuracy: 0.6,
+      confidenceAccuracyGap: 0.1,
+      avgEstimatedHoursPerWeek: 12,
+      avgActualHoursPerWeek: 10,
+      hoursAccuracyRatio: 0.83,
+      priorityDistribution: { KING: 0.5, QUEEN: 0.5 },
+      categoryDistribution: { DELIVERY: 0.5, OPERATIONS: 0.5 },
+      effortTypeDistribution: { BUILD: 0.5, MAINTAIN: 0.5 },
+      weekPoints: [{
+        weekStart: "2026-03-10",
+        totalCommits: 2,
+        strategicCommits: 1,
+        carryForwardCommits: 0,
+        avgConfidence: 0.7,
+        completionRate: 0.5,
+        hasActuals: true,
+        priorityCounts: { KING: 1, QUEEN: 1 },
+        categoryCounts: { DELIVERY: 1, OPERATIONS: 1 },
+        estimatedHours: 12,
+        actualHours: 10,
+        hoursAccuracyRatio: 0.83,
+        effortTypeCounts: { BUILD: 1, MAINTAIN: 1 },
+      }],
+      insights: [],
+    };
+
+    expect(resp.effortTypeDistribution?.BUILD).toBe(0.5);
+    expect(resp.weekPoints[0].effortTypeCounts?.MAINTAIN).toBe(1);
   });
 });
 

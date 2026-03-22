@@ -26,6 +26,9 @@ import java.util.Map;
  * @param categoryDistribution       fraction of commits per CommitCategory name (values sum ≤ 1)
  * @param weekPoints                 per-week breakdown, oldest to newest
  * @param insights                   generated insight objects for notable patterns
+ * @param effortTypeDistribution     fraction of commits per EffortType name
+ *                                   (BUILD/MAINTAIN/COLLABORATE/LEARN, values sum ≤ 1);
+ *                                   derived from CommitCategory via EffortTypeMapper (Phase 6, additive)
  */
 public record TrendsResponse(
         int weeksAnalyzed,
@@ -44,10 +47,12 @@ public record TrendsResponse(
         Map<String, Double> priorityDistribution,
         Map<String, Double> categoryDistribution,
         List<WeekTrendPoint> weekPoints,
-        List<TrendInsight> insights
+        List<TrendInsight> insights,
+        Map<String, Double> effortTypeDistribution
 ) {
     /**
-     * Backwards-compatible constructor for callers that do not provide hour metrics.
+     * Backwards-compatible constructor for callers that do not provide hour metrics
+     * or effort-type distribution. Sets {@code effortTypeDistribution} to an empty map.
      */
     public TrendsResponse(
             int weeksAnalyzed,
@@ -82,7 +87,53 @@ public record TrendsResponse(
                 priorityDistribution,
                 categoryDistribution,
                 weekPoints,
-                insights
+                insights,
+                Map.of()
+        );
+    }
+
+    /**
+     * Backwards-compatible constructor for callers that provide hour metrics but not
+     * effort-type distribution. Sets {@code effortTypeDistribution} to an empty map.
+     */
+    public TrendsResponse(
+            int weeksAnalyzed,
+            String windowStart,
+            String windowEnd,
+            double strategicAlignmentRate,
+            double teamStrategicAlignmentRate,
+            double avgCarryForwardPerWeek,
+            int carryForwardStreak,
+            double avgConfidence,
+            double completionAccuracy,
+            double confidenceAccuracyGap,
+            Double avgEstimatedHoursPerWeek,
+            Double avgActualHoursPerWeek,
+            Double hoursAccuracyRatio,
+            Map<String, Double> priorityDistribution,
+            Map<String, Double> categoryDistribution,
+            List<WeekTrendPoint> weekPoints,
+            List<TrendInsight> insights
+    ) {
+        this(
+                weeksAnalyzed,
+                windowStart,
+                windowEnd,
+                strategicAlignmentRate,
+                teamStrategicAlignmentRate,
+                avgCarryForwardPerWeek,
+                carryForwardStreak,
+                avgConfidence,
+                completionAccuracy,
+                confidenceAccuracyGap,
+                avgEstimatedHoursPerWeek,
+                avgActualHoursPerWeek,
+                hoursAccuracyRatio,
+                priorityDistribution,
+                categoryDistribution,
+                weekPoints,
+                insights,
+                Map.of()
         );
     }
 }

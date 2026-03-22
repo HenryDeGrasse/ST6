@@ -209,6 +209,8 @@ export interface WeekTrendPoint {
   actualHours: number | null;
   /** actualHours / estimatedHours, or null when unavailable. */
   hoursAccuracyRatio: number | null;
+  /** Raw counts per EffortType, derived from CommitCategory. Phase 6 additive field. */
+  effortTypeCounts?: Record<string, number>;
 }
 
 export interface TrendsResponse {
@@ -246,6 +248,8 @@ export interface TrendsResponse {
   weekPoints: WeekTrendPoint[];
   /** Structured insights for notable patterns. */
   insights: TrendInsight[];
+  /** Fraction of commits per EffortType, derived from CommitCategory. Phase 6 additive field. */
+  effortTypeDistribution?: Record<string, number>;
 }
 
 // ─── Phase 6: Issue Backlog, Teams & AI Work Intelligence ───
