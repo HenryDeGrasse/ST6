@@ -108,9 +108,14 @@ public interface IssueRepository extends JpaRepository<IssueEntity, UUID> {
      * concurrent inserts from receiving the same sequence number. The service
      * layer must call this inside a transaction before inserting the issue.
      *
+     * <p>Note: {@code @Modifying} is intentionally absent. PostgreSQL's
+     * {@code UPDATE … RETURNING} statement returns a result set, so Spring Data
+     * must use the query-result path ({@code getResultList()}) rather than
+     * {@code executeUpdate()}. The change is committed by the caller's
+     * {@code @Transactional} boundary.
+     *
      * <p>Returns 0 when no team row is matched (team not found).
      */
-    @Modifying
     @Query(value = "UPDATE teams SET issue_sequence = issue_sequence + 1 "
             + "WHERE id = :teamId RETURNING issue_sequence",
             nativeQuery = true)

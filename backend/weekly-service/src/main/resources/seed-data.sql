@@ -508,7 +508,7 @@ VALUES (
     'ENG',
     'Core platform, APIs, and infrastructure team.',
     'c0000000-0000-0000-0000-000000000001'::uuid,
-    8,
+    9,
     1,
     NOW() - interval '60 days',
     NOW() - interval '60 days'
@@ -538,7 +538,7 @@ WHERE  t.name    = 'General'
   AND  t.org_id  = 'a0000000-0000-0000-0000-000000000001'::uuid
 ON CONFLICT (team_id, user_id) DO NOTHING;
 
--- ─── Seed issues for Platform Engineering (ENG-1 … ENG-8) ─────────────────
+-- ─── Seed issues for Platform Engineering (ENG-1 … ENG-9) ─────────────────
 -- These are standalone backlog items not derived from weekly commits —
 -- they represent typical Phase 6 issues for demo and UI testing.
 
@@ -662,6 +662,27 @@ INSERT INTO issues (
 )
 ON CONFLICT DO NOTHING;
 
+-- ENG-9: Archived historical issue (done and retired from active backlog)
+INSERT INTO issues (
+    id, org_id, team_id, issue_key, sequence_number,
+    title, description, effort_type, estimated_hours, chess_priority,
+    outcome_id, creator_user_id, assignee_user_id, status,
+    embedding_version, version, created_at, updated_at, archived_at
+) VALUES (
+    'f1000000-0000-0000-0000-000000000009'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'f0000000-0000-0000-0000-000000000001'::uuid,
+    'ENG-9', 9,
+    'Retire legacy webhook v1 endpoints',
+    'Remove the deprecated webhook v1 path after all customer tenants migrate to v2.',
+    'MAINTAIN', 6.0, 'PAWN',
+    NULL,
+    'c0000000-0000-0000-0000-000000000001'::uuid,
+    'c0000000-0000-0000-0000-000000000010'::uuid,
+    'ARCHIVED', 0, 1, NOW() - interval '30 days', NOW() - interval '15 days', NOW() - interval '15 days'
+)
+ON CONFLICT DO NOTHING;
+
 -- ─── Seed issue activities (CREATED events for each ENG issue) ─────────────
 INSERT INTO issue_activities (id, org_id, issue_id, actor_user_id, activity_type, metadata, created_at)
 VALUES
@@ -672,5 +693,181 @@ VALUES
     (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid, 'f1000000-0000-0000-0000-000000000005'::uuid, 'c0000000-0000-0000-0000-000000000010'::uuid, 'CREATED', '{}', NOW() - interval '2 days'),
     (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid, 'f1000000-0000-0000-0000-000000000006'::uuid, 'c0000000-0000-0000-0000-000000000020'::uuid, 'CREATED', '{}', NOW() - interval '10 days'),
     (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid, 'f1000000-0000-0000-0000-000000000007'::uuid, 'c0000000-0000-0000-0000-000000000020'::uuid, 'CREATED', '{}', NOW() - interval '14 days'),
-    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid, 'f1000000-0000-0000-0000-000000000008'::uuid, 'c0000000-0000-0000-0000-000000000010'::uuid, 'CREATED', '{}', NOW() - interval '1 day')
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid, 'f1000000-0000-0000-0000-000000000008'::uuid, 'c0000000-0000-0000-0000-000000000010'::uuid, 'CREATED', '{}', NOW() - interval '1 day'),
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid, 'f1000000-0000-0000-0000-000000000009'::uuid, 'c0000000-0000-0000-0000-000000000001'::uuid, 'CREATED', '{}', NOW() - interval '30 days')
 ON CONFLICT DO NOTHING;
+
+-- ─── Rich lifecycle activities for ENG-1 (Alice, IN_PROGRESS) ──────────────
+-- Demonstrates: COMMITTED_TO_WEEK → STATUS_CHANGE → COMMENT → TIME_ENTRY
+INSERT INTO issue_activities (id, org_id, issue_id, actor_user_id, activity_type, new_value, metadata, created_at)
+VALUES
+    -- ENG-1 committed to Alice's current week plan
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid,
+     'f1000000-0000-0000-0000-000000000001'::uuid,
+     'c0000000-0000-0000-0000-000000000010'::uuid,
+     'COMMITTED_TO_WEEK',
+     date_trunc('week', CURRENT_DATE)::text,
+     '{"planId":"b0000000-0000-0000-0000-000000000010","weekStart":"' || date_trunc('week', CURRENT_DATE)::date || '"}',
+     NOW() - interval '13 days')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO issue_activities (id, org_id, issue_id, actor_user_id, activity_type, old_value, new_value, metadata, created_at)
+VALUES
+    -- ENG-1 status changed OPEN → IN_PROGRESS when assigned
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid,
+     'f1000000-0000-0000-0000-000000000001'::uuid,
+     'c0000000-0000-0000-0000-000000000010'::uuid,
+     'STATUS_CHANGE', 'OPEN', 'IN_PROGRESS', '{}',
+     NOW() - interval '13 days'),
+    -- ENG-1 carried forward from Alice's prior week into the current draft
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid,
+     'f1000000-0000-0000-0000-000000000001'::uuid,
+     'c0000000-0000-0000-0000-000000000010'::uuid,
+     'CARRIED_FORWARD',
+     'b0000000-0000-0000-0000-000000000011',
+     'b0000000-0000-0000-0000-000000000010',
+     '{"fromWeekStart":"' || date_trunc('week', CURRENT_DATE - interval '7 days')::date
+       || '","toWeekStart":"' || date_trunc('week', CURRENT_DATE)::date || '"}',
+     NOW() - interval '12 days')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO issue_activities (id, org_id, issue_id, actor_user_id, activity_type, comment_text, metadata, created_at)
+VALUES
+    -- Alice added a progress comment
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid,
+     'f1000000-0000-0000-0000-000000000001'::uuid,
+     'c0000000-0000-0000-0000-000000000010'::uuid,
+     'COMMENT',
+     'Started the SSO integration — using the existing SAML adapter. Multi-step wizard UI scaffolded.',
+     '{}',
+     NOW() - interval '11 days'),
+    -- Alice logged time
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid,
+     'f1000000-0000-0000-0000-000000000001'::uuid,
+     'c0000000-0000-0000-0000-000000000010'::uuid,
+     'COMMENT',
+     'Backend SSO handler complete. Frontend wizard steps 1-3 done. Step 4 (org provisioning) in progress.',
+     '{}',
+     NOW() - interval '7 days')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO issue_activities (id, org_id, issue_id, actor_user_id, activity_type, hours_logged, metadata, created_at)
+VALUES
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid,
+     'f1000000-0000-0000-0000-000000000001'::uuid,
+     'c0000000-0000-0000-0000-000000000010'::uuid,
+     'TIME_ENTRY', 5.5, '{"note":"SSO handler + wizard steps 1-3"}', NOW() - interval '11 days'),
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid,
+     'f1000000-0000-0000-0000-000000000001'::uuid,
+     'c0000000-0000-0000-0000-000000000010'::uuid,
+     'TIME_ENTRY', 4.0, '{"note":"Org provisioning flow, initial testing"}', NOW() - interval '7 days')
+ON CONFLICT DO NOTHING;
+
+-- ─── Rich lifecycle activities for ENG-6 (Bob, DONE — CI runner migration) ─
+INSERT INTO issue_activities (id, org_id, issue_id, actor_user_id, activity_type, new_value, metadata, created_at)
+VALUES
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid,
+     'f1000000-0000-0000-0000-000000000006'::uuid,
+     'c0000000-0000-0000-0000-000000000020'::uuid,
+     'COMMITTED_TO_WEEK',
+     date_trunc('week', CURRENT_DATE)::text,
+     '{"planId":"b0000000-0000-0000-0000-000000000020","weekStart":"' || date_trunc('week', CURRENT_DATE)::date || '"}',
+     NOW() - interval '9 days')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO issue_activities (id, org_id, issue_id, actor_user_id, activity_type, old_value, new_value, metadata, created_at)
+VALUES
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid,
+     'f1000000-0000-0000-0000-000000000006'::uuid,
+     'c0000000-0000-0000-0000-000000000020'::uuid,
+     'STATUS_CHANGE', 'OPEN', 'IN_PROGRESS', '{}', NOW() - interval '9 days'),
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid,
+     'f1000000-0000-0000-0000-000000000006'::uuid,
+     'c0000000-0000-0000-0000-000000000020'::uuid,
+     'STATUS_CHANGE', 'IN_PROGRESS', 'DONE', '{}', NOW() - interval '7 days')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO issue_activities (id, org_id, issue_id, actor_user_id, activity_type, hours_logged, metadata, created_at)
+VALUES
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid,
+     'f1000000-0000-0000-0000-000000000006'::uuid,
+     'c0000000-0000-0000-0000-000000000020'::uuid,
+     'TIME_ENTRY', 5.0, '{"note":"ARM runner setup and validation"}', NOW() - interval '8 days')
+ON CONFLICT DO NOTHING;
+
+-- ─── Archived historical lifecycle for ENG-9 ───────────────────────────────
+INSERT INTO issue_activities (id, org_id, issue_id, actor_user_id, activity_type, old_value, new_value, metadata, created_at)
+VALUES
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid,
+     'f1000000-0000-0000-0000-000000000009'::uuid,
+     'c0000000-0000-0000-0000-000000000010'::uuid,
+     'STATUS_CHANGE', 'OPEN', 'IN_PROGRESS', '{}', NOW() - interval '25 days'),
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid,
+     'f1000000-0000-0000-0000-000000000009'::uuid,
+     'c0000000-0000-0000-0000-000000000010'::uuid,
+     'STATUS_CHANGE', 'IN_PROGRESS', 'DONE', '{}', NOW() - interval '16 days'),
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid,
+     'f1000000-0000-0000-0000-000000000009'::uuid,
+     'c0000000-0000-0000-0000-000000000001'::uuid,
+     'STATUS_CHANGE', 'DONE', 'ARCHIVED', '{}', NOW() - interval '15 days')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO issue_activities (id, org_id, issue_id, actor_user_id, activity_type, comment_text, metadata, created_at)
+VALUES
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid,
+     'f1000000-0000-0000-0000-000000000009'::uuid,
+     'c0000000-0000-0000-0000-000000000010'::uuid,
+     'COMMENT',
+     'All known tenants have migrated to webhook v2. v1 endpoints are safe to retire.',
+     '{}',
+     NOW() - interval '17 days')
+ON CONFLICT DO NOTHING;
+
+-- ─── Weekly assignments linking ENG issues to existing plans ───────────────
+-- ENG-1 (IN_PROGRESS) → Alice's current DRAFT week (b0000000-0000-0000-0000-000000000010)
+INSERT INTO weekly_assignments (id, org_id, weekly_plan_id, issue_id, chess_priority_override,
+    expected_result, confidence, tags, version, created_at, updated_at)
+VALUES (
+    'fa000000-0000-0000-0001-000000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'b0000000-0000-0000-0000-000000000010'::uuid,
+    'f1000000-0000-0000-0000-000000000001'::uuid,
+    'KING',
+    'Onboarding wizard v2 fully deployed to staging with SSO working end-to-end.',
+    0.80,
+    '{eng,onboarding,sso}',
+    1,
+    NOW() - interval '13 days',
+    NOW() - interval '1 day'
+) ON CONFLICT (weekly_plan_id, issue_id) DO NOTHING;
+
+-- ENG-6 (DONE) → Bob's RECONCILED current week (b0000000-0000-0000-0000-000000000020)
+INSERT INTO weekly_assignments (id, org_id, weekly_plan_id, issue_id, chess_priority_override,
+    expected_result, confidence, tags, version, created_at, updated_at)
+VALUES (
+    'fa000000-0000-0000-0006-000000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'b0000000-0000-0000-0000-000000000020'::uuid,
+    'f1000000-0000-0000-0000-000000000006'::uuid,
+    'PAWN',
+    'All GitHub Actions runners migrated to ARM — CI pipelines green on all repos.',
+    0.90,
+    '{eng,ci,infra}',
+    2,
+    NOW() - interval '9 days',
+    NOW() - interval '7 days'
+) ON CONFLICT (weekly_plan_id, issue_id) DO NOTHING;
+
+-- ─── Assignment actuals for ENG-6 (DONE — reconciled) ─────────────────────
+INSERT INTO weekly_assignment_actuals (assignment_id, org_id, actual_result, completion_status,
+    delta_reason, hours_spent, created_at, updated_at)
+VALUES (
+    'fa000000-0000-0000-0006-000000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'All 12 repos migrated to ARM runners. CI build time reduced by 22%. No regressions.',
+    'DONE',
+    NULL,
+    5.0,
+    NOW() - interval '7 days',
+    NOW() - interval '7 days'
+) ON CONFLICT (assignment_id) DO NOTHING;
