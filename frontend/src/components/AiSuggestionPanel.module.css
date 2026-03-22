@@ -1,6 +1,6 @@
 /**
- * AiSuggestionPanel – CSS Module (Academia / Classical)
- * Brass-accented dashed-border panel for AI RCDO suggestions.
+ * AiSuggestionPanel – CSS Module (Enterprise Dashboard)
+ * Blue-tinted dashed-border panel for AI RCDO suggestions.
  *
  * Layout: Outcome name is the headline, breadcrumb path is subtle,
  * rationale appears on hover.
@@ -24,11 +24,11 @@
 .robotIcon { color: var(--wc-ai-suggestion-text); flex-shrink: 0; }
 
 .title {
-  font-family:    var(--wc-font-display);
-  font-size:      0.625rem;
+  font-family:    var(--wc-font-body);
+  font-size:      0.6875rem;
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.06em;
   color:          var(--wc-ai-suggestion-text);
   white-space:    nowrap;
 }
@@ -37,7 +37,6 @@
   font-size:   0.75rem;
   color:       var(--wc-color-text-muted);
   margin-left: var(--wc-space-xs);
-  font-style:  italic;
 }
 
 /* ─── Suggestion button ──────────────────────────────────────────────────── */
@@ -64,7 +63,8 @@
 
 .suggestionButton:hover {
   border-color:     var(--wc-color-accent);
-  box-shadow:       0 2px 8px rgba(0, 0, 0, 0.25);
+  background-color: var(--wc-color-accent-muted);
+  box-shadow:       var(--wc-shadow-sm);
 }
 
 .suggestionButton:focus-visible {
@@ -81,7 +81,7 @@
 }
 
 .outcomeName {
-  font-family: var(--wc-font-heading);
+  font-family: var(--wc-font-body);
   font-weight: 600;
   font-size:   1rem;
   color:       var(--wc-color-text-primary);
@@ -91,18 +91,18 @@
 }
 
 .confidence {
-  font-family:    var(--wc-font-display);
-  font-size:      0.625rem;
+  font-family:    var(--wc-font-body);
+  font-size:      0.6875rem;
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color:          var(--wc-color-accent);
+  letter-spacing: 0.04em;
+  color:          var(--wc-ai-suggestion-text);
   white-space:    nowrap;
   flex-shrink:    0;
   padding:        0.15rem 0.5rem;
   border-radius:  var(--wc-radius-sm);
   background:     var(--wc-color-accent-muted);
-  border:         1px solid rgba(201, 169, 98, 0.25);
+  border:         1px solid var(--wc-ai-suggestion-border);
 }
 
 /* ─── Breadcrumb: Rally Cry › Objective ──────────────────────────────────── */
@@ -124,8 +124,8 @@
 }
 
 .breadcrumbArrow {
-  color:      var(--wc-color-border);
-  font-size:  0.875rem;
+  color:       var(--wc-color-border);
+  font-size:   0.875rem;
   flex-shrink: 0;
 }
 

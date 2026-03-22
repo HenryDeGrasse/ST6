@@ -1,6 +1,6 @@
 /**
- * AiReconciliationDraft – CSS Module (Academia / Classical)
- * Sage-accented dashed-border AI panel for reconciliation drafts.
+ * AiReconciliationDraft – CSS Module (Enterprise Dashboard)
+ * Green-tinted dashed-border AI panel for reconciliation drafts.
  */
 
 .panel {
@@ -21,8 +21,8 @@
 .robotIcon { color: var(--wc-ai-draft-text); flex-shrink: 0; }
 
 .title {
-  font-family: var(--wc-font-display); font-size: 0.6875rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.15em;
+  font-family: var(--wc-font-body); font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
   color: var(--wc-ai-draft-text); white-space: nowrap;
 }
 
@@ -30,11 +30,11 @@
   display: inline-flex; align-items: center; gap: 0.2rem;
   padding: 0.1rem 0.4rem; border-radius: var(--wc-radius-sm);
   background-color: var(--wc-ai-draft-bg); border: 1px solid var(--wc-ai-draft-border);
-  font-family: var(--wc-font-display); font-size: 0.5625rem; font-weight: 600;
-  color: var(--wc-ai-draft-text); letter-spacing: 0.1em; text-transform: uppercase;
+  font-family: var(--wc-font-body); font-size: 0.5625rem; font-weight: 600;
+  color: var(--wc-ai-draft-text); letter-spacing: 0.06em; text-transform: uppercase;
 }
 
-.betaHint { font-size: 0.75rem; color: var(--wc-color-text-muted); font-style: italic; }
+.betaHint { font-size: 0.75rem; color: var(--wc-color-text-muted); }
 
 .generateButton {
   display: inline-flex; align-items: center; gap: var(--wc-space-xs);
@@ -47,7 +47,7 @@
 }
 
 .generateButton:hover {
-  background-color: var(--wc-ai-draft-bg); border-color: var(--wc-color-accent);
+  background-color: var(--wc-ai-draft-bg); border-color: var(--wc-ai-draft-text);
 }
 
 .generateButton:focus-visible { outline: 2px solid var(--wc-color-accent); outline-offset: 2px; }
@@ -80,5 +80,8 @@
   transition: background-color var(--wc-transition-fast), border-color var(--wc-transition-fast);
 }
 
-.applyButton:hover { background-color: rgba(122,175,122,0.2); border-color: var(--wc-color-accent); }
+.applyButton:hover {
+  background-color: var(--wc-color-success-bg);
+  border-color: var(--wc-ai-draft-text);
+}
 .applyButton:focus-visible { outline: 2px solid var(--wc-color-accent); outline-offset: 2px; }
