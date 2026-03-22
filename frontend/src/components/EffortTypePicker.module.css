@@ -1,40 +1,37 @@
 /**
- * EffortTypePicker – CSS Module (Academia / Classical)
+ * EffortTypePicker – CSS Module (Enterprise Dashboard)
  *
  * Chip-style effort-type selector with colour coding.
  * Supports an AI-suggested "dimmed pre-selection" state.
  */
 
 .wrapper {
-  display:   flex;
-  flex-wrap: wrap;
-  gap:       var(--wc-space-sm);
+  display:     flex;
+  flex-wrap:   wrap;
+  gap:         var(--wc-space-sm);
   align-items: center;
 }
 
-/* Each chip button */
+/* Each chip button — default (unselected) */
 .chip {
-  display:       inline-flex;
-  align-items:   center;
-  gap:           0.3rem;
-  padding:       0.25rem 0.75rem;
-  border-radius: 2rem;
-  border:        1px solid transparent;
-  font-family:   inherit;
-  font-size:     0.75rem;
-  font-weight:   600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  cursor:        pointer;
-  transition:    background-color 200ms, border-color 200ms, opacity 200ms;
-  background-color: var(--wc-color-surface, #2A2118);
-  color:         var(--wc-color-text-muted, #9C8B7A);
-  border-color:  var(--wc-color-border, #4A3F35);
+  display:          inline-flex;
+  align-items:      center;
+  gap:              0.3rem;
+  padding:          0.25rem 0.75rem;
+  border-radius:    2rem;
+  border:           1px solid var(--wc-color-border);
+  font-family:      var(--wc-font-body);
+  font-size:        0.75rem;
+  font-weight:      500;
+  cursor:           pointer;
+  transition:       background-color 150ms, border-color 150ms, color 150ms, opacity 150ms;
+  background-color: var(--wc-color-bg-tertiary);
+  color:            var(--wc-color-text-secondary);
 }
 
 .chip:hover:not(:disabled) {
-  border-color: var(--wc-color-accent, #C9A962);
-  color:        var(--wc-color-text, #E8DCC8);
+  border-color: var(--wc-color-accent);
+  color:        var(--wc-color-accent);
 }
 
 .chip:disabled {
@@ -42,77 +39,110 @@
   cursor:  not-allowed;
 }
 
-/* Selected state */
+/* Selected state — base: overridden by per-type rules below */
 .chipSelected {
   border-color: transparent;
-  color:        #1A1510;
-  font-weight:  700;
+  color:        #ffffff;
+  font-weight:  600;
 }
 
-/* AI-suggested (dimmed) state — shown when the AI has a suggestion
-   but the user hasn't confirmed it yet */
+/* AI-suggested (dimmed) state */
 .chipAiSuggested {
-  opacity:    0.65;
+  opacity:      0.7;
   border-style: dashed;
-  border-color: var(--wc-color-accent, #C9A962);
+  border-color: var(--wc-color-accent);
 }
 
-/* Per-effort-type colours */
+/* ─── Per-effort-type colours (light mode) ───────────────────────────────── */
+
+/* Build — blue */
 .chipBuild {
-  background-color: #4A6741;
-  color:            #D8EDD5;
+  background-color: #eff6ff;
+  border-color:     #93c5fd;
+  color:            #2563eb;
 }
 .chipBuild.chipSelected {
-  background-color: #5C8054;
-  color:            #1A1510;
+  background-color: #2563eb;
+  border-color:     #2563eb;
+  color:            #ffffff;
+}
+.chipBuild:hover:not(:disabled):not(.chipSelected) {
+  background-color: #dbeafe;
+  border-color:     #60a5fa;
+  color:            #1d4ed8;
 }
 
+/* Maintain — teal */
 .chipMaintain {
-  background-color: #3D5470;
-  color:            #C8DCEF;
+  background-color: #ecfdf5;
+  border-color:     #99f6e4;
+  color:            #0f766e;
 }
 .chipMaintain.chipSelected {
-  background-color: #4E6B8C;
-  color:            #1A1510;
+  background-color: #0f766e;
+  border-color:     #0f766e;
+  color:            #ffffff;
+}
+.chipMaintain:hover:not(:disabled):not(.chipSelected) {
+  background-color: #ccfbf1;
+  border-color:     #5eead4;
+  color:            #0f766e;
 }
 
+/* Collaborate — purple */
 .chipCollaborate {
-  background-color: #6B4F2A;
-  color:            #EDD8B0;
+  background-color: #f5f3ff;
+  border-color:     #c4b5fd;
+  color:            #7c3aed;
 }
 .chipCollaborate.chipSelected {
-  background-color: #8A6435;
-  color:            #1A1510;
+  background-color: #7c3aed;
+  border-color:     #7c3aed;
+  color:            #ffffff;
+}
+.chipCollaborate:hover:not(:disabled):not(.chipSelected) {
+  background-color: #ede9fe;
+  border-color:     #a78bfa;
+  color:            #6d28d9;
 }
 
+/* Learn — green */
 .chipLearn {
-  background-color: #5C3D6E;
-  color:            #E0C8F0;
+  background-color: #f0fdf4;
+  border-color:     #86efac;
+  color:            #059669;
 }
 .chipLearn.chipSelected {
-  background-color: #7A508C;
-  color:            #1A1510;
+  background-color: #059669;
+  border-color:     #059669;
+  color:            #ffffff;
+}
+.chipLearn:hover:not(:disabled):not(.chipSelected) {
+  background-color: #dcfce7;
+  border-color:     #4ade80;
+  color:            #047857;
 }
 
-/* "AI suggestion" label badge */
+/* ─── "AI suggestion" label badge ────────────────────────────────────────── */
 .aiLabel {
-  font-size:      0.65rem;
-  font-style:     italic;
-  opacity:        0.8;
-  margin-left:    0.25rem;
+  font-size:   0.65rem;
+  font-style:  italic;
+  opacity:     0.8;
+  margin-left: 0.25rem;
 }
 
+/* ─── Clear button ───────────────────────────────────────────────────────── */
 .clearBtn {
-  background:  none;
-  border:      none;
-  color:       var(--wc-color-text-muted, #9C8B7A);
-  cursor:      pointer;
-  font-size:   0.75rem;
-  padding:     0.2rem 0.4rem;
-  border-radius: 0.25rem;
-  transition:  color 150ms;
+  background:    none;
+  border:        none;
+  color:         var(--wc-color-text-muted);
+  cursor:        pointer;
+  font-size:     0.75rem;
+  padding:       0.2rem 0.4rem;
+  border-radius: var(--wc-radius-sm);
+  transition:    color var(--wc-transition-fast);
 }
 
 .clearBtn:hover {
-  color: var(--wc-color-text, #E8DCC8);
+  color: var(--wc-color-text-primary);
 }

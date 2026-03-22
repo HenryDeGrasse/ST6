@@ -1,5 +1,5 @@
 /**
- * WeekSelector – CSS Module (Academia / Classical)
+ * WeekSelector – CSS Module (Enterprise Dashboard)
  */
 
 /* ─── Navigation bar ─────────────────────────────────────────────────────── */
@@ -58,15 +58,15 @@
   border:           1px solid var(--wc-color-border);
   background-color: var(--wc-color-bg-secondary);
   color:            var(--wc-color-text-primary);
-  font-family:      var(--wc-font-heading);
-  font-size:        1.0625rem;
+  font-family:      var(--wc-font-body);
+  font-size:        0.9375rem;
   font-weight:      500;
   min-width:        12rem;
   text-align:       center;
   white-space:      nowrap;
 }
 
-/* Current week — brass accent */
+/* Current week — blue accent */
 .weekLabelCurrent {
   border-color:     var(--wc-color-accent);
   background-color: var(--wc-color-accent-muted);
@@ -82,11 +82,9 @@
   border:           1px solid var(--wc-color-accent);
   background-color: var(--wc-color-accent-muted);
   color:            var(--wc-color-accent);
-  font-family:      var(--wc-font-display);
-  font-size:        0.6875rem;
-  font-weight:      600;
-  text-transform:   uppercase;
-  letter-spacing:   0.15em;
+  font-family:      var(--wc-font-body);
+  font-size:        0.8125rem;
+  font-weight:      500;
   cursor:           pointer;
   white-space:      nowrap;
   transition:

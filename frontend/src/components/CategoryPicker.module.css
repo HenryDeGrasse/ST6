@@ -1,5 +1,5 @@
 /**
- * CategoryPicker – CSS Module (Academia / Classical)
+ * CategoryPicker – CSS Module (Enterprise Dashboard)
  *
  * Select dropdown with a colour-coded dot that appears
  * once a category is chosen.
@@ -24,7 +24,7 @@
   cursor:  not-allowed;
 }
 
-/* When a category is selected, subtly accent the border */
+/* When a category is selected, accent the border with blue */
 .selectActive {
   border-color: var(--wc-color-accent);
 }
@@ -47,11 +47,11 @@
   flex-shrink:   0;
 }
 
-/* Per-category dot colours */
-.dotDelivery   { background-color: var(--wc-chess-king); }
-.dotOperations { background-color: var(--wc-chess-rook); }
-.dotCustomer   { background-color: var(--wc-chess-queen); }
-.dotGtm        { background-color: var(--wc-chess-bishop); }
-.dotPeople     { background-color: var(--wc-chess-knight); }
-.dotLearning   { background-color: var(--wc-chess-pawn); }
-.dotTechDebt   { background-color: var(--wc-color-text-muted); }
+/* Per-category dot colours — aligned with the enterprise category palette */
+.dotDelivery   { background-color: #2563eb; }
+.dotOperations { background-color: #0f766e; }
+.dotCustomer   { background-color: #7c3aed; }
+.dotGtm        { background-color: #dc2626; }
+.dotPeople     { background-color: #059669; }
+.dotLearning   { background-color: #d97706; }
+.dotTechDebt   { background-color: #94a3b8; }
