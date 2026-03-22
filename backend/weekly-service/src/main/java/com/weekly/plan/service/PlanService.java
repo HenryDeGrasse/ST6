@@ -404,14 +404,18 @@ public class PlanService {
                         "partialCount", partialCount,
                         "droppedCount", droppedCount));
 
-        // Publish application event so the integration layer can post outbound comments
-        // on linked external tickets (ADR-010 Wave 4). Uses Spring's event bus to avoid
-        // a cyclic dependency between the plan and integration packages.
+        // Publish application event so that:
+        // 1. The integration layer can post outbound comments on linked external tickets
+        //    (ADR-010 Wave 4).
+        // 2. The assignment layer can apply DONE/PARTIALLY/NOT_DONE/DROPPED issue status
+        //    transitions (Phase 6 — AssignmentReconciliationListener).
+        // Uses Spring's event bus to avoid cyclic package dependencies between plan,
+        // integration, and assignment modules.
         String summary = String.format(
                 "Reconciliation submitted for week of %s — %d done, %d partial, %d dropped.",
                 plan.getWeekStartDate(), doneCount, partialCount, droppedCount);
         eventPublisher.publishEvent(
-                new ReconciliationSubmittedEvent(this, orgId, planId, summary));
+                new ReconciliationSubmittedEvent(this, orgId, planId, userId, summary));
 
         return WeeklyPlanResponse.from(plan);
     }

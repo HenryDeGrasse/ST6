@@ -228,7 +228,7 @@ class OutboundCommentServiceTest {
                     .thenReturn(List.of(link));
 
             ReconciliationSubmittedEvent event =
-                    new ReconciliationSubmittedEvent(this, ORG_ID, PLAN_ID, "3 done, 0 dropped.");
+                    new ReconciliationSubmittedEvent(this, ORG_ID, PLAN_ID, UUID.randomUUID(), "3 done, 0 dropped.");
 
             // Calling the event listener method directly (bypasses Spring container)
             service.onReconciliationSubmitted(event);
@@ -247,7 +247,7 @@ class OutboundCommentServiceTest {
                     .thenReturn(List.of());
 
             ReconciliationSubmittedEvent event =
-                    new ReconciliationSubmittedEvent(this, ORG_ID, PLAN_ID, "Summary");
+                    new ReconciliationSubmittedEvent(this, ORG_ID, PLAN_ID, UUID.randomUUID(), "Summary");
 
             assertDoesNotThrow(() -> service.onReconciliationSubmitted(event));
 

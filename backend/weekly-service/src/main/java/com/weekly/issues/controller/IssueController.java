@@ -6,7 +6,6 @@ import com.weekly.issues.dto.AddCommentRequest;
 import com.weekly.issues.dto.AssignIssueRequest;
 import com.weekly.issues.dto.CommitIssueToWeekRequest;
 import com.weekly.issues.dto.CreateIssueRequest;
-import com.weekly.issues.dto.CreateWeeklyAssignmentRequest;
 import com.weekly.issues.dto.IssueActivityResponse;
 import com.weekly.issues.dto.IssueDetailResponse;
 import com.weekly.issues.dto.IssueListResponse;
@@ -44,9 +43,10 @@ import org.springframework.web.bind.annotation.RestController;
  *   <li>{@code POST /api/v1/issues/{issueId}/comment}</li>
  *   <li>{@code POST /api/v1/issues/{issueId}/time-entry}</li>
  *   <li>{@code GET /api/v1/plans/{planId}/assignments}</li>
- *   <li>{@code POST /api/v1/weeks/{weekStart}/plan/assignments}</li>
- *   <li>{@code DELETE /api/v1/weeks/{weekStart}/plan/assignments/{assignmentId}}</li>
  * </ul>
+ *
+ * <p>Note: week-scoped assignment creation/removal is handled by
+ * {@link com.weekly.issues.controller.AssignmentController}.
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -203,7 +203,7 @@ public class IssueController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // ── Plan-scoped assignment endpoints ─────────────────────
+    // ── Plan-scoped assignment list ──────────────────────────
 
     @GetMapping("/plans/{planId}/assignments")
     public ResponseEntity<WeeklyAssignmentsResponse> listPlanAssignments(
@@ -215,44 +215,5 @@ public class IssueController {
                 authenticatedUserContext.userId()
         );
         return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Creates a weekly assignment for the user's plan in the given week.
-     *
-     * <p>The {@code weekStart} path variable is an ISO date (e.g. "2026-03-23").
-     * The service resolves the plan by orgId + userId + weekStart.
-     */
-    @PostMapping("/weeks/{weekStart}/plan/assignments")
-    public ResponseEntity<WeeklyAssignmentResponse> createWeeklyAssignment(
-            @PathVariable String weekStart,
-            @Valid @RequestBody CreateWeeklyAssignmentRequest request
-    ) {
-        WeeklyAssignmentResponse response = issueService.createWeeklyAssignmentForWeek(
-                authenticatedUserContext.orgId(),
-                authenticatedUserContext.userId(),
-                weekStart,
-                request
-        );
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    /**
-     * Removes a weekly assignment by ID.
-     *
-     * <p>The {@code weekStart} path variable is present for URL symmetry;
-     * the actual removal is keyed by {@code assignmentId}.
-     */
-    @DeleteMapping("/weeks/{weekStart}/plan/assignments/{assignmentId}")
-    public ResponseEntity<Void> removeWeeklyAssignment(
-            @PathVariable String weekStart,
-            @PathVariable UUID assignmentId
-    ) {
-        issueService.removeWeeklyAssignment(
-                authenticatedUserContext.orgId(),
-                assignmentId,
-                authenticatedUserContext.userId()
-        );
-        return ResponseEntity.noContent().build();
     }
 }
