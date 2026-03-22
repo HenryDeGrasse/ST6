@@ -42,6 +42,7 @@ class DraftFromHistoryServiceTest {
     private WeeklyPlanRepository planRepository;
     private WeeklyCommitRepository commitRepository;
     private WeeklyCommitActualRepository actualRepository;
+    private com.weekly.compatibility.dualwrite.DualWriteService dualWriteService;
     private DraftFromHistoryService service;
 
     @BeforeEach
@@ -49,7 +50,10 @@ class DraftFromHistoryServiceTest {
         planRepository = mock(WeeklyPlanRepository.class);
         commitRepository = mock(WeeklyCommitRepository.class);
         actualRepository = mock(WeeklyCommitActualRepository.class);
-        service = new DraftFromHistoryService(planRepository, commitRepository, actualRepository);
+        dualWriteService = mock(com.weekly.compatibility.dualwrite.DualWriteService.class);
+        service = new DraftFromHistoryService(
+                planRepository, commitRepository, actualRepository, dualWriteService
+        );
     }
 
     private LocalDate currentMonday() {
@@ -250,6 +254,7 @@ class DraftFromHistoryServiceTest {
             WeeklyCommitEntity notDoneCommit = makeCommit(planId, "Implement payment gateway");
             when(commitRepository.findByOrgIdAndWeeklyPlanIdIn(eq(ORG_ID), any()))
                     .thenReturn(List.of(notDoneCommit));
+            when(commitRepository.findById(notDoneCommit.getId())).thenReturn(Optional.of(notDoneCommit));
 
             WeeklyCommitActualEntity actual = makeActual(notDoneCommit.getId(),
                     CompletionStatus.NOT_DONE);
@@ -269,6 +274,10 @@ class DraftFromHistoryServiceTest {
             SuggestedCommit suggestion = result.suggestedCommits().get(0);
             assertEquals("Implement payment gateway", suggestion.title());
             assertEquals(CommitSource.CARRIED_FORWARD, suggestion.source());
+            verify(dualWriteService).prepareCarryForward(any(WeeklyCommitEntity.class), eq(notDoneCommit));
+            verify(dualWriteService).finalizeCarryForward(
+                    any(WeeklyCommitEntity.class), eq(notDoneCommit), eq(newPlan.getId()), eq(ORG_ID)
+            );
         }
 
         @Test

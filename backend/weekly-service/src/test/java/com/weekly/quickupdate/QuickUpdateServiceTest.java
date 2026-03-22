@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -44,6 +45,7 @@ class QuickUpdateServiceTest {
     private WeeklyPlanRepository planRepository;
     private WeeklyCommitRepository commitRepository;
     private ProgressEntryRepository progressEntryRepository;
+    private com.weekly.compatibility.dualwrite.DualWriteService dualWriteService;
     private QuickUpdateService quickUpdateService;
 
     @BeforeEach
@@ -51,8 +53,9 @@ class QuickUpdateServiceTest {
         planRepository = mock(WeeklyPlanRepository.class);
         commitRepository = mock(WeeklyCommitRepository.class);
         progressEntryRepository = mock(ProgressEntryRepository.class);
+        dualWriteService = mock(com.weekly.compatibility.dualwrite.DualWriteService.class);
         quickUpdateService = new QuickUpdateService(
-                planRepository, commitRepository, progressEntryRepository);
+                planRepository, commitRepository, progressEntryRepository, dualWriteService);
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
@@ -97,6 +100,7 @@ class QuickUpdateServiceTest {
                     quickUpdateService.batchCheckIn(ORG_ID, USER_ID, PLAN_ID, updates);
 
             verify(progressEntryRepository, times(2)).save(any());
+            verify(dualWriteService, times(2)).onQuickUpdateNote(any(), any(), eq(USER_ID));
             assertEquals(2, response.updatedCount());
             assertNotNull(response.entries());
             assertEquals(2, response.entries().size());

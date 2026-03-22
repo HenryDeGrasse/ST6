@@ -1,6 +1,7 @@
 package com.weekly.plan.service;
 
 import com.weekly.audit.AuditService;
+import com.weekly.compatibility.dualwrite.DualWriteService;
 import com.weekly.outbox.OutboxService;
 import com.weekly.plan.domain.CompletionStatus;
 import com.weekly.plan.domain.PlanState;
@@ -35,19 +36,22 @@ public class ActualService {
     private final WeeklyCommitActualRepository actualRepository;
     private final AuditService auditService;
     private final OutboxService outboxService;
+    private final DualWriteService dualWriteService;
 
     public ActualService(
             WeeklyPlanRepository planRepository,
             WeeklyCommitRepository commitRepository,
             WeeklyCommitActualRepository actualRepository,
             AuditService auditService,
-            OutboxService outboxService
+            OutboxService outboxService,
+            DualWriteService dualWriteService
     ) {
         this.planRepository = planRepository;
         this.commitRepository = commitRepository;
         this.actualRepository = actualRepository;
         this.auditService = auditService;
         this.outboxService = outboxService;
+        this.dualWriteService = dualWriteService;
     }
 
     /**
@@ -99,6 +103,9 @@ public class ActualService {
             actual.setActualHours(BigDecimal.valueOf(request.actualHours()));
         }
         actualRepository.save(actual);
+
+        // Phase 6 dual-write: mirror actual to weekly_assignment_actuals
+        dualWriteService.onActualWritten(commit, actual);
 
         // Bump commit version (aggregate root)
         commit.setUpdatedAt(actual.getUpdatedAt());

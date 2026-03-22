@@ -6,6 +6,7 @@ import com.weekly.plan.domain.ProgressNoteSource;
 import com.weekly.plan.domain.ProgressStatus;
 import com.weekly.plan.domain.WeeklyCommitEntity;
 import com.weekly.plan.domain.WeeklyPlanEntity;
+import com.weekly.compatibility.dualwrite.DualWriteService;
 import com.weekly.plan.dto.CheckInEntryResponse;
 import com.weekly.plan.repository.ProgressEntryRepository;
 import com.weekly.plan.repository.WeeklyCommitRepository;
@@ -30,6 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>Validates plan ownership and state, then atomically creates
  * {@link ProgressEntryEntity} records for each item in the batch.
+ * During Phase 6 dual-write it also mirrors typed notes into COMMENT-type
+ * {@code issue_activities} for the issue linked via {@code weekly_commits.source_issue_id}.
  * Note provenance is persisted on each progress entry so downstream learning
  * jobs can aggregate typed notes without double-counting accepted suggestions.
  */
@@ -39,15 +42,18 @@ public class QuickUpdateService {
     private final WeeklyPlanRepository planRepository;
     private final WeeklyCommitRepository commitRepository;
     private final ProgressEntryRepository progressEntryRepository;
+    private final DualWriteService dualWriteService;
 
     public QuickUpdateService(
             WeeklyPlanRepository planRepository,
             WeeklyCommitRepository commitRepository,
-            ProgressEntryRepository progressEntryRepository
+            ProgressEntryRepository progressEntryRepository,
+            DualWriteService dualWriteService
     ) {
         this.planRepository = planRepository;
         this.commitRepository = commitRepository;
         this.progressEntryRepository = progressEntryRepository;
+        this.dualWriteService = dualWriteService;
     }
 
     /**
@@ -132,6 +138,7 @@ public class QuickUpdateService {
                     item.selectedSuggestionSource()
             );
             progressEntryRepository.save(entry);
+            dualWriteService.onQuickUpdateNote(commit, item.note(), userId);
             entries.add(entry);
         }
 

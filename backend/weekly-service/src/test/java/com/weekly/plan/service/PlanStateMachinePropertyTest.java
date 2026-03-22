@@ -328,7 +328,8 @@ class PlanStateMachinePropertyTest {
         PlanService service = new PlanService(
             planRepo, commitRepo, actualRepo,
             new CommitValidator(), rcdoClient, auditSvc, outboxSvc,
-            orgGraph, orgPolicy, mock(org.springframework.context.ApplicationEventPublisher.class)
+            orgGraph, orgPolicy, mock(org.springframework.context.ApplicationEventPublisher.class),
+            mock(com.weekly.compatibility.dualwrite.DualWriteService.class)
         );
 
         return new TestContext(

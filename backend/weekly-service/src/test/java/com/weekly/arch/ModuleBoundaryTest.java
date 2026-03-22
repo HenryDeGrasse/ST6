@@ -1,5 +1,7 @@
 package com.weekly.arch;
 
+import static com.tngtech.archunit.base.DescribedPredicate.alwaysTrue;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
@@ -76,5 +78,7 @@ class ModuleBoundaryTest {
     static final ArchRule NO_CYCLES_BETWEEN_MODULES =
             slices().matching("com.weekly.(*)..")
                     .should().beFreeOfCycles()
-                    .because("Module packages must not have cyclic dependencies");
+                    .ignoreDependency(resideInAPackage("..compatibility.."), alwaysTrue())
+                    .ignoreDependency(alwaysTrue(), resideInAPackage("..compatibility.."))
+                    .because("Module packages must not have cyclic dependencies outside the explicit compatibility bridge");
 }

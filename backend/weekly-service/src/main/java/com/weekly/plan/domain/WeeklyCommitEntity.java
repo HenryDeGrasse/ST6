@@ -115,6 +115,14 @@ public class WeeklyCommitEntity {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
+    /**
+     * Phase 6 crosswalk — set when a dual-write issue is created alongside this commit.
+     * Points to the {@code issues.id} that represents this commit in the new model.
+     * See V16 schema for the column definition.
+     */
+    @Column(name = "source_issue_id")
+    private UUID sourceIssueId;
+
     protected WeeklyCommitEntity() {
         // JPA
     }
@@ -220,6 +228,10 @@ public class WeeklyCommitEntity {
         return carriedFromCommitId;
     }
 
+    public UUID getSourceIssueId() {
+        return sourceIssueId;
+    }
+
     public int getVersion() {
         return version;
     }
@@ -291,6 +303,10 @@ public class WeeklyCommitEntity {
 
     public void setCarriedFromCommitId(UUID carriedFromCommitId) {
         this.carriedFromCommitId = carriedFromCommitId;
+    }
+
+    public void setSourceIssueId(UUID sourceIssueId) {
+        this.sourceIssueId = sourceIssueId;
     }
 
     public void setUpdatedAt(Instant updatedAt) {

@@ -99,11 +99,13 @@ class AcceptanceCriteriaTest {
                 planRepository, commitRepository, actualRepository,
                 commitValidator, rcdoClient, auditService, outboxService,
                 orgGraphClient, orgPolicyService,
-                mock(org.springframework.context.ApplicationEventPublisher.class)
+                mock(org.springframework.context.ApplicationEventPublisher.class),
+                mock(com.weekly.compatibility.dualwrite.DualWriteService.class)
         );
         commitService = new CommitService(
                 planRepository, commitRepository, actualRepository,
-                commitValidator, auditService, outboxService
+                commitValidator, auditService, outboxService,
+                mock(com.weekly.compatibility.dualwrite.DualWriteService.class)
         );
         reviewService = new ReviewService(
                 planRepository, reviewRepository,

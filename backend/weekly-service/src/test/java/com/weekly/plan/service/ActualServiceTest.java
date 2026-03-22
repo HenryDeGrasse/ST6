@@ -3,6 +3,7 @@ package com.weekly.plan.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,6 +46,7 @@ class ActualServiceTest {
     private WeeklyCommitActualRepository actualRepository;
     private AuditService auditService;
     private OutboxService outboxService;
+    private com.weekly.compatibility.dualwrite.DualWriteService dualWriteService;
     private ActualService actualService;
 
     @BeforeEach
@@ -54,9 +56,11 @@ class ActualServiceTest {
         actualRepository = mock(WeeklyCommitActualRepository.class);
         auditService = mock(AuditService.class);
         outboxService = mock(OutboxService.class);
+        dualWriteService = mock(com.weekly.compatibility.dualwrite.DualWriteService.class);
         actualService = new ActualService(
                 planRepository, commitRepository, actualRepository,
-                auditService, outboxService
+                auditService, outboxService,
+                dualWriteService
         );
     }
 
@@ -118,6 +122,7 @@ class ActualServiceTest {
             assertEquals("Feature shipped", result.actualResult());
             assertEquals(120, result.timeSpent());
             verify(actualRepository).save(any(WeeklyCommitActualEntity.class));
+            verify(dualWriteService).onActualWritten(eq(commit), any(WeeklyCommitActualEntity.class));
         }
 
         @Test

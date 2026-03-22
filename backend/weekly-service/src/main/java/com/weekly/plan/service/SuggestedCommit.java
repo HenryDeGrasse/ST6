@@ -15,6 +15,10 @@ import java.util.UUID;
  *   <li>{@link CommitSource#COVERAGE_GAP} — coverage gap from the future
  *       {@code NextWorkService}</li>
  * </ul>
+ *
+ * <p>{@code sourceCommitId} is the ID of the historical commit from which this
+ * suggestion was derived.  For CARRIED_FORWARD suggestions, it enables the
+ * Phase 6 dual-write layer to reuse the same issue rather than creating a new one.
  */
 public record SuggestedCommit(
         UUID commitId,
@@ -25,6 +29,7 @@ public record SuggestedCommit(
         String outcomeId,
         String nonStrategicReason,
         String expectedResult,
-        CommitSource source
+        CommitSource source,
+        UUID sourceCommitId
 ) {
 }

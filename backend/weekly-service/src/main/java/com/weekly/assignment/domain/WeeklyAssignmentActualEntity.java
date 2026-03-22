@@ -1,6 +1,5 @@
 package com.weekly.assignment.domain;
 
-import com.weekly.plan.domain.CompletionStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -16,6 +15,10 @@ import java.util.UUID;
  *
  * <p>Records the outcome of a {@link WeeklyAssignmentEntity} after reconciliation.
  * One-to-one with the assignment (PK = assignment ID).
+ *
+ * <p>Uses the local {@link AssignmentCompletionStatus} enum rather than
+ * {@code plan.domain.CompletionStatus} to keep the {@code assignment} module
+ * free of cycles with the {@code plan} module.
  */
 @Entity
 @Table(name = "weekly_assignment_actuals")
@@ -33,7 +36,7 @@ public class WeeklyAssignmentActualEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "completion_status", nullable = false, length = 15)
-    private CompletionStatus completionStatus;
+    private AssignmentCompletionStatus completionStatus;
 
     @Column(name = "delta_reason", columnDefinition = "TEXT")
     private String deltaReason;
@@ -54,7 +57,7 @@ public class WeeklyAssignmentActualEntity {
     public WeeklyAssignmentActualEntity(
             UUID assignmentId,
             UUID orgId,
-            CompletionStatus completionStatus) {
+            AssignmentCompletionStatus completionStatus) {
         this.assignmentId = assignmentId;
         this.orgId = orgId;
         this.actualResult = "";
@@ -78,7 +81,7 @@ public class WeeklyAssignmentActualEntity {
         return actualResult;
     }
 
-    public CompletionStatus getCompletionStatus() {
+    public AssignmentCompletionStatus getCompletionStatus() {
         return completionStatus;
     }
 
@@ -105,7 +108,7 @@ public class WeeklyAssignmentActualEntity {
         this.updatedAt = Instant.now();
     }
 
-    public void setCompletionStatus(CompletionStatus completionStatus) {
+    public void setCompletionStatus(AssignmentCompletionStatus completionStatus) {
         this.completionStatus = completionStatus;
         this.updatedAt = Instant.now();
     }

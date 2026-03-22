@@ -61,6 +61,7 @@ class PlanServiceTest {
     private OrgGraphClient orgGraphClient;
     private OrgPolicyService orgPolicyService;
     private ApplicationEventPublisher eventPublisher;
+    private com.weekly.compatibility.dualwrite.DualWriteService dualWriteService;
     private PlanService planService;
 
     @BeforeEach
@@ -75,11 +76,13 @@ class PlanServiceTest {
         orgGraphClient = mock(OrgGraphClient.class);
         orgPolicyService = mock(OrgPolicyService.class);
         eventPublisher = mock(ApplicationEventPublisher.class);
+        dualWriteService = mock(com.weekly.compatibility.dualwrite.DualWriteService.class);
         when(orgPolicyService.getPolicy(any())).thenReturn(OrgPolicyService.defaultPolicy());
         planService = new PlanService(
                 planRepository, commitRepository, actualRepository,
                 commitValidator, rcdoClient, auditService, outboxService,
-                orgGraphClient, orgPolicyService, eventPublisher
+                orgGraphClient, orgPolicyService, eventPublisher,
+                dualWriteService
         );
     }
 
@@ -310,6 +313,9 @@ class PlanServiceTest {
             assertEquals("Increase ARR", king.getSnapshotObjectiveName());
             assertEquals("Revenue Growth", king.getSnapshotOutcomeName());
 
+            verify(dualWriteService).onCommitLocked(king);
+            verify(dualWriteService).onCommitLocked(queen);
+
             // Non-strategic commit should not have snapshot
             assertNull(queen.getSnapshotRallyCryName());
         }
@@ -465,7 +471,8 @@ class PlanServiceTest {
             PlanService serviceWithStaleRcdo = new PlanService(
                     planRepository, commitRepository, actualRepository,
                     commitValidator, mockRcdoClient, auditService, outboxService,
-                    orgGraphClient, orgPolicyService, eventPublisher
+                    orgGraphClient, orgPolicyService, eventPublisher,
+                    mock(com.weekly.compatibility.dualwrite.DualWriteService.class)
             );
 
             WeeklyCommitEntity king = createCommit(planId, "Task", ChessPriority.KING, outcomeId, null);
@@ -490,7 +497,8 @@ class PlanServiceTest {
             PlanService serviceWithoutStaleBlock = new PlanService(
                     planRepository, commitRepository, actualRepository,
                     commitValidator, mockRcdoClient, auditService, outboxService,
-                    orgGraphClient, orgPolicyService, eventPublisher
+                    orgGraphClient, orgPolicyService, eventPublisher,
+                    mock(com.weekly.compatibility.dualwrite.DualWriteService.class)
             );
 
             WeeklyCommitEntity rook = createCommit(planId, "Task", ChessPriority.ROOK, null, "Support work");
@@ -683,6 +691,7 @@ class PlanServiceTest {
 
             assertEquals("RECONCILED", result.state());
             assertEquals("REVIEW_PENDING", result.reviewStatus());
+            verify(dualWriteService).onActualWritten(commit, actual);
         }
 
         @Test
@@ -805,6 +814,8 @@ class PlanServiceTest {
 
             assertEquals("CARRY_FORWARD", result.state());
             assertNotNull(result.carryForwardExecutedAt());
+            verify(dualWriteService).prepareCarryForward(any(WeeklyCommitEntity.class), eq(commit));
+            verify(dualWriteService).finalizeCarryForward(any(WeeklyCommitEntity.class), eq(commit), any(), eq(ORG_ID));
         }
 
         @Test

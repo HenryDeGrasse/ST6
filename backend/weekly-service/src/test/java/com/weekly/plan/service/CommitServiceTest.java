@@ -56,6 +56,7 @@ class CommitServiceTest {
     private CommitValidator commitValidator;
     private AuditService auditService;
     private OutboxService outboxService;
+    private com.weekly.compatibility.dualwrite.DualWriteService dualWriteService;
     private CommitService commitService;
 
     @BeforeEach
@@ -66,8 +67,9 @@ class CommitServiceTest {
         commitValidator = new CommitValidator();
         auditService = mock(AuditService.class);
         outboxService = mock(OutboxService.class);
+        dualWriteService = mock(com.weekly.compatibility.dualwrite.DualWriteService.class);
         commitService = new CommitService(planRepository, commitRepository, commitActualRepository,
-                commitValidator, auditService, outboxService);
+                commitValidator, auditService, outboxService, dualWriteService);
     }
 
     private LocalDate currentMonday() {
@@ -161,6 +163,28 @@ class CommitServiceTest {
             assertEquals("Quick task", result.title());
             // Validation errors expected: missing chess priority and RCDO/reason
             assertTrue(result.validationErrors().size() >= 2);
+        }
+
+        @Test
+        void populatesCrosswalkBeforeSavingCommitAndCreatesAssignmentAfterward() {
+            WeeklyPlanEntity plan = draftPlan();
+            when(commitRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(planRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            UUID issueId = UUID.randomUUID();
+            when(dualWriteService.createIssueForCommit(any(WeeklyCommitEntity.class), eq(ORG_ID), eq(USER_ID)))
+                    .thenReturn(issueId);
+
+            CreateCommitRequest request = new CreateCommitRequest(
+                    "Quick task", null, "ROOK", "OPERATIONS", null, "Support work", null, null, null, null
+            );
+
+            commitService.createCommit(ORG_ID, plan.getId(), request, USER_ID);
+
+            ArgumentCaptor<WeeklyCommitEntity> commitCaptor = ArgumentCaptor.forClass(WeeklyCommitEntity.class);
+            verify(commitRepository).save(commitCaptor.capture());
+            assertEquals(issueId, commitCaptor.getValue().getSourceIssueId());
+            verify(dualWriteService).createAssignmentForCommit(issueId, plan.getId(), commitCaptor.getValue(), ORG_ID);
         }
 
         @Test
@@ -312,6 +336,7 @@ class CommitServiceTest {
             assertEquals("Updated title", result.title());
             assertEquals("New description", result.description());
             assertEquals("QUEEN", result.chessPriority());
+            verify(dualWriteService).onCommitUpdated(commit);
         }
 
         @Test
@@ -456,6 +481,7 @@ class CommitServiceTest {
 
             commitService.deleteCommit(ORG_ID, commit.getId(), USER_ID);
 
+            verify(dualWriteService).onCommitDeleted(commit, USER_ID);
             verify(commitRepository).delete(commit);
         }
 

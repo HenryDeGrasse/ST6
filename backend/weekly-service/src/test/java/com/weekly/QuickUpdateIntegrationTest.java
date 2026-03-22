@@ -137,7 +137,15 @@ class QuickUpdateIntegrationTest {
             stmt.execute("DELETE FROM user_model_snapshots");
             stmt.execute("DELETE FROM weekly_commit_actuals");
             stmt.execute("DELETE FROM manager_reviews");
+            // Phase 6: delete assignment tables before commits (FK: legacy_commit_id → commits)
+            stmt.execute("DELETE FROM weekly_assignment_actuals");
+            stmt.execute("DELETE FROM weekly_assignments");
+            stmt.execute("DELETE FROM issue_activities");
             stmt.execute("DELETE FROM weekly_commits");
+            stmt.execute("DELETE FROM issues");
+            stmt.execute("DELETE FROM team_members");
+            stmt.execute("DELETE FROM team_access_requests");
+            stmt.execute("DELETE FROM teams");
             stmt.execute("DELETE FROM weekly_plans");
             stmt.execute("DELETE FROM audit_events");
             stmt.execute("DELETE FROM outbox_events");
@@ -270,6 +278,12 @@ class QuickUpdateIntegrationTest {
         assertThat(inputs.get(0).ownerUserId()).isEqualTo(USER_1);
         assertThat(inputs.get(0).noteSource().name()).isEqualTo("USER_TYPED");
         assertThat(inputs.get(1).selectedSuggestionSource()).isEqualTo("ai");
+        assertThat(fetchIssueCommentCountForCommit(
+                UUID.fromString(kingCommitId), "Making good progress on APIs"
+        )).isEqualTo(1);
+        assertThat(fetchIssueCommentCountForCommit(
+                UUID.fromString(queenCommitId), "CI fixed ahead of schedule"
+        )).isEqualTo(1);
     }
 
     // ── Test 2: Reject quick-update on a DRAFT plan ───────────
@@ -441,6 +455,23 @@ class QuickUpdateIntegrationTest {
                     progressEntryRepository.findPatternInputsCreatedSince(java.time.Instant.EPOCH));
         } finally {
             SecurityContextHolder.clearContext();
+        }
+    }
+
+    private int fetchIssueCommentCountForCommit(UUID commitId, String commentText) throws SQLException {
+        String sql = "SELECT COUNT(*) "
+                + "FROM issue_activities ia "
+                + "JOIN weekly_commits wc ON wc.source_issue_id = ia.issue_id "
+                + "WHERE wc.id = ?::uuid AND ia.activity_type = 'COMMENT' AND ia.comment_text = ?";
+        try (Connection conn = DriverManager.getConnection(
+                POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+             java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, commitId);
+            stmt.setString(2, commentText);
+            try (java.sql.ResultSet rs = stmt.executeQuery()) {
+                rs.next();
+                return rs.getInt(1);
+            }
         }
     }
 

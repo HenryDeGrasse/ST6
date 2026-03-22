@@ -1,6 +1,7 @@
 package com.weekly.plan.service;
 
 import com.weekly.plan.domain.ChessPriority;
+import com.weekly.compatibility.dualwrite.DualWriteService;
 import com.weekly.plan.domain.CommitCategory;
 import com.weekly.plan.domain.CompletionStatus;
 import com.weekly.plan.domain.PlanState;
@@ -60,15 +61,18 @@ public class DraftFromHistoryService {
     private final WeeklyPlanRepository planRepository;
     private final WeeklyCommitRepository commitRepository;
     private final WeeklyCommitActualRepository actualRepository;
+    private final DualWriteService dualWriteService;
 
     public DraftFromHistoryService(
             WeeklyPlanRepository planRepository,
             WeeklyCommitRepository commitRepository,
-            WeeklyCommitActualRepository actualRepository
+            WeeklyCommitActualRepository actualRepository,
+            DualWriteService dualWriteService
     ) {
         this.planRepository = planRepository;
         this.commitRepository = commitRepository;
         this.actualRepository = actualRepository;
+        this.dualWriteService = dualWriteService;
     }
 
     /**
@@ -153,7 +157,40 @@ public class DraftFromHistoryService {
             // Store the suggestion source in tags for traceability
             commit.setTagsFromArray(
                     new String[]{"draft_source:" + suggestion.source().name()});
+            // Phase 6 dual-write: prepare crosswalk before save (avoids double-save)
+            UUID draftIssueId = null;
+            WeeklyCommitEntity draftSourceCommit = null;
+
+            if (suggestion.source() == CommitSource.CARRIED_FORWARD
+                    && suggestion.sourceCommitId() != null) {
+                draftSourceCommit =
+                        commitRepository.findById(suggestion.sourceCommitId()).orElse(null);
+                if (draftSourceCommit != null) {
+                    dualWriteService.prepareCarryForward(commit, draftSourceCommit);
+                } else {
+                    draftIssueId = dualWriteService.createIssueForCommit(commit, orgId, userId);
+                    if (draftIssueId != null) {
+                        commit.setSourceIssueId(draftIssueId);
+                    }
+                }
+            } else {
+                draftIssueId = dualWriteService.createIssueForCommit(commit, orgId, userId);
+                if (draftIssueId != null) {
+                    commit.setSourceIssueId(draftIssueId);
+                }
+            }
+
             WeeklyCommitEntity savedCommit = commitRepository.save(commit);
+
+            // Create assignment after commit is in DB
+            if (draftSourceCommit != null) {
+                dualWriteService.finalizeCarryForward(
+                        savedCommit, draftSourceCommit, draftPlan.getId(), orgId);
+            } else if (draftIssueId != null) {
+                dualWriteService.createAssignmentForCommit(
+                        draftIssueId, draftPlan.getId(), savedCommit, orgId);
+            }
+
             persistedSuggestions.add(toSuggestedCommit(savedCommit, suggestion.source()));
         }
 
@@ -275,7 +312,8 @@ public class DraftFromHistoryService {
                 entity.getOutcomeId() != null ? entity.getOutcomeId().toString() : null,
                 entity.getNonStrategicReason(),
                 entity.getExpectedResult(),
-                source
+                source,
+                entity.getId() // sourceCommitId — the historical entity's ID
         );
     }
 

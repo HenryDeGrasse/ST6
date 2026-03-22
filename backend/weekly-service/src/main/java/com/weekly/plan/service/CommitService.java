@@ -3,6 +3,7 @@ package com.weekly.plan.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.weekly.audit.AuditService;
+import com.weekly.compatibility.dualwrite.DualWriteService;
 import com.weekly.outbox.OutboxService;
 import com.weekly.plan.domain.ChessPriority;
 import com.weekly.plan.domain.CommitCategory;
@@ -45,6 +46,7 @@ public class CommitService {
     private final CommitValidator commitValidator;
     private final AuditService auditService;
     private final OutboxService outboxService;
+    private final DualWriteService dualWriteService;
 
     public CommitService(
             WeeklyPlanRepository planRepository,
@@ -52,7 +54,8 @@ public class CommitService {
             WeeklyCommitActualRepository commitActualRepository,
             CommitValidator commitValidator,
             AuditService auditService,
-            OutboxService outboxService
+            OutboxService outboxService,
+            DualWriteService dualWriteService
     ) {
         this.planRepository = planRepository;
         this.commitRepository = commitRepository;
@@ -60,6 +63,7 @@ public class CommitService {
         this.commitValidator = commitValidator;
         this.auditService = auditService;
         this.outboxService = outboxService;
+        this.dualWriteService = dualWriteService;
     }
 
     /**
@@ -125,7 +129,18 @@ public class CommitService {
             commit.setTagsFromArray(request.tags());
         }
 
-        commitRepository.save(commit);
+        // Phase 6 dual-write: create issue BEFORE save so source_issue_id goes in the same write
+        UUID dualWriteIssueId = dualWriteService.createIssueForCommit(commit, orgId, userId);
+        if (dualWriteIssueId != null) {
+            commit.setSourceIssueId(dualWriteIssueId);
+        }
+
+        commitRepository.save(commit); // one save; version stays at 1
+
+        // Create assignment AFTER commit is in DB (FK constraint on legacy_commit_id)
+        if (dualWriteIssueId != null) {
+            dualWriteService.createAssignmentForCommit(dualWriteIssueId, planId, commit, orgId);
+        }
 
         // Touch plan updatedAt
         plan.setUpdatedAt(commit.getCreatedAt());
@@ -179,6 +194,9 @@ public class CommitService {
 
         commitRepository.save(commit);
 
+        // Phase 6 dual-write: propagate updates to the corresponding issue
+        dualWriteService.onCommitUpdated(commit);
+
         Map<String, Object> changedFieldsPayload = buildChangedFieldsPayload(beforeUpdate, commit, state);
         auditService.record(orgId, userId, EventType.COMMIT_UPDATED.getValue(),
                 "WeeklyCommit", commitId, null, null,
@@ -216,6 +234,9 @@ public class CommitService {
         // Capture title before deletion for audit trail (PRD 'disappearing work' note)
         String deletedTitle = commit.getTitle();
         UUID deletedPlanId = commit.getWeeklyPlanId();
+
+        // Phase 6 dual-write: archive corresponding issue / remove assignment
+        dualWriteService.onCommitDeleted(commit, userId);
 
         commitRepository.delete(commit);
 

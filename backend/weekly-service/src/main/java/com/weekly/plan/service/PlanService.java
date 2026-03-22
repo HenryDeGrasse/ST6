@@ -3,6 +3,7 @@ package com.weekly.plan.service;
 import com.weekly.audit.AuditService;
 import com.weekly.auth.OrgGraphClient;
 import com.weekly.config.OrgPolicyService;
+import com.weekly.compatibility.dualwrite.DualWriteService;
 import com.weekly.outbox.OutboxService;
 import com.weekly.plan.domain.ChessPriority;
 import com.weekly.plan.domain.CompletionStatus;
@@ -49,6 +50,7 @@ public class PlanService {
     private final OrgGraphClient orgGraphClient;
     private final OrgPolicyService orgPolicyService;
     private final org.springframework.context.ApplicationEventPublisher eventPublisher;
+    private final DualWriteService dualWriteService;
 
     public PlanService(
             WeeklyPlanRepository planRepository,
@@ -60,7 +62,8 @@ public class PlanService {
             OutboxService outboxService,
             OrgGraphClient orgGraphClient,
             OrgPolicyService orgPolicyService,
-            org.springframework.context.ApplicationEventPublisher eventPublisher
+            org.springframework.context.ApplicationEventPublisher eventPublisher,
+            DualWriteService dualWriteService
     ) {
         this.planRepository = planRepository;
         this.commitRepository = commitRepository;
@@ -71,6 +74,7 @@ public class PlanService {
         this.outboxService = outboxService;
         this.orgGraphClient = orgGraphClient;
         this.orgPolicyService = orgPolicyService;
+        this.dualWriteService = dualWriteService;
         this.eventPublisher = eventPublisher;
     }
 
@@ -200,6 +204,11 @@ public class PlanService {
         List<WeeklyCommitEntity> commits = commitRepository.findByOrgIdAndWeeklyPlanId(orgId, planId);
 
         performLockValidationAndSnapshots(orgId, commits);
+
+        // Phase 6 dual-write: populate chess_priority_override on assignments
+        for (WeeklyCommitEntity commit : commits) {
+            dualWriteService.onCommitLocked(commit);
+        }
 
         String previousState = plan.getState().name();
         plan.lock(LockType.ON_TIME);
@@ -362,6 +371,15 @@ public class PlanService {
             );
         }
 
+        // Phase 6 dual-write: ensure reconciled actuals/status are mirrored even if
+        // the legacy actual rows were written through an older code path.
+        for (WeeklyCommitEntity commit : commits) {
+            WeeklyCommitActualEntity actual = actualsMap.get(commit.getId());
+            if (actual != null) {
+                dualWriteService.onActualWritten(commit, actual);
+            }
+        }
+
         long doneCount = actualsMap.values().stream()
                 .filter(actual -> actual.getCompletionStatus() == CompletionStatus.DONE)
                 .count();
@@ -477,7 +495,12 @@ public class PlanService {
             clone.setConfidence(source.getConfidence());
             clone.setTagsFromArray(source.getTags());
             clone.setCarriedFromCommitId(source.getId());
-            commitRepository.save(clone);
+            // Phase 6 dual-write: reuse existing issue, set source_issue_id before save
+            dualWriteService.prepareCarryForward(clone, source);
+            commitRepository.save(clone); // one save with source_issue_id set
+
+            // Create new assignment AFTER clone is in DB
+            dualWriteService.finalizeCarryForward(clone, source, nextPlan.getId(), orgId);
         }
 
         // Transition plan to CARRY_FORWARD
