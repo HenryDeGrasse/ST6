@@ -2351,6 +2351,13 @@ paths:
           schema:
             type: integer
             default: 20
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum:
+              - ai_rank
+          description: Optional sort override. When set to ai_rank, orders by AI backlog rank ascending.
       responses:
         "200":
           description: Paginated issue list

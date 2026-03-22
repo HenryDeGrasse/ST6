@@ -142,6 +142,43 @@ public class IssueService {
      * Lists the backlog for a team, optionally filtered by status.
      *
      * @param status null means all non-archived issues
+     * @param sort   optional sort directive; {@code "ai_rank"} orders by
+     *               {@code ai_recommended_rank} ascending (nulls last). Any other value
+     *               (or null) falls back to {@code createdAt} descending.
+     */
+    @Transactional(readOnly = true)
+    public IssueListResponse listTeamBacklog(
+            UUID orgId,
+            UUID teamId,
+            UUID actorUserId,
+            IssueStatus status,
+            int page,
+            int size,
+            String sort
+    ) {
+        requireTeam(orgId, teamId);
+        requireTeamMember(teamId, actorUserId);
+
+        Sort sortOrder = "ai_rank".equalsIgnoreCase(sort)
+                ? Sort.by(Sort.Order.asc("aiRecommendedRank").nullsLast())
+                : Sort.by("createdAt").descending();
+
+        PageRequest pageable = PageRequest.of(page, size, sortOrder);
+        Page<IssueEntity> result = (status != null)
+                ? issueRepository.findAllByTeamIdAndStatus(teamId, status, pageable)
+                : issueRepository.findAllByTeamIdAndStatusNot(teamId, IssueStatus.ARCHIVED, pageable);
+
+        List<IssueResponse> content = result.getContent().stream()
+                .map(IssueResponse::from)
+                .toList();
+        return new IssueListResponse(content, page, size, result.getTotalElements(),
+                result.getTotalPages());
+    }
+
+    /**
+     * Overload without sort parameter — delegates to the full signature with default sort.
+     *
+     * <p>Retained for backward compatibility with callers that do not supply a sort directive.
      */
     @Transactional(readOnly = true)
     public IssueListResponse listTeamBacklog(
@@ -152,18 +189,7 @@ public class IssueService {
             int page,
             int size
     ) {
-        requireTeam(orgId, teamId);
-        requireTeamMember(teamId, actorUserId);
-        PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<IssueEntity> result = (status != null)
-                ? issueRepository.findAllByTeamIdAndStatus(teamId, status, pageable)
-                : issueRepository.findAllByTeamIdAndStatusNot(teamId, IssueStatus.ARCHIVED, pageable);
-
-        List<IssueResponse> content = result.getContent().stream()
-                .map(IssueResponse::from)
-                .toList();
-        return new IssueListResponse(content, page, size, result.getTotalElements(),
-                result.getTotalPages());
+        return listTeamBacklog(orgId, teamId, actorUserId, status, page, size, null);
     }
 
     // ── Update ───────────────────────────────────────────────

@@ -3,6 +3,7 @@ package com.weekly.ai;
 import com.weekly.auth.AuthenticatedUserContext;
 import com.weekly.shared.ApiErrorResponse;
 import com.weekly.shared.ErrorCode;
+import com.weekly.team.repository.TeamMemberRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import java.time.DayOfWeek;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>POST /api/v1/ai/suggest-next-work — Wave 2, behind {@code suggestNextWork} flag.
  * <p>POST /api/v1/ai/suggestion-feedback — Wave 2, behind {@code suggestNextWork} flag.
  * <p>POST /api/v1/ai/suggest-effort-type — Phase 6, behind {@code suggestEffortType} flag.
+ * <p>POST /api/v1/ai/rank-backlog — Phase 6, on-demand backlog ranking trigger.
  *
  * <p>Rate limited to 20 requests per user per minute (PRD §4).
  * On LLM unavailability, returns 200 with {@code status: "unavailable"}.
@@ -46,6 +48,8 @@ public class AiController {
     private final RateLimiter rateLimiter;
     private final AuthenticatedUserContext authenticatedUserContext;
     private final AiEffortTypeSuggestionService effortTypeSuggestionService;
+    private final BacklogRankingService backlogRankingService;
+    private final TeamMemberRepository teamMemberRepository;
 
     public AiController(
             AiSuggestionService aiSuggestionService,
@@ -55,7 +59,9 @@ public class AiController {
             AiFeatureFlags featureFlags,
             RateLimiter rateLimiter,
             AuthenticatedUserContext authenticatedUserContext,
-            AiEffortTypeSuggestionService effortTypeSuggestionService
+            AiEffortTypeSuggestionService effortTypeSuggestionService,
+            BacklogRankingService backlogRankingService,
+            TeamMemberRepository teamMemberRepository
     ) {
         this.aiSuggestionService = aiSuggestionService;
         this.planQualityService = planQualityService;
@@ -65,6 +71,8 @@ public class AiController {
         this.rateLimiter = rateLimiter;
         this.authenticatedUserContext = authenticatedUserContext;
         this.effortTypeSuggestionService = effortTypeSuggestionService;
+        this.backlogRankingService = backlogRankingService;
+        this.teamMemberRepository = teamMemberRepository;
     }
 
     /**
@@ -206,6 +214,50 @@ public class AiController {
             );
         }
     }
+
+    // ─── Backlog Ranking ─────────────────────────────────────────────────────
+
+    /**
+     * POST /ai/rank-backlog
+     *
+     * <p>On-demand trigger: ranks all open issues for the specified team using
+     * the deterministic formula (urgency × time_pressure × effort_fit × dependency_bonus).
+     * Persists the computed ranks and returns the ranked list ordered by rank ascending
+     * (rank 1 = highest priority).
+     *
+     * <p>Phase 6 feature. Does not require a feature flag — the ranking algorithm is
+     * always available. Rate limited at 20 requests per user per minute.
+     */
+    @PostMapping("/rank-backlog")
+    public ResponseEntity<?> rankBacklog(@RequestBody RankBacklogRequest request) {
+        if (!rateLimiter.tryAcquire(authenticatedUserContext.userId())) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(ApiErrorResponse.of(ErrorCode.CONFLICT,
+                            "Rate limit exceeded: 20 AI requests per minute"));
+        }
+
+        java.util.UUID teamId = java.util.UUID.fromString(request.teamId());
+        if (!teamMemberRepository.existsByTeamIdAndUserId(teamId, authenticatedUserContext.userId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiErrorResponse.of(ErrorCode.FORBIDDEN,
+                            "User is not a member of the target team"));
+        }
+
+        List<BacklogRankingService.RankedIssue> ranked =
+                backlogRankingService.rankTeamBacklog(authenticatedUserContext.orgId(), teamId);
+
+        List<RankedIssueDto> dtos = ranked.stream()
+                .map(r -> new RankedIssueDto(r.issueId().toString(), r.rank(), r.rationale()))
+                .toList();
+
+        return ResponseEntity.ok(new RankBacklogResponse("ok", dtos));
+    }
+
+    public record RankBacklogRequest(String teamId) {}
+
+    public record RankedIssueDto(String issueId, int rank, String rationale) {}
+
+    public record RankBacklogResponse(String status, List<RankedIssueDto> rankedIssues) {}
 
     // ─── Request / Response DTOs ────────────────────────────
 

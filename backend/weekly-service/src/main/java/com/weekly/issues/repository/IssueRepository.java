@@ -31,6 +31,20 @@ public interface IssueRepository extends JpaRepository<IssueEntity, UUID> {
 
     Page<IssueEntity> findAllByTeamIdAndStatus(UUID teamId, IssueStatus status, Pageable pageable);
 
+    /** Returns distinct team IDs that have at least one issue in the given status. */
+    @Query("SELECT DISTINCT i.teamId FROM IssueEntity i WHERE i.status = :status")
+    List<UUID> findDistinctTeamIdsByStatus(@Param("status") IssueStatus status);
+
+    /** Returns distinct team IDs that have at least one issue in any of the given statuses. */
+    @Query("SELECT DISTINCT i.teamId FROM IssueEntity i WHERE i.status IN :statuses")
+    List<UUID> findDistinctTeamIdsByStatusIn(@Param("statuses") java.util.Collection<IssueStatus> statuses);
+
+    /** Returns all issues for a team whose status is in the given set. */
+    @Query("SELECT i FROM IssueEntity i WHERE i.teamId = :teamId AND i.status IN :statuses")
+    List<IssueEntity> findAllByTeamIdAndStatusIn(
+            @Param("teamId") UUID teamId,
+            @Param("statuses") java.util.Collection<IssueStatus> statuses);
+
     /**
      * Atomically increments the team's issue sequence and returns the new value.
      *

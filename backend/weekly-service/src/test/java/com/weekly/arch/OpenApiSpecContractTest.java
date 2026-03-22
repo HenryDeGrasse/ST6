@@ -166,7 +166,9 @@ class OpenApiSpecContractTest {
             // Phase 6: Weekly assignment endpoints
             "GET /plans/{planId}/assignments",
             "POST /weeks/{weekStart}/plan/assignments",
-            "DELETE /weeks/{weekStart}/plan/assignments/{assignmentId}"
+            "DELETE /weeks/{weekStart}/plan/assignments/{assignmentId}",
+            // Phase 6: Backlog ranking
+            "POST /ai/rank-backlog"
     );
 
     // ─── 1. Path Coverage ──────────────────────────────────────────────────────
@@ -224,8 +226,8 @@ class OpenApiSpecContractTest {
     void expectedOperationCountMatchesOpenApiSpec() {
         // Update this sentinel whenever the committed OpenAPI path set changes.
         // Recent additions: Phase 5 forecasting/planning-copilot/executive,
-        // Phase 6 team management and issue/assignment endpoints.
-        int expectedCount = 65;
+        // Phase 6 team management, issue/assignment endpoints, and backlog ranking.
+        int expectedCount = 66;
         assertTrue(
                 EXPECTED_OPENAPI_OPERATIONS.size() == expectedCount,
                 "Expected " + expectedCount + " OpenAPI operations but found "

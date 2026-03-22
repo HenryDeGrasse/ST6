@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import com.weekly.auth.AuthenticatedUserContext;
 import com.weekly.auth.UserPrincipal;
+import com.weekly.team.repository.TeamMemberRepository;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -46,6 +47,8 @@ class AiControllerTest {
     private RateLimiter rateLimiter;
     private AuthenticatedUserContext authenticatedUserContext;
     private AiEffortTypeSuggestionService effortTypeSuggestionService;
+    private BacklogRankingService backlogRankingService;
+    private TeamMemberRepository teamMemberRepository;
     private AiController controller;
 
     @BeforeEach
@@ -55,6 +58,8 @@ class AiControllerTest {
         nextWorkSuggestionService = mock(NextWorkSuggestionService.class);
         feedbackRepository = mock(AiSuggestionFeedbackRepository.class);
         effortTypeSuggestionService = mock(AiEffortTypeSuggestionService.class);
+        backlogRankingService = mock(BacklogRankingService.class);
+        teamMemberRepository = mock(TeamMemberRepository.class);
         featureFlags = new AiFeatureFlags();
         rateLimiter = new RateLimiter(20, java.time.Duration.ofMinutes(1));
         authenticatedUserContext = new AuthenticatedUserContext();
@@ -64,7 +69,7 @@ class AiControllerTest {
         controller = new AiController(
                 aiService, planQualityService, nextWorkSuggestionService,
                 feedbackRepository, featureFlags, rateLimiter, authenticatedUserContext,
-                effortTypeSuggestionService);
+                effortTypeSuggestionService, backlogRankingService, teamMemberRepository);
     }
 
     @AfterEach
@@ -121,7 +126,9 @@ class AiControllerTest {
                     featureFlags,
                     strictLimiter,
                     authenticatedUserContext,
-                    effortTypeSuggestionService
+                    effortTypeSuggestionService,
+                    backlogRankingService,
+                    teamMemberRepository
             );
             var request = new AiController.SuggestRcdoRequest("title", null);
 
@@ -196,7 +203,9 @@ class AiControllerTest {
                     featureFlags,
                     strictLimiter,
                     authenticatedUserContext,
-                    effortTypeSuggestionService
+                    effortTypeSuggestionService,
+                    backlogRankingService,
+                    teamMemberRepository
             );
             var request = new AiController.DraftReconciliationRequest(UUID.randomUUID().toString());
 
@@ -255,7 +264,9 @@ class AiControllerTest {
                     featureFlags,
                     strictLimiter,
                     authenticatedUserContext,
-                    effortTypeSuggestionService
+                    effortTypeSuggestionService,
+                    backlogRankingService,
+                    teamMemberRepository
             );
             var request = new AiController.PlanQualityCheckRequest(UUID.randomUUID().toString());
 
@@ -390,7 +401,9 @@ class AiControllerTest {
                     featureFlags,
                     strictLimiter,
                     authenticatedUserContext,
-                    effortTypeSuggestionService
+                    effortTypeSuggestionService,
+                    backlogRankingService,
+                    teamMemberRepository
             );
             var request = new AiController.SuggestNextWorkRequest(null);
 
@@ -546,7 +559,9 @@ class AiControllerTest {
                     featureFlags,
                     strictLimiter,
                     authenticatedUserContext,
-                    effortTypeSuggestionService
+                    effortTypeSuggestionService,
+                    backlogRankingService,
+                    teamMemberRepository
             );
             var request = new AiController.SuggestEffortTypeRequest("Build login page", null, null);
 
@@ -573,6 +588,67 @@ class AiControllerTest {
             var body = (AiController.SuggestEffortTypeResponse) response.getBody();
             assertNotNull(body);
             assertEquals("COLLABORATE", body.suggestedType());
+        }
+    }
+
+    @Nested
+    class RankBacklog {
+
+        @Test
+        void returnsRankedIssuesUsingPersistedRankOrder() {
+            UUID teamId = UUID.randomUUID();
+            UUID issueId = UUID.randomUUID();
+            when(teamMemberRepository.existsByTeamIdAndUserId(teamId, USER_ID)).thenReturn(true);
+            when(backlogRankingService.rankTeamBacklog(ORG_ID, teamId))
+                    .thenReturn(List.of(new BacklogRankingService.RankedIssue(issueId, 1, 6.0,
+                            "urgency=CRITICAL(4) × time_pressure=1.00 × effort_fit=1.0 × dependency_bonus=1.5 → score=6.000")));
+
+            var request = new AiController.RankBacklogRequest(teamId.toString());
+            ResponseEntity<?> response = controller.rankBacklog(request);
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            var body = (AiController.RankBacklogResponse) response.getBody();
+            assertNotNull(body);
+            assertEquals("ok", body.status());
+            assertEquals(1, body.rankedIssues().size());
+            assertEquals(issueId.toString(), body.rankedIssues().get(0).issueId());
+            assertEquals(1, body.rankedIssues().get(0).rank());
+        }
+
+        @Test
+        void returnsForbiddenWhenUserIsNotTeamMember() {
+            UUID teamId = UUID.randomUUID();
+            when(teamMemberRepository.existsByTeamIdAndUserId(teamId, USER_ID)).thenReturn(false);
+
+            ResponseEntity<?> response = controller.rankBacklog(
+                    new AiController.RankBacklogRequest(teamId.toString()));
+
+            assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+            verify(backlogRankingService, never()).rankTeamBacklog(any(), any());
+        }
+
+        @Test
+        void returns429WhenRateLimited() {
+            UUID teamId = UUID.randomUUID();
+            RateLimiter strictLimiter = new RateLimiter(0, java.time.Duration.ofMinutes(1));
+            AiController strictController = new AiController(
+                    aiService,
+                    planQualityService,
+                    nextWorkSuggestionService,
+                    feedbackRepository,
+                    featureFlags,
+                    strictLimiter,
+                    authenticatedUserContext,
+                    effortTypeSuggestionService,
+                    backlogRankingService,
+                    teamMemberRepository
+            );
+
+            ResponseEntity<?> response = strictController.rankBacklog(
+                    new AiController.RankBacklogRequest(teamId.toString()));
+
+            assertEquals(HttpStatus.TOO_MANY_REQUESTS, response.getStatusCode());
+            verify(backlogRankingService, never()).rankTeamBacklog(any(), any());
         }
     }
 }

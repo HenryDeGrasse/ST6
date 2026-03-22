@@ -6135,6 +6135,8 @@ export interface operations {
                 assigneeUserId?: string;
                 page?: number;
                 size?: number;
+                /** @description Optional sort override. When set to ai_rank, orders by AI backlog rank ascending. */
+                sort?: "ai_rank";
             };
             header?: never;
             path: {

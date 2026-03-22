@@ -67,7 +67,8 @@ public class IssueController {
             @PathVariable UUID teamId,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String sort
     ) {
         IssueStatus statusEnum = status != null ? IssueStatus.valueOf(status.toUpperCase()) : null;
         IssueListResponse response = issueService.listTeamBacklog(
@@ -76,7 +77,8 @@ public class IssueController {
                 authenticatedUserContext.userId(),
                 statusEnum,
                 page,
-                size
+                size,
+                sort
         );
         return ResponseEntity.ok(response);
     }
