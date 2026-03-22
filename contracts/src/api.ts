@@ -1161,33 +1161,43 @@ export interface RecommendWeeklyIssuesResponse {
 // AI: Suggest deferrals (overcommit detection)
 
 export interface SuggestDeferralsRequest {
-  weeklyPlanId: string;
+  weekStart?: string | null;
 }
 
 export interface DeferralSuggestion {
+  assignmentId: string;
   issueId: string;
   issueKey: string;
   title: string;
-  reason: string;
-  impactIfDeferred: string;
+  estimatedHours: number;
+  rationale: string;
 }
 
 export interface SuggestDeferralsResponse {
-  status: AiSuggestionStatus;
-  suggestions: DeferralSuggestion[];
+  status: "ok" | "no_overcommit" | "unavailable";
+  totalHours: number | null;
+  cap: number | null;
+  summary: string;
+  deferrals: DeferralSuggestion[];
 }
 
 // AI: Coverage gap inspirations
 
+export interface CoverageGapInspirationItem {
+  outcomeId: string | null;
+  outcomeName: string | null;
+  objectiveName?: string | null;
+  rallyCryName?: string | null;
+  suggestedTitle: string;
+  suggestedDescription: string;
+  estimatedHours: number;
+  rationale: string;
+  weeksMissing: number;
+}
+
 export interface CoverageGapInspirationsResponse {
   status: AiSuggestionStatus;
-  inspirations: Array<{
-    outcomeId: string | null;
-    outcomeName: string | null;
-    suggestedTitle: string;
-    rationale: string;
-    suggestedEffortType: EffortType | null;
-  }>;
+  inspirations: CoverageGapInspirationItem[];
 }
 
 // Semantic search (RAG)

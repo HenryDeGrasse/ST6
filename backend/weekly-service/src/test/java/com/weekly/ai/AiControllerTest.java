@@ -54,6 +54,8 @@ class AiControllerTest {
     private TeamMemberRepository teamMemberRepository;
     private HydeQueryService hydeQueryService;
     private IssueRepository issueRepository;
+    private OvercommitDeferralService overcommitDeferralService;
+    private CoverageGapInspirationService coverageGapInspirationService;
     private AiController controller;
 
     @BeforeEach
@@ -67,6 +69,8 @@ class AiControllerTest {
         teamMemberRepository = mock(TeamMemberRepository.class);
         hydeQueryService = mock(HydeQueryService.class);
         issueRepository = mock(IssueRepository.class);
+        overcommitDeferralService = mock(OvercommitDeferralService.class);
+        coverageGapInspirationService = mock(CoverageGapInspirationService.class);
         featureFlags = new AiFeatureFlags();
         rateLimiter = new RateLimiter(20, java.time.Duration.ofMinutes(1));
         authenticatedUserContext = new AuthenticatedUserContext();
@@ -77,7 +81,8 @@ class AiControllerTest {
                 aiService, planQualityService, nextWorkSuggestionService,
                 feedbackRepository, featureFlags, rateLimiter, authenticatedUserContext,
                 effortTypeSuggestionService, backlogRankingService, teamMemberRepository,
-                hydeQueryService, issueRepository);
+                hydeQueryService, issueRepository,
+                overcommitDeferralService, coverageGapInspirationService);
     }
 
     @AfterEach
@@ -138,7 +143,9 @@ class AiControllerTest {
                     backlogRankingService,
                     teamMemberRepository,
                     hydeQueryService,
-                    issueRepository
+                    issueRepository,
+                    overcommitDeferralService,
+                    coverageGapInspirationService
             );
             var request = new AiController.SuggestRcdoRequest("title", null);
 
@@ -217,7 +224,9 @@ class AiControllerTest {
                     backlogRankingService,
                     teamMemberRepository,
                     hydeQueryService,
-                    issueRepository
+                    issueRepository,
+                    overcommitDeferralService,
+                    coverageGapInspirationService
             );
             var request = new AiController.DraftReconciliationRequest(UUID.randomUUID().toString());
 
@@ -280,7 +289,9 @@ class AiControllerTest {
                     backlogRankingService,
                     teamMemberRepository,
                     hydeQueryService,
-                    issueRepository
+                    issueRepository,
+                    overcommitDeferralService,
+                    coverageGapInspirationService
             );
             var request = new AiController.PlanQualityCheckRequest(UUID.randomUUID().toString());
 
@@ -419,7 +430,9 @@ class AiControllerTest {
                     backlogRankingService,
                     teamMemberRepository,
                     hydeQueryService,
-                    issueRepository
+                    issueRepository,
+                    overcommitDeferralService,
+                    coverageGapInspirationService
             );
             var request = new AiController.SuggestNextWorkRequest(null);
 
@@ -579,7 +592,9 @@ class AiControllerTest {
                     backlogRankingService,
                     teamMemberRepository,
                     hydeQueryService,
-                    issueRepository
+                    issueRepository,
+                    overcommitDeferralService,
+                    coverageGapInspirationService
             );
             var request = new AiController.SuggestEffortTypeRequest("Build login page", null, null);
 
@@ -661,7 +676,9 @@ class AiControllerTest {
                     backlogRankingService,
                     teamMemberRepository,
                     hydeQueryService,
-                    issueRepository
+                    issueRepository,
+                    overcommitDeferralService,
+                    coverageGapInspirationService
             );
 
             ResponseEntity<?> response = strictController.rankBacklog(
@@ -729,7 +746,8 @@ class AiControllerTest {
                     aiService, planQualityService, nextWorkSuggestionService,
                     feedbackRepository, featureFlags, strictLimiter, authenticatedUserContext,
                     effortTypeSuggestionService, backlogRankingService, teamMemberRepository,
-                    hydeQueryService, issueRepository
+                    hydeQueryService, issueRepository,
+                    overcommitDeferralService, coverageGapInspirationService
             );
 
             ResponseEntity<?> response = strictController.recommendWeeklyIssues(
@@ -811,7 +829,8 @@ class AiControllerTest {
                     aiService, planQualityService, nextWorkSuggestionService,
                     feedbackRepository, featureFlags, strictLimiter, authenticatedUserContext,
                     effortTypeSuggestionService, backlogRankingService, teamMemberRepository,
-                    hydeQueryService, issueRepository
+                    hydeQueryService, issueRepository,
+                    overcommitDeferralService, coverageGapInspirationService
             );
 
             ResponseEntity<?> response = strictController.searchIssues(
@@ -830,6 +849,176 @@ class AiControllerTest {
 
             assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
             verify(hydeQueryService, never()).searchWithHyde(any(), any(), anyInt(), any(), any());
+        }
+    }
+
+    @Nested
+    class SuggestDeferrals {
+
+        @Test
+        void returnsOkWithDeferralSuggestions() {
+            UUID assignmentId = UUID.randomUUID();
+            UUID issueId = UUID.randomUUID();
+            var suggestion = new OvercommitDeferralService.DeferralSuggestion(
+                    assignmentId, issueId, "PLAT-5", "Big task",
+                    java.math.BigDecimal.valueOf(8.0),
+                    "Chess priority: ROOK, outcome urgency: ON_TRACK. Deferring frees 8.0 h toward cap of 40.0 h (currently at 52.0 h)."
+            );
+            var result = new OvercommitDeferralService.DeferralResult(
+                    "ok",
+                    List.of(suggestion),
+                    java.math.BigDecimal.valueOf(52.0),
+                    java.math.BigDecimal.valueOf(40.0),
+                    "Total estimated hours: 52.0 h exceeds capacity cap of 40.0 h. Suggesting 1 deferral(s) to bring the plan within capacity."
+            );
+            when(overcommitDeferralService.suggestDeferrals(eq(ORG_ID), eq(USER_ID), any()))
+                    .thenReturn(result);
+
+            ResponseEntity<?> response = controller.suggestDeferrals(
+                    new AiController.SuggestDeferralsRequest("2026-03-23"));
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            var body = (AiController.SuggestDeferralsResponse) response.getBody();
+            assertNotNull(body);
+            assertEquals("ok", body.status());
+            assertEquals(1, body.deferrals().size());
+            assertEquals("PLAT-5", body.deferrals().get(0).issueKey());
+        }
+
+        @Test
+        void returnsNoOvercommitWhenPlanFitsWithinCap() {
+            var result = OvercommitDeferralService.DeferralResult.noOvercommit(
+                    java.math.BigDecimal.valueOf(30.0), java.math.BigDecimal.valueOf(40.0));
+            when(overcommitDeferralService.suggestDeferrals(any(), any(), any()))
+                    .thenReturn(result);
+
+            ResponseEntity<?> response = controller.suggestDeferrals(
+                    new AiController.SuggestDeferralsRequest(null));
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            var body = (AiController.SuggestDeferralsResponse) response.getBody();
+            assertNotNull(body);
+            assertEquals("no_overcommit", body.status());
+            assertTrue(body.deferrals().isEmpty());
+        }
+
+        @Test
+        void returnsUnavailableWhenFeatureDisabled() {
+            featureFlags.setOvercommitDeferralEnabled(false);
+
+            ResponseEntity<?> response = controller.suggestDeferrals(
+                    new AiController.SuggestDeferralsRequest(null));
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            var body = (AiController.SuggestDeferralsResponse) response.getBody();
+            assertNotNull(body);
+            assertEquals("unavailable", body.status());
+        }
+
+        @Test
+        void returns429WhenRateLimited() {
+            RateLimiter strictLimiter = new RateLimiter(0, java.time.Duration.ofMinutes(1));
+            AiController strictController = new AiController(
+                    aiService, planQualityService, nextWorkSuggestionService,
+                    feedbackRepository, featureFlags, strictLimiter, authenticatedUserContext,
+                    effortTypeSuggestionService, backlogRankingService, teamMemberRepository,
+                    hydeQueryService, issueRepository,
+                    overcommitDeferralService, coverageGapInspirationService
+            );
+
+            ResponseEntity<?> response = strictController.suggestDeferrals(
+                    new AiController.SuggestDeferralsRequest(null));
+
+            assertEquals(HttpStatus.TOO_MANY_REQUESTS, response.getStatusCode());
+        }
+
+        @Test
+        void returnsBadRequestForInvalidWeekStart() {
+            ResponseEntity<?> response = controller.suggestDeferrals(
+                    new AiController.SuggestDeferralsRequest("not-a-date"));
+
+            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        }
+    }
+
+    @Nested
+    class CoverageGapInspirations {
+
+        @Test
+        void returnsOkWithInspirations() {
+            var inspiration = new CoverageGapInspirationService.InspirationSuggestion(
+                    UUID.randomUUID().toString(),
+                    "Improve Security Posture",
+                    "Platform Reliability",
+                    "Ship Better Software",
+                    "Contribute to: Improve Security Posture",
+                    "The team has not committed to this outcome for 3 weeks.",
+                    java.math.BigDecimal.valueOf(4.0),
+                    "Outcome has been uncovered for 3 weeks.",
+                    3
+            );
+            var result = new CoverageGapInspirationService.InspirationResult(
+                    "ok", List.of(inspiration));
+            when(coverageGapInspirationService.generateInspirations(eq(ORG_ID), any()))
+                    .thenReturn(result);
+
+            ResponseEntity<?> response = controller.coverageGapInspirations("2026-03-23");
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            var body = (AiController.CoverageGapInspirationsResponse) response.getBody();
+            assertNotNull(body);
+            assertEquals("ok", body.status());
+            assertEquals(1, body.inspirations().size());
+            assertEquals("Improve Security Posture", body.inspirations().get(0).outcomeName());
+        }
+
+        @Test
+        void returnsEmptyListWhenNoGapsFound() {
+            when(coverageGapInspirationService.generateInspirations(any(), any()))
+                    .thenReturn(new CoverageGapInspirationService.InspirationResult("ok", List.of()));
+
+            ResponseEntity<?> response = controller.coverageGapInspirations(null);
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            var body = (AiController.CoverageGapInspirationsResponse) response.getBody();
+            assertNotNull(body);
+            assertEquals("ok", body.status());
+            assertTrue(body.inspirations().isEmpty());
+        }
+
+        @Test
+        void returnsUnavailableWhenFeatureDisabled() {
+            featureFlags.setCoverageGapInspirationEnabled(false);
+
+            ResponseEntity<?> response = controller.coverageGapInspirations(null);
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            var body = (AiController.CoverageGapInspirationsResponse) response.getBody();
+            assertNotNull(body);
+            assertEquals("unavailable", body.status());
+        }
+
+        @Test
+        void returns429WhenRateLimited() {
+            RateLimiter strictLimiter = new RateLimiter(0, java.time.Duration.ofMinutes(1));
+            AiController strictController = new AiController(
+                    aiService, planQualityService, nextWorkSuggestionService,
+                    feedbackRepository, featureFlags, strictLimiter, authenticatedUserContext,
+                    effortTypeSuggestionService, backlogRankingService, teamMemberRepository,
+                    hydeQueryService, issueRepository,
+                    overcommitDeferralService, coverageGapInspirationService
+            );
+
+            ResponseEntity<?> response = strictController.coverageGapInspirations(null);
+
+            assertEquals(HttpStatus.TOO_MANY_REQUESTS, response.getStatusCode());
+        }
+
+        @Test
+        void returnsBadRequestForInvalidWeekStart() {
+            ResponseEntity<?> response = controller.coverageGapInspirations("not-a-date");
+
+            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         }
     }
 }

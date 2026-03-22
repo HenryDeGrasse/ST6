@@ -2812,6 +2812,14 @@ paths:
       tags:
         - Backlog
         - AI
+      parameters:
+        - name: weekStart
+          in: query
+          required: false
+          description: Optional ISO Monday used as the reference week for coverage-gap analysis
+          schema:
+            type: string
+            format: date
       responses:
         "200":
           description: Coverage gap inspirations
@@ -3708,22 +3716,25 @@ components:
 
     SuggestDeferralsRequest:
       type: object
-      required:
-        - weeklyPlanId
       properties:
-        weeklyPlanId:
+        weekStart:
           type: string
-          format: uuid
+          format: date
+          nullable: true
 
     DeferralSuggestion:
       type: object
       required:
+        - assignmentId
         - issueId
         - issueKey
         - title
-        - reason
-        - impactIfDeferred
+        - estimatedHours
+        - rationale
       properties:
+        assignmentId:
+          type: string
+          format: uuid
         issueId:
           type: string
           format: uuid
@@ -3731,23 +3742,38 @@ components:
           type: string
         title:
           type: string
-        reason:
-          type: string
-        impactIfDeferred:
+        estimatedHours:
+          type: number
+          format: double
+        rationale:
           type: string
 
     SuggestDeferralsResponse:
       type: object
       required:
         - status
-        - suggestions
+        - totalHours
+        - cap
+        - summary
+        - deferrals
       properties:
         status:
           type: string
           enum:
             - ok
+            - no_overcommit
             - unavailable
-        suggestions:
+        totalHours:
+          type: number
+          format: double
+          nullable: true
+        cap:
+          type: number
+          format: double
+          nullable: true
+        summary:
+          type: string
+        deferrals:
           type: array
           items:
             $ref: "#/components/schemas/DeferralSuggestion"
@@ -3756,7 +3782,10 @@ components:
       type: object
       required:
         - suggestedTitle
+        - suggestedDescription
+        - estimatedHours
         - rationale
+        - weeksMissing
       properties:
         outcomeId:
           type: string
@@ -3765,13 +3794,23 @@ components:
         outcomeName:
           type: string
           nullable: true
+        objectiveName:
+          type: string
+          nullable: true
+        rallyCryName:
+          type: string
+          nullable: true
         suggestedTitle:
           type: string
+        suggestedDescription:
+          type: string
+        estimatedHours:
+          type: number
+          format: double
         rationale:
           type: string
-        suggestedEffortType:
-          $ref: "#/components/schemas/EffortType"
-          nullable: true
+        weeksMissing:
+          type: integer
 
     CoverageGapInspirationsResponse:
       type: object

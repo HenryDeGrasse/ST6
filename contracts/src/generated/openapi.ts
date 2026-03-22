@@ -2147,29 +2147,42 @@ export interface components {
             recommendations: components["schemas"]["RecommendedIssue"][];
         };
         SuggestDeferralsRequest: {
-            /** Format: uuid */
-            weeklyPlanId: string;
+            /** Format: date */
+            weekStart?: string | null;
         };
         DeferralSuggestion: {
+            /** Format: uuid */
+            assignmentId: string;
             /** Format: uuid */
             issueId: string;
             issueKey: string;
             title: string;
-            reason: string;
-            impactIfDeferred: string;
+            /** Format: double */
+            estimatedHours: number;
+            rationale: string;
         };
         SuggestDeferralsResponse: {
             /** @enum {string} */
-            status: "ok" | "unavailable";
-            suggestions: components["schemas"]["DeferralSuggestion"][];
+            status: "ok" | "no_overcommit" | "unavailable";
+            /** Format: double */
+            totalHours: number | null;
+            /** Format: double */
+            cap: number | null;
+            summary: string;
+            deferrals: components["schemas"]["DeferralSuggestion"][];
         };
         CoverageGapInspirationItem: {
             /** Format: uuid */
             outcomeId?: string | null;
             outcomeName?: string | null;
+            objectiveName?: string | null;
+            rallyCryName?: string | null;
             suggestedTitle: string;
+            suggestedDescription: string;
+            /** Format: double */
+            estimatedHours: number;
             rationale: string;
-            suggestedEffortType?: components["schemas"]["EffortType"];
+            weeksMissing: number;
         };
         CoverageGapInspirationsResponse: {
             /** @enum {string} */
@@ -6586,7 +6599,10 @@ export interface operations {
     };
     getCoverageGapInspirations: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Optional ISO Monday used as the reference week for coverage-gap analysis */
+                weekStart?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;

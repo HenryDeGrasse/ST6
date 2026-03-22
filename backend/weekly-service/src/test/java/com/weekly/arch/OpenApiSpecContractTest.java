@@ -171,7 +171,10 @@ class OpenApiSpecContractTest {
             "POST /ai/rank-backlog",
             // Phase 6: HyDE-powered recommendations and semantic search
             "POST /ai/recommend-weekly-issues",
-            "POST /ai/search-issues"
+            "POST /ai/search-issues",
+            // Phase 6: Overcommit deferral and coverage gap inspirations
+            "POST /ai/suggest-deferrals",
+            "GET /ai/coverage-gap-inspirations"
     );
 
     // ─── 1. Path Coverage ──────────────────────────────────────────────────────
@@ -230,8 +233,9 @@ class OpenApiSpecContractTest {
         // Update this sentinel whenever the committed OpenAPI path set changes.
         // Recent additions: Phase 5 forecasting/planning-copilot/executive,
         // Phase 6 team management, issue/assignment endpoints, backlog ranking,
-        // and HyDE semantic search/recommendations.
-        int expectedCount = 68;
+        // HyDE semantic search/recommendations, overcommit deferrals, and
+        // coverage gap inspirations.
+        int expectedCount = 70;
         assertTrue(
                 EXPECTED_OPENAPI_OPERATIONS.size() == expectedCount,
                 "Expected " + expectedCount + " OpenAPI operations but found "
@@ -507,5 +511,34 @@ class OpenApiSpecContractTest {
     void healthEndpointRespondsWith200WithoutAuth() throws Exception {
         mockMvc.perform(get("/api/v1/health"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void suggestDeferralsResponseContainsContractFields() throws Exception {
+        String body = objectMapper.writeValueAsString(Map.of(
+                "weekStart", LocalDate.now().with(DayOfWeek.MONDAY).toString()
+        ));
+
+        mockMvc.perform(post("/api/v1/ai/suggest-deferrals")
+                        .header("X-Org-Id", ORG_ID)
+                        .header("X-User-Id", USER_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").exists())
+                .andExpect(jsonPath("$.totalHours").hasJsonPath())
+                .andExpect(jsonPath("$.cap").hasJsonPath())
+                .andExpect(jsonPath("$.summary").exists())
+                .andExpect(jsonPath("$.deferrals").isArray());
+    }
+
+    @Test
+    void coverageGapInspirationsResponseContainsContractFields() throws Exception {
+        mockMvc.perform(get("/api/v1/ai/coverage-gap-inspirations")
+                        .header("X-Org-Id", ORG_ID)
+                        .header("X-User-Id", USER_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").exists())
+                .andExpect(jsonPath("$.inspirations").isArray());
     }
 }

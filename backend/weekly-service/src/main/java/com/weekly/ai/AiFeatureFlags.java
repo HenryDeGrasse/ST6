@@ -23,6 +23,8 @@ public class AiFeatureFlags {
     private boolean suggestEffortTypeEnabled = true;
     private boolean ragSearchEnabled = true;
     private boolean hydeRecommendationsEnabled = true;
+    private boolean overcommitDeferralEnabled = true;
+    private boolean coverageGapInspirationEnabled = true;
 
     /**
      * Whether the RCDO auto-suggest endpoint is active.
@@ -186,5 +188,29 @@ public class AiFeatureFlags {
 
     public void setHydeRecommendationsEnabled(boolean enabled) {
         this.hydeRecommendationsEnabled = enabled;
+    }
+
+    /**
+     * Whether the overcommit deferral suggestion endpoint is active.
+     * Default: enabled. Configurable via {@code ai.features.overcommit-deferral-enabled}.
+     */
+    public boolean isOvercommitDeferralEnabled() {
+        return overcommitDeferralEnabled;
+    }
+
+    public void setOvercommitDeferralEnabled(boolean enabled) {
+        this.overcommitDeferralEnabled = enabled;
+    }
+
+    /**
+     * Whether the coverage gap inspiration endpoint is active.
+     * Default: enabled. Configurable via {@code ai.features.coverage-gap-inspiration-enabled}.
+     */
+    public boolean isCoverageGapInspirationEnabled() {
+        return coverageGapInspirationEnabled;
+    }
+
+    public void setCoverageGapInspirationEnabled(boolean enabled) {
+        this.coverageGapInspirationEnabled = enabled;
     }
 }

@@ -18,9 +18,11 @@ import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -38,6 +40,10 @@ import org.springframework.web.bind.annotation.RestController;
  *     behind {@code hydeRecommendationsEnabled} flag.
  * <p>POST /api/v1/ai/search-issues — Phase 6, semantic search over issue history,
  *     behind {@code ragSearchEnabled} flag.
+ * <p>POST /api/v1/ai/suggest-deferrals — Phase 6, overcommit deferral suggestions,
+ *     behind {@code overcommitDeferralEnabled} flag.
+ * <p>GET /api/v1/ai/coverage-gap-inspirations — Phase 6, coverage gap issue creation
+ *     suggestions, behind {@code coverageGapInspirationEnabled} flag.
  *
  * <p>Rate limited to 20 requests per user per minute (PRD §4).
  * On LLM unavailability, returns 200 with {@code status: "unavailable"}.
@@ -62,6 +68,8 @@ public class AiController {
     private final TeamMemberRepository teamMemberRepository;
     private final HydeQueryService hydeQueryService;
     private final IssueRepository issueRepository;
+    private final OvercommitDeferralService overcommitDeferralService;
+    private final CoverageGapInspirationService coverageGapInspirationService;
 
     public AiController(
             AiSuggestionService aiSuggestionService,
@@ -75,7 +83,9 @@ public class AiController {
             BacklogRankingService backlogRankingService,
             TeamMemberRepository teamMemberRepository,
             HydeQueryService hydeQueryService,
-            IssueRepository issueRepository
+            IssueRepository issueRepository,
+            OvercommitDeferralService overcommitDeferralService,
+            CoverageGapInspirationService coverageGapInspirationService
     ) {
         this.aiSuggestionService = aiSuggestionService;
         this.planQualityService = planQualityService;
@@ -89,6 +99,8 @@ public class AiController {
         this.teamMemberRepository = teamMemberRepository;
         this.hydeQueryService = hydeQueryService;
         this.issueRepository = issueRepository;
+        this.overcommitDeferralService = overcommitDeferralService;
+        this.coverageGapInspirationService = coverageGapInspirationService;
     }
 
     /**
@@ -517,6 +529,176 @@ public class AiController {
             String status,
             List<SemanticSearchHit> hits
     ) {}
+
+    // ─── Overcommit Deferral ──────────────────────────────────────────────────
+
+    /**
+     * POST /ai/suggest-deferrals
+     *
+     * <p>When a user's weekly plan exceeds their realistic capacity cap, returns a ranked
+     * list of assignments to suggest deferring back to the backlog. Assignments are ranked
+     * by lowest chess priority and lowest outcome urgency — items that are least critical
+     * are surfaced first. KING-priority and CRITICAL-urgency items are never suggested.
+     *
+     * <p>Phase 6 feature, behind {@code overcommitDeferralEnabled} flag.
+     * Returns 200 with {@code status: "unavailable"} when the flag is disabled.
+     */
+    @PostMapping("/suggest-deferrals")
+    public ResponseEntity<?> suggestDeferrals(
+            @RequestBody SuggestDeferralsRequest request
+    ) {
+        if (!featureFlags.isOvercommitDeferralEnabled()) {
+            return ResponseEntity.ok(
+                    new SuggestDeferralsResponse("unavailable", java.math.BigDecimal.ZERO,
+                            java.math.BigDecimal.ZERO, "Feature disabled.", List.of()));
+        }
+
+        if (!rateLimiter.tryAcquire(authenticatedUserContext.userId())) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(ApiErrorResponse.of(ErrorCode.CONFLICT,
+                            "Rate limit exceeded: 20 AI requests per minute"));
+        }
+
+        LocalDate weekStart = null;
+        if (request.weekStart() != null && !request.weekStart().isBlank()) {
+            try {
+                weekStart = LocalDate.parse(request.weekStart());
+            } catch (java.time.format.DateTimeParseException e) {
+                return ResponseEntity.badRequest()
+                        .body(ApiErrorResponse.of(ErrorCode.VALIDATION_ERROR,
+                                "weekStart must be a valid ISO date (yyyy-MM-dd)"));
+            }
+        }
+
+        OvercommitDeferralService.DeferralResult result =
+                overcommitDeferralService.suggestDeferrals(
+                        authenticatedUserContext.orgId(),
+                        authenticatedUserContext.userId(),
+                        weekStart
+                );
+
+        return ResponseEntity.ok(SuggestDeferralsResponse.from(result));
+    }
+
+    public record SuggestDeferralsRequest(String weekStart) {}
+
+    public record DeferralSuggestionDto(
+            String assignmentId,
+            String issueId,
+            String issueKey,
+            String title,
+            double estimatedHours,
+            String rationale
+    ) {}
+
+    public record SuggestDeferralsResponse(
+            String status,
+            java.math.BigDecimal totalHours,
+            java.math.BigDecimal cap,
+            String summary,
+            List<DeferralSuggestionDto> deferrals
+    ) {
+        static SuggestDeferralsResponse from(OvercommitDeferralService.DeferralResult result) {
+            List<DeferralSuggestionDto> dtos = result.suggestions().stream()
+                    .map(s -> new DeferralSuggestionDto(
+                            s.assignmentId().toString(),
+                            s.issueId().toString(),
+                            s.issueKey(),
+                            s.title(),
+                            s.estimatedHours() != null ? s.estimatedHours().doubleValue() : 0.0,
+                            s.rationale()
+                    ))
+                    .toList();
+            return new SuggestDeferralsResponse(
+                    result.status(),
+                    result.totalHours(),
+                    result.cap(),
+                    result.summary(),
+                    dtos
+            );
+        }
+    }
+
+    // ─── Coverage Gap Inspirations ─────────────────────────────────────────────
+
+    /**
+     * GET /ai/coverage-gap-inspirations
+     *
+     * <p>Returns issue-creation suggestions for RCDO outcomes that have gone uncovered
+     * (zero team commits) for a recent stretch. Each suggestion includes a title,
+     * description, estimated effort (from RAG similarity on past DONE issues or a default),
+     * and the linked outcome.
+     *
+     * <p>Phase 6 feature, behind {@code coverageGapInspirationEnabled} flag.
+     * Returns 200 with {@code status: "unavailable"} when the flag is disabled.
+     */
+    @GetMapping("/coverage-gap-inspirations")
+    public ResponseEntity<?> coverageGapInspirations(
+            @RequestParam(required = false) String weekStart
+    ) {
+        if (!featureFlags.isCoverageGapInspirationEnabled()) {
+            return ResponseEntity.ok(
+                    new CoverageGapInspirationsResponse("unavailable", List.of()));
+        }
+
+        if (!rateLimiter.tryAcquire(authenticatedUserContext.userId())) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(ApiErrorResponse.of(ErrorCode.CONFLICT,
+                            "Rate limit exceeded: 20 AI requests per minute"));
+        }
+
+        LocalDate monday = null;
+        if (weekStart != null && !weekStart.isBlank()) {
+            try {
+                monday = LocalDate.parse(weekStart);
+            } catch (java.time.format.DateTimeParseException e) {
+                return ResponseEntity.badRequest()
+                        .body(ApiErrorResponse.of(ErrorCode.VALIDATION_ERROR,
+                                "weekStart must be a valid ISO date (yyyy-MM-dd)"));
+            }
+        }
+
+        CoverageGapInspirationService.InspirationResult result =
+                coverageGapInspirationService.generateInspirations(
+                        authenticatedUserContext.orgId(), monday);
+
+        return ResponseEntity.ok(CoverageGapInspirationsResponse.from(result));
+    }
+
+    public record InspirationSuggestionDto(
+            String outcomeId,
+            String outcomeName,
+            String objectiveName,
+            String rallyCryName,
+            String suggestedTitle,
+            String suggestedDescription,
+            double estimatedHours,
+            String rationale,
+            int weeksMissing
+    ) {}
+
+    public record CoverageGapInspirationsResponse(
+            String status,
+            List<InspirationSuggestionDto> inspirations
+    ) {
+        static CoverageGapInspirationsResponse from(
+                CoverageGapInspirationService.InspirationResult result) {
+            List<InspirationSuggestionDto> dtos = result.inspirations().stream()
+                    .map(s -> new InspirationSuggestionDto(
+                            s.outcomeId(),
+                            s.outcomeName(),
+                            s.objectiveName(),
+                            s.rallyCryName(),
+                            s.suggestedTitle(),
+                            s.suggestedDescription(),
+                            s.estimatedHours() != null ? s.estimatedHours().doubleValue() : 0.0,
+                            s.rationale(),
+                            s.weeksMissing()
+                    ))
+                    .toList();
+            return new CoverageGapInspirationsResponse(result.status(), dtos);
+        }
+    }
 
     // ─── Request / Response DTOs ────────────────────────────
 

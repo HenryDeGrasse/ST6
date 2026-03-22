@@ -228,6 +228,7 @@ export type {
   SuggestDeferralsRequest,
   DeferralSuggestion,
   SuggestDeferralsResponse,
+  CoverageGapInspirationItem,
   CoverageGapInspirationsResponse,
   SemanticSearchRequest,
   SemanticSearchHit,

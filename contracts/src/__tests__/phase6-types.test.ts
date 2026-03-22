@@ -584,20 +584,24 @@ describe("AI endpoint types", () => {
   });
 
   it("supports SuggestDeferralsRequest and Response", () => {
-    const req: SuggestDeferralsRequest = { weeklyPlanId: "plan-1" };
+    const req: SuggestDeferralsRequest = { weekStart: "2026-03-23" };
     const suggestion: DeferralSuggestion = {
+      assignmentId: "assignment-1",
       issueId: "issue-3",
       issueKey: "ENG-3",
       title: "Nice-to-have optimization",
-      reason: "Low urgency, low complexity reduction",
-      impactIfDeferred: "Minor performance degradation persists one more week",
+      estimatedHours: 6,
+      rationale: "Low urgency and low priority make this a safe deferral candidate",
     };
     const resp: SuggestDeferralsResponse = {
       status: "ok",
-      suggestions: [suggestion],
+      totalHours: 46,
+      cap: 40,
+      summary: "Plan exceeds capacity and should defer one item.",
+      deferrals: [suggestion],
     };
-    expect(req.weeklyPlanId).toBe("plan-1");
-    expect(resp.suggestions[0].reason).toBeTruthy();
+    expect(req.weekStart).toBe("2026-03-23");
+    expect(resp.deferrals[0].estimatedHours).toBe(6);
   });
 
   it("supports CoverageGapInspirationsResponse", () => {
@@ -607,13 +611,17 @@ describe("AI endpoint types", () => {
         {
           outcomeId: "outcome-3",
           outcomeName: "Reduce churn",
+          objectiveName: "Improve retention",
+          rallyCryName: "Customer love",
           suggestedTitle: "Implement proactive customer health monitoring",
-          rationale: "Outcome has no linked issues this quarter",
-          suggestedEffortType: EffortType.BUILD,
+          suggestedDescription: "Create visibility into leading indicators for churn risk.",
+          estimatedHours: 4,
+          rationale: "Outcome has had no recent team coverage.",
+          weeksMissing: 3,
         },
       ],
     };
-    expect(resp.inspirations[0].suggestedEffortType).toBe("BUILD");
+    expect(resp.inspirations[0].estimatedHours).toBe(4);
   });
 
   it("supports SemanticSearchRequest and Response", () => {
@@ -649,7 +657,13 @@ describe("AI endpoint types", () => {
     };
     const rankResp: RankBacklogResponse = { status: "unavailable", rankedIssues: [] };
     const recResp: RecommendWeeklyIssuesResponse = { status: "unavailable", recommendations: [] };
-    const deferResp: SuggestDeferralsResponse = { status: "unavailable", suggestions: [] };
+    const deferResp: SuggestDeferralsResponse = {
+      status: "unavailable",
+      totalHours: null,
+      cap: null,
+      summary: "Capacity profile unavailable",
+      deferrals: [],
+    };
     const searchResp: SemanticSearchResponse = { status: "unavailable", hits: [] };
 
     expect(effortResp.status).toBe("unavailable");
