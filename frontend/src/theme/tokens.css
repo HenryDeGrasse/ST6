@@ -1,10 +1,10 @@
 /**
  * Weekly Commitments – Design Token CSS
  * ═══════════════════════════════════════
- * Academia / Classical theme.
+ * Enterprise Dashboard theme.
  *
- * Single-theme design system inspired by centuries-old university libraries:
- * aged parchment, dark mahogany, polished brass, leather bindings.
+ * Cool neutral foundation, deep blue primary, semantic state colors.
+ * Serious, calm, structured, and operationally trustworthy.
  *
  * All custom properties are scoped to .wc-theme to avoid polluting
  * the PA host's global stylesheet.
@@ -12,9 +12,10 @@
 
 .wc-theme {
   /* ─── Typography ──────────────────────────────────────────────────────── */
-  --wc-font-heading: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
-  --wc-font-body:    'Crimson Pro', Georgia, 'Times New Roman', serif;
-  --wc-font-display: 'Cinzel', Georgia, 'Times New Roman', serif;
+  --wc-font-heading: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --wc-font-body:    'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --wc-font-display: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --wc-font-mono:    'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
 
   /* ─── Spacing scale (8px base grid) ───────────────────────────────────── */
   --wc-space-xs:  0.25rem;   /*  4px */
@@ -25,7 +26,7 @@
   --wc-space-2xl: 3rem;      /* 48px */
   --wc-space-3xl: 4rem;      /* 64px */
 
-  /* ─── Border-radius (subtle, traditional) ─────────────────────────────── */
+  /* ─── Border-radius (preserved scale) ─────────────────────────────────── */
   --wc-radius-sm:   4px;
   --wc-radius-md:   4px;
   --wc-radius-lg:   6px;
@@ -33,98 +34,104 @@
   --wc-radius-full: 9999px;
   --wc-radius-arch: 40% 40% 0 0 / 20% 20% 0 0;
 
-  /* ─── Transitions (dignified, deliberate) ─────────────────────────────── */
+  /* ─── Transitions (preserved timing scale) ────────────────────────────── */
   --wc-transition-fast:     150ms ease-out;
   --wc-transition-base:     300ms ease-out;
   --wc-transition-slow:     500ms ease-out;
   --wc-transition-dramatic: 700ms ease-out;
 
-  /* ─── Foundation Colors (Library at Night) ────────────────────────────── */
-  --wc-color-bg:           #1C1714;  /* Deep Mahogany — darkest layer       */
-  --wc-color-bg-secondary: #251E19;  /* Aged Oak — card / panel surfaces    */
-  --wc-color-bg-tertiary:  #3D332B;  /* Worn Leather — hover / inset fills  */
+  /* ─── Foundation Colors (Cool Neutral Light) ──────────────────────────── */
+  --wc-color-bg:           #f8f9fb;  /* Cool off-white — page background    */
+  --wc-color-bg-secondary: #ffffff;  /* White — card / panel surfaces       */
+  --wc-color-bg-tertiary:  #f1f3f5;  /* Light gray — hover / inset fills    */
 
-  /* ─── Accent Colors ───────────────────────────────────────────────────── */
-  --wc-color-accent:            #C9A962;  /* Polished Brass                 */
-  --wc-color-accent-hover:      #D4B872;  /* Bright Brass                   */
-  --wc-color-accent-muted:      rgba(201, 169, 98, 0.15);
-  --wc-color-accent-secondary:  #8B2635;  /* Library Crimson                */
-  --wc-color-accent-foreground: #1C1714;  /* Dark text on brass backgrounds */
+  /* ─── Primary / Accent Colors ─────────────────────────────────────────── */
+  --wc-color-accent:            #2563eb;  /* Blue-600 — primary action      */
+  --wc-color-accent-hover:      #1d4ed8;  /* Blue-700 — hover state         */
+  --wc-color-accent-muted:      rgba(37, 99, 235, 0.08);
+  --wc-color-accent-secondary:  #0f766e;  /* Teal-700 — secondary accent    */
+  --wc-color-accent-foreground: #ffffff;  /* White text on blue backgrounds */
 
   /* ─── Text ────────────────────────────────────────────────────────────── */
-  --wc-color-text-primary:   #E8DFD4;  /* Antique Parchment  */
-  --wc-color-text-secondary: #9C8B7A;  /* Faded Ink          */
-  --wc-color-text-muted:     #7A6E62;  /* Distant Ink        */
+  --wc-color-text-primary:   #1a2332;  /* Dark slate — primary text   */
+  --wc-color-text-secondary: #64748b;  /* Slate-500 — secondary text  */
+  --wc-color-text-muted:     #94a3b8;  /* Slate-400 — muted / hints   */
 
   /* ─── Borders ─────────────────────────────────────────────────────────── */
-  --wc-color-border:       #4A3F35;            /* Wood Grain  */
-  --wc-color-border-muted: rgba(74, 63, 53, 0.5);
+  --wc-color-border:       #e2e5ea;
+  --wc-color-border-muted: rgba(226, 229, 234, 0.5);
 
-  /* ─── Panel / Glass (backward compat — now opaque wood panels) ────────── */
-  --wc-glass-bg:     rgba(37, 30, 25, 0.92);
-  --wc-glass-border: rgba(74, 63, 53, 0.6);
-  --wc-glass-blur:   0px;  /* No blur — solid wood panels */
+  /* ─── Panel / Glass (solid light panels) ─────────────────────────────── */
+  --wc-glass-bg:     rgba(255, 255, 255, 0.98);
+  --wc-glass-border: #e2e5ea;
+  --wc-glass-blur:   0px;
 
-  /* ─── Box Shadows (warm, library-lit) ─────────────────────────────────── */
-  --wc-shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.3);
-  --wc-shadow-md:   0 4px 12px rgba(0, 0, 0, 0.4);
-  --wc-shadow-lg:   0 8px 24px rgba(0, 0, 0, 0.5);
-  --wc-shadow-glow: 0 4px 12px rgba(201, 169, 98, 0.3);
+  /* ─── Box Shadows (light-mode appropriate) ────────────────────────────── */
+  --wc-shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.05);
+  --wc-shadow-md:   0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --wc-shadow-lg:   0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --wc-shadow-glow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 
-  /* ─── Brass Effects ───────────────────────────────────────────────────── */
-  --wc-brass-gradient: linear-gradient(180deg, #D4B872 0%, #C9A962 50%, #B8953F 100%);
-  --wc-text-engraved:  1px 1px 1px rgba(0,0,0,0.4), -1px -1px 1px rgba(255,255,255,0.1);
+  /* ─── Primary Gradient (replaces brass gradient) ─────────────────────── */
+  --wc-primary-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  --wc-brass-gradient:   var(--wc-primary-gradient); /* compatibility alias */
+  --wc-text-engraved:    none;
 
-  /* ─── Chess Piece Colors (warmed) ─────────────────────────────────────── */
-  --wc-chess-king:   #D4B872;
-  --wc-chess-queen:  #C9A962;
-  --wc-chess-rook:   #8BAAB0;
-  --wc-chess-bishop: #B09AC0;
-  --wc-chess-knight: #8AAF7A;
-  --wc-chess-pawn:   #9C8B7A;
+  /* ─── Chess Piece Colors (analytical, distinct) ───────────────────────── */
+  --wc-chess-king:   #2563eb;  /* Blue   — highest priority */
+  --wc-chess-queen:  #7c3aed;  /* Purple — strategic        */
+  --wc-chess-rook:   #0f766e;  /* Teal   — structural       */
+  --wc-chess-bishop: #d97706;  /* Amber  — important        */
+  --wc-chess-knight: #059669;  /* Green  — delivery         */
+  --wc-chess-pawn:   #94a3b8;  /* Gray   — baseline/low     */
 
-  /* ─── State Badges (warmed, leather-bound) ────────────────────────────── */
-  /* Draft — brass / gold */
-  --wc-state-draft-bg:      rgba(201, 169, 98, 0.15);
-  --wc-state-draft-text:    #C9A962;
-  --wc-state-draft-border:  rgba(201, 169, 98, 0.30);
+  /* ─── State Badges (correct semantic mapping) ─────────────────────────── */
+  /* Draft — neutral gray: "in progress, not final" */
+  --wc-state-draft-bg:      #f3f4f6;
+  --wc-state-draft-text:    #6b7280;
+  --wc-state-draft-border:  #d1d5db;
 
-  /* Locked — crimson */
-  --wc-state-locked-bg:     rgba(139, 38, 53, 0.18);
-  --wc-state-locked-text:   #C47A84;
-  --wc-state-locked-border: rgba(139, 38, 53, 0.30);
+  /* Locked — blue: "committed / official" */
+  --wc-state-locked-bg:     #dbeafe;
+  --wc-state-locked-text:   #2563eb;
+  --wc-state-locked-border: #93c5fd;
 
-  /* Reconciling — warm amber */
-  --wc-state-reconciling-bg:     rgba(180, 140, 60, 0.18);
-  --wc-state-reconciling-text:   #D4B872;
-  --wc-state-reconciling-border: rgba(180, 140, 60, 0.30);
+  /* Reconciling — amber: "attention required / active evaluation" */
+  --wc-state-reconciling-bg:     #fef3c7;
+  --wc-state-reconciling-text:   #d97706;
+  --wc-state-reconciling-border: #fcd34d;
 
-  /* Reconciled — muted sage */
-  --wc-state-reconciled-bg:     rgba(90, 130, 80, 0.18);
-  --wc-state-reconciled-text:   #7AAF7A;
-  --wc-state-reconciled-border: rgba(90, 130, 80, 0.30);
+  /* Reconciled — green: "resolved / complete" */
+  --wc-state-reconciled-bg:     #d1fae5;
+  --wc-state-reconciled-text:   #059669;
+  --wc-state-reconciled-border: #6ee7b7;
 
-  /* ─── AI Panel Accents (warmed) ───────────────────────────────────────── */
-  --wc-ai-suggestion-border: rgba(201, 169, 98, 0.45);
-  --wc-ai-suggestion-bg:     rgba(201, 169, 98, 0.06);
-  --wc-ai-suggestion-text:   #C9A962;
+  /* Carry Forward — purple: "preserved but unresolved continuation" */
+  --wc-state-carry-forward-bg:     #ede9fe;
+  --wc-state-carry-forward-text:   #5b21b6;
+  --wc-state-carry-forward-border: #c4b5fd;
 
-  --wc-ai-draft-border: rgba(122, 175, 122, 0.45);
-  --wc-ai-draft-bg:     rgba(122, 175, 122, 0.06);
-  --wc-ai-draft-text:   #7AAF7A;
+  /* ─── AI Panel Accents ────────────────────────────────────────────────── */
+  --wc-ai-suggestion-border: rgba(37, 99, 235, 0.3);
+  --wc-ai-suggestion-bg:     rgba(37, 99, 235, 0.04);
+  --wc-ai-suggestion-text:   #2563eb;
 
-  --wc-ai-insight-border: rgba(176, 154, 192, 0.45);
-  --wc-ai-insight-bg:     rgba(176, 154, 192, 0.06);
-  --wc-ai-insight-text:   #B09AC0;
+  --wc-ai-draft-border: rgba(5, 150, 105, 0.3);
+  --wc-ai-draft-bg:     rgba(5, 150, 105, 0.04);
+  --wc-ai-draft-text:   #059669;
 
-  /* ─── Functional Colors (errors, warnings — warmed) ───────────────────── */
-  --wc-color-error:         #C47A7A;
-  --wc-color-error-bg:      rgba(196, 122, 122, 0.12);
-  --wc-color-error-border:  rgba(196, 122, 122, 0.30);
-  --wc-color-warning:       #D4B872;
-  --wc-color-warning-bg:    rgba(212, 184, 114, 0.12);
-  --wc-color-warning-border: rgba(212, 184, 114, 0.30);
-  --wc-color-success:       #7AAF7A;
-  --wc-color-success-bg:    rgba(122, 175, 122, 0.12);
-  --wc-color-success-border: rgba(122, 175, 122, 0.30);
+  --wc-ai-insight-border: rgba(124, 58, 237, 0.3);
+  --wc-ai-insight-bg:     rgba(124, 58, 237, 0.04);
+  --wc-ai-insight-text:   #7c3aed;
+
+  /* ─── Functional / Semantic Colors ───────────────────────────────────── */
+  --wc-color-error:          #dc2626;
+  --wc-color-error-bg:       #fef2f2;
+  --wc-color-error-border:   #fca5a5;
+  --wc-color-warning:        #d97706;
+  --wc-color-warning-bg:     #fffbeb;
+  --wc-color-warning-border: #fcd34d;
+  --wc-color-success:        #059669;
+  --wc-color-success-bg:     #f0fdf4;
+  --wc-color-success-border: #6ee7b7;
 }

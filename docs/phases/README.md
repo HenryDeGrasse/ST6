@@ -48,6 +48,21 @@ Before these phases, the MVP already has:
 | External integration stubs (Jira/Linear) | ⚠️ Stubbed | `JiraAdapter`, `LinearAdapter`, `IntegrationController` |
 | Admin dashboard with AI usage + feature flags | ✅ Implemented | `AdminController`, `AdminDashboardPage` |
 | Notification bell with digest support | ✅ Implemented | `NotificationBell`, cadence reminder job |
+| **Phase 6: Persistent issues (replacing ephemeral commits)** | ✅ Implemented | `issues/`, `IssueEntity`, `IssueController`, `IssueService` |
+| **Teams with membership + access requests** | ✅ Implemented | `team/`, `TeamEntity`, `TeamController`, `TeamService` |
+| **Weekly assignments (issue-week bindings)** | ✅ Implemented | `assignment/`, `WeeklyAssignmentEntity`, V16/V17 migrations |
+| **Dual-write compatibility (commits ↔ assignments)** | ✅ Implemented | `PlanService` writes to both old + new tables |
+| **Issue activity log (comments, time, status changes)** | ✅ Implemented | `IssueActivityEntity`, `issue_activities` table |
+| **Effort types (BUILD/MAINTAIN/COLLABORATE/LEARN)** | ✅ Implemented | Replaces 7 old `CommitCategory` values |
+| **Backlog page + issue CRUD UI** | ✅ Implemented | `BacklogPage`, `IssueCreateForm`, `IssueDetailPanel`, `BacklogPickerDialog` |
+| **Team management UI** | ✅ Implemented | `TeamManagementPage` (members, access requests) |
+| **RAG pipeline (Pinecone + in-memory fallback)** | ✅ Implemented | `ai/rag/`, `PineconeEmbeddingClient`, `InMemoryEmbeddingClient` |
+| **Issue embedding service + templates** | ✅ Implemented | `IssueEmbeddingService`, `IssueEmbeddingTemplate`, `IssueEmbeddingJob` |
+| **HyDE query service** | ✅ Implemented | `HydeQueryService` (hypothetical document embeddings for semantic search) |
+| **AI backlog ranking** | ✅ Implemented | `BacklogRankingService`, `BacklogRankingJob` |
+| **Chess-aware suggestion downgrade** | ✅ Implemented | `DefaultNextWorkSuggestionService.applyChessDowngrade()` |
+| **Data migration (commits → issues)** | ✅ Implemented | V17 migration preserves carry-forward chains |
+| **Assignment materialized views** | ✅ Implemented | V18 migration |
 
 ---
 

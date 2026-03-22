@@ -1,14 +1,26 @@
 # Phase 6: Issue Backlog, Teams & AI-Powered Work Intelligence
 
-> **Priority:** Next major phase. Transforms the system from weekly-ephemeral
-> commits into a persistent work graph that the AI can reason over holistically.
+> **Status:** ✅ Implemented (Phase A — additive tables, dual-write, full UI).
+> Phase B (drop deprecated commit artifacts) deferred to after runtime surfaces
+> are fully ported.
 >
-> **Core insight:** Today, commits are throwaway objects — created fresh each
-> week, cloned on carry-forward, no persistent identity. This means the AI
-> can only say "Consider contributing to Outcome X." With persistent issues,
-> a team backlog, and semantic search over work history, the AI can say:
-> *"Pick up PLAT-42 (4h, unblocks the AT_RISK Outcome, fits your remaining
-> capacity this week)."*
+> **Implemented:** 2026-03-22. Run ID `2026-03-21T23-50-53-764Z-6a0485ae`.
+> 20 steps, 259 changed files.
+>
+> **Core insight:** Commits were throwaway objects — created fresh each
+> week, cloned on carry-forward, no persistent identity. Now issues are
+> persistent, team-scoped work items. Weekly assignments bind issues to
+> plans. The AI reasons over work history via Pinecone RAG with HyDE.
+
+### What was built
+
+| Layer | Artifacts |
+|-------|-----------|
+| **Database** | V16 (teams, issues, assignments), V17 (data migration), V18 (materialized views) |
+| **Backend** | `team/` package (CRUD + access requests), `issues/` package (CRUD + lifecycle), `assignment/` package (entities + repos), `ai/rag/` package (Pinecone, HyDE, embedding pipeline), dual-write compatibility in `PlanService` |
+| **Frontend** | `BacklogPage`, `TeamManagementPage`, `IssueCreateForm`, `IssueDetailPanel`, `BacklogPickerDialog`, 6 new hooks |
+| **Tests** | 16 new frontend test files, 17 new backend test files (+177 frontend tests, +45 contract tests) |
+| **Contracts** | `EffortType` enum, Team/Issue/Assignment types, new API paths |
 
 ---
 
@@ -760,29 +772,34 @@ DELETE /api/v1/weeks/{weekStart}/plan/assignments/{assignmentId} — Remove from
 
 Since this is pre-production, we do a single big migration:
 
-### V16__issues_teams_backlog.sql
+### Migrations (implemented)
 
+**V16__teams_issues_assignments.sql** (additive — no drops)
 1. Create `teams`, `team_members`, `team_access_requests` tables
 2. Create `issues`, `issue_activities` tables
 3. Create `weekly_assignments`, `weekly_assignment_actuals` tables
-4. Migrate existing `weekly_commits` data:
-   - For each commit, create an issue in a default "General" team
-   - Create a weekly_assignment linking the issue to its plan
-   - Copy commit_actuals to weekly_assignment_actuals
-   - Copy progress_entries to issue_activities as TIME_ENTRY / COMMENT
-5. Update foreign keys in `progress_entries` to reference issues
-6. Update `ai_suggestion_feedback` to reference issues
-7. Drop `weekly_commits` and `weekly_commit_actuals` after migration
-8. Add `effort_type` column (nullable, replaces `category`)
-9. Update `org_policies` with default team creation policy
+4. Add `effort_type` column to issues (replaces `category`)
+5. All RLS policies and indexes
 
-### Seed data update
+**V17__migrate_commits_to_issues.sql** (data migration)
+1. Creates a default "General" team per org
+2. For each `weekly_commit`, creates a corresponding `issue`
+3. Creates `weekly_assignment` rows linking issues to their plans
+4. Migrates `weekly_commit_actuals` → `weekly_assignment_actuals`
+5. Preserves carry-forward chains via `issue_activities`
+6. **Does not drop** `weekly_commits` — dual-write keeps both tables active
 
-Update `scripts/seed-data.sql` to:
+**V18__assignment_materialized_views.sql**
+1. Materialized views for assignment-based analytics
+2. Supports the new backlog health metrics
+
+### Seed data
+
+`scripts/seed-data.sql` has been updated to:
 - Create teams for each persona's manager
 - Create issues with full activity history
 - Create weekly_assignments linking issues to plans
-- Populate Pinecone (or in-memory) with issue embeddings
+- Issue embeddings handled by `IssueEmbeddingJob` on startup (in-memory mode for local dev)
 
 ---
 
@@ -817,17 +834,30 @@ Add "Backlog" as a nav item visible to all users, between "My Plan" and
 ## 11. Implementation order
 
 ```
-Step 1: Schema + Team CRUD + Issue CRUD (no AI, no RAG)
-Step 2: Weekly assignment integration (replace commits)
-Step 3: Reconciliation flow updates (carry-forward / release to backlog)
-Step 4: Backlog UI + issue detail panel
-Step 5: AI effort type suggestion + deterministic backlog ranking
-Step 6: RAG infrastructure (Pinecone + embedding pipeline)
-Step 7: HyDE-powered recommendations + semantic search
-Step 8: Coverage gap inspiration in issue creation
-Step 9: Overcommit deferral suggestions
-Step 10: Team management UI + access requests
+Step 1:  Schema + Team CRUD + Issue CRUD (no AI, no RAG)          ✅ Done
+Step 2:  Weekly assignment integration (replace commits)           ✅ Done (dual-write)
+Step 3:  Reconciliation flow updates (carry-forward / release)     ✅ Done
+Step 4:  Backlog UI + issue detail panel                           ✅ Done
+Step 5:  AI effort type suggestion + deterministic backlog ranking ✅ Done
+Step 6:  RAG infrastructure (Pinecone + embedding pipeline)        ✅ Done
+Step 7:  HyDE-powered recommendations + semantic search            ✅ Done
+Step 8:  Coverage gap inspiration in issue creation                ✅ Done
+Step 9:  Overcommit deferral suggestions                           ✅ Done
+Step 10: Team management UI + access requests                      ✅ Done
 ```
+
+### Phase B (future — not yet implemented)
+
+```
+Step 11: Remove deprecated weekly_commits / weekly_commit_actuals tables
+Step 12: Remove CommitCategory enum (fully replaced by EffortType)
+Step 13: Remove dual-write paths in PlanService
+Step 14: Update all E2E tests to use assignment-based APIs exclusively
+```
+
+Phase B is deferred until all runtime surfaces (frontend pages, API consumers,
+seed data, E2E tests) are verified to work exclusively through the new
+issue/assignment model.
 
 ---
 
