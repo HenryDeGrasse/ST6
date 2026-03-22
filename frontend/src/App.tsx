@@ -27,6 +27,10 @@ const DEV_TOKEN = "dev-jwt-token";
 
 type AppRoute = "weekly" | "weekly/backlog" | "weekly/insights" | "weekly/team" | "admin" | "executive";
 
+interface NavigateEventDetail {
+  route: AppRoute;
+}
+
 export interface AppProps {
   /** Override auth user (PA host injects real values). */
   user?: typeof DEV_USER;
@@ -67,6 +71,20 @@ const AppShell: React.FC<{
       setRoute(isManager ? "weekly/team" : isAdmin ? "admin" : "weekly");
     }
   }, [canAccessExecutive, isAdmin, isManager, route]);
+
+  useEffect(() => {
+    const handleNavigate = (event: Event) => {
+      const detail = (event as CustomEvent<NavigateEventDetail>).detail;
+      if (detail?.route) {
+        setRoute(detail.route);
+      }
+    };
+
+    window.addEventListener("wc:navigate", handleNavigate);
+    return () => {
+      window.removeEventListener("wc:navigate", handleNavigate);
+    };
+  }, []);
 
   const renderNavButton = (targetRoute: AppRoute, label: string, testId: string) => (
     <button

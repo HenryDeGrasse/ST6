@@ -6,6 +6,7 @@ const mockUseFeatureFlags = vi.fn();
 const mockUseExecutiveDashboard = vi.fn();
 const mockExecutiveBriefing = vi.fn();
 const mockFetchDashboard = vi.fn().mockResolvedValue(undefined);
+const mockFetchBacklogHealth = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("../context/FeatureFlagContext.js", () => ({
   useFeatureFlags: () => mockUseFeatureFlags(),
@@ -31,6 +32,28 @@ vi.mock("../hooks/useExecutiveDashboard.js", () => ({
   useExecutiveDashboard: () => mockUseExecutiveDashboard(),
 }));
 
+let mockBacklogHealth = null as null | Array<{
+  teamId: string;
+  openIssueCount: number;
+  avgIssueAgeDays: number;
+  blockedCount: number;
+  buildCount: number;
+  maintainCount: number;
+  collaborateCount: number;
+  learnCount: number;
+  avgCycleTimeDays: number;
+}>;
+
+vi.mock("../hooks/useAnalytics.js", () => ({
+  useOrgBacklogHealth: () => ({
+    data: mockBacklogHealth,
+    loading: false,
+    error: null,
+    fetch: mockFetchBacklogHealth,
+    clearError: vi.fn(),
+  }),
+}));
+
 vi.mock("../components/Phase5/index.js", () => ({
   ExecutiveBriefing: (props: { weekStart: string }) => {
     mockExecutiveBriefing(props);
@@ -41,6 +64,9 @@ vi.mock("../components/Phase5/index.js", () => ({
 describe("ExecutiveDashboardPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFetchDashboard.mockResolvedValue(undefined);
+    mockFetchBacklogHealth.mockResolvedValue(undefined);
+    mockBacklogHealth = null;
     mockUseExecutiveDashboard.mockReturnValue({
       dashboard: null,
       briefing: null,
@@ -55,7 +81,7 @@ describe("ExecutiveDashboardPage", () => {
   });
 
   it("renders rich executive sections and refetches when the week changes", () => {
-    mockUseFeatureFlags.mockReturnValue({ executiveDashboard: true });
+    mockUseFeatureFlags.mockReturnValue({ executiveDashboard: true, useIssueBacklog: false });
     mockUseExecutiveDashboard.mockReturnValue({
       dashboard: {
         weekStart: "2026-03-16",
@@ -128,8 +154,74 @@ describe("ExecutiveDashboardPage", () => {
     expect(mockFetchDashboard).toHaveBeenLastCalledWith("2026-03-23");
   });
 
+  it("renders org backlog overview when issue backlog metrics are available", () => {
+    mockUseFeatureFlags.mockReturnValue({ executiveDashboard: true, useIssueBacklog: true });
+    mockBacklogHealth = [
+      {
+        teamId: "team-1",
+        openIssueCount: 12,
+        avgIssueAgeDays: 8,
+        blockedCount: 2,
+        buildCount: 5,
+        maintainCount: 4,
+        collaborateCount: 2,
+        learnCount: 1,
+        avgCycleTimeDays: 11,
+      },
+      {
+        teamId: "team-2",
+        openIssueCount: 8,
+        avgIssueAgeDays: 5,
+        blockedCount: 1,
+        buildCount: 3,
+        maintainCount: 2,
+        collaborateCount: 2,
+        learnCount: 1,
+        avgCycleTimeDays: 9,
+      },
+    ];
+    mockUseExecutiveDashboard.mockReturnValue({
+      dashboard: {
+        weekStart: "2026-03-16",
+        summary: {
+          totalForecasts: 10,
+          onTrackForecasts: 5,
+          needsAttentionForecasts: 3,
+          offTrackForecasts: 2,
+          noDataForecasts: 0,
+          averageForecastConfidence: 0.74,
+          totalCapacityHours: 120,
+          strategicHours: 72,
+          nonStrategicHours: 48,
+          strategicCapacityUtilizationPct: 60,
+          nonStrategicCapacityUtilizationPct: 40,
+          planningCoveragePct: 92,
+        },
+        rallyCryRollups: [],
+        teamBuckets: [],
+        teamGroupingAvailable: true,
+      },
+      briefing: null,
+      dashboardStatus: "ok" as const,
+      briefingStatus: "idle" as const,
+      errorDashboard: null,
+      errorBriefing: null,
+      fetchDashboard: mockFetchDashboard,
+      fetchBriefing: vi.fn().mockResolvedValue(undefined),
+      clearErrors: vi.fn(),
+    });
+
+    render(<ExecutiveDashboardPage />);
+
+    expect(screen.getByTestId("exec-backlog-metrics")).toBeInTheDocument();
+    expect(screen.getByTestId("exec-backlog-open")).toHaveTextContent("20");
+    expect(screen.getByTestId("exec-backlog-cycle-time")).toHaveTextContent("10d");
+    expect(screen.getByTestId("exec-backlog-ratio")).toHaveTextContent("2.0x");
+    expect(screen.getByTestId("exec-backlog-teams")).toHaveTextContent("2");
+  });
+
   it("shows a flag-disabled state without rendering executive panels", () => {
-    mockUseFeatureFlags.mockReturnValue({ executiveDashboard: false });
+    mockUseFeatureFlags.mockReturnValue({ executiveDashboard: false, useIssueBacklog: false });
 
     render(<ExecutiveDashboardPage />);
 

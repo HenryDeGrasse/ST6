@@ -173,14 +173,14 @@ public class AnalyticsController {
      *
      * <p>Returns 200 with a {@link com.weekly.analytics.dto.TeamBacklogHealth} payload,
      * 204 No Content when the team has no open issues (no view row exists),
-     * or 403 if not a manager.
+     * or 403 if the caller is neither a manager nor an admin.
      *
      * @param teamId UUID of the team to query
      * @return 200 with team backlog health, 204 when no open issues, or 403
      */
     @GetMapping("/teams/{teamId}/backlog-health")
     public ResponseEntity<?> getTeamBacklogHealth(@PathVariable UUID teamId) {
-        ResponseEntity<?> guard = managerGuard();
+        ResponseEntity<?> guard = managerOrAdminGuard();
         if (guard != null) {
             return guard;
         }
@@ -197,11 +197,11 @@ public class AnalyticsController {
      * Teams with no open issues are excluded (they have no view row).
      *
      * @return 200 with list of {@link com.weekly.analytics.dto.TeamBacklogHealth},
-     *         or 403 if not a manager
+     *         or 403 if the caller is neither a manager nor an admin
      */
     @GetMapping("/teams/backlog-health")
     public ResponseEntity<?> getOrgBacklogHealth() {
-        ResponseEntity<?> guard = managerGuard();
+        ResponseEntity<?> guard = managerOrAdminGuard();
         if (guard != null) {
             return guard;
         }
@@ -221,6 +221,20 @@ public class AnalyticsController {
                     .body(ApiErrorResponse.of(
                             ErrorCode.FORBIDDEN,
                             "Manager role required"));
+        }
+        return null;
+    }
+
+    /**
+     * Returns a 403 response if the current user is neither a manager nor an admin,
+     * or {@code null} if the check passes.
+     */
+    private ResponseEntity<?> managerOrAdminGuard() {
+        if (!authenticatedUserContext.isManager() && !authenticatedUserContext.isAdmin()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiErrorResponse.of(
+                            ErrorCode.FORBIDDEN,
+                            "Manager or admin role required"));
         }
         return null;
     }

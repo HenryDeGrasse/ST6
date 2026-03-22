@@ -17,3 +17,6 @@ export { ProgressRing } from "./ProgressRing.js";
 export type { ProgressRingProps } from "./ProgressRing.js";
 
 export { fmtPct, clamp } from "./utils.js";
+
+export { EffortTypeChart, EFFORT_TYPE_COLORS } from "./EffortTypeChart.js";
+export type { EffortTypeChartProps } from "./EffortTypeChart.js";

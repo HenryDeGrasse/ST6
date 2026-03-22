@@ -28,6 +28,8 @@ import {
 } from "../hooks/useOutcomeMetadata.js";
 import { useRcdo } from "../hooks/useRcdo.js";
 import { useForecasts } from "../hooks/useForecasts.js";
+import { useOrgBacklogHealth } from "../hooks/useAnalytics.js";
+import { EFFORT_TYPE_COLORS } from "../components/charts/index.js";
 import { useFeatureFlags } from "../context/FeatureFlagContext.js";
 import { useAuth } from "../context/AuthContext.js";
 import { useApiClient } from "../api/ApiContext.js";
@@ -109,6 +111,14 @@ export const TeamDashboardPage: React.FC = () => {
   const { tree: rcdoTree, fetchTree } = useRcdo();
   const { forecasts, loadingList: forecastsLoading, errorList: forecastsError, fetchForecasts } = useForecasts();
 
+  // Phase 6: backlog health (gated by useIssueBacklog flag)
+  const {
+    data: orgBacklogHealth,
+    error: backlogHealthError,
+    fetch: fetchOrgBacklogHealth,
+    clearError: clearBacklogHealthError,
+  } = useOrgBacklogHealth();
+
   // Flatten RCDO tree into { outcomeId, outcomeName } for the editor dropdown.
   const outcomes = useMemo(
     () =>
@@ -186,6 +196,14 @@ export const TeamDashboardPage: React.FC = () => {
     }
   }, [fetchForecasts, flags.targetDateForecasting]);
 
+  useEffect(() => {
+    if (!flags.useIssueBacklog) {
+      clearBacklogHealthError();
+      return;
+    }
+    void fetchOrgBacklogHealth();
+  }, [clearBacklogHealthError, fetchOrgBacklogHealth, flags.useIssueBacklog]);
+
   const featuredForecasts = useMemo(() => {
     return [...forecasts]
       .sort((left, right) => {
@@ -206,6 +224,47 @@ export const TeamDashboardPage: React.FC = () => {
       })
       .slice(0, 3);
   }, [forecasts]);
+
+  const backlogHealth = useMemo(() => {
+    if (!orgBacklogHealth || orgBacklogHealth.length === 0) {
+      return null;
+    }
+
+    const totalOpen = orgBacklogHealth.reduce((sum, team) => sum + team.openIssueCount, 0);
+    const blockedCount = orgBacklogHealth.reduce((sum, team) => sum + team.blockedCount, 0);
+    const avgAgeDays =
+      totalOpen > 0
+        ? Math.round(
+            orgBacklogHealth.reduce(
+              (sum, team) => sum + team.avgIssueAgeDays * team.openIssueCount,
+              0,
+            ) / totalOpen,
+          )
+        : 0;
+    const avgCycleTimeDays =
+      totalOpen > 0
+        ? Math.round(
+            orgBacklogHealth.reduce(
+              (sum, team) => sum + team.avgCycleTimeDays * team.openIssueCount,
+              0,
+            ) / totalOpen,
+          )
+        : 0;
+
+    return {
+      openCount: totalOpen,
+      blockedCount,
+      avgAgeDays,
+      avgCycleTimeDays,
+      effortCounts: {
+        BUILD: orgBacklogHealth.reduce((sum, team) => sum + team.buildCount, 0),
+        MAINTAIN: orgBacklogHealth.reduce((sum, team) => sum + team.maintainCount, 0),
+        COLLABORATE: orgBacklogHealth.reduce((sum, team) => sum + team.collaborateCount, 0),
+        LEARN: orgBacklogHealth.reduce((sum, team) => sum + team.learnCount, 0),
+      },
+      teamCount: orgBacklogHealth.length,
+    };
+  }, [orgBacklogHealth]);
 
   useEffect(() => {
     if (!flags.targetDateForecasting || featuredForecasts.length === 0) {
@@ -302,12 +361,13 @@ export const TeamDashboardPage: React.FC = () => {
     [drillDownPlan, drillDownUserId, submitReview, fetchSummary, selectedWeek, page, filters],
   );
 
-  const error = dashError ?? reviewError ?? notificationError;
+  const error = dashError ?? reviewError ?? notificationError ?? backlogHealthError;
   const clearError = useCallback(() => {
     clearDashError();
     clearReviewError();
     clearNotificationError();
-  }, [clearDashError, clearReviewError, clearNotificationError]);
+    clearBacklogHealthError();
+  }, [clearBacklogHealthError, clearDashError, clearReviewError, clearNotificationError]);
 
   // If in drill-down mode, show drill-down view
   if (drillDownUserId) {
@@ -523,6 +583,84 @@ export const TeamDashboardPage: React.FC = () => {
             )}
 
             <RcdoRollupPanel rollup={rollup} loading={dashLoading} />
+
+            {/* ─── Phase 6: Backlog Health ────────────────────────────── */}
+            {flags.useIssueBacklog && backlogHealth && (
+              <section data-testid="backlog-health-section" className={styles.backlogHealthSection}>
+                <div className={styles.backlogHealthHeader}>
+                  <span className="wc-volume-label" aria-hidden="true">Backlog</span>
+                  <h3 className={styles.backlogHealthTitle}>Backlog Health</h3>
+                </div>
+                <div className={styles.backlogHealthGrid}>
+                  <div className={styles.backlogHealthCard} data-testid="backlog-open-count">
+                    <span className={styles.backlogMetricLabel}>Open Issues</span>
+                    <span className={styles.backlogMetricValue}>{backlogHealth.openCount}</span>
+                  </div>
+                  <div className={styles.backlogHealthCard} data-testid="backlog-blocked-count">
+                    <span className={styles.backlogMetricLabel}>Blocked</span>
+                    <span
+                      className={styles.backlogMetricValue}
+                      style={backlogHealth.blockedCount > 0 ? { color: "#C47A84" } : undefined}
+                    >
+                      {backlogHealth.blockedCount}
+                    </span>
+                  </div>
+                  <div className={styles.backlogHealthCard} data-testid="backlog-avg-age">
+                    <span className={styles.backlogMetricLabel}>Avg Age</span>
+                    <span className={styles.backlogMetricValue}>{backlogHealth.avgAgeDays}d</span>
+                  </div>
+                  <div className={styles.backlogHealthCard} data-testid="backlog-avg-cycle-time">
+                    <span className={styles.backlogMetricLabel}>Avg Cycle Time</span>
+                    <span className={styles.backlogMetricValue}>
+                      {backlogHealth.avgCycleTimeDays > 0 ? `${backlogHealth.avgCycleTimeDays}d` : "—"}
+                    </span>
+                  </div>
+                  {backlogHealth.teamCount > 0 && (
+                    <div className={styles.backlogHealthCard} data-testid="backlog-team-count">
+                      <span className={styles.backlogMetricLabel}>Teams</span>
+                      <span className={styles.backlogMetricValue}>{backlogHealth.teamCount}</span>
+                    </div>
+                  )}
+                </div>
+                {/* Effort type breakdown */}
+                {Object.keys(backlogHealth.effortCounts).length > 0 && (
+                  <div className={styles.backlogEffortBreakdown} data-testid="backlog-effort-breakdown">
+                    <span className={styles.backlogEffortLabel}>By Effort Type</span>
+                    <div className={styles.backlogEffortBars}>
+                      {Object.entries(backlogHealth.effortCounts).map(([type, count]) => (
+                        <div key={type} className={styles.backlogEffortItem}>
+                          <span
+                            className={styles.backlogEffortSwatch}
+                            style={{ backgroundColor: EFFORT_TYPE_COLORS[type] ?? "#9C8B7A" }}
+                          />
+                          <span className={styles.backlogEffortType}>
+                            {type.charAt(0) + type.slice(1).toLowerCase()}
+                          </span>
+                          <span className={styles.backlogEffortCount}>{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <p className={styles.backlogHealthLink}>
+                  <a
+                    href="#backlog"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.dispatchEvent(
+                        new CustomEvent("wc:navigate", {
+                          detail: { route: "weekly/backlog" },
+                        }),
+                      );
+                    }}
+                    data-testid="backlog-health-link"
+                    className={styles.backlogLink}
+                  >
+                    View full backlog →
+                  </a>
+                </p>
+              </section>
+            )}
 
             {flags.outcomeUrgency && isManager && (
               <div data-testid="outcome-targets-section">

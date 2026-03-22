@@ -64,6 +64,18 @@ type RawUserEstimationAccuracy = EstimationAccuracyDistribution["users"][number]
 
 type RawPrediction = Omit<Prediction, "subjectId">;
 
+export interface TeamBacklogHealthSnapshot {
+  teamId: string;
+  openIssueCount: number;
+  avgIssueAgeDays: number;
+  blockedCount: number;
+  buildCount: number;
+  maintainCount: number;
+  collaborateCount: number;
+  learnCount: number;
+  avgCycleTimeDays: number;
+}
+
 interface AnalyticsGetResult<T> {
   data: T | null;
   error: string | null;
@@ -316,6 +328,49 @@ export function useEstimationAccuracy(): UseEstimationAccuracyResult {
   );
 
   return { data, loading, error, fetch: fetchData };
+}
+
+export interface UseOrgBacklogHealthResult {
+  data: TeamBacklogHealthSnapshot[] | null;
+  loading: boolean;
+  error: string | null;
+  fetch: () => Promise<void>;
+  clearError: () => void;
+}
+
+export function useOrgBacklogHealth(): UseOrgBacklogHealthResult {
+  const client = useApiClient() as unknown as RawAnalyticsClient;
+  const flags = useFeatureFlags();
+
+  const [data, setData] = useState<TeamBacklogHealthSnapshot[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    if (!flags.useIssueBacklog) {
+      setData(null);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await analyticsGet<TeamBacklogHealthSnapshot[]>(client, "/analytics/teams/backlog-health");
+      if (result.data) {
+        setData(result.data);
+      } else {
+        setError(result.error);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Network error");
+    } finally {
+      setLoading(false);
+    }
+  }, [client, flags.useIssueBacklog]);
+
+  const clearError = useCallback(() => setError(null), []);
+
+  return { data, loading, error, fetch: fetchData, clearError };
 }
 
 export interface UsePredictionsResult {

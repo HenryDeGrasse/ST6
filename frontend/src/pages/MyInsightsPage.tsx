@@ -7,6 +7,7 @@ import {
   Sparkline,
   HBar,
   CategoryDonut,
+  EffortTypeChart,
   DONUT_COLORS,
   fmtPct,
   clamp,
@@ -230,6 +231,14 @@ export const MyInsightsPage: React.FC = () => {
           {trends && (
             <section className={styles.section} data-testid="distribution-section">
               <div className={styles.distGrid}>
+                {/* Effort type distribution — primary view when data is available (Phase 6) */}
+                {trends.effortTypeDistribution && Object.keys(trends.effortTypeDistribution).length > 0 && (
+                  <div className={styles.distCard} data-testid="effort-type-section">
+                    <h3 className={styles.sectionTitle}>Effort Type Mix</h3>
+                    <EffortTypeChart data={trends.effortTypeDistribution} />
+                  </div>
+                )}
+
                 {/* Category distribution */}
                 <div className={styles.distCard}>
                   <h3 className={styles.sectionTitle}>Category Mix</h3>

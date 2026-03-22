@@ -200,3 +200,125 @@
   color:        var(--wc-color-text-primary);
   border-color: var(--wc-color-text-secondary);
 }
+
+/* ─── Phase 6: Backlog Health Section ───────────────────────────────────── */
+
+.backlogHealthSection {
+  margin-top: var(--wc-space-lg);
+  padding: var(--wc-space-md) var(--wc-space-lg);
+  background: rgba(60, 50, 40, 0.2);
+  border: 1px solid rgba(201, 169, 98, 0.12);
+  border-radius: 6px;
+}
+
+.backlogHealthHeader {
+  margin-bottom: var(--wc-space-sm);
+}
+
+.backlogHealthTitle {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--wc-color-accent, #C9A962);
+  margin: 0;
+}
+
+.backlogHealthGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: var(--wc-space-sm);
+}
+
+.backlogHealthCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: rgba(60, 50, 40, 0.35);
+  border: 1px solid rgba(201, 169, 98, 0.12);
+  border-radius: 4px;
+  padding: 0.6rem 1rem;
+  min-width: 80px;
+}
+
+.backlogMetricLabel {
+  font-family: 'Cinzel', serif;
+  font-size: 0.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--wc-color-muted, #9C8B7A);
+}
+
+.backlogMetricValue {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+  color: var(--wc-color-text, #E8DFD4);
+  line-height: 1.15;
+}
+
+.backlogEffortBreakdown {
+  margin-top: 0.5rem;
+}
+
+.backlogEffortLabel {
+  font-family: 'Cinzel', serif;
+  font-size: 0.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--wc-color-muted, #9C8B7A);
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.backlogEffortBars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.backlogEffortItem {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.82rem;
+}
+
+.backlogEffortSwatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.backlogEffortType {
+  color: var(--wc-color-muted, #9C8B7A);
+}
+
+.backlogEffortCount {
+  color: var(--wc-color-text, #E8DFD4);
+  font-weight: 600;
+}
+
+.backlogHealthLink {
+  margin: 0.75rem 0 0;
+}
+
+.backlogLink {
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.82rem;
+  color: var(--wc-color-accent, #C9A962);
+  text-decoration: none;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+
+.backlogLink:hover {
+  opacity: 1;
+  text-decoration: underline;
+}

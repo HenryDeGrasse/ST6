@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { GlassPanel } from "../components/GlassPanel.js";
 import { WeekSelector } from "../components/WeekSelector.js";
 import { ExecutiveBriefing } from "../components/Phase5/index.js";
 import { useFeatureFlags } from "../context/FeatureFlagContext.js";
 import { useExecutiveDashboard } from "../hooks/useExecutiveDashboard.js";
+import { useOrgBacklogHealth } from "../hooks/useAnalytics.js";
 import { getWeekStart } from "../utils/week.js";
 import {
   StackedBar,
@@ -46,12 +47,51 @@ export const ExecutiveDashboardPage: React.FC = () => {
   const flags = useFeatureFlags();
   const [selectedWeek, setSelectedWeek] = useState(() => getWeekStart());
   const { dashboard, dashboardStatus, errorDashboard, fetchDashboard } = useExecutiveDashboard();
+  const {
+    data: orgBacklogHealth,
+    error: backlogHealthError,
+    fetch: fetchOrgBacklogHealth,
+  } = useOrgBacklogHealth();
 
   useEffect(() => {
     if (flags.executiveDashboard) {
       void fetchDashboard(selectedWeek);
     }
   }, [flags.executiveDashboard, fetchDashboard, selectedWeek]);
+
+  useEffect(() => {
+    if (flags.useIssueBacklog && flags.executiveDashboard) {
+      void fetchOrgBacklogHealth();
+    }
+  }, [fetchOrgBacklogHealth, flags.executiveDashboard, flags.useIssueBacklog]);
+
+  const orgBacklogMetrics = useMemo(() => {
+    if (!flags.useIssueBacklog || !orgBacklogHealth || orgBacklogHealth.length === 0) {
+      return null;
+    }
+
+    const totalOpen = orgBacklogHealth.reduce((sum, team) => sum + team.openIssueCount, 0);
+    const avgCycleTimeDays =
+      totalOpen > 0
+        ? Math.round(
+            orgBacklogHealth.reduce(
+              (sum, team) => sum + team.avgCycleTimeDays * team.openIssueCount,
+              0,
+            ) / totalOpen,
+          )
+        : 0;
+    const backlogToPlanRatio =
+      dashboard?.summary.totalForecasts && dashboard.summary.totalForecasts > 0
+        ? totalOpen / dashboard.summary.totalForecasts
+        : null;
+
+    return {
+      totalOpen,
+      teamCount: orgBacklogHealth.length,
+      avgCycleTimeDays,
+      backlogToPlanRatio,
+    };
+  }, [dashboard?.summary.totalForecasts, flags.useIssueBacklog, orgBacklogHealth]);
 
   return (
     <div data-testid="executive-dashboard-page" className={styles.page}>
@@ -89,6 +129,10 @@ export const ExecutiveDashboardPage: React.FC = () => {
 
             {errorDashboard && !dashboard && (
               <div className={styles.errorState}>{errorDashboard}</div>
+            )}
+
+            {backlogHealthError && flags.useIssueBacklog && (
+              <div className={styles.errorState}>{backlogHealthError}</div>
             )}
 
             {/* ── A. Summary Stat Cards ── */}
@@ -258,7 +302,40 @@ export const ExecutiveDashboardPage: React.FC = () => {
               </section>
             )}
 
-            {/* ── E. Executive Briefing ── */}
+            {/* ── E. Org Backlog Overview (Phase 6) ── */}
+            {flags.useIssueBacklog && orgBacklogMetrics && (
+              <section className={styles.section} data-testid="exec-backlog-metrics">
+                <h3 className={styles.sectionTitle}>Org Backlog Overview</h3>
+                <div className={styles.statGrid}>
+                  <StatCard
+                    label="Open Issues"
+                    value={String(orgBacklogMetrics.totalOpen)}
+                    testId="exec-backlog-open"
+                  />
+                  <StatCard
+                    label="Avg Cycle Time"
+                    value={orgBacklogMetrics.avgCycleTimeDays > 0 ? `${orgBacklogMetrics.avgCycleTimeDays}d` : "—"}
+                    testId="exec-backlog-cycle-time"
+                  />
+                  <StatCard
+                    label="Backlog / Plan Ratio"
+                    value={
+                      orgBacklogMetrics.backlogToPlanRatio != null
+                        ? `${orgBacklogMetrics.backlogToPlanRatio.toFixed(1)}x`
+                        : "—"
+                    }
+                    testId="exec-backlog-ratio"
+                  />
+                  <StatCard
+                    label="Teams"
+                    value={String(orgBacklogMetrics.teamCount)}
+                    testId="exec-backlog-teams"
+                  />
+                </div>
+              </section>
+            )}
+
+            {/* ── F. Executive Briefing ── */}
             <div className={styles.section}>
               <ExecutiveBriefing weekStart={selectedWeek} />
             </div>
