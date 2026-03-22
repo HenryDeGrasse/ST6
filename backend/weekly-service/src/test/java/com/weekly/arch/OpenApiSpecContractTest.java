@@ -138,7 +138,18 @@ class OpenApiSpecContractTest {
             "GET /executive/strategic-health",
             "POST /ai/executive-briefing",
             // Health
-            "GET /health"
+            "GET /health",
+            // Phase 6: Team management
+            "GET /teams",
+            "POST /teams",
+            "GET /teams/{teamId}",
+            "PATCH /teams/{teamId}",
+            "GET /teams/{teamId}/members",
+            "POST /teams/{teamId}/members",
+            "DELETE /teams/{teamId}/members/{userId}",
+            "GET /teams/{teamId}/access-requests",
+            "POST /teams/{teamId}/access-requests",
+            "PATCH /teams/{teamId}/access-requests/{requestId}"
     );
 
     // ─── 1. Path Coverage ──────────────────────────────────────────────────────
@@ -196,8 +207,8 @@ class OpenApiSpecContractTest {
     void expectedOperationCountMatchesOpenApiSpec() {
         // Update this sentinel whenever the committed OpenAPI path set changes.
         // Recent additions include Phase 5 forecasting, planning-copilot,
-        // and executive dashboard / briefing surfaces.
-        int expectedCount = 41;
+        // executive dashboard / briefing surfaces, and Phase 6 team management.
+        int expectedCount = 51;
         assertTrue(
                 EXPECTED_OPENAPI_OPERATIONS.size() == expectedCount,
                 "Expected " + expectedCount + " OpenAPI operations but found "
