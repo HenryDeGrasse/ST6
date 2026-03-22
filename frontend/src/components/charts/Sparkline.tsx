@@ -15,7 +15,7 @@ export interface SparklineProps {
   width?: number;
   /** SVG intrinsic height in px. @default 36 */
   height?: number;
-  /** Stroke / fill accent color. @default var(--wc-color-accent, #C9A962) */
+  /** Stroke / fill accent color. @default var(--wc-color-accent, #2563eb) */
   color?: string;
   /** Accessible label for the SVG element. */
   label: string;
@@ -29,7 +29,7 @@ export const Sparkline: React.FC<SparklineProps> = ({
   data,
   width = 140,
   height = 36,
-  color = "var(--wc-color-accent, #C9A962)",
+  color = "var(--wc-color-accent, #2563eb)",
   label,
 }) => {
   const gradientId = useId();

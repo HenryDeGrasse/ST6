@@ -13,7 +13,7 @@ export interface ProgressRingProps {
   value: number;
   /** Diameter of the SVG in px. @default 64 */
   size?: number;
-  /** Ring stroke color. @default var(--wc-color-accent, #C9A962) */
+  /** Ring stroke color. @default var(--wc-color-accent, #2563eb) */
   color?: string;
   /** Optional label rendered below the ring. */
   label?: string;
@@ -25,7 +25,7 @@ export interface ProgressRingProps {
 export const ProgressRing: React.FC<ProgressRingProps> = ({
   value,
   size = 64,
-  color = "var(--wc-color-accent, #C9A962)",
+  color = "var(--wc-color-accent, #2563eb)",
   label,
 }) => {
   const strokeWidth = size * 0.1;
@@ -53,7 +53,7 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
           cy={cy}
           r={r}
           fill="none"
-          stroke="rgba(60, 50, 40, 0.5)"
+          stroke="var(--wc-color-border, #e2e5ea)"
           strokeWidth={strokeWidth}
         />
         {/* Progress arc */}
@@ -75,8 +75,8 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
           y={cy}
           textAnchor="middle"
           dominantBaseline="central"
-          fill="var(--wc-color-text, #E8DFD4)"
-          fontFamily="'Cinzel', serif"
+          fill="var(--wc-color-text-primary, #1a2332)"
+          fontFamily="'Inter', system-ui, sans-serif"
           fontSize={size * 0.2}
           fontWeight="600"
         >

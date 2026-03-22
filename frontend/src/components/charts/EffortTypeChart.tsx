@@ -12,10 +12,10 @@ import styles from "./charts.module.css";
 
 /** Default palette keyed by EffortType name. */
 export const EFFORT_TYPE_COLORS: Record<string, string> = {
-  BUILD: "#C9A962",       // gold   — building new features
-  MAINTAIN: "#7A8C6E",    // green  — maintenance & operational
-  COLLABORATE: "#8B6E8C", // purple — cross-team collaboration
-  LEARN: "#6E7A8C",       // slate  — learning & upskilling
+  BUILD:       "#2563eb", // blue   — building new features
+  MAINTAIN:    "#0f766e", // teal   — maintenance & operational
+  COLLABORATE: "#7c3aed", // purple — cross-team collaboration
+  LEARN:       "#059669", // green  — learning & upskilling
 };
 
 const EFFORT_TYPE_LABELS: Record<string, string> = {
@@ -68,7 +68,7 @@ export const EffortTypeChart: React.FC<EffortTypeChartProps> = ({ data, size = 1
               cy="50"
               r={r}
               fill="none"
-              stroke={EFFORT_TYPE_COLORS[type] ?? "#9C8B7A"}
+              stroke={EFFORT_TYPE_COLORS[type] ?? "#94a3b8"}
               strokeWidth="12"
               strokeDasharray={`${dash} ${circumference - dash}`}
               strokeDashoffset={offset}
@@ -82,7 +82,7 @@ export const EffortTypeChart: React.FC<EffortTypeChartProps> = ({ data, size = 1
           <div key={type} className={styles.legendItem}>
             <span
               className={styles.legendSwatch}
-              style={{ backgroundColor: EFFORT_TYPE_COLORS[type] ?? "#9C8B7A" }}
+              style={{ backgroundColor: EFFORT_TYPE_COLORS[type] ?? "#94a3b8" }}
             />
             <span className={styles.legendLabel}>
               {EFFORT_TYPE_LABELS[type] ?? (type.charAt(0) + type.slice(1).toLowerCase())}

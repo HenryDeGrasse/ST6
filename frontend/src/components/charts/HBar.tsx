@@ -12,7 +12,7 @@ export interface HBarProps {
   label: string;
   /** Value in the range 0–1 (clamped). */
   value: number;
-  /** Fill color. @default var(--wc-color-accent, #C9A962) */
+  /** Fill color. @default var(--wc-color-accent, #2563eb) */
   color?: string;
 }
 
@@ -22,7 +22,7 @@ export interface HBarProps {
 export const HBar: React.FC<HBarProps> = ({
   label,
   value,
-  color = "var(--wc-color-accent, #C9A962)",
+  color = "var(--wc-color-accent, #2563eb)",
 }) => (
   <div className={styles.hbar} data-testid="hbar">
     <span className={styles.hbarLabel}>{label}</span>

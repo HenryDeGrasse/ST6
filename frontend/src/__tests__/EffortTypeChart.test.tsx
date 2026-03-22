@@ -69,7 +69,7 @@ describe("EffortTypeChart", () => {
     const svg = screen.getByTestId("effort-type-chart");
     const circle = svg.querySelector("circle");
     // Should use fallback color for unknown types
-    expect(circle).toHaveAttribute("stroke", "#9C8B7A");
+    expect(circle).toHaveAttribute("stroke", "#94a3b8");
     // Label should be title-cased
     expect(screen.getByText("Custom_type")).toBeInTheDocument();
   });
