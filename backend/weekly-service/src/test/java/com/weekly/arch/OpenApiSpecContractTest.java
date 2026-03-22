@@ -149,7 +149,23 @@ class OpenApiSpecContractTest {
             "DELETE /teams/{teamId}/members/{userId}",
             "GET /teams/{teamId}/access-requests",
             "POST /teams/{teamId}/access-requests",
-            "PATCH /teams/{teamId}/access-requests/{requestId}"
+            "PATCH /teams/{teamId}/access-requests/{requestId}",
+            // Phase 6: Issue backlog CRUD
+            "GET /teams/{teamId}/issues",
+            "POST /teams/{teamId}/issues",
+            "GET /issues/{issueId}",
+            "PATCH /issues/{issueId}",
+            "DELETE /issues/{issueId}",
+            // Phase 6: Issue actions
+            "POST /issues/{issueId}/assign",
+            "POST /issues/{issueId}/commit",
+            "POST /issues/{issueId}/release",
+            "POST /issues/{issueId}/comment",
+            "POST /issues/{issueId}/time-entry",
+            // Phase 6: Weekly assignment endpoints
+            "GET /plans/{planId}/assignments",
+            "POST /weeks/{weekStart}/plan/assignments",
+            "DELETE /weeks/{weekStart}/plan/assignments/{assignmentId}"
     );
 
     // ─── 1. Path Coverage ──────────────────────────────────────────────────────
@@ -206,9 +222,9 @@ class OpenApiSpecContractTest {
     @Test
     void expectedOperationCountMatchesOpenApiSpec() {
         // Update this sentinel whenever the committed OpenAPI path set changes.
-        // Recent additions include Phase 5 forecasting, planning-copilot,
-        // executive dashboard / briefing surfaces, and Phase 6 team management.
-        int expectedCount = 51;
+        // Recent additions: Phase 5 forecasting/planning-copilot/executive,
+        // Phase 6 team management and issue/assignment endpoints.
+        int expectedCount = 64;
         assertTrue(
                 EXPECTED_OPENAPI_OPERATIONS.size() == expectedCount,
                 "Expected " + expectedCount + " OpenAPI operations but found "

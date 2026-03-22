@@ -11,5 +11,11 @@ public interface WeeklyAssignmentRepository extends JpaRepository<WeeklyAssignme
 
     List<WeeklyAssignmentEntity> findAllByOrgIdAndWeeklyPlanId(UUID orgId, UUID weeklyPlanId);
 
+    Optional<WeeklyAssignmentEntity> findByWeeklyPlanIdAndIssueId(UUID weeklyPlanId, UUID issueId);
+
     Optional<WeeklyAssignmentEntity> findByLegacyCommitId(UUID legacyCommitId);
+
+    Optional<WeeklyAssignmentEntity> findByOrgIdAndId(UUID orgId, UUID id);
+
+    List<WeeklyAssignmentEntity> findAllByIssueId(UUID issueId);
 }
