@@ -486,3 +486,191 @@ INSERT INTO user_model_snapshots (org_id, user_id, computed_at, weeks_analyzed, 
     }
   }')
 ON CONFLICT (org_id, user_id) DO NOTHING;
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- PHASE 6 SEED DATA: Teams, Issues, Weekly Assignments
+--
+-- V17 migration already creates a 'General' (GEN) team for the org and
+-- migrates all existing commits to issues/assignments.  The seed data below
+-- adds:
+--   1. A named 'Platform Engineering' team with prefix 'ENG' (Carol owns it)
+--   2. Team members for both teams
+--   3. A few extra seed issues for backlog demonstrations
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- ─── Platform Engineering team (Carol = OWNER) ─────────────────────────────
+INSERT INTO teams (id, org_id, name, key_prefix, description, owner_user_id, issue_sequence, version, created_at, updated_at)
+VALUES (
+    'f0000000-0000-0000-0000-000000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'Platform Engineering',
+    'ENG',
+    'Core platform, APIs, and infrastructure team.',
+    'c0000000-0000-0000-0000-000000000001'::uuid,
+    8,
+    1,
+    NOW() - interval '60 days',
+    NOW() - interval '60 days'
+) ON CONFLICT (org_id, name) DO NOTHING;
+
+-- Members of Platform Engineering
+INSERT INTO team_members (team_id, user_id, org_id, role, joined_at) VALUES
+    ('f0000000-0000-0000-0000-000000000001'::uuid, 'c0000000-0000-0000-0000-000000000001'::uuid, 'a0000000-0000-0000-0000-000000000001'::uuid, 'OWNER',  NOW() - interval '60 days'),
+    ('f0000000-0000-0000-0000-000000000001'::uuid, 'c0000000-0000-0000-0000-000000000010'::uuid, 'a0000000-0000-0000-0000-000000000001'::uuid, 'MEMBER', NOW() - interval '60 days'),
+    ('f0000000-0000-0000-0000-000000000001'::uuid, 'c0000000-0000-0000-0000-000000000020'::uuid, 'a0000000-0000-0000-0000-000000000001'::uuid, 'MEMBER', NOW() - interval '60 days'),
+    ('f0000000-0000-0000-0000-000000000001'::uuid, 'c0000000-0000-0000-0000-000000000030'::uuid, 'a0000000-0000-0000-0000-000000000001'::uuid, 'MEMBER', NOW() - interval '60 days')
+ON CONFLICT (team_id, user_id) DO NOTHING;
+
+-- Also add all four personas to the General team created by V17.
+-- We can't hardcode the General team's UUID (it's gen_random_uuid() in V17),
+-- so we use a sub-select to find it.
+INSERT INTO team_members (team_id, user_id, org_id, role, joined_at)
+SELECT t.id, u.user_id, t.org_id, u.role, NOW()
+FROM   teams t
+CROSS  JOIN (VALUES
+    ('c0000000-0000-0000-0000-000000000001'::uuid, 'MEMBER'),
+    ('c0000000-0000-0000-0000-000000000010'::uuid, 'MEMBER'),
+    ('c0000000-0000-0000-0000-000000000020'::uuid, 'MEMBER'),
+    ('c0000000-0000-0000-0000-000000000030'::uuid, 'MEMBER')
+) AS u(user_id, role)
+WHERE  t.name    = 'General'
+  AND  t.org_id  = 'a0000000-0000-0000-0000-000000000001'::uuid
+ON CONFLICT (team_id, user_id) DO NOTHING;
+
+-- ─── Seed issues for Platform Engineering (ENG-1 … ENG-8) ─────────────────
+-- These are standalone backlog items not derived from weekly commits —
+-- they represent typical Phase 6 issues for demo and UI testing.
+
+INSERT INTO issues (
+    id, org_id, team_id, issue_key, sequence_number,
+    title, description, effort_type, estimated_hours, chess_priority,
+    outcome_id, creator_user_id, assignee_user_id, status,
+    embedding_version, version, created_at, updated_at
+) VALUES
+-- ENG-1: Active in-progress issue (Alice, BUILD)
+(
+    'f1000000-0000-0000-0000-000000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'f0000000-0000-0000-0000-000000000001'::uuid,
+    'ENG-1', 1,
+    'Build onboarding wizard v2 with SSO support',
+    'Multi-step onboarding flow with enterprise SSO bypass and sample data pre-population.',
+    'BUILD', 16.0, 'KING',
+    'e0000000-0000-0000-0000-000000000001'::uuid,
+    'c0000000-0000-0000-0000-000000000010'::uuid,
+    'c0000000-0000-0000-0000-000000000010'::uuid,
+    'IN_PROGRESS', 0, 1, NOW() - interval '14 days', NOW() - interval '1 day'
+),
+-- ENG-2: Open issue (Bob, BUILD)
+(
+    'f1000000-0000-0000-0000-000000000002'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'f0000000-0000-0000-0000-000000000001'::uuid,
+    'ENG-2', 2,
+    'Optimize dashboard aggregate query with materialized view',
+    'The p95 latency is 280ms due to a complex multi-join aggregation. Needs a materialized view refresh strategy.',
+    'BUILD', 8.0, 'QUEEN',
+    '30000000-0000-0000-0000-000000000007'::uuid,
+    'c0000000-0000-0000-0000-000000000020'::uuid,
+    'c0000000-0000-0000-0000-000000000020'::uuid,
+    'OPEN', 0, 1, NOW() - interval '7 days', NOW() - interval '7 days'
+),
+-- ENG-3: Open issue (Alice, MAINTAIN)
+(
+    'f1000000-0000-0000-0000-000000000003'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'f0000000-0000-0000-0000-000000000001'::uuid,
+    'ENG-3', 3,
+    'Rotate all service account credentials post-SOC2 audit',
+    'Auditor flagged stale credentials in 3 services. Rotate and update secrets manager.',
+    'MAINTAIN', 4.0, 'ROOK',
+    '30000000-0000-0000-0000-000000000005'::uuid,
+    'c0000000-0000-0000-0000-000000000001'::uuid,
+    NULL,
+    'OPEN', 0, 1, NOW() - interval '5 days', NOW() - interval '5 days'
+),
+-- ENG-4: Open issue (Carol, COLLABORATE)
+(
+    'f1000000-0000-0000-0000-000000000004'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'f0000000-0000-0000-0000-000000000001'::uuid,
+    'ENG-4', 4,
+    'Conduct Q3 engineering health-check retrospective',
+    'Quarterly team retrospective — process, tooling, and culture health. Generate action items.',
+    'COLLABORATE', 3.0, 'BISHOP',
+    'e0000000-0000-0000-0000-000000000002'::uuid,
+    'c0000000-0000-0000-0000-000000000001'::uuid,
+    'c0000000-0000-0000-0000-000000000001'::uuid,
+    'OPEN', 0, 1, NOW() - interval '3 days', NOW() - interval '3 days'
+),
+-- ENG-5: Open issue (Alice, LEARN)
+(
+    'f1000000-0000-0000-0000-000000000005'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'f0000000-0000-0000-0000-000000000001'::uuid,
+    'ENG-5', 5,
+    'Research Postgres logical replication for multi-region read replicas',
+    'Spike: evaluate PG logical replication vs Citus for the multi-region read path.',
+    'LEARN', 6.0, 'KNIGHT',
+    NULL,
+    'c0000000-0000-0000-0000-000000000010'::uuid,
+    NULL,
+    'OPEN', 0, 1, NOW() - interval '2 days', NOW() - interval '2 days'
+),
+-- ENG-6: Done issue (Bob, BUILD)
+(
+    'f1000000-0000-0000-0000-000000000006'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'f0000000-0000-0000-0000-000000000001'::uuid,
+    'ENG-6', 6,
+    'Migrate CI runners to ARM',
+    'All GitHub Actions runners migrated from x86 to ARM for cost savings.',
+    'MAINTAIN', 5.0, 'PAWN',
+    NULL,
+    'c0000000-0000-0000-0000-000000000020'::uuid,
+    'c0000000-0000-0000-0000-000000000020'::uuid,
+    'DONE', 0, 1, NOW() - interval '10 days', NOW() - interval '7 days'
+),
+-- ENG-7: Open issue (Dana, BUILD) — AI-ranked
+(
+    'f1000000-0000-0000-0000-000000000007'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'f0000000-0000-0000-0000-000000000001'::uuid,
+    'ENG-7', 7,
+    'Implement customer health-score alerting MVP',
+    'CSM alerting pipeline: email when health score drops below threshold. Blocked on platform credential API access.',
+    'BUILD', 10.0, 'QUEEN',
+    '30000000-0000-0000-0000-000000000011'::uuid,
+    'c0000000-0000-0000-0000-000000000020'::uuid,
+    NULL,
+    'OPEN', 0, 1, NOW() - interval '14 days', NOW() - interval '3 days'
+),
+-- ENG-8: Open issue, blocked
+(
+    'f1000000-0000-0000-0000-000000000008'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'f0000000-0000-0000-0000-000000000001'::uuid,
+    'ENG-8', 8,
+    'Add rate-limiting to public API endpoints',
+    'Protect API from abuse — implement token-bucket rate limiting at the gateway layer.',
+    'BUILD', 8.0, 'ROOK',
+    '30000000-0000-0000-0000-000000000007'::uuid,
+    'c0000000-0000-0000-0000-000000000010'::uuid,
+    NULL,
+    'OPEN', 0, 1, NOW() - interval '1 day', NOW() - interval '1 day'
+)
+ON CONFLICT DO NOTHING;
+
+-- ─── Seed issue activities (CREATED events for each ENG issue) ─────────────
+INSERT INTO issue_activities (id, org_id, issue_id, actor_user_id, activity_type, metadata, created_at)
+VALUES
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid, 'f1000000-0000-0000-0000-000000000001'::uuid, 'c0000000-0000-0000-0000-000000000010'::uuid, 'CREATED', '{}', NOW() - interval '14 days'),
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid, 'f1000000-0000-0000-0000-000000000002'::uuid, 'c0000000-0000-0000-0000-000000000020'::uuid, 'CREATED', '{}', NOW() - interval '7 days'),
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid, 'f1000000-0000-0000-0000-000000000003'::uuid, 'c0000000-0000-0000-0000-000000000001'::uuid, 'CREATED', '{}', NOW() - interval '5 days'),
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid, 'f1000000-0000-0000-0000-000000000004'::uuid, 'c0000000-0000-0000-0000-000000000001'::uuid, 'CREATED', '{}', NOW() - interval '3 days'),
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid, 'f1000000-0000-0000-0000-000000000005'::uuid, 'c0000000-0000-0000-0000-000000000010'::uuid, 'CREATED', '{}', NOW() - interval '2 days'),
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid, 'f1000000-0000-0000-0000-000000000006'::uuid, 'c0000000-0000-0000-0000-000000000020'::uuid, 'CREATED', '{}', NOW() - interval '10 days'),
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid, 'f1000000-0000-0000-0000-000000000007'::uuid, 'c0000000-0000-0000-0000-000000000020'::uuid, 'CREATED', '{}', NOW() - interval '14 days'),
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001'::uuid, 'f1000000-0000-0000-0000-000000000008'::uuid, 'c0000000-0000-0000-0000-000000000010'::uuid, 'CREATED', '{}', NOW() - interval '1 day')
+ON CONFLICT DO NOTHING;
