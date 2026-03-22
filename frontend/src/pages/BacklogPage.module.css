@@ -1,0 +1,241 @@
+/**
+ * BacklogPage – CSS Module
+ */
+
+.page {
+  padding:        var(--wc-space-md) var(--wc-space-lg);
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--wc-space-md);
+  min-height:     100vh;
+  box-sizing:     border-box;
+}
+
+.toolbar {
+  display:         flex;
+  flex-wrap:       wrap;
+  gap:             var(--wc-space-sm);
+  align-items:     center;
+  justify-content: space-between;
+}
+
+.toolbarLeft {
+  display:     flex;
+  flex-wrap:   wrap;
+  gap:         var(--wc-space-sm);
+  align-items: center;
+}
+
+.toolbarRight {
+  display:     flex;
+  gap:         var(--wc-space-sm);
+  align-items: center;
+}
+
+.teamSelect {
+  min-width: 10rem;
+}
+
+.filterGroup {
+  display:     flex;
+  gap:         var(--wc-space-sm);
+  align-items: center;
+  flex-wrap:   wrap;
+}
+
+/* Issue table */
+.tableWrapper {
+  overflow-x: auto;
+  border:     1px solid var(--wc-color-border, #4A3F35);
+  border-radius: 0.375rem;
+}
+
+table.issueTable {
+  width:           100%;
+  border-collapse: collapse;
+  font-size:       0.82rem;
+}
+
+.issueTable th {
+  padding:        0.5rem 0.75rem;
+  text-align:     left;
+  font-size:      0.68rem;
+  font-weight:    700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color:          var(--wc-color-text-muted, #9C8B7A);
+  border-bottom:  1px solid var(--wc-color-border, #4A3F35);
+  background:     var(--wc-color-surface, #2A2118);
+  white-space:    nowrap;
+  user-select:    none;
+}
+
+.issueTable th.sortable {
+  cursor: pointer;
+}
+
+.issueTable th.sortable:hover {
+  color: var(--wc-color-accent, #C9A962);
+}
+
+.issueTable td {
+  padding:       0.5rem 0.75rem;
+  border-bottom: 1px solid var(--wc-color-border, #4A3F35);
+  color:         var(--wc-color-text, #E8DCC8);
+  vertical-align: middle;
+}
+
+.issueTable tr:last-child td {
+  border-bottom: none;
+}
+
+.issueTable tr:hover td {
+  background-color: rgba(255, 255, 255, 0.03);
+  cursor:           pointer;
+}
+
+.issueKey {
+  font-family:   monospace;
+  font-size:     0.75rem;
+  color:         var(--wc-color-accent, #C9A962);
+  font-weight:   700;
+  white-space:   nowrap;
+}
+
+.issueTitle {
+  max-width:   25rem;
+  overflow:    hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Status badge */
+.statusBadge {
+  display:        inline-flex;
+  align-items:    center;
+  padding:        0.12rem 0.45rem;
+  border-radius:  0.2rem;
+  font-size:      0.65rem;
+  font-weight:    700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space:    nowrap;
+}
+
+.statusOpen       { background-color: #3D5470; color: #C8DCEF; }
+.statusInProgress { background-color: #6B4F2A; color: #EDD8B0; }
+.statusDone       { background-color: #4A6741; color: #D8EDD5; }
+.statusArchived   { background-color: #2A2118; color: #9C8B7A; border: 1px solid #4A3F35; }
+
+/* Effort type badge */
+.effortBadge {
+  display:     inline-flex;
+  align-items: center;
+  padding:     0.12rem 0.45rem;
+  border-radius: 0.2rem;
+  font-size:   0.65rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.effortBuild      { background-color: #4A6741; color: #D8EDD5; }
+.effortMaintain   { background-color: #3D5470; color: #C8DCEF; }
+.effortCollaborate{ background-color: #6B4F2A; color: #EDD8B0; }
+.effortLearn      { background-color: #5C3D6E; color: #E0C8F0; }
+
+/* AI rank chip */
+.aiRankChip {
+  font-size:   0.72rem;
+  color:       var(--wc-color-accent, #C9A962);
+  font-weight: 700;
+}
+
+/* Empty + loading */
+.emptyState {
+  text-align:  center;
+  padding:     3rem 1rem;
+  color:       var(--wc-color-text-muted, #9C8B7A);
+}
+
+.loadingRow td {
+  text-align: center;
+  padding:    2rem;
+  color:      var(--wc-color-text-muted, #9C8B7A);
+}
+
+/* Pagination */
+.pagination {
+  display:         flex;
+  align-items:     center;
+  gap:             var(--wc-space-sm);
+  justify-content: flex-end;
+}
+
+.paginationInfo {
+  font-size: 0.75rem;
+  color:     var(--wc-color-text-muted, #9C8B7A);
+}
+
+/* Modal overlay for New Issue */
+.modalOverlay {
+  position:   fixed;
+  inset:      0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index:    150;
+  display:    flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  background:    var(--wc-color-surface, #2A2118);
+  border:        1px solid var(--wc-color-border, #4A3F35);
+  border-radius: 0.5rem;
+  padding:       var(--wc-space-md) var(--wc-space-lg);
+  width:         min(540px, 95vw);
+  max-height:    85vh;
+  overflow-y:    auto;
+}
+
+.modalHeader {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  margin-bottom:   var(--wc-space-md);
+}
+
+.modalTitle {
+  font-size:   1rem;
+  font-weight: 700;
+  color:       var(--wc-color-text, #E8DCC8);
+}
+
+.aiRankToggle {
+  display:     flex;
+  align-items: center;
+  gap:         0.35rem;
+  font-size:   0.75rem;
+  color:       var(--wc-color-text-muted, #9C8B7A);
+  cursor:      pointer;
+  user-select: none;
+}
+
+.aiRankToggle input {
+  accent-color: var(--wc-color-accent, #C9A962);
+}
+
+.errorBanner {
+  background-color: rgba(194, 107, 107, 0.15);
+  border:           1px solid #C26B6B;
+  color:            #E8DCC8;
+  padding:          0.5rem 0.75rem;
+  border-radius:    0.25rem;
+  font-size:        0.82rem;
+}
+
+.pageTitle {
+  font-family:   "'Cinzel', serif";
+  font-size:     1.2rem;
+  font-weight:   700;
+  color:         var(--wc-color-text, #E8DCC8);
+}

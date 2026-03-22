@@ -1,0 +1,78 @@
+/**
+ * IssueCreateForm – CSS Module
+ */
+
+.form {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--wc-space-md);
+}
+
+.fieldGroup {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--wc-space-xs);
+}
+
+.label {
+  font-size:      0.75rem;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color:          var(--wc-color-text-muted, #9C8B7A);
+}
+
+.labelRequired::after {
+  content: " *";
+  color:   var(--wc-chess-queen, #C9A962);
+}
+
+.input,
+.textarea,
+.select {
+  width:      100%;
+  box-sizing: border-box;
+}
+
+.textarea {
+  min-height: 6rem;
+  resize:     vertical;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap:     var(--wc-space-md);
+}
+
+.errorText {
+  font-size: 0.75rem;
+  color:     var(--wc-color-error, #C26B6B);
+  margin-top: 0.25rem;
+}
+
+.actions {
+  display:         flex;
+  justify-content: flex-end;
+  gap:             var(--wc-space-sm);
+  padding-top:     var(--wc-space-sm);
+  border-top:      1px solid var(--wc-color-border, #4A3F35);
+  margin-top:      var(--wc-space-sm);
+}
+
+.aiHint,
+.helpText {
+  font-size:  0.7rem;
+  color:      var(--wc-color-text-muted, #9C8B7A);
+  margin-top: 0.25rem;
+}
+
+.aiHint {
+  font-style: italic;
+}
+
+@media (max-width: 720px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -7,6 +7,7 @@ import { TeamDashboardPage } from "./pages/TeamDashboardPage.js";
 import { AdminDashboardPage } from "./pages/AdminDashboardPage.js";
 import { ExecutiveDashboardPage } from "./pages/ExecutiveDashboardPage.js";
 import { MyInsightsPage } from "./pages/MyInsightsPage.js";
+import { BacklogPage } from "./pages/BacklogPage.js";
 import { ErrorBoundary } from "./components/ErrorBoundary.js";
 import { ToastProvider } from "./context/ToastContext.js";
 import { ThemeProvider } from "./theme/ThemeContext.js";
@@ -24,7 +25,7 @@ const DEV_USER = {
 };
 const DEV_TOKEN = "dev-jwt-token";
 
-type AppRoute = "weekly" | "weekly/insights" | "weekly/team" | "admin" | "executive";
+type AppRoute = "weekly" | "weekly/backlog" | "weekly/insights" | "weekly/team" | "admin" | "executive";
 
 export interface AppProps {
   /** Override auth user (PA host injects real values). */
@@ -96,12 +97,14 @@ const AppShell: React.FC<{
           }}
         >
           {renderNavButton("weekly", "My Plan", "nav-my-plan")}
+          {renderNavButton("weekly/backlog", "Backlog", "nav-backlog")}
           {renderNavButton("weekly/insights", "My Insights", "nav-my-insights")}
           {isManager && renderNavButton("weekly/team", "Team Dashboard", "nav-team-dashboard")}
           {canAccessExecutive && renderNavButton("executive", "Executive", "nav-executive")}
           {isAdmin && renderNavButton("admin", "Admin", "nav-admin")}
         </nav>
       {route === "weekly" && <WeeklyPlanPage />}
+      {route === "weekly/backlog" && <BacklogPage />}
       {route === "weekly/insights" && <MyInsightsPage />}
       {route === "weekly/team" && isManager && <TeamDashboardPage />}
       {route === "executive" && canAccessExecutive && <ExecutiveDashboardPage />}

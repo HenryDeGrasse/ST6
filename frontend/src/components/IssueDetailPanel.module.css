@@ -1,0 +1,186 @@
+/**
+ * IssueDetailPanel – CSS Module
+ * Slide-out panel overlay.
+ */
+
+.overlay {
+  position:   fixed;
+  inset:      0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index:    200;
+}
+
+.panel {
+  position:   fixed;
+  top:        0;
+  right:      0;
+  bottom:     0;
+  width:      min(520px, 95vw);
+  background: var(--wc-color-surface, #2A2118);
+  border-left: 1px solid var(--wc-color-border, #4A3F35);
+  display:    flex;
+  flex-direction: column;
+  z-index:    201;
+  overflow:   hidden;
+}
+
+.header {
+  display:         flex;
+  align-items:     flex-start;
+  justify-content: space-between;
+  padding:         var(--wc-space-md);
+  border-bottom:   1px solid var(--wc-color-border, #4A3F35);
+  gap:             var(--wc-space-sm);
+}
+
+.headerLeft {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.25rem;
+}
+
+.issueKey {
+  font-size:      0.7rem;
+  font-weight:    700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color:          var(--wc-color-accent, #C9A962);
+}
+
+.issueTitle {
+  font-size:   1rem;
+  font-weight: 600;
+  color:       var(--wc-color-text, #E8DCC8);
+  line-height: 1.3;
+}
+
+.closeBtn {
+  background:  none;
+  border:      none;
+  color:       var(--wc-color-text-muted, #9C8B7A);
+  cursor:      pointer;
+  font-size:   1.2rem;
+  padding:     0.25rem;
+  line-height: 1;
+  flex-shrink: 0;
+  transition:  color 150ms;
+}
+
+.closeBtn:hover {
+  color: var(--wc-color-text, #E8DCC8);
+}
+
+.body {
+  flex:      1;
+  overflow-y: auto;
+  padding:   var(--wc-space-md);
+  display:   flex;
+  flex-direction: column;
+  gap:       var(--wc-space-md);
+}
+
+.metaGrid {
+  display:               grid;
+  grid-template-columns: 1fr 1fr;
+  gap:                   var(--wc-space-sm) var(--wc-space-md);
+}
+
+.metaItem {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.15rem;
+}
+
+.metaLabel {
+  font-size:      0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color:          var(--wc-color-text-muted, #9C8B7A);
+  font-weight:    600;
+}
+
+.metaValue {
+  font-size: 0.85rem;
+  color:     var(--wc-color-text, #E8DCC8);
+}
+
+.description {
+  font-size:   0.85rem;
+  line-height: 1.6;
+  color:       var(--wc-color-text, #E8DCC8);
+  white-space: pre-wrap;
+}
+
+.sectionTitle {
+  font-size:      0.7rem;
+  font-weight:    700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color:          var(--wc-color-text-muted, #9C8B7A);
+  border-bottom:  1px solid var(--wc-color-border, #4A3F35);
+  padding-bottom: 0.3rem;
+  margin-bottom:  0.25rem;
+}
+
+.activityList {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.5rem;
+}
+
+.activityItem {
+  display:     flex;
+  gap:         0.5rem;
+  align-items: flex-start;
+  font-size:   0.8rem;
+}
+
+.activityTime {
+  color:       var(--wc-color-text-muted, #9C8B7A);
+  font-size:   0.7rem;
+  flex-shrink: 0;
+  min-width:   5rem;
+}
+
+.activityText {
+  color: var(--wc-color-text, #E8DCC8);
+}
+
+.commentText {
+  color:       var(--wc-color-text, #E8DCC8);
+  font-style:  italic;
+}
+
+.inputRow {
+  display: flex;
+  gap:     var(--wc-space-sm);
+}
+
+.inputRow input,
+.inputRow textarea {
+  flex: 1;
+}
+
+.footer {
+  padding:       var(--wc-space-sm) var(--wc-space-md);
+  border-top:    1px solid var(--wc-color-border, #4A3F35);
+  display:       flex;
+  flex-direction: column;
+  gap:           var(--wc-space-sm);
+}
+
+.statusBadge {
+  display:        inline-flex;
+  align-items:    center;
+  padding:        0.15rem 0.5rem;
+  border-radius:  0.25rem;
+  font-size:      0.7rem;
+  font-weight:    700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.statusOpen       { background-color: #3D5470; color: #C8DCEF; }
+.statusInProgress { background-color: #6B4F2A; color: #EDD8B0; }
+.statusDone       { background-color: #4A6741; color: #D8EDD5; }
+.statusArchived   { background-color: #2A2118; color: #9C8B7A; border: 1px solid #4A3F35; }

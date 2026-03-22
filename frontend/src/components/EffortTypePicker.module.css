@@ -1,0 +1,118 @@
+/**
+ * EffortTypePicker – CSS Module (Academia / Classical)
+ *
+ * Chip-style effort-type selector with colour coding.
+ * Supports an AI-suggested "dimmed pre-selection" state.
+ */
+
+.wrapper {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       var(--wc-space-sm);
+  align-items: center;
+}
+
+/* Each chip button */
+.chip {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           0.3rem;
+  padding:       0.25rem 0.75rem;
+  border-radius: 2rem;
+  border:        1px solid transparent;
+  font-family:   inherit;
+  font-size:     0.75rem;
+  font-weight:   600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor:        pointer;
+  transition:    background-color 200ms, border-color 200ms, opacity 200ms;
+  background-color: var(--wc-color-surface, #2A2118);
+  color:         var(--wc-color-text-muted, #9C8B7A);
+  border-color:  var(--wc-color-border, #4A3F35);
+}
+
+.chip:hover:not(:disabled) {
+  border-color: var(--wc-color-accent, #C9A962);
+  color:        var(--wc-color-text, #E8DCC8);
+}
+
+.chip:disabled {
+  opacity: 0.5;
+  cursor:  not-allowed;
+}
+
+/* Selected state */
+.chipSelected {
+  border-color: transparent;
+  color:        #1A1510;
+  font-weight:  700;
+}
+
+/* AI-suggested (dimmed) state — shown when the AI has a suggestion
+   but the user hasn't confirmed it yet */
+.chipAiSuggested {
+  opacity:    0.65;
+  border-style: dashed;
+  border-color: var(--wc-color-accent, #C9A962);
+}
+
+/* Per-effort-type colours */
+.chipBuild {
+  background-color: #4A6741;
+  color:            #D8EDD5;
+}
+.chipBuild.chipSelected {
+  background-color: #5C8054;
+  color:            #1A1510;
+}
+
+.chipMaintain {
+  background-color: #3D5470;
+  color:            #C8DCEF;
+}
+.chipMaintain.chipSelected {
+  background-color: #4E6B8C;
+  color:            #1A1510;
+}
+
+.chipCollaborate {
+  background-color: #6B4F2A;
+  color:            #EDD8B0;
+}
+.chipCollaborate.chipSelected {
+  background-color: #8A6435;
+  color:            #1A1510;
+}
+
+.chipLearn {
+  background-color: #5C3D6E;
+  color:            #E0C8F0;
+}
+.chipLearn.chipSelected {
+  background-color: #7A508C;
+  color:            #1A1510;
+}
+
+/* "AI suggestion" label badge */
+.aiLabel {
+  font-size:      0.65rem;
+  font-style:     italic;
+  opacity:        0.8;
+  margin-left:    0.25rem;
+}
+
+.clearBtn {
+  background:  none;
+  border:      none;
+  color:       var(--wc-color-text-muted, #9C8B7A);
+  cursor:      pointer;
+  font-size:   0.75rem;
+  padding:     0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  transition:  color 150ms;
+}
+
+.clearBtn:hover {
+  color: var(--wc-color-text, #E8DCC8);
+}
