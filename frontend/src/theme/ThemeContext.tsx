@@ -1,5 +1,5 @@
 /**
- * ThemeContext – Academia / Classical single-theme provider.
+ * ThemeContext – Enterprise Dashboard single-theme provider.
  *
  * CRITICAL for Module Federation:
  *   tokens.css and global.css are imported here (not in main.tsx) so they are
@@ -34,12 +34,12 @@ export interface ThemeProviderProps {
 }
 
 /**
- * Provides the Academia theme. The dark/light toggle API is retained
- * for backward compatibility but has no visual effect — all tokens
+ * Provides the Enterprise Dashboard theme. The dark/light toggle API is
+ * retained for backward compatibility but has no visual effect — all tokens
  * live on `.wc-theme` without a mode suffix.
  */
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("light");
 
   const toggleTheme = useCallback(() => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));

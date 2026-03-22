@@ -3,8 +3,9 @@ import { useTheme } from "../theme/ThemeContext.js";
 import styles from "./ThemeToggle.module.css";
 
 /**
- * Circular icon button that toggles between dark and light themes.
- * Renders a sun SVG in dark mode, a moon SVG in light mode.
+ * Icon button that toggles the retained light/dark theme API state.
+ * The UI is styled as a single enterprise theme, but this control remains
+ * for compatibility with existing consumers and tests.
  */
 export const ThemeToggle: React.FC = () => {
   const { theme, toggleTheme } = useTheme();

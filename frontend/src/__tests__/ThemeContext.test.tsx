@@ -49,52 +49,52 @@ describe("ThemeContext", () => {
     localStorageMock.setItem.mockClear();
   });
 
-  it("defaults to dark theme", () => {
+  it("defaults to light theme", () => {
     render(
       <ThemeProvider>
         <ThemeConsumer />
       </ThemeProvider>,
     );
-    expect(screen.getByTestId("current-theme")).toHaveTextContent("dark");
-  });
-
-  it("toggleTheme switches internal state from dark to light", () => {
-    render(
-      <ThemeProvider>
-        <ThemeConsumer />
-      </ThemeProvider>,
-    );
-
-    expect(screen.getByTestId("current-theme")).toHaveTextContent("dark");
-
-    act(() => {
-      screen.getByTestId("toggle-btn").click();
-    });
-
     expect(screen.getByTestId("current-theme")).toHaveTextContent("light");
   });
 
-  it("toggleTheme switches internal state from light back to dark", () => {
+  it("toggleTheme switches internal state from light to dark", () => {
     render(
       <ThemeProvider>
         <ThemeConsumer />
       </ThemeProvider>,
     );
 
-    // Toggle to light
+    expect(screen.getByTestId("current-theme")).toHaveTextContent("light");
+
     act(() => {
       screen.getByTestId("toggle-btn").click();
     });
-    expect(screen.getByTestId("current-theme")).toHaveTextContent("light");
 
-    // Toggle back to dark
+    expect(screen.getByTestId("current-theme")).toHaveTextContent("dark");
+  });
+
+  it("toggleTheme switches internal state from dark back to light", () => {
+    render(
+      <ThemeProvider>
+        <ThemeConsumer />
+      </ThemeProvider>,
+    );
+
+    // Toggle to dark
     act(() => {
       screen.getByTestId("toggle-btn").click();
     });
     expect(screen.getByTestId("current-theme")).toHaveTextContent("dark");
+
+    // Toggle back to light
+    act(() => {
+      screen.getByTestId("toggle-btn").click();
+    });
+    expect(screen.getByTestId("current-theme")).toHaveTextContent("light");
   });
 
-  it("wrapper div has wc-theme className (single Academia theme)", () => {
+  it("wrapper div has wc-theme className (single enterprise theme)", () => {
     render(
       <ThemeProvider>
         <ThemeConsumer />

@@ -1,26 +1,82 @@
 /**
- * ThemeToggle – CSS Module (Academia / Classical)
- * Kept for API compat but hidden from UI by removing from App.tsx nav.
+ * ThemeToggle – CSS Module (Enterprise Dashboard)
+ * Kept for API compat. All styling uses design tokens.
  */
 
 .button {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 2.5rem; height: 2.5rem; padding: 0;
-  border: 1px solid var(--wc-color-border); border-radius: var(--wc-radius-sm);
-  background-color: var(--wc-color-bg-secondary); color: var(--wc-color-text-secondary);
-  cursor: pointer; flex-shrink: 0;
-  transition: border-color var(--wc-transition-fast), color var(--wc-transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid var(--wc-color-border);
+  border-radius: var(--wc-radius-sm);
+  background-color: var(--wc-color-bg-secondary);
+  color: var(--wc-color-text-secondary);
+  box-shadow: var(--wc-shadow-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background-color var(--wc-transition-fast),
+    border-color var(--wc-transition-fast),
+    color var(--wc-transition-fast),
+    box-shadow var(--wc-transition-fast);
 }
 
-.button:hover { border-color: var(--wc-color-accent); color: var(--wc-color-accent); }
-.button:focus-visible { outline: 2px solid var(--wc-color-accent); outline-offset: 2px; }
+.button:hover {
+  border-color: var(--wc-color-accent);
+  background-color: var(--wc-color-accent-muted);
+  color: var(--wc-color-accent);
+}
 
-.iconStack { position: relative; width: 1.25rem; height: 1.25rem; }
+.button:focus-visible {
+  outline: 2px solid var(--wc-color-accent);
+  outline-offset: 2px;
+}
+
+.button:active {
+  box-shadow: none;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button:disabled:hover {
+  background-color: var(--wc-color-bg-secondary);
+  border-color: var(--wc-color-border);
+  color: var(--wc-color-text-secondary);
+}
+
+.iconStack {
+  position: relative;
+  width: 1.25rem;
+  height: 1.25rem;
+}
 
 .icon {
-  position: absolute; inset: 0; width: 1.25rem; height: 1.25rem;
+  position: absolute;
+  inset: 0;
+  width: 1.25rem;
+  height: 1.25rem;
   transition: transform var(--wc-transition-base), opacity var(--wc-transition-base);
 }
 
-.iconVisible { opacity: 1; transform: rotate(0deg) scale(1); }
-.iconHidden  { opacity: 0; transform: rotate(-20deg) scale(0.7); }
+.iconVisible {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+.iconHidden {
+  opacity: 0;
+  transform: rotate(-20deg) scale(0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .icon {
+    transition: none;
+  }
+}
