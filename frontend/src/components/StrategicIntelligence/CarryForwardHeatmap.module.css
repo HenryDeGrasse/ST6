@@ -1,15 +1,16 @@
 /**
- * CarryForwardHeatmap – CSS Module (Academia / Classical)
+ * CarryForwardHeatmap – CSS Module (Enterprise Dashboard)
  *
  * Heatmap grid for per-user carry-forward counts across weeks.
- * Shares the ai-insight token set used by other analytics panels.
+ * Carry-forward items use purple tints to match the semantic carry-forward
+ * color from the design system (purple = "preserved but unresolved").
  */
 
 /* ─── Outer panel ─────────────────────────────────────────────────────────── */
 
 .panel {
   padding:          var(--wc-space-sm) var(--wc-space-md);
-  border:           1.5px dashed var(--wc-ai-insight-border);
+  border:           1px solid var(--wc-ai-insight-border);
   border-radius:    var(--wc-radius-md);
   background-color: var(--wc-ai-insight-bg);
   margin-bottom:    var(--wc-space-md);
@@ -31,7 +32,7 @@
   font-size:      0.6875rem;
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.08em;
   color:          var(--wc-ai-insight-text);
   flex:           1;
   min-width:      0;
@@ -58,9 +59,9 @@
 }
 
 .legendLabel {
-  font-size:   0.625rem;
-  color:       var(--wc-color-text-muted);
-  white-space: nowrap;
+  font-size:    0.625rem;
+  color:        var(--wc-color-text-muted);
+  white-space:  nowrap;
   margin-right: 0.35rem;
 }
 
@@ -76,7 +77,7 @@
 /* ─── Table wrapper (horizontal scroll) ──────────────────────────────────── */
 
 .tableWrapper {
-  overflow-x: auto;
+  overflow-x:     auto;
   padding-bottom: var(--wc-space-xs);
 }
 
@@ -91,7 +92,7 @@
 /* ─── Corner / week header cells ─────────────────────────────────────────── */
 
 .cornerCell {
-  width:    6rem;
+  width:     6rem;
   min-width: 6rem;
 }
 
@@ -111,7 +112,7 @@
 /* ─── Row ─────────────────────────────────────────────────────────────────── */
 
 .row {
-  border-top: 1px solid var(--wc-ai-insight-border);
+  border-top: 1px solid var(--wc-color-border);
 }
 
 /* ─── User name cell (row header) ────────────────────────────────────────── */
@@ -144,20 +145,20 @@
 
 /* ─── Cell colour variants ────────────────────────────────────────────────── */
 
-/* 0 carried – neutral / green */
+/* 0 carried – neutral / green: nothing to worry about */
 .cellNeutral {
-  background-color: color-mix(in srgb, var(--wc-color-success) 15%, transparent);
+  background-color: var(--wc-color-success-bg);
   color:            var(--wc-color-success);
 }
 
-/* 1–2 carried – yellow / warning */
+/* 1–2 carried – light purple: carry-forward building up */
 .cellWarn {
-  background-color: color-mix(in srgb, var(--wc-color-warning, #d97706) 15%, transparent);
-  color:            var(--wc-color-warning, #d97706);
+  background-color: var(--wc-state-carry-forward-bg);
+  color:            var(--wc-state-carry-forward-text);
 }
 
-/* 3+ carried – red / high */
+/* 3+ carried – stronger purple: persistent carry-forward pattern */
 .cellHigh {
-  background-color: color-mix(in srgb, var(--wc-color-error) 15%, transparent);
-  color:            var(--wc-color-error);
+  background-color: var(--wc-state-carry-forward-border);
+  color:            var(--wc-state-carry-forward-text);
 }

@@ -8,10 +8,10 @@ export interface ExecutiveBriefingProps {
   weekStart: string;
 }
 
-const SEVERITY_ACCENT: Record<string, string> = {
-  POSITIVE: "#7A8C6E",
-  INFO: "#6E7A8C",
-  WARNING: "#C47A84",
+const SEVERITY_CLASS: Record<string, string> = {
+  POSITIVE: briefingStyles.insightPositive,
+  INFO: briefingStyles.insightInfo,
+  WARNING: briefingStyles.insightWarning,
 };
 
 const SEVERITY_LABEL: Record<string, string> = {
@@ -77,8 +77,7 @@ export const ExecutiveBriefing: React.FC<ExecutiveBriefingProps> = ({ weekStart 
               <li
                 key={`${insight.title}-${index}`}
                 data-testid={`executive-briefing-insight-${index}`}
-                className={briefingStyles.insightItem}
-                style={{ borderLeftColor: SEVERITY_ACCENT[insight.severity] ?? "transparent" }}
+                className={[briefingStyles.insightItem, SEVERITY_CLASS[insight.severity] ?? ""].filter(Boolean).join(" ")}
               >
                 <span className={briefingStyles.insightSeverity}>
                   {SEVERITY_LABEL[insight.severity] ?? insight.severity}

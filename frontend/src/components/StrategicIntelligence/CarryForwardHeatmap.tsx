@@ -11,9 +11,9 @@ export interface CarryForwardHeatmapProps {
 /**
  * Returns the CSS class for a given carried-forward count.
  *
- * 0        → neutral / green  (no carry-forward)
- * 1–2      → yellow  (mild carry-forward)
- * 3+       → red     (high carry-forward)
+ * 0        → neutral / green   (no carry-forward)
+ * 1–2      → light purple      (mild carry-forward)
+ * 3+       → stronger purple   (persistent carry-forward pattern)
  */
 function cellStyleClass(carriedCount: number): string {
   if (carriedCount === 0) return styles.cellNeutral;

@@ -1,5 +1,5 @@
 /**
- * OutcomeCoverageTimeline – CSS Module (Academia / Classical)
+ * OutcomeCoverageTimeline – CSS Module (Enterprise Dashboard)
  *
  * Week-by-week bar chart for a single RCDO outcome's commit coverage.
  * Shares the ai-insight token set used by other analytics panels.
@@ -9,7 +9,7 @@
 
 .panel {
   padding:          var(--wc-space-sm) var(--wc-space-md);
-  border:           1.5px dashed var(--wc-ai-insight-border);
+  border:           1px solid var(--wc-ai-insight-border);
   border-radius:    var(--wc-radius-md);
   background-color: var(--wc-ai-insight-bg);
   margin-bottom:    var(--wc-space-md);
@@ -31,7 +31,7 @@
   font-size:      0.6875rem;
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.08em;
   color:          var(--wc-ai-insight-text);
   flex:           1;
   min-width:      0;
@@ -129,8 +129,8 @@
 }
 
 .contributorCount {
-  font-size:  0.625rem;
-  color:      var(--wc-color-text-muted);
+  font-size:   0.625rem;
+  color:       var(--wc-color-text-muted);
   white-space: nowrap;
 }
 

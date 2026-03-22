@@ -1,8 +1,8 @@
 /**
- * StrategicIntelligencePanel – CSS Module (Academia / Classical)
+ * StrategicIntelligencePanel – CSS Module (Enterprise Dashboard)
  *
  * Container panel orchestrating Carry-Forward Heatmap, Prediction Alerts,
- * and per-outcome Coverage Timelines.  Uses the ai-insight token set shared
+ * and per-outcome Coverage Timelines. Uses the ai-insight token set shared
  * by all analytics panels.
  */
 
@@ -10,7 +10,7 @@
 
 .panel {
   padding:          var(--wc-space-sm) var(--wc-space-md);
-  border:           1.5px dashed var(--wc-ai-insight-border);
+  border:           1px solid var(--wc-ai-insight-border);
   border-radius:    var(--wc-radius-md);
   background-color: var(--wc-ai-insight-bg);
   margin-bottom:    var(--wc-space-md);
@@ -32,7 +32,7 @@
   font-size:      0.6875rem;
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.08em;
   color:          var(--wc-ai-insight-text);
   white-space:    nowrap;
 }
@@ -40,8 +40,8 @@
 /* ─── Collapsible section ─────────────────────────────────────────────────── */
 
 .section {
-  margin-top: var(--wc-space-sm);
-  border-top: 1px solid var(--wc-ai-insight-border);
+  margin-top:  var(--wc-space-sm);
+  border-top:  1px solid var(--wc-color-border);
   padding-top: var(--wc-space-sm);
 }
 
@@ -59,7 +59,7 @@
   font-size:      0.625rem;
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.06em;
   color:          var(--wc-color-text-muted);
   white-space:    nowrap;
 }
@@ -72,9 +72,9 @@
   gap:              var(--wc-space-xs);
   padding:          0.2rem 0.6rem;
   border-radius:    var(--wc-radius-sm);
-  border:           1px solid var(--wc-ai-insight-border);
+  border:           1px solid var(--wc-color-border);
   background-color: var(--wc-color-bg-secondary);
-  color:            var(--wc-ai-insight-text);
+  color:            var(--wc-color-text-secondary);
   font-family:      var(--wc-font-body);
   font-size:        0.75rem;
   font-weight:      500;
@@ -84,8 +84,9 @@
 }
 
 .toggleButton:hover {
-  background-color: var(--wc-ai-insight-bg);
+  background-color: var(--wc-color-bg-tertiary);
   border-color:     var(--wc-color-accent);
+  color:            var(--wc-color-accent);
 }
 
 .toggleButton:focus-visible {

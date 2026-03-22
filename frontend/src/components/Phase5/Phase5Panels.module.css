@@ -1,53 +1,62 @@
+/**
+ * Phase5Panels – CSS Module (Enterprise Dashboard)
+ *
+ * Shared panel styles for Phase 5 executive components.
+ * All dark-glass/brass references replaced with clean light-mode tokens.
+ */
+
 .panel {
-  padding: var(--wc-space-lg);
-  border: 1px solid var(--wc-glass-border, rgba(255,255,255,0.12));
-  border-radius: var(--wc-radius-md, 0.75rem);
-  background: rgba(255,255,255,0.03);
+  padding:          var(--wc-space-lg);
+  border:           1px solid var(--wc-color-border);
+  border-radius:    var(--wc-radius-md);
+  background-color: var(--wc-color-bg-secondary);
+  box-shadow:       var(--wc-shadow-sm);
 }
 
 .headerRow {
-  display: flex;
+  display:         flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--wc-space-sm);
-  margin-bottom: var(--wc-space-md);
+  align-items:     flex-start;
+  gap:             var(--wc-space-sm);
+  margin-bottom:   var(--wc-space-md);
 }
 
 .eyebrow,
 .metricLabel {
-  display: block;
-  font-family: var(--wc-font-display);
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  display:        block;
+  font-family:    var(--wc-font-display);
+  font-size:      0.65rem;
+  font-weight:    600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--wc-color-text-muted);
+  color:          var(--wc-color-text-muted);
 }
 
 .title,
 .sectionTitle {
-  margin: 0;
+  margin:      0;
   font-family: var(--wc-font-heading);
-  color: var(--wc-color-text-primary);
+  color:       var(--wc-color-text-primary);
 }
 
 .sectionTitle {
   margin-bottom: var(--wc-space-sm);
-  font-size: 1rem;
+  font-size:     1rem;
+  font-weight:   600;
 }
 
 .metricGrid {
-  display: grid;
+  display:               grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: var(--wc-space-sm);
+  gap:                   var(--wc-space-sm);
 }
 
 .metricCard,
 .memberCard {
-  padding: var(--wc-space-sm);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: var(--wc-radius-sm, 0.5rem);
-  background: rgba(255,255,255,0.02);
+  padding:          var(--wc-space-sm);
+  border:           1px solid var(--wc-color-border);
+  border-radius:    var(--wc-radius-sm);
+  background-color: var(--wc-color-bg-tertiary);
 }
 
 .metricValueSmall,
@@ -75,15 +84,15 @@
 .statusBadge,
 .primaryButton,
 .secondaryButton {
-  border-radius: var(--wc-radius-sm, 0.5rem);
+  border-radius: var(--wc-radius-sm);
 }
 
 .statusBadge {
-  padding: 0.25rem 0.5rem;
-  background: rgba(201,169,98,0.12);
-  color: var(--wc-color-accent, #C9A962);
-  font-size: 0.75rem;
-  font-weight: 600;
+  padding:          0.25rem 0.5rem;
+  background-color: var(--wc-color-accent-muted);
+  color:            var(--wc-color-accent);
+  font-size:        0.75rem;
+  font-weight:      600;
 }
 
 .section {
@@ -91,7 +100,7 @@
 }
 
 .list {
-  margin: 0;
+  margin:       0;
   padding-left: 1rem;
 }
 
@@ -108,42 +117,64 @@
 .memberHeader,
 .actions {
   justify-content: space-between;
-  align-items: center;
-  gap: var(--wc-space-sm);
+  align-items:     center;
+  gap:             var(--wc-space-sm);
 }
 
 .checkboxRow {
-  gap: 0.5rem;
+  gap:         0.5rem;
   align-items: flex-start;
 }
 
 .subtle,
 .loading,
 .empty {
-  color: var(--wc-color-text-muted);
+  color:     var(--wc-color-text-muted);
   font-size: 0.875rem;
 }
 
 .error {
-  color: var(--wc-color-error, #E66450);
+  color:     var(--wc-color-error);
+  font-size: 0.875rem;
 }
 
 .success {
   margin-top: var(--wc-space-md);
-  color: #7bd88f;
+  color:      var(--wc-color-success);
+  font-size:  0.875rem;
 }
 
 .primaryButton,
 .secondaryButton {
-  border: 1px solid var(--wc-color-border, rgba(255,255,255,0.12));
+  border:  1px solid var(--wc-color-border);
   padding: 0.5rem 0.75rem;
-  cursor: pointer;
-  background: rgba(255,255,255,0.03);
-  color: var(--wc-color-text-primary);
+  cursor:  pointer;
+  color:   var(--wc-color-text-primary);
+}
+
+.primaryButton {
+  background-color: var(--wc-color-accent);
+  border-color:     var(--wc-color-accent);
+  color:            var(--wc-color-accent-foreground);
+}
+
+.primaryButton:hover:not(:disabled) {
+  background-color: var(--wc-color-accent-hover);
+  border-color:     var(--wc-color-accent-hover);
+}
+
+.secondaryButton {
+  background-color: var(--wc-color-bg-secondary);
+}
+
+.secondaryButton:hover:not(:disabled) {
+  background-color: var(--wc-color-bg-tertiary);
+  border-color:     var(--wc-color-accent);
+  color:            var(--wc-color-accent);
 }
 
 .primaryButton:disabled,
 .secondaryButton:disabled {
   opacity: 0.6;
-  cursor: not-allowed;
+  cursor:  not-allowed;
 }
