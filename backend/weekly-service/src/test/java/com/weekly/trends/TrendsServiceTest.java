@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import com.weekly.capacity.CapacityProfileEntity;
 import com.weekly.capacity.CapacityProfileService;
 import com.weekly.issues.domain.EffortType;
+import com.weekly.issues.repository.IssueRepository;
 import com.weekly.plan.domain.ChessPriority;
 import com.weekly.plan.domain.CommitCategory;
 import com.weekly.plan.domain.CompletionStatus;
@@ -43,6 +44,7 @@ class TrendsServiceTest {
     private WeeklyCommitRepository commitRepository;
     private WeeklyCommitActualRepository actualRepository;
     private CapacityProfileService capacityProfileService;
+    private IssueRepository issueRepository;
     private DefaultTrendsService service;
 
     @BeforeEach
@@ -51,11 +53,13 @@ class TrendsServiceTest {
         commitRepository = mock(WeeklyCommitRepository.class);
         actualRepository = mock(WeeklyCommitActualRepository.class);
         capacityProfileService = mock(CapacityProfileService.class);
+        issueRepository = mock(IssueRepository.class);
         service = new DefaultTrendsService(
                 planRepository,
                 commitRepository,
                 actualRepository,
-                capacityProfileService);
+                capacityProfileService,
+                issueRepository);
 
         // Default: no team plans or saved capacity profile
         when(planRepository.findByOrgIdAndWeekStartDateBetween(
@@ -665,7 +669,8 @@ class TrendsServiceTest {
                     makeCommitWithCategory(planId, CommitCategory.OPERATIONS)
             );
 
-            java.util.Map<String, Double> dist = service.computeEffortTypeDistribution(commits);
+            java.util.Map<String, Double> dist = service.computeEffortTypeDistribution(
+                    commits, java.util.Map.of());
 
             assertEquals(2.0 / 3.0, dist.get(EffortType.BUILD.name()), 0.001);
             assertEquals(1.0 / 3.0, dist.get(EffortType.MAINTAIN.name()), 0.001);
@@ -680,7 +685,8 @@ class TrendsServiceTest {
                     new WeeklyCommitEntity(UUID.randomUUID(), ORG_ID, planId, "Task")
             );
 
-            java.util.Map<String, Double> dist = service.computeEffortTypeDistribution(commits);
+            java.util.Map<String, Double> dist = service.computeEffortTypeDistribution(
+                    commits, java.util.Map.of());
 
             for (EffortType et : EffortType.values()) {
                 assertEquals(0.0, dist.get(et.name()), 0.001, "Expected 0.0 for " + et);
@@ -689,7 +695,8 @@ class TrendsServiceTest {
 
         @Test
         void allZeroForEmptyCommitList() {
-            java.util.Map<String, Double> dist = service.computeEffortTypeDistribution(List.of());
+            java.util.Map<String, Double> dist = service.computeEffortTypeDistribution(
+                    List.of(), java.util.Map.of());
 
             for (EffortType et : EffortType.values()) {
                 assertEquals(0.0, dist.get(et.name()), 0.001, "Expected 0.0 for " + et);
@@ -703,9 +710,51 @@ class TrendsServiceTest {
                     makeCommitWithCategory(planId, CommitCategory.GTM)
             );
 
-            java.util.Map<String, Double> dist = service.computeEffortTypeDistribution(commits);
+            java.util.Map<String, Double> dist = service.computeEffortTypeDistribution(
+                    commits, java.util.Map.of());
 
             assertEquals(1.0, dist.get(EffortType.BUILD.name()), 0.001);
+        }
+
+        @Test
+        void crosswalkIssueEffortTypeOverridesCommitCategoryMapping() {
+            UUID planId = UUID.randomUUID();
+            UUID issueId = UUID.randomUUID();
+            // Commit has DELIVERY (→ BUILD via mapper), but the linked issue says LEARN
+            WeeklyCommitEntity commit = makeCommitWithCategory(planId, CommitCategory.DELIVERY);
+            commit.setSourceIssueId(issueId);
+            List<WeeklyCommitEntity> commits = List.of(commit);
+
+            // Issue effort type map: the linked issue explicitly says LEARN
+            java.util.Map<UUID, com.weekly.issues.domain.EffortType> issueEffortTypes =
+                    java.util.Map.of(issueId, com.weekly.issues.domain.EffortType.LEARN);
+
+            java.util.Map<String, Double> dist = service.computeEffortTypeDistribution(
+                    commits, issueEffortTypes);
+
+            // Crosswalk wins: LEARN should be 1.0, BUILD 0.0
+            assertEquals(1.0, dist.get(EffortType.LEARN.name()), 0.001,
+                    "Crosswalk issue effort type (LEARN) should override category-based mapping (BUILD)");
+            assertEquals(0.0, dist.get(EffortType.BUILD.name()), 0.001,
+                    "Category-based BUILD should be 0.0 when crosswalk overrides");
+        }
+
+        @Test
+        void fallsBackToCategoryMappingWhenIssueHasNoEffortType() {
+            UUID planId = UUID.randomUUID();
+            UUID issueId = UUID.randomUUID();
+            // Commit has DELIVERY → BUILD, linked issue has no effort type in the map
+            WeeklyCommitEntity commit = makeCommitWithCategory(planId, CommitCategory.DELIVERY);
+            commit.setSourceIssueId(issueId);
+            List<WeeklyCommitEntity> commits = List.of(commit);
+
+            // Issue map is empty (issue has no effort type set)
+            java.util.Map<String, Double> dist = service.computeEffortTypeDistribution(
+                    commits, java.util.Map.of());
+
+            // Category fallback: DELIVERY → BUILD
+            assertEquals(1.0, dist.get(EffortType.BUILD.name()), 0.001,
+                    "Should fall back to category-based BUILD when issue has no effort type");
         }
 
         @Test
@@ -764,6 +813,39 @@ class TrendsServiceTest {
             assertEquals(1, point.effortTypeCounts().getOrDefault(EffortType.COLLABORATE.name(), 0));
             assertEquals(0, point.effortTypeCounts().getOrDefault(EffortType.BUILD.name(), 0));
             assertEquals(0, point.effortTypeCounts().getOrDefault(EffortType.LEARN.name(), 0));
+        }
+
+        @Test
+        void weekPointCrosswalkIssueEffortTypeOverridesCommitCategoryMapping() {
+            LocalDate monday = currentMonday();
+            UUID planId = UUID.randomUUID();
+            UUID issueId = UUID.randomUUID();
+            WeeklyPlanEntity plan = makePlan(planId, monday);
+
+            when(planRepository
+                    .findByOrgIdAndOwnerUserIdAndWeekStartDateBetweenOrderByWeekStartDateAsc(
+                            eq(ORG_ID), eq(USER_ID), any(), any()))
+                    .thenReturn(List.of(plan));
+
+            WeeklyCommitEntity commit = makeCommitWithCategory(planId, CommitCategory.DELIVERY);
+            commit.setSourceIssueId(issueId);
+
+            com.weekly.issues.domain.IssueEntity issue = new com.weekly.issues.domain.IssueEntity(
+                    issueId, ORG_ID, UUID.randomUUID(), "ISS-1", 1, "Investigate spike", USER_ID);
+            issue.setEffortType(EffortType.LEARN);
+
+            when(commitRepository.findByOrgIdAndWeeklyPlanIdIn(eq(ORG_ID), any()))
+                    .thenReturn(List.of(commit));
+            when(actualRepository.findByOrgIdAndCommitIdIn(eq(ORG_ID), any()))
+                    .thenReturn(List.of());
+            when(issueRepository.findAllByOrgIdAndIdIn(eq(ORG_ID), any()))
+                    .thenReturn(List.of(issue));
+
+            TrendsResponse response = service.computeTrends(ORG_ID, USER_ID, 1);
+
+            WeekTrendPoint point = response.weekPoints().get(0);
+            assertEquals(1, point.effortTypeCounts().getOrDefault(EffortType.LEARN.name(), 0));
+            assertEquals(0, point.effortTypeCounts().getOrDefault(EffortType.BUILD.name(), 0));
         }
     }
 }

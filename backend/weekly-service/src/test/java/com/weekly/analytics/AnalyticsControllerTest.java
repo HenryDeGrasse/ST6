@@ -43,13 +43,16 @@ class AnalyticsControllerTest {
 
     private TestAnalyticsService analyticsService;
     private AuthenticatedUserContext authenticatedUserContext;
+    private TeamBacklogHealthProvider teamBacklogHealthProvider;
     private AnalyticsController controller;
 
     @BeforeEach
     void setUp() {
         analyticsService = new TestAnalyticsService();
         authenticatedUserContext = new AuthenticatedUserContext();
-        controller = new AnalyticsController(analyticsService, authenticatedUserContext);
+        teamBacklogHealthProvider = new TestTeamBacklogHealthProvider();
+        controller = new AnalyticsController(
+                analyticsService, teamBacklogHealthProvider, authenticatedUserContext);
     }
 
     @AfterEach
@@ -311,6 +314,21 @@ class AnalyticsControllerTest {
         @Override
         public List<UUID> getDirectReports(UUID orgId, UUID managerId) {
             return List.of();
+        }
+    }
+
+    /**
+     * No-op implementation of {@link TeamBacklogHealthProvider} for unit tests.
+     * Needs a NamedParameterJdbcTemplate but never executes queries in unit test context.
+     */
+    private static final class TestTeamBacklogHealthProvider extends TeamBacklogHealthProvider {
+        private TestTeamBacklogHealthProvider() {
+            super(new org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate(
+                    new JdbcTemplate(new org.springframework.jdbc.datasource.DriverManagerDataSource(
+                            "jdbc:h2:mem:analytics-ctrl-test-" + UUID.randomUUID()
+                                    + ";MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+                            "sa",
+                            ""))));
         }
     }
 }

@@ -4,6 +4,8 @@ import com.weekly.capacity.CapacityProfileEntity;
 import com.weekly.capacity.CapacityProfileService;
 import com.weekly.issues.domain.EffortType;
 import com.weekly.issues.domain.EffortTypeMapper;
+import com.weekly.issues.domain.IssueEntity;
+import com.weekly.issues.repository.IssueRepository;
 import com.weekly.plan.domain.ChessPriority;
 import com.weekly.plan.domain.CommitCategory;
 import com.weekly.plan.domain.CompletionStatus;
@@ -18,6 +20,7 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,17 +62,20 @@ public class DefaultTrendsService implements TrendsService {
     private final WeeklyCommitRepository commitRepository;
     private final WeeklyCommitActualRepository actualRepository;
     private final CapacityProfileService capacityProfileService;
+    private final IssueRepository issueRepository;
 
     public DefaultTrendsService(
             WeeklyPlanRepository planRepository,
             WeeklyCommitRepository commitRepository,
             WeeklyCommitActualRepository actualRepository,
-            CapacityProfileService capacityProfileService
+            CapacityProfileService capacityProfileService,
+            IssueRepository issueRepository
     ) {
         this.planRepository = planRepository;
         this.commitRepository = commitRepository;
         this.actualRepository = actualRepository;
         this.capacityProfileService = capacityProfileService;
+        this.issueRepository = issueRepository;
     }
 
     /**
@@ -110,8 +116,10 @@ public class DefaultTrendsService implements TrendsService {
                         .collect(Collectors.toMap(
                                 WeeklyCommitActualEntity::getCommitId, Function.identity()));
 
+        Map<UUID, EffortType> issueEffortTypes = loadIssueEffortTypes(orgId, allUserCommits);
+
         List<WeekTrendPoint> weekPoints = buildWeekPoints(
-                windowStart, windowEnd, planByWeek, commitsByPlan, actualsByCommitId);
+                windowStart, windowEnd, planByWeek, commitsByPlan, actualsByCommitId, issueEffortTypes);
 
         double strategicRate = computeStrategicRate(allUserCommits);
         double avgCarryForward = computeAvgCarryForward(weekPoints);
@@ -124,7 +132,7 @@ public class DefaultTrendsService implements TrendsService {
         Double hoursAccuracyRatio = computeHoursAccuracyRatio(weekPoints);
         Map<String, Double> priorityDist = computePriorityDistribution(allUserCommits);
         Map<String, Double> categoryDist = computeCategoryDistribution(allUserCommits);
-        Map<String, Double> effortTypeDist = computeEffortTypeDistribution(allUserCommits);
+        Map<String, Double> effortTypeDist = computeEffortTypeDistribution(allUserCommits, issueEffortTypes);
 
         double teamStrategicRate = computeTeamStrategicRate(orgId, windowStart, windowEnd);
         Optional<CapacityProfileEntity> capacityProfile = capacityProfileService.getProfile(orgId, userId);
@@ -172,7 +180,8 @@ public class DefaultTrendsService implements TrendsService {
             LocalDate windowEnd,
             Map<LocalDate, WeeklyPlanEntity> planByWeek,
             Map<UUID, List<WeeklyCommitEntity>> commitsByPlan,
-            Map<UUID, WeeklyCommitActualEntity> actualsByCommitId
+            Map<UUID, WeeklyCommitActualEntity> actualsByCommitId,
+            Map<UUID, EffortType> issueEffortTypes
     ) {
         List<WeekTrendPoint> points = new ArrayList<>();
         LocalDate week = windowStart;
@@ -184,7 +193,7 @@ public class DefaultTrendsService implements TrendsService {
 
             boolean hasActuals = plan != null && isFinalizedReconciliation(plan.getState());
 
-            points.add(buildWeekPoint(week, commits, actualsByCommitId, hasActuals));
+            points.add(buildWeekPoint(week, commits, actualsByCommitId, hasActuals, issueEffortTypes));
             week = week.plusWeeks(1);
         }
         return points;
@@ -194,7 +203,8 @@ public class DefaultTrendsService implements TrendsService {
             LocalDate weekStart,
             List<WeeklyCommitEntity> commits,
             Map<UUID, WeeklyCommitActualEntity> actualsByCommitId,
-            boolean hasActuals
+            boolean hasActuals,
+            Map<UUID, EffortType> issueEffortTypes
     ) {
         int totalCommits = commits.size();
         int strategicCommits = 0;
@@ -209,7 +219,6 @@ public class DefaultTrendsService implements TrendsService {
 
         Map<String, Integer> priorityCounts = new LinkedHashMap<>();
         Map<String, Integer> categoryCounts = new LinkedHashMap<>();
-        Map<String, Integer> effortTypeCounts = new LinkedHashMap<>();
 
         for (WeeklyCommitEntity commit : commits) {
             if (commit.getOutcomeId() != null) {
@@ -231,10 +240,6 @@ public class DefaultTrendsService implements TrendsService {
             }
             if (commit.getCategory() != null) {
                 categoryCounts.merge(commit.getCategory().name(), 1, Integer::sum);
-                EffortType effortType = EffortTypeMapper.fromCommitCategory(commit.getCategory());
-                if (effortType != null) {
-                    effortTypeCounts.merge(effortType.name(), 1, Integer::sum);
-                }
             }
 
             WeeklyCommitActualEntity actual = actualsByCommitId.get(commit.getId());
@@ -258,6 +263,8 @@ public class DefaultTrendsService implements TrendsService {
                 && totalEstimatedHours.compareTo(BigDecimal.ZERO) > 0
                 ? totalActualHours.divide(totalEstimatedHours, 4, java.math.RoundingMode.HALF_UP).doubleValue()
                 : null;
+
+        Map<String, Integer> effortTypeCounts = computeWeekEffortTypeCounts(commits, issueEffortTypes);
 
         return new WeekTrendPoint(
                 weekStart.toString(),
@@ -411,30 +418,68 @@ public class DefaultTrendsService implements TrendsService {
     }
 
     /**
-     * Computes the fraction of commits per {@link EffortType} value
-     * (BUILD / MAINTAIN / COLLABORATE / LEARN) mapped from {@link CommitCategory}
-     * via {@link EffortTypeMapper}.
+     * Loads a map of issueId → {@link EffortType} for all commits that have a
+     * {@code source_issue_id} set (Phase 6 dual-write crosswalk).
      *
-     * <p>Only commits with a non-null category are included in the denominator.
-     * Commits whose category maps to {@code null} (currently impossible but
-     * defensive) are excluded from both numerator and denominator.
+     * <p>Used to enrich effort-type distribution with the canonical effort type
+     * stored on the {@code issues} table rather than the derived value from
+     * {@link EffortTypeMapper}. Commits without a {@code source_issue_id} are not
+     * present in the returned map and will use the category-based fallback.
      *
      * @param commits all commits in the rolling window
-     * @return map of effort-type name → fraction (0.0 when no categorised commits)
+     * @return map of issue UUID → effort type (may be empty when no commits link to issues)
      */
-    Map<String, Double> computeEffortTypeDistribution(List<WeeklyCommitEntity> commits) {
+    Map<UUID, EffortType> loadIssueEffortTypes(UUID orgId, List<WeeklyCommitEntity> commits) {
+        List<UUID> sourceIssueIds = commits.stream()
+                .map(WeeklyCommitEntity::getSourceIssueId)
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+        if (sourceIssueIds.isEmpty()) {
+            return Map.of();
+        }
+        return issueRepository.findAllByOrgIdAndIdIn(orgId, sourceIssueIds).stream()
+                .filter(issue -> issue.getEffortType() != null)
+                .collect(Collectors.toMap(IssueEntity::getId, IssueEntity::getEffortType));
+    }
+
+    /**
+     * Computes the fraction of commits per {@link EffortType} value
+     * (BUILD / MAINTAIN / COLLABORATE / LEARN).
+     *
+     * <p>Priority for determining the effort type per commit (crosswalk-aware):
+     * <ol>
+     *   <li>If the commit has a {@code source_issue_id} and the linked issue has a
+     *       non-null {@code effort_type}, use that canonical value.</li>
+     *   <li>Otherwise fall back to {@link EffortTypeMapper#fromCommitCategory} derived
+     *       from the commit's {@code category}.</li>
+     * </ol>
+     * Commits for which no effort type can be determined are excluded from both
+     * numerator and denominator.
+     *
+     * @param commits          all commits in the rolling window
+     * @param issueEffortTypes map of issue UUID → effort type (from {@link #loadIssueEffortTypes})
+     * @return map of effort-type name → fraction (0.0 when no typed commits)
+     */
+    Map<String, Double> computeEffortTypeDistribution(
+            List<WeeklyCommitEntity> commits,
+            Map<UUID, EffortType> issueEffortTypes) {
         Map<String, Double> result = new LinkedHashMap<>();
-        // Build mapped counts first
-        Map<EffortType, Long> rawCounts = new java.util.EnumMap<>(EffortType.class);
+        Map<EffortType, Long> rawCounts = new EnumMap<>(EffortType.class);
         for (EffortType et : EffortType.values()) {
             rawCounts.put(et, 0L);
         }
         long total = 0;
         for (WeeklyCommitEntity commit : commits) {
-            if (commit.getCategory() == null) {
-                continue;
+            EffortType effortType = null;
+            // Crosswalk: prefer the canonical effort type from the linked issue.
+            if (commit.getSourceIssueId() != null) {
+                effortType = issueEffortTypes.get(commit.getSourceIssueId());
             }
-            EffortType effortType = EffortTypeMapper.fromCommitCategory(commit.getCategory());
+            // Fallback: derive from commit category.
+            if (effortType == null && commit.getCategory() != null) {
+                effortType = EffortTypeMapper.fromCommitCategory(commit.getCategory());
+            }
             if (effortType != null) {
                 rawCounts.merge(effortType, 1L, Long::sum);
                 total++;
@@ -448,6 +493,31 @@ public class DefaultTrendsService implements TrendsService {
             }
         }
         return result;
+    }
+
+    /**
+     * Backwards-compatible overload used by {@link #buildWeekPoint} for the per-week
+     * effort-type breakdown.  Uses only the category-based mapping since the per-week
+     * point does not have access to the pre-fetched issue map.
+     */
+    private Map<String, Integer> computeWeekEffortTypeCounts(
+            List<WeeklyCommitEntity> commits,
+            Map<UUID, EffortType> issueEffortTypes
+    ) {
+        Map<String, Integer> effortTypeCounts = new LinkedHashMap<>();
+        for (WeeklyCommitEntity commit : commits) {
+            EffortType effortType = null;
+            if (commit.getSourceIssueId() != null) {
+                effortType = issueEffortTypes.get(commit.getSourceIssueId());
+            }
+            if (effortType == null && commit.getCategory() != null) {
+                effortType = EffortTypeMapper.fromCommitCategory(commit.getCategory());
+            }
+            if (effortType != null) {
+                effortTypeCounts.merge(effortType.name(), 1, Integer::sum);
+            }
+        }
+        return effortTypeCounts;
     }
 
     double computeTeamStrategicRate(UUID orgId, LocalDate windowStart, LocalDate windowEnd) {

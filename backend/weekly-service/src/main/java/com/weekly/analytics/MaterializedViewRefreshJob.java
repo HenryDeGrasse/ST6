@@ -10,11 +10,13 @@ import org.springframework.stereotype.Component;
 
 /**
  * Scheduled job that refreshes the analytics materialized views introduced in
- * V9 ({@code mv_outcome_coverage_weekly} and {@code mv_user_weekly_summary}).
+ * V9 ({@code mv_outcome_coverage_weekly} and {@code mv_user_weekly_summary})
+ * and V18 ({@code mv_outcome_coverage_weekly_v2}, {@code mv_user_weekly_summary_v2},
+ * {@code mv_team_backlog_health}).
  *
  * <p>Uses {@code REFRESH MATERIALIZED VIEW CONCURRENTLY} so that read queries
  * against the views are never blocked during refresh (requires the unique
- * indexes created by the V9 migration).
+ * indexes created by the V9 and V18 migrations).
  *
  * <p>Enabled via {@code analytics.refresh.enabled=true} (worker profile only).
  * Runs every 15 minutes with a 60-second startup delay.
@@ -25,8 +27,17 @@ public class MaterializedViewRefreshJob {
 
     private static final Logger LOG = LoggerFactory.getLogger(MaterializedViewRefreshJob.class);
 
+    // V9 commit-based views (legacy — Phase A source of truth for historical analytics)
     static final String MV_OUTCOME_COVERAGE_WEEKLY = "mv_outcome_coverage_weekly";
     static final String MV_USER_WEEKLY_SUMMARY = "mv_user_weekly_summary";
+
+    // V18 assignment-based views (Phase 6 — new surfaces)
+    static final String MV_OUTCOME_COVERAGE_WEEKLY_V2 = "mv_outcome_coverage_weekly_v2";
+    static final String MV_USER_WEEKLY_SUMMARY_V2 = "mv_user_weekly_summary_v2";
+    static final String MV_TEAM_BACKLOG_HEALTH = "mv_team_backlog_health";
+
+    /** Total view count — updated when more views are added. */
+    private static final int TOTAL_VIEW_COUNT = 5;
 
     private final JdbcTemplate jdbcTemplate;
     private final MeterRegistry meterRegistry;
@@ -37,8 +48,16 @@ public class MaterializedViewRefreshJob {
     }
 
     /**
-     * Refreshes both analytics materialized views concurrently.
-     * Runs every 15 minutes (fixedRate = 900_000 ms) with a 60-second
+     * Refreshes all analytics materialized views concurrently.
+     *
+     * <p>Refreshes are attempted in dependency order:
+     * <ol>
+     *   <li>V9 commit-based views (no inter-view dependencies)</li>
+     *   <li>V18 assignment-based views (no inter-view dependencies)</li>
+     * </ol>
+     * A failure of one view does not abort the remaining refreshes.
+     *
+     * <p>Runs every 15 minutes ({@code fixedRate = 900_000 ms}) with a 60-second
      * initial delay to allow the application to finish startup.
      */
     @Scheduled(fixedRate = 900_000, initialDelay = 60_000)
@@ -48,12 +67,15 @@ public class MaterializedViewRefreshJob {
         int successfulViews = 0;
         successfulViews += refreshView(MV_OUTCOME_COVERAGE_WEEKLY) ? 1 : 0;
         successfulViews += refreshView(MV_USER_WEEKLY_SUMMARY) ? 1 : 0;
+        successfulViews += refreshView(MV_OUTCOME_COVERAGE_WEEKLY_V2) ? 1 : 0;
+        successfulViews += refreshView(MV_USER_WEEKLY_SUMMARY_V2) ? 1 : 0;
+        successfulViews += refreshView(MV_TEAM_BACKLOG_HEALTH) ? 1 : 0;
 
         LOG.info(
                 "MaterializedViewRefreshJob: completed refresh of analytics materialized views "
                         + "(successfulViews={}, failedViews={})",
                 successfulViews,
-                2 - successfulViews
+                TOTAL_VIEW_COUNT - successfulViews
         );
     }
 

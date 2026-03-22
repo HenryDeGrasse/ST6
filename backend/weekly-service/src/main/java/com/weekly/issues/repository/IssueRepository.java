@@ -26,6 +26,8 @@ public interface IssueRepository extends JpaRepository<IssueEntity, UUID> {
 
     List<IssueEntity> findAllByOrgIdAndOutcomeId(UUID orgId, UUID outcomeId);
 
+    List<IssueEntity> findAllByOrgIdAndIdIn(UUID orgId, java.util.Collection<UUID> ids);
+
     Page<IssueEntity> findAllByTeamIdAndStatusNot(UUID teamId, IssueStatus status, Pageable pageable);
 
     Page<IssueEntity> findAllByTeamId(UUID teamId, Pageable pageable);

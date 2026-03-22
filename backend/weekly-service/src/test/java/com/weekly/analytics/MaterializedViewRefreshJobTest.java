@@ -28,8 +28,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
  *
  * <p>Mocks {@link JdbcTemplate} to avoid a live database and uses
  * {@link SimpleMeterRegistry} to assert Micrometer counter values directly.
+ * Covers all five materialized views: two V9 commit-based views and
+ * three V18 assignment-based views.
  */
 class MaterializedViewRefreshJobTest {
+
+    /** Total number of materialized views refreshed per cycle. */
+    private static final int TOTAL_VIEWS = 5;
 
     private JdbcTemplate jdbcTemplate;
     private SimpleMeterRegistry meterRegistry;
@@ -48,18 +53,20 @@ class MaterializedViewRefreshJobTest {
     class SqlExecution {
 
         /**
-         * Verifies that {@code refreshMaterializedViews()} issues exactly two
-         * {@code REFRESH MATERIALIZED VIEW CONCURRENTLY} statements – one for each
-         * view defined in the job.
+         * Verifies that {@code refreshMaterializedViews()} issues exactly five
+         * {@code REFRESH MATERIALIZED VIEW CONCURRENTLY} statements — one for each
+         * view defined in the job (two V9 + three V18).
          */
         @Test
-        void executesRefreshConcurrentlyForBothViews() {
+        void executesRefreshConcurrentlyForAllFiveViews() {
             ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
 
             job.refreshMaterializedViews();
 
-            verify(jdbcTemplate, times(2)).execute(sqlCaptor.capture());
+            verify(jdbcTemplate, times(TOTAL_VIEWS)).execute(sqlCaptor.capture());
             List<String> sqls = sqlCaptor.getAllValues();
+
+            // V9 commit-based views
             assertTrue(sqls.contains(
                     "REFRESH MATERIALIZED VIEW CONCURRENTLY "
                             + MaterializedViewRefreshJob.MV_OUTCOME_COVERAGE_WEEKLY),
@@ -68,6 +75,20 @@ class MaterializedViewRefreshJobTest {
                     "REFRESH MATERIALIZED VIEW CONCURRENTLY "
                             + MaterializedViewRefreshJob.MV_USER_WEEKLY_SUMMARY),
                     "Expected SQL for mv_user_weekly_summary not found");
+
+            // V18 assignment-based views
+            assertTrue(sqls.contains(
+                    "REFRESH MATERIALIZED VIEW CONCURRENTLY "
+                            + MaterializedViewRefreshJob.MV_OUTCOME_COVERAGE_WEEKLY_V2),
+                    "Expected SQL for mv_outcome_coverage_weekly_v2 not found");
+            assertTrue(sqls.contains(
+                    "REFRESH MATERIALIZED VIEW CONCURRENTLY "
+                            + MaterializedViewRefreshJob.MV_USER_WEEKLY_SUMMARY_V2),
+                    "Expected SQL for mv_user_weekly_summary_v2 not found");
+            assertTrue(sqls.contains(
+                    "REFRESH MATERIALIZED VIEW CONCURRENTLY "
+                            + MaterializedViewRefreshJob.MV_TEAM_BACKLOG_HEALTH),
+                    "Expected SQL for mv_team_backlog_health not found");
         }
 
         /**
@@ -80,7 +101,7 @@ class MaterializedViewRefreshJobTest {
 
             job.refreshMaterializedViews();
 
-            verify(jdbcTemplate, times(2)).execute(sqlCaptor.capture());
+            verify(jdbcTemplate, times(TOTAL_VIEWS)).execute(sqlCaptor.capture());
             for (String sql : sqlCaptor.getAllValues()) {
                 assertTrue(sql.contains("CONCURRENTLY"),
                         "SQL must contain CONCURRENTLY keyword: " + sql);
@@ -95,18 +116,31 @@ class MaterializedViewRefreshJobTest {
 
         /**
          * After a successful refresh, the {@code analytics_mv_refresh_total} counter
-         * tagged with {@code result=success} must be incremented once per view.
+         * tagged with {@code result=success} must be incremented once per view for
+         * all five views.
          */
         @Test
         void incrementsSuccessCounterForEachViewOnSuccessfulRefresh() {
             job.refreshMaterializedViews();
 
+            // V9 views
             assertEquals(1.0,
                     successCount(MaterializedViewRefreshJob.MV_OUTCOME_COVERAGE_WEEKLY),
                     "Success counter for mv_outcome_coverage_weekly must be 1");
             assertEquals(1.0,
                     successCount(MaterializedViewRefreshJob.MV_USER_WEEKLY_SUMMARY),
                     "Success counter for mv_user_weekly_summary must be 1");
+
+            // V18 views
+            assertEquals(1.0,
+                    successCount(MaterializedViewRefreshJob.MV_OUTCOME_COVERAGE_WEEKLY_V2),
+                    "Success counter for mv_outcome_coverage_weekly_v2 must be 1");
+            assertEquals(1.0,
+                    successCount(MaterializedViewRefreshJob.MV_USER_WEEKLY_SUMMARY_V2),
+                    "Success counter for mv_user_weekly_summary_v2 must be 1");
+            assertEquals(1.0,
+                    successCount(MaterializedViewRefreshJob.MV_TEAM_BACKLOG_HEALTH),
+                    "Success counter for mv_team_backlog_health must be 1");
         }
 
         /**
@@ -131,8 +165,8 @@ class MaterializedViewRefreshJobTest {
         /**
          * When {@link JdbcTemplate#execute} throws for every call, the
          * {@code analytics_mv_refresh_total} counter tagged with
-         * {@code result=failure} must be incremented once per view, and the
-         * success counter must remain at zero.
+         * {@code result=failure} must be incremented once per view for all views,
+         * and the success counter must remain at zero.
          */
         @Test
         void incrementsFailureCounterWhenJdbcTemplateThrows() {
@@ -146,6 +180,7 @@ class MaterializedViewRefreshJobTest {
                 detachLogAppender(logAppender);
             }
 
+            // V9 views
             assertEquals(1.0,
                     failureCount(MaterializedViewRefreshJob.MV_OUTCOME_COVERAGE_WEEKLY),
                     "Failure counter for mv_outcome_coverage_weekly must be 1");
@@ -158,6 +193,18 @@ class MaterializedViewRefreshJobTest {
             assertEquals(0.0,
                     successCount(MaterializedViewRefreshJob.MV_USER_WEEKLY_SUMMARY),
                     "Success counter for mv_user_weekly_summary must stay 0 on failure");
+
+            // V18 views
+            assertEquals(1.0,
+                    failureCount(MaterializedViewRefreshJob.MV_OUTCOME_COVERAGE_WEEKLY_V2),
+                    "Failure counter for mv_outcome_coverage_weekly_v2 must be 1");
+            assertEquals(1.0,
+                    failureCount(MaterializedViewRefreshJob.MV_USER_WEEKLY_SUMMARY_V2),
+                    "Failure counter for mv_user_weekly_summary_v2 must be 1");
+            assertEquals(1.0,
+                    failureCount(MaterializedViewRefreshJob.MV_TEAM_BACKLOG_HEALTH),
+                    "Failure counter for mv_team_backlog_health must be 1");
+
             assertTrue(logAppender.list.stream().anyMatch(event -> event.getLevel() == Level.ERROR
                             && event.getFormattedMessage().contains("failed to refresh "
                                     + MaterializedViewRefreshJob.MV_OUTCOME_COVERAGE_WEEKLY)),
@@ -169,8 +216,8 @@ class MaterializedViewRefreshJobTest {
         }
 
         /**
-         * When only the first view fails, the per-view counters must reflect the
-         * individual outcomes: failure for the first view, success for the second.
+         * When only the first V9 view fails, the per-view counters must reflect the
+         * individual outcomes: failure for the first view, success for all others.
          */
         @Test
         void incrementsFailureOnlyForFailingViewAndSuccessForPassingView() {
@@ -189,10 +236,20 @@ class MaterializedViewRefreshJobTest {
                     "Success counter for the failing view must remain 0");
             assertEquals(1.0,
                     successCount(MaterializedViewRefreshJob.MV_USER_WEEKLY_SUMMARY),
-                    "Success counter for the passing view must be 1");
+                    "Success counter for mv_user_weekly_summary must be 1");
             assertEquals(0.0,
                     failureCount(MaterializedViewRefreshJob.MV_USER_WEEKLY_SUMMARY),
-                    "Failure counter for the passing view must remain 0");
+                    "Failure counter for mv_user_weekly_summary must remain 0");
+            // V18 views should all succeed
+            assertEquals(1.0,
+                    successCount(MaterializedViewRefreshJob.MV_OUTCOME_COVERAGE_WEEKLY_V2),
+                    "Success counter for mv_outcome_coverage_weekly_v2 must be 1");
+            assertEquals(1.0,
+                    successCount(MaterializedViewRefreshJob.MV_USER_WEEKLY_SUMMARY_V2),
+                    "Success counter for mv_user_weekly_summary_v2 must be 1");
+            assertEquals(1.0,
+                    successCount(MaterializedViewRefreshJob.MV_TEAM_BACKLOG_HEALTH),
+                    "Success counter for mv_team_backlog_health must be 1");
         }
     }
 

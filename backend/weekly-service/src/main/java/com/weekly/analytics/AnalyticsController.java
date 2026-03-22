@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PathVariable;
 
 /**
  * REST controller for manager-facing multi-week analytics.
@@ -26,12 +27,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
+    private final TeamBacklogHealthProvider teamBacklogHealthProvider;
     private final AuthenticatedUserContext authenticatedUserContext;
 
     public AnalyticsController(
             AnalyticsService analyticsService,
+            TeamBacklogHealthProvider teamBacklogHealthProvider,
             AuthenticatedUserContext authenticatedUserContext) {
         this.analyticsService = analyticsService;
+        this.teamBacklogHealthProvider = teamBacklogHealthProvider;
         this.authenticatedUserContext = authenticatedUserContext;
     }
 
@@ -157,6 +161,52 @@ public class AnalyticsController {
                         authenticatedUserContext.orgId(),
                         authenticatedUserContext.userId(),
                         weeks));
+    }
+
+    /**
+     * GET /api/v1/analytics/teams/{teamId}/backlog-health
+     *
+     * <p>Returns backlog health metrics for a specific team from the
+     * {@code mv_team_backlog_health} materialized view. The view is refreshed
+     * every 15 minutes and shows open issue count, average age, blocked count,
+     * effort-type distribution, and average cycle time.
+     *
+     * <p>Returns 200 with a {@link com.weekly.analytics.dto.TeamBacklogHealth} payload,
+     * 204 No Content when the team has no open issues (no view row exists),
+     * or 403 if not a manager.
+     *
+     * @param teamId UUID of the team to query
+     * @return 200 with team backlog health, 204 when no open issues, or 403
+     */
+    @GetMapping("/teams/{teamId}/backlog-health")
+    public ResponseEntity<?> getTeamBacklogHealth(@PathVariable UUID teamId) {
+        ResponseEntity<?> guard = managerGuard();
+        if (guard != null) {
+            return guard;
+        }
+        return teamBacklogHealthProvider
+                .getTeamHealth(authenticatedUserContext.orgId(), teamId)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    /**
+     * GET /api/v1/analytics/teams/backlog-health
+     *
+     * <p>Returns backlog health metrics for all teams in the organisation.
+     * Teams with no open issues are excluded (they have no view row).
+     *
+     * @return 200 with list of {@link com.weekly.analytics.dto.TeamBacklogHealth},
+     *         or 403 if not a manager
+     */
+    @GetMapping("/teams/backlog-health")
+    public ResponseEntity<?> getOrgBacklogHealth() {
+        ResponseEntity<?> guard = managerGuard();
+        if (guard != null) {
+            return guard;
+        }
+        return ResponseEntity.ok(
+                teamBacklogHealthProvider.getOrgHealth(authenticatedUserContext.orgId()));
     }
 
     // ── Internal helpers ──────────────────────────────────────────────────────
