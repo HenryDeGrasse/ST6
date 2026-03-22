@@ -16,6 +16,8 @@ weekly:
     retention:
       enabled: true
     retention-days: 30
+  rag:
+    provider: memory
 
 logging:
   level:

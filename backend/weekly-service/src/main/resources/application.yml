@@ -102,6 +102,15 @@ weekly:
       enabled: false
       soft-delete-years: 3
       hard-delete-grace-days: 90
+  rag:
+    # memory (default) = in-process stub; pinecone = production vector store
+    provider: ${RAG_PROVIDER:memory}
+    pinecone:
+      api-key: ${PINECONE_API_KEY:}
+      # Existing index "spice-fortran" (1536 dims, cosine, aws/us-east-1)
+      index-name: ${PINECONE_INDEX_NAME:spice-fortran}
+    openai:
+      api-key: ${OPENAI_API_KEY:}
 
 ---
 spring:
@@ -152,3 +161,7 @@ notification:
 tenant:
   rls:
     enabled: false
+
+weekly:
+  rag:
+    provider: memory

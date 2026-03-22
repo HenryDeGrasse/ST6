@@ -33,6 +33,16 @@ dependencies {
     // PRD §9.2 – in-process LRU cache fallback for Redis outages
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
 
+    // Phase 6 – RAG / vector search
+    // Pinecone Java SDK for vector upsert/query/delete (control + data plane)
+    implementation("io.pinecone:pinecone-client:3.0.0") {
+        // Exclude Pinecone's older Jackson to let Spring Boot manage the version
+        exclude(group = "com.fasterxml.jackson.core", module = "jackson-databind")
+        exclude(group = "com.fasterxml.jackson.core", module = "jackson-core")
+    }
+    // OpenAI Java client (service module includes EmbeddingRequest + OpenAiService)
+    implementation("com.theokanning.openai-gpt3-java:service:0.18.2")
+
     // Database
     runtimeOnly("org.postgresql:postgresql")
     implementation("org.flywaydb:flyway-core")

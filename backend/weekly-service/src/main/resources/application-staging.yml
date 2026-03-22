@@ -11,6 +11,11 @@ ai:
     draft-reconciliation-enabled: true
     manager-insights-enabled: true
 
+weekly:
+  rag:
+    # Uses PINECONE_API_KEY + OPENAI_API_KEY injected by ECS task definition
+    provider: pinecone
+
 logging:
   level:
     com.weekly: INFO
