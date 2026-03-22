@@ -1,8 +1,8 @@
 /**
- * OutcomeProgressCard – CSS Module (Academia / Classical)
+ * OutcomeProgressCard – CSS Module (Enterprise Dashboard theme)
  *
  * Card displaying RCDO outcome progress details.
- * Follows the GlassPanel / wood-panel aesthetic.
+ * Clean card aesthetic — no decorative corner flourishes.
  */
 
 /* ─── Card wrapper ───────────────────────────────────────────────────────── */
@@ -13,42 +13,10 @@
   border-radius:    var(--wc-radius-lg);
   border:           1px solid var(--wc-color-border);
   background-color: var(--wc-color-bg-secondary);
-  box-shadow:       var(--wc-shadow-md);
+  box-shadow:       var(--wc-shadow-sm);
   display:          flex;
   flex-direction:   column;
   gap:              var(--wc-space-sm);
-}
-
-/* Corner flourishes — brass L-brackets (mirrors GlassPanel) */
-.card::before,
-.card::after {
-  content:        '';
-  position:       absolute;
-  width:          16px;
-  height:         16px;
-  border:         2px solid var(--wc-color-accent);
-  opacity:        0.35;
-  pointer-events: none;
-  transition:     opacity var(--wc-transition-slow);
-}
-
-.card::before {
-  top:           -1px;
-  left:          -1px;
-  border-right:  none;
-  border-bottom: none;
-}
-
-.card::after {
-  bottom:     -1px;
-  right:      -1px;
-  border-left: none;
-  border-top:  none;
-}
-
-.card:hover::before,
-.card:hover::after {
-  opacity: 0.7;
 }
 
 /* ─── Header row ─────────────────────────────────────────────────────────── */
@@ -78,7 +46,7 @@
   height:           8px;
   background-color: var(--wc-color-bg-tertiary);
   border-radius:    var(--wc-radius-full);
-  border:           1px solid var(--wc-color-border-muted);
+  border:           1px solid var(--wc-color-border);
   overflow:         visible;
 }
 
@@ -94,19 +62,19 @@
 /* Fill colour variants — keyed to gap between actual and expected progress */
 
 .fillOnTrack {
-  background-color: var(--wc-color-success, #4CAF82);
+  background-color: var(--wc-color-success);
 }
 
 .fillNeedsAttention {
-  background-color: var(--wc-color-warning, #C8A040);
+  background-color: var(--wc-color-warning);
 }
 
 .fillAtRisk {
-  background-color: #D2823C;
+  background-color: #ea580c;
 }
 
 .fillCritical {
-  background-color: var(--wc-color-error, #C84040);
+  background-color: var(--wc-color-error);
 }
 
 /* Expected-progress tick marker */
@@ -119,7 +87,7 @@
   background-color: var(--wc-color-text-muted);
   border-radius:    1px;
   transform:        translateX(-50%);
-  opacity:          0.75;
+  opacity:          0.6;
   pointer-events:   none;
 }
 
@@ -154,12 +122,12 @@
 }
 
 .targetDate {
-  font-family: var(--wc-font-display);
-  font-size:   0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-family:    var(--wc-font-display);
+  font-size:      0.6875rem;
+  font-weight:    500;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
-  color:       var(--wc-color-text-muted);
+  color:          var(--wc-color-text-muted);
 }
 
 .noTarget {
@@ -176,11 +144,11 @@
   font-family:      var(--wc-font-display);
   font-size:        0.6875rem;
   font-weight:      600;
-  letter-spacing:   0.08em;
+  letter-spacing:   0.03em;
   text-transform:   uppercase;
-  color:            var(--wc-color-error, #C84040);
-  background-color: var(--wc-color-error-bg, rgba(200, 64, 64, 0.12));
-  border:           1px solid var(--wc-color-error-border, rgba(200, 64, 64, 0.3));
+  color:            var(--wc-color-error);
+  background-color: var(--wc-color-error-bg);
+  border:           1px solid var(--wc-color-error-border);
   border-radius:    var(--wc-radius-sm);
   padding:          0.1rem 0.4rem;
 }

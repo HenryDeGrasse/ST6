@@ -1,9 +1,9 @@
 /**
- * StrategicSlackBanner – CSS Module (Academia / Classical)
+ * StrategicSlackBanner – CSS Module (Enterprise Dashboard theme)
  *
  * Banner displaying the org's current strategic slack level.
  * Follows the OvercommitBanner / ErrorBanner pattern: left-border accent,
- * coloured background tint, warm dark panel aesthetic.
+ * coloured background tint, clean enterprise panel aesthetic.
  */
 
 /* ─── Base banner ────────────────────────────────────────────────────────── */
@@ -31,25 +31,22 @@
   border-left-color: var(--wc-color-success);
   background-color:  var(--wc-color-success-bg);
   border-color:      var(--wc-color-success-border);
-  border-left-color: var(--wc-color-success);
   color:             var(--wc-color-text-primary);
 }
 
-/* MODERATE_SLACK — yellow/brass (warning: watch outcome progress) */
+/* MODERATE_SLACK — amber (warning: watch outcome progress) */
 .moderate {
   border-left-color: var(--wc-color-warning);
   background-color:  var(--wc-color-warning-bg);
   border-color:      var(--wc-color-warning-border);
-  border-left-color: var(--wc-color-warning);
   color:             var(--wc-color-text-primary);
 }
 
 /* LOW_SLACK — orange (between warning and error: attention needed soon) */
 .low {
-  border-left-color: #D2823C;
-  background-color:  rgba(210, 130, 60, 0.12);
-  border-color:      rgba(210, 130, 60, 0.35);
-  border-left-color: #D2823C;
+  border-left-color: #ea580c;
+  background-color:  rgba(234, 88, 12, 0.06);
+  border-color:      rgba(234, 88, 12, 0.25);
   color:             var(--wc-color-text-primary);
 }
 
@@ -58,7 +55,6 @@
   border-left-color: var(--wc-color-error);
   background-color:  var(--wc-color-error-bg);
   border-color:      var(--wc-color-error-border);
-  border-left-color: var(--wc-color-error);
   color:             var(--wc-color-text-primary);
 }
 
@@ -87,8 +83,8 @@
 
 .headline strong {
   font-family:    var(--wc-font-display);
-  font-weight:    700;
-  letter-spacing: 0.05em;
+  font-weight:    600;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 

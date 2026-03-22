@@ -1,5 +1,5 @@
 /**
- * QuickUpdateFlow – CSS Module (Academia / Classical theme)
+ * QuickUpdateFlow – CSS Module (Enterprise Dashboard theme)
  *
  * Rapid-fire batch check-in card layout.
  * Full-screen overlay with a centred card, status button row, AI option
@@ -15,7 +15,7 @@
   display:          flex;
   align-items:      center;
   justify-content:  center;
-  background-color: rgba(28, 23, 20, 0.85); /* --wc-color-bg at 85% */
+  background-color: rgba(0, 0, 0, 0.45);
   backdrop-filter:  blur(4px);
   padding:          var(--wc-space-md);
 }
@@ -83,7 +83,7 @@
   font-size:      0.625rem;
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.06em;
   color:          var(--wc-color-text-muted);
 }
 
@@ -97,7 +97,7 @@
 
 .progressFill {
   height:           100%;
-  background:       var(--wc-brass-gradient);
+  background:       var(--wc-color-accent);
   border-radius:    var(--wc-radius-full);
   transition:       width var(--wc-transition-base);
 }
@@ -114,7 +114,7 @@
   margin:      0;
   font-family: var(--wc-font-heading);
   font-size:   1.25rem;
-  font-weight: 700;
+  font-weight: 600;
   color:       var(--wc-color-text-primary);
   line-height: 1.3;
 }
@@ -133,12 +133,12 @@
   border-radius:    var(--wc-radius-sm);
   background-color: var(--wc-color-bg-tertiary);
   border:           1px solid var(--wc-color-border);
-  color:            var(--wc-color-accent);
+  color:            var(--wc-color-text-secondary);
   font-family:      var(--wc-font-display);
   font-size:        0.625rem;
   font-weight:      600;
   text-transform:   uppercase;
-  letter-spacing:   0.08em;
+  letter-spacing:   0.04em;
   white-space:      nowrap;
 }
 
@@ -157,20 +157,20 @@
 /* ─── Last check-in context ───────────────────────────────────────────── */
 
 .lastCheckIn {
-  display:     flex;
-  align-items: center;
-  gap:         0.5rem;
-  flex-wrap:   wrap;
-  padding:     0.375rem 0.625rem;
-  border-radius: var(--wc-radius-sm);
+  display:          flex;
+  align-items:      center;
+  gap:              0.5rem;
+  flex-wrap:        wrap;
+  padding:          0.375rem 0.625rem;
+  border-radius:    var(--wc-radius-sm);
   background-color: var(--wc-color-bg-tertiary);
-  border:      1px solid var(--wc-color-border-muted);
+  border:           1px solid var(--wc-color-border);
 }
 
 .lastCheckInLabel {
-  font-size:   0.75rem;
-  color:       var(--wc-color-text-muted);
-  font-style:  italic;
+  font-size:  0.75rem;
+  color:      var(--wc-color-text-muted);
+  font-style: italic;
 }
 
 .lastCheckInStatus {
@@ -180,8 +180,8 @@
 }
 
 .lastCheckInDays {
-  font-size:   0.75rem;
-  color:       var(--wc-color-text-muted);
+  font-size: 0.75rem;
+  color:     var(--wc-color-text-muted);
 }
 
 /* ─── Section labels ──────────────────────────────────────────────────── */
@@ -192,7 +192,7 @@
   font-size:      0.5625rem;
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.08em;
   color:          var(--wc-color-text-muted);
   margin-bottom:  var(--wc-space-xs);
 }
@@ -227,14 +227,13 @@
   transition:
     background-color var(--wc-transition-fast),
     border-color     var(--wc-transition-fast),
-    color            var(--wc-transition-fast),
-    transform        var(--wc-transition-fast);
+    color            var(--wc-transition-fast);
 }
 
 .statusButton:hover:not(:disabled) {
-  border-color: var(--wc-color-accent);
-  color:        var(--wc-color-text-primary);
-  transform:    translateY(-1px);
+  border-color:     var(--wc-color-accent);
+  color:            var(--wc-color-text-primary);
+  background-color: var(--wc-color-accent-muted);
 }
 
 .statusButton:focus-visible {
@@ -250,7 +249,7 @@
 .statusButtonSelected {
   background-color: var(--wc-color-accent-muted);
   border-color:     var(--wc-color-accent);
-  color:            var(--wc-color-text-primary);
+  color:            var(--wc-color-accent);
   box-shadow:       0 0 0 1px var(--wc-color-accent);
 }
 
@@ -294,7 +293,7 @@
 }
 
 .chip:hover:not(:disabled) {
-  background-color: rgba(201, 169, 98, 0.12);
+  background-color: var(--wc-color-accent-muted);
   border-color:     var(--wc-color-accent);
 }
 
@@ -311,7 +310,7 @@
 .chipSelected {
   background-color: var(--wc-color-accent-muted);
   border-color:     var(--wc-color-accent);
-  color:            var(--wc-color-text-primary);
+  color:            var(--wc-color-accent);
 }
 
 /* ─── Note section ────────────────────────────────────────────────────── */
@@ -325,7 +324,7 @@
   padding:          0.5rem 0.75rem;
   border-radius:    var(--wc-radius-sm);
   border:           1px solid var(--wc-color-border);
-  background-color: var(--wc-color-bg-primary, var(--wc-color-bg));
+  background-color: var(--wc-color-bg-secondary);
   color:            var(--wc-color-text-primary);
   font-family:      var(--wc-font-body);
   font-size:        0.9375rem;
@@ -344,12 +343,13 @@
 .noteInput:focus {
   outline:      none;
   border-color: var(--wc-color-accent);
-  box-shadow:   0 0 0 2px rgba(201, 169, 98, 0.2);
+  box-shadow:   0 0 0 3px var(--wc-color-accent-muted);
 }
 
 .noteInput:disabled {
-  opacity: 0.5;
-  cursor:  not-allowed;
+  opacity:          0.5;
+  cursor:           not-allowed;
+  background-color: var(--wc-color-bg-tertiary);
 }
 
 /* ─── Navigation bar ──────────────────────────────────────────────────── */
@@ -359,7 +359,7 @@
   align-items:     center;
   justify-content: space-between;
   padding-top:     var(--wc-space-sm);
-  border-top:      1px solid var(--wc-color-border-muted);
+  border-top:      1px solid var(--wc-color-border);
   gap:             var(--wc-space-sm);
 }
 
@@ -373,7 +373,7 @@
   padding:          0.4375rem 1.125rem;
   border-radius:    var(--wc-radius-sm);
   border:           1px solid var(--wc-color-border);
-  background-color: var(--wc-color-bg-tertiary);
+  background-color: var(--wc-color-bg-secondary);
   color:            var(--wc-color-text-secondary);
   font-family:      var(--wc-font-body);
   font-size:        0.875rem;
@@ -386,8 +386,9 @@
 }
 
 .navButton:hover:not(:disabled) {
-  border-color: var(--wc-color-accent);
-  color:        var(--wc-color-text-primary);
+  border-color:     var(--wc-color-accent);
+  color:            var(--wc-color-text-primary);
+  background-color: var(--wc-color-bg-tertiary);
 }
 
 .navButton:focus-visible {
@@ -401,32 +402,28 @@
 }
 
 .submitButton {
-  display:         inline-flex;
-  align-items:     center;
-  padding:         0.4375rem 1.5rem;
-  border-radius:   var(--wc-radius-sm);
-  border:          none;
-  background:      var(--wc-brass-gradient);
-  color:           var(--wc-color-accent-foreground);
-  font-family:     var(--wc-font-display);
-  font-size:       0.6875rem;
-  font-weight:     600;
-  text-transform:  uppercase;
-  letter-spacing:  0.12em;
-  text-shadow:     var(--wc-text-engraved);
-  cursor:          pointer;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
-    0 2px 6px rgba(0, 0, 0, 0.25);
+  display:          inline-flex;
+  align-items:      center;
+  padding:          0.4375rem 1.5rem;
+  border-radius:    var(--wc-radius-sm);
+  border:           none;
+  background-color: var(--wc-color-accent);
+  color:            var(--wc-color-accent-foreground);
+  font-family:      var(--wc-font-display);
+  font-size:        0.6875rem;
+  font-weight:      600;
+  text-transform:   uppercase;
+  letter-spacing:   0.06em;
+  cursor:           pointer;
+  box-shadow:       var(--wc-shadow-sm);
   transition:
-    filter     var(--wc-transition-fast),
-    box-shadow var(--wc-transition-fast);
+    background-color var(--wc-transition-fast),
+    box-shadow       var(--wc-transition-fast);
 }
 
 .submitButton:hover:not(:disabled) {
-  filter:     brightness(1.1);
-  box-shadow: var(--wc-shadow-glow);
+  background-color: var(--wc-color-accent-hover);
+  box-shadow:       var(--wc-shadow-glow);
 }
 
 .submitButton:focus-visible {
@@ -437,11 +434,7 @@
 .submitButton:disabled {
   opacity:    0.45;
   cursor:     not-allowed;
-  filter:     none;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
-    0 2px 6px rgba(0, 0, 0, 0.25);
+  box-shadow: none;
 }
 
 /* ─── Close / empty state ─────────────────────────────────────────────── */
@@ -451,8 +444,8 @@
 }
 
 .emptyState {
-  padding:   var(--wc-space-md);
-  color:     var(--wc-color-text-muted);
+  padding:    var(--wc-space-md);
+  color:      var(--wc-color-text-muted);
   font-style: italic;
   text-align: center;
 }

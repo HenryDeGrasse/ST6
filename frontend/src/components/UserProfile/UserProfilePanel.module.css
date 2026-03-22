@@ -1,14 +1,14 @@
 /**
- * UserProfilePanel – CSS Module (Academia / Classical)
- * Collapsible user model profile panel using the same ai-insight
- * design tokens as MyTrendsPanel.
+ * UserProfilePanel – CSS Module (Enterprise Dashboard theme)
+ * Collapsible user model profile panel using clean enterprise card styling.
  */
 
 .panel {
   padding:          var(--wc-space-sm) var(--wc-space-md);
-  border:           1.5px dashed var(--wc-ai-insight-border);
+  border:           1px solid var(--wc-color-border);
   border-radius:    var(--wc-radius-md);
-  background-color: var(--wc-ai-insight-bg);
+  background-color: var(--wc-color-bg-secondary);
+  box-shadow:       var(--wc-shadow-sm);
   margin-bottom:    var(--wc-space-md);
 }
 
@@ -30,7 +30,7 @@
 }
 
 .profileIcon {
-  color:       var(--wc-ai-insight-text);
+  color:       var(--wc-color-accent);
   flex-shrink: 0;
 }
 
@@ -39,8 +39,8 @@
   font-size:      0.6875rem;
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color:          var(--wc-ai-insight-text);
+  letter-spacing: 0.08em;
+  color:          var(--wc-color-text-primary);
   white-space:    nowrap;
 }
 
@@ -50,20 +50,22 @@
   gap:              var(--wc-space-xs);
   padding:          0.3rem 0.75rem;
   border-radius:    var(--wc-radius-sm);
-  border:           1px solid var(--wc-ai-insight-border);
+  border:           1px solid var(--wc-color-border);
   background-color: var(--wc-color-bg-secondary);
-  color:            var(--wc-ai-insight-text);
+  color:            var(--wc-color-text-secondary);
   font-family:      var(--wc-font-body);
   font-size:        0.875rem;
   font-weight:      500;
   cursor:           pointer;
   transition:       background-color var(--wc-transition-fast),
-                    border-color var(--wc-transition-fast);
+                    border-color     var(--wc-transition-fast),
+                    color            var(--wc-transition-fast);
 }
 
 .toggleButton:hover {
-  background-color: var(--wc-ai-insight-bg);
+  background-color: var(--wc-color-bg-tertiary);
   border-color:     var(--wc-color-accent);
+  color:            var(--wc-color-text-primary);
 }
 
 .toggleButton:focus-visible {
@@ -118,9 +120,9 @@
 
 .metricCard {
   padding:          var(--wc-space-xs) var(--wc-space-sm);
-  border:           1px solid var(--wc-ai-insight-border);
+  border:           1px solid var(--wc-color-border);
   border-radius:    var(--wc-radius-sm);
-  background-color: var(--wc-color-bg-secondary);
+  background-color: var(--wc-color-bg-tertiary);
 }
 
 .metricLabel {
@@ -128,7 +130,7 @@
   font-size:      0.5625rem;
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   color:          var(--wc-color-text-muted);
   margin-bottom:  0.15rem;
 }
@@ -154,7 +156,7 @@
   font-size:      0.5625rem;
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   color:          var(--wc-color-text-muted);
   margin-bottom:  var(--wc-space-xs);
 }
@@ -178,12 +180,12 @@
 }
 
 .barLabel {
-  font-size:    0.8125rem;
-  color:        var(--wc-color-text-secondary);
-  min-width:    6rem;
-  flex-shrink:  0;
-  white-space:  nowrap;
-  overflow:     hidden;
+  font-size:     0.8125rem;
+  color:         var(--wc-color-text-secondary);
+  min-width:     6rem;
+  flex-shrink:   0;
+  white-space:   nowrap;
+  overflow:      hidden;
   text-overflow: ellipsis;
 }
 
@@ -193,11 +195,12 @@
   background-color: var(--wc-color-bg-tertiary);
   border-radius:    var(--wc-radius-full);
   overflow:         hidden;
+  border:           1px solid var(--wc-color-border);
 }
 
 .barFill {
   height:        100%;
-  background:    var(--wc-brass-gradient);
+  background:    var(--wc-color-accent);
   border-radius: var(--wc-radius-full);
   transition:    width var(--wc-transition-base);
 }
@@ -227,14 +230,14 @@
   align-items:      center;
   padding:          0.1875rem 0.5625rem;
   border-radius:    var(--wc-radius-full);
-  border:           1px solid var(--wc-ai-insight-border);
-  background-color: var(--wc-color-bg-secondary);
-  color:            var(--wc-ai-insight-text);
+  border:           1px solid var(--wc-color-border);
+  background-color: var(--wc-color-bg-tertiary);
+  color:            var(--wc-color-text-secondary);
   font-family:      var(--wc-font-display);
   font-size:        0.6875rem;
   font-weight:      600;
   text-transform:   uppercase;
-  letter-spacing:   0.08em;
+  letter-spacing:   0.04em;
   white-space:      nowrap;
 }
 
@@ -251,14 +254,14 @@
 }
 
 .trendBadge {
-  display:       inline-flex;
-  align-items:   center;
-  padding:       0.1875rem 0.5rem;
-  border-radius: var(--wc-radius-sm);
-  font-family:   var(--wc-font-display);
-  font-size:     0.5625rem;
-  font-weight:   600;
-  letter-spacing: 0.1em;
+  display:        inline-flex;
+  align-items:    center;
+  padding:        0.1875rem 0.5rem;
+  border-radius:  var(--wc-radius-sm);
+  font-family:    var(--wc-font-display);
+  font-size:      0.5625rem;
+  font-weight:    600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   white-space:    nowrap;
   flex-shrink:    0;
@@ -266,21 +269,21 @@
 
 /* IMPROVING = green */
 .badgeImproving {
-  background-color: rgba(var(--wc-color-success-rgb, 80, 160, 100), 0.12);
+  background-color: var(--wc-color-success-bg);
   color:            var(--wc-color-success);
-  border:           1px solid rgba(var(--wc-color-success-rgb, 80, 160, 100), 0.25);
+  border:           1px solid var(--wc-color-success-border);
 }
 
-/* STABLE = blue */
+/* STABLE = blue (neutral, steady-state) */
 .badgeStable {
-  background-color: rgba(139, 170, 176, 0.15);
-  color:            #8BAAB0;
-  border:           1px solid rgba(139, 170, 176, 0.3);
+  background-color: var(--wc-color-accent-muted);
+  color:            var(--wc-color-accent);
+  border:           1px solid rgba(37, 99, 235, 0.25);
 }
 
-/* WORSENING = orange */
+/* WORSENING = amber */
 .badgeWorsening {
-  background-color: rgba(var(--wc-color-warning-rgb, 200, 140, 0), 0.12);
+  background-color: var(--wc-color-warning-bg);
   color:            var(--wc-color-warning);
-  border:           1px solid rgba(var(--wc-color-warning-rgb, 200, 140, 0), 0.25);
+  border:           1px solid var(--wc-color-warning-border);
 }

@@ -1,9 +1,8 @@
 /**
- * OutcomeMetadataEditor – CSS Module (Academia / Classical)
+ * OutcomeMetadataEditor – CSS Module (Enterprise Dashboard theme)
  *
  * Admin/manager form for configuring RCDO outcome target dates and progress
- * tracking.  Follows the GlassPanel / wood-panel aesthetic and the
- * AdminDashboardPage form-field patterns.
+ * tracking.  Follows the clean card / enterprise panel aesthetic.
  */
 
 /* ─── Editor wrapper ─────────────────────────────────────────────────────── */
@@ -20,7 +19,7 @@
   margin:      0 0 var(--wc-space-xs);
   font-family: var(--wc-font-heading);
   font-size:   1.25rem;
-  font-weight: 500;
+  font-weight: 600;
   color:       var(--wc-color-text-primary);
   line-height: 1.25;
 }
@@ -50,7 +49,7 @@
   font-family:    var(--wc-font-display);
   font-size:      0.65rem;
   font-weight:    600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color:          var(--wc-color-text-muted);
 }
@@ -58,48 +57,53 @@
 /* ─── Text / number / date inputs ────────────────────────────────────────── */
 
 .input {
-  font-family:   var(--wc-font-body);
-  font-size:     0.9375rem;
-  color:         var(--wc-color-text-primary);
-  background:    rgba(255, 255, 255, 0.05);
-  border:        1px solid var(--wc-glass-border, rgba(255, 255, 255, 0.12));
-  border-radius: var(--wc-radius-sm, 0.25rem);
-  padding:       0.375rem 0.5rem;
-  width:         100%;
-  box-sizing:    border-box;
-  transition:    border-color 150ms ease-out;
+  font-family:      var(--wc-font-body);
+  font-size:        0.9375rem;
+  color:            var(--wc-color-text-primary);
+  background-color: var(--wc-color-bg-secondary);
+  border:           1px solid var(--wc-color-border);
+  border-radius:    var(--wc-radius-sm);
+  padding:          0.375rem 0.5rem;
+  width:            100%;
+  box-sizing:       border-box;
+  transition:       border-color var(--wc-transition-fast),
+                    box-shadow   var(--wc-transition-fast);
 }
 
 .input:focus {
   outline:      none;
-  border-color: var(--wc-color-accent, #C9A962);
+  border-color: var(--wc-color-accent);
+  box-shadow:   0 0 0 3px var(--wc-color-accent-muted);
 }
 
 .input:disabled {
-  opacity: 0.5;
-  cursor:  not-allowed;
+  opacity:          0.5;
+  cursor:           not-allowed;
+  background-color: var(--wc-color-bg-tertiary);
 }
 
 /* ─── Select ─────────────────────────────────────────────────────────────── */
 
 .select {
-  font-family:   var(--wc-font-body);
-  font-size:     0.9375rem;
-  color:         var(--wc-color-text-primary);
-  background:    rgba(255, 255, 255, 0.05);
-  border:        1px solid var(--wc-glass-border, rgba(255, 255, 255, 0.12));
-  border-radius: var(--wc-radius-sm, 0.25rem);
-  padding:       0.375rem 0.5rem;
-  width:         100%;
-  box-sizing:    border-box;
-  cursor:        pointer;
-  transition:    border-color 150ms ease-out;
-  appearance:    auto;
+  font-family:      var(--wc-font-body);
+  font-size:        0.9375rem;
+  color:            var(--wc-color-text-primary);
+  background-color: var(--wc-color-bg-secondary);
+  border:           1px solid var(--wc-color-border);
+  border-radius:    var(--wc-radius-sm);
+  padding:          0.375rem 0.5rem;
+  width:            100%;
+  box-sizing:       border-box;
+  cursor:           pointer;
+  transition:       border-color var(--wc-transition-fast),
+                    box-shadow   var(--wc-transition-fast);
+  appearance:       auto;
 }
 
 .select:focus {
   outline:      none;
-  border-color: var(--wc-color-accent, #C9A962);
+  border-color: var(--wc-color-accent);
+  box-shadow:   0 0 0 3px var(--wc-color-accent-muted);
 }
 
 .select:disabled {
@@ -110,9 +114,9 @@
 /* ─── Radio group ────────────────────────────────────────────────────────── */
 
 .radioGroup {
-  display:   flex;
-  flex-wrap: wrap;
-  gap:       var(--wc-space-md, 1rem);
+  display:    flex;
+  flex-wrap:  wrap;
+  gap:        var(--wc-space-md);
   margin-top: 0.25rem;
 }
 
@@ -133,7 +137,7 @@
 }
 
 .radioInput {
-  accent-color: var(--wc-color-accent, #C9A962);
+  accent-color: var(--wc-color-accent);
   width:        0.9rem;
   height:       0.9rem;
   cursor:       pointer;
@@ -166,9 +170,9 @@
   flex-direction:   column;
   gap:              var(--wc-space-sm);
   padding:          var(--wc-space-sm) var(--wc-space-md);
-  border:           1px solid var(--wc-glass-border, rgba(255, 255, 255, 0.08));
-  border-radius:    var(--wc-radius-md, 0.5rem);
-  background-color: rgba(255, 255, 255, 0.02);
+  border:           1px solid var(--wc-color-border);
+  border-radius:    var(--wc-radius-md);
+  background-color: var(--wc-color-bg-tertiary);
 }
 
 /* ─── Two-column field row ───────────────────────────────────────────────── */
@@ -208,7 +212,7 @@
   font-family:    var(--wc-font-display);
   font-size:      0.6rem;
   font-weight:    600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color:          var(--wc-color-text-muted);
 }
@@ -260,19 +264,21 @@
   font-size:      0.65rem;
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   background:     transparent;
-  color:          var(--wc-color-accent, #C9A962);
-  border:         1px solid var(--wc-color-accent, #C9A962);
-  border-radius:  var(--wc-radius-sm, 0.25rem);
+  color:          var(--wc-color-accent);
+  border:         1px solid var(--wc-color-accent);
+  border-radius:  var(--wc-radius-sm);
   padding:        0.25rem 0.75rem;
   cursor:         pointer;
-  transition:     background 150ms ease-out, color 150ms ease-out;
+  transition:     background-color var(--wc-transition-fast),
+                  box-shadow       var(--wc-transition-fast);
   white-space:    nowrap;
 }
 
 .addButton:hover:not(:disabled) {
-  background: rgba(201, 169, 98, 0.12);
+  background-color: var(--wc-color-accent-muted);
+  box-shadow:       var(--wc-shadow-glow);
 }
 
 .addButton:disabled {
@@ -291,18 +297,20 @@
   line-height:     1;
   background:      transparent;
   color:           var(--wc-color-text-muted);
-  border:          1px solid var(--wc-glass-border, rgba(255, 255, 255, 0.12));
-  border-radius:   var(--wc-radius-sm, 0.25rem);
+  border:          1px solid var(--wc-color-border);
+  border-radius:   var(--wc-radius-sm);
   cursor:          pointer;
-  transition:      color 150ms ease-out, border-color 150ms ease-out, background 150ms ease-out;
+  transition:      color            var(--wc-transition-fast),
+                   border-color     var(--wc-transition-fast),
+                   background-color var(--wc-transition-fast);
   flex-shrink:     0;
   justify-self:    center;
 }
 
 .removeButton:hover:not(:disabled) {
-  color:            var(--wc-color-error, #C84040);
-  border-color:     var(--wc-color-error-border, rgba(200, 64, 64, 0.3));
-  background-color: var(--wc-color-error-bg, rgba(200, 64, 64, 0.08));
+  color:            var(--wc-color-error);
+  border-color:     var(--wc-color-error-border);
+  background-color: var(--wc-color-error-bg);
 }
 
 .removeButton:disabled {
@@ -323,10 +331,10 @@
 
 .errorBox {
   padding:       var(--wc-space-sm) var(--wc-space-md);
-  border:        1px solid rgba(200, 64, 64, 0.35);
-  border-radius: var(--wc-radius-md, 0.5rem);
-  background:    rgba(200, 64, 64, 0.08);
-  color:         var(--wc-color-error, #C84040);
+  border:        1px solid var(--wc-color-error-border);
+  border-radius: var(--wc-radius-md);
+  background:    var(--wc-color-error-bg);
+  color:         var(--wc-color-error);
   font-family:   var(--wc-font-body);
   font-size:     0.875rem;
 }
@@ -334,7 +342,7 @@
 .successMsg {
   font-family: var(--wc-font-body);
   font-size:   0.875rem;
-  color:       var(--wc-color-success, #4CAF82);
+  color:       var(--wc-color-success);
   font-style:  italic;
 }
 
@@ -351,22 +359,25 @@
 /* ─── Save button ────────────────────────────────────────────────────────── */
 
 .saveButton {
-  font-family:    var(--wc-font-display);
-  font-size:      0.7rem;
-  font-weight:    700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  background:     var(--wc-color-accent, #C9A962);
-  color:          #1a1510;
-  border:         none;
-  border-radius:  var(--wc-radius-sm, 0.25rem);
-  padding:        0.5rem 1.5rem;
-  cursor:         pointer;
-  transition:     opacity 150ms ease-out, background 150ms ease-out;
+  font-family:      var(--wc-font-display);
+  font-size:        0.7rem;
+  font-weight:      600;
+  text-transform:   uppercase;
+  letter-spacing:   0.06em;
+  background-color: var(--wc-color-accent);
+  color:            var(--wc-color-accent-foreground);
+  border:           none;
+  border-radius:    var(--wc-radius-sm);
+  padding:          0.5rem 1.5rem;
+  cursor:           pointer;
+  box-shadow:       var(--wc-shadow-sm);
+  transition:       background-color var(--wc-transition-fast),
+                    box-shadow       var(--wc-transition-fast);
 }
 
 .saveButton:hover:not(:disabled) {
-  opacity: 0.9;
+  background-color: var(--wc-color-accent-hover);
+  box-shadow:       var(--wc-shadow-glow);
 }
 
 .saveButton:disabled {
