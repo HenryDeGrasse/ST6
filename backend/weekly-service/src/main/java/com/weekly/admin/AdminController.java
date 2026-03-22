@@ -1,16 +1,24 @@
 package com.weekly.admin;
 
+import com.weekly.ai.rag.IssueEmbeddingJob;
 import com.weekly.auth.AuthenticatedUserContext;
 import com.weekly.config.CorrelationIdFilter;
+import com.weekly.issues.domain.IssueStatus;
+import com.weekly.issues.repository.IssueRepository;
 import com.weekly.shared.ApiErrorResponse;
 import com.weekly.shared.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,18 +37,26 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/admin")
 public class AdminController {
 
+    private static final Logger LOG = LoggerFactory.getLogger(AdminController.class);
+
     private final UserDataDeletionService userDataDeletionService;
     private final AdminDashboardService adminDashboardService;
     private final AuthenticatedUserContext authenticatedUserContext;
+    private final IssueRepository issueRepository;
+    private final IssueEmbeddingJob issueEmbeddingJob;
 
     public AdminController(
             UserDataDeletionService userDataDeletionService,
             AdminDashboardService adminDashboardService,
-            AuthenticatedUserContext authenticatedUserContext
+            AuthenticatedUserContext authenticatedUserContext,
+            IssueRepository issueRepository,
+            IssueEmbeddingJob issueEmbeddingJob
     ) {
         this.userDataDeletionService = userDataDeletionService;
         this.adminDashboardService = adminDashboardService;
         this.authenticatedUserContext = authenticatedUserContext;
+        this.issueRepository = issueRepository;
+        this.issueEmbeddingJob = issueEmbeddingJob;
     }
 
     /**
@@ -171,5 +187,54 @@ public class AdminController {
         RcdoHealthReport report = adminDashboardService.getRcdoHealth(
                 authenticatedUserContext.orgId());
         return ResponseEntity.ok(report);
+    }
+
+    // ── Embedding backfill ───────────────────────────────────────────────────
+
+    /**
+     * Backfills Pinecone embeddings for all non-archived issues with
+     * {@code embedding_version = 0} (i.e. never been embedded).
+     *
+     * <p>Designed for use after initial Phase 6 deployment or after a Pinecone
+     * index reset.  Processing is synchronous (blocking) to simplify progress
+     * tracking; run during a maintenance window for large datasets.
+     *
+     * @return 200 with counts of processed/succeeded/failed issues, 403 if not ADMIN
+     */
+    @PostMapping("/backfill-embeddings")
+    public ResponseEntity<?> backfillEmbeddings() {
+        if (!authenticatedUserContext.isAdmin()) {
+            return ResponseEntity.status(ErrorCode.FORBIDDEN.getHttpStatus())
+                    .body(ApiErrorResponse.of(ErrorCode.FORBIDDEN, "Admin role required"));
+        }
+
+        List<UUID> issueIds = issueRepository
+                .findAllByOrgIdAndEmbeddingVersionAndStatusNot(
+                        authenticatedUserContext.orgId(), 0, IssueStatus.ARCHIVED)
+                .stream()
+                .map(issue -> issue.getId())
+                .toList();
+
+        LOG.info("Backfill-embeddings: {} issues with embedding_version=0 for org {}",
+                issueIds.size(), authenticatedUserContext.orgId());
+
+        int succeeded = 0;
+        int failed = 0;
+        for (UUID issueId : issueIds) {
+            if (issueEmbeddingJob.embedNow(issueId)) {
+                succeeded++;
+            } else {
+                failed++;
+            }
+        }
+
+        LOG.info("Backfill-embeddings complete: {}/{} succeeded, {} failed",
+                succeeded, issueIds.size(), failed);
+
+        return ResponseEntity.ok(Map.of(
+                "total", issueIds.size(),
+                "succeeded", succeeded,
+                "failed", failed
+        ));
     }
 }

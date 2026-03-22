@@ -72,6 +72,7 @@ class IssueServiceTest {
     private TeamMemberRepository memberRepository;
     private WeeklyPlanRepository planRepository;
     private AuditService auditService;
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
     private IssueService issueService;
 
     @BeforeEach
@@ -83,9 +84,11 @@ class IssueServiceTest {
         memberRepository = mock(TeamMemberRepository.class);
         planRepository = mock(WeeklyPlanRepository.class);
         auditService = mock(AuditService.class);
+        eventPublisher = mock(org.springframework.context.ApplicationEventPublisher.class);
         issueService = new IssueService(
                 issueRepository, activityRepository, assignmentRepository,
-                teamRepository, memberRepository, planRepository, auditService
+                teamRepository, memberRepository, planRepository, auditService,
+                eventPublisher
         );
     }
 
@@ -533,6 +536,7 @@ class IssueServiceTest {
             assertEquals(issueId.toString(), response.issueId());
             // Issue should transition to IN_PROGRESS
             assertEquals(IssueStatus.IN_PROGRESS, issue.getStatus());
+            verify(eventPublisher).publishEvent(any(com.weekly.issues.events.IssueUpdatedEvent.class));
         }
 
         @Test
@@ -611,6 +615,7 @@ class IssueServiceTest {
             assertEquals(IssueStatus.IN_PROGRESS, issue.getStatus());
             verify(activityRepository).save(argOfType(IssueActivityType.COMMITTED_TO_WEEK));
             verify(activityRepository).save(argOfType(IssueActivityType.STATUS_CHANGE));
+            verify(eventPublisher).publishEvent(any(com.weekly.issues.events.IssueUpdatedEvent.class));
         }
     }
 
@@ -644,6 +649,7 @@ class IssueServiceTest {
 
             assertEquals("OPEN", response.status());
             verify(assignmentRepository).delete(assignment);
+            verify(eventPublisher).publishEvent(any(com.weekly.issues.events.IssueUpdatedEvent.class));
         }
 
         @Test

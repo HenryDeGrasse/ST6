@@ -66,6 +66,7 @@ class AssignmentServiceTest {
     private WeeklyPlanRepository planRepository;
     private WeeklyCommitRepository commitRepository;
     private TeamMemberRepository memberRepository;
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
     private AssignmentService assignmentService;
 
     @BeforeEach
@@ -77,10 +78,12 @@ class AssignmentServiceTest {
         planRepository = mock(WeeklyPlanRepository.class);
         commitRepository = mock(WeeklyCommitRepository.class);
         memberRepository = mock(TeamMemberRepository.class);
+        eventPublisher = mock(org.springframework.context.ApplicationEventPublisher.class);
         assignmentService = new AssignmentService(
                 assignmentRepository, assignmentActualRepository,
                 issueRepository, activityRepository,
-                planRepository, commitRepository, memberRepository
+                planRepository, commitRepository, memberRepository,
+                eventPublisher
         );
     }
 
@@ -153,6 +156,7 @@ class AssignmentServiceTest {
             assertNotNull(response);
             assertEquals(ISSUE_ID.toString(), response.issueId());
             assertEquals(PLAN_ID.toString(), response.weeklyPlanId());
+            verify(eventPublisher).publishEvent(any(com.weekly.issues.events.IssueUpdatedEvent.class));
 
             // Verify dual-write commit was created
             ArgumentCaptor<WeeklyCommitEntity> commitCaptor =
@@ -323,6 +327,7 @@ class AssignmentServiceTest {
 
             verify(commitRepository).delete(commit);
             verify(assignmentRepository).delete(assignment);
+            verify(eventPublisher).publishEvent(any(com.weekly.issues.events.IssueUpdatedEvent.class));
 
             ArgumentCaptor<IssueEntity> issueCaptor = ArgumentCaptor.forClass(IssueEntity.class);
             verify(issueRepository).save(issueCaptor.capture());
@@ -462,6 +467,7 @@ class AssignmentServiceTest {
             assertNotNull(response);
             assertEquals(toPlanId.toString(), response.weeklyPlanId());
             assertEquals(ISSUE_ID.toString(), response.issueId());
+            verify(eventPublisher).publishEvent(any(com.weekly.issues.events.IssueUpdatedEvent.class));
 
             // Verify a new commit was created in the target plan
             ArgumentCaptor<WeeklyCommitEntity> commitCaptor =
@@ -581,6 +587,7 @@ class AssignmentServiceTest {
             assertNotNull(response);
             assertEquals(IssueStatus.OPEN.name(), response.status());
             verify(assignmentRepository).delete(assignment);
+            verify(eventPublisher).publishEvent(any(com.weekly.issues.events.IssueUpdatedEvent.class));
 
             // STATUS_CHANGE + RELEASED_TO_BACKLOG
             verify(activityRepository, times(2)).save(any(IssueActivityEntity.class));

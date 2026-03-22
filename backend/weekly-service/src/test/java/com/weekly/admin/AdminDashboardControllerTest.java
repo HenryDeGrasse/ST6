@@ -54,7 +54,9 @@ class AdminDashboardControllerTest {
                 mock(IdempotencyKeyRepository.class),
                 mock(AuditService.class)
         );
-        controller = new AdminController(deletionService, adminDashboardService, authenticatedUserContext);
+        controller = new AdminController(deletionService, adminDashboardService, authenticatedUserContext,
+                mock(com.weekly.issues.repository.IssueRepository.class),
+                mock(com.weekly.ai.rag.IssueEmbeddingJob.class));
     }
 
     @AfterEach

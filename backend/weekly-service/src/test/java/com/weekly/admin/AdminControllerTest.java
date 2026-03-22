@@ -5,14 +5,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.weekly.ai.rag.IssueEmbeddingJob;
 import com.weekly.audit.AuditEventRepository;
 import com.weekly.audit.AuditService;
 import com.weekly.auth.AuthenticatedUserContext;
 import com.weekly.auth.UserPrincipal;
 import com.weekly.config.CorrelationIdFilter;
 import com.weekly.idempotency.IdempotencyKeyRepository;
+import com.weekly.issues.domain.IssueEntity;
 import com.weekly.notification.NotificationRepository;
 import com.weekly.plan.repository.WeeklyCommitRepository;
 import com.weekly.plan.repository.WeeklyPlanRepository;
@@ -42,6 +45,8 @@ class AdminControllerTest {
     private CapturingUserDataDeletionService userDataDeletionService;
     private AuthenticatedUserContext authenticatedUserContext;
     private AdminDashboardService adminDashboardService;
+    private com.weekly.issues.repository.IssueRepository issueRepository;
+    private IssueEmbeddingJob issueEmbeddingJob;
     private AdminController controller;
 
     @BeforeEach
@@ -49,8 +54,12 @@ class AdminControllerTest {
         userDataDeletionService = new CapturingUserDataDeletionService();
         authenticatedUserContext = new AuthenticatedUserContext();
         adminDashboardService = mock(AdminDashboardService.class);
+        issueRepository = mock(com.weekly.issues.repository.IssueRepository.class);
+        issueEmbeddingJob = mock(IssueEmbeddingJob.class);
         controller = new AdminController(
-                userDataDeletionService, adminDashboardService, authenticatedUserContext);
+                userDataDeletionService, adminDashboardService, authenticatedUserContext,
+                issueRepository,
+                issueEmbeddingJob);
     }
 
     private static final class CapturingUserDataDeletionService extends UserDataDeletionService {
@@ -96,8 +105,7 @@ class AdminControllerTest {
         SecurityContextHolder.clearContext();
     }
 
-    @Test
-    void delegatesDeletionForAdminUser() {
+    private void loginAsAdmin() {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(
                         new UserPrincipal(ADMIN_ID, ORG_ID, Set.of("ADMIN")),
@@ -105,6 +113,11 @@ class AdminControllerTest {
                         List.of()
                 )
         );
+    }
+
+    @Test
+    void delegatesDeletionForAdminUser() {
+        loginAsAdmin();
         MDC.put(CorrelationIdFilter.MDC_KEY, "corr-123");
         HttpServletRequest request = mock(HttpServletRequest.class);
         when(request.getRemoteAddr()).thenReturn("10.0.0.1");
@@ -136,5 +149,22 @@ class AdminControllerTest {
 
         assertEquals(403, response.getStatusCode().value());
         assertFalse(userDataDeletionService.invoked);
+    }
+
+    @Test
+    void backfillEmbeddingsScopesLookupToAuthenticatedOrg() {
+        loginAsAdmin();
+        IssueEntity issue = new IssueEntity(
+                UUID.randomUUID(), ORG_ID, UUID.randomUUID(), "PLAT-1", 1, "Embed me", ADMIN_ID);
+        when(issueRepository.findAllByOrgIdAndEmbeddingVersionAndStatusNot(ORG_ID, 0,
+                com.weekly.issues.domain.IssueStatus.ARCHIVED)).thenReturn(List.of(issue));
+        when(issueEmbeddingJob.embedNow(issue.getId())).thenReturn(true);
+
+        ResponseEntity<?> response = controller.backfillEmbeddings();
+
+        assertEquals(200, response.getStatusCode().value());
+        verify(issueRepository).findAllByOrgIdAndEmbeddingVersionAndStatusNot(
+                ORG_ID, 0, com.weekly.issues.domain.IssueStatus.ARCHIVED);
+        verify(issueEmbeddingJob).embedNow(issue.getId());
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Spring Data repository for {@link IssueEntity} (Phase 6). */
 public interface IssueRepository extends JpaRepository<IssueEntity, UUID> {
@@ -44,6 +45,34 @@ public interface IssueRepository extends JpaRepository<IssueEntity, UUID> {
     List<IssueEntity> findAllByTeamIdAndStatusIn(
             @Param("teamId") UUID teamId,
             @Param("statuses") java.util.Collection<IssueStatus> statuses);
+
+    /**
+     * Returns all non-archived issues that have never been successfully embedded
+     * ({@code embedding_version = 0}).
+     *
+     * <p>Used by the admin backfill endpoint to find issues created before the
+     * embedding pipeline was wired up.
+     */
+    List<IssueEntity> findAllByEmbeddingVersionAndStatusNot(int embeddingVersion, IssueStatus status);
+
+    /** Org-scoped variant used by admin backfill so one org cannot process another org's issues. */
+    List<IssueEntity> findAllByOrgIdAndEmbeddingVersionAndStatusNot(
+            UUID orgId,
+            int embeddingVersion,
+            IssueStatus status
+    );
+
+    /**
+     * Increments {@code embedding_version} by 1 for the given issue.
+     *
+     * <p>Called by the async embedding job after each successful embed so that the
+     * backfill query ({@code embedding_version = 0}) correctly excludes already-
+     * embedded issues.
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE IssueEntity i SET i.embeddingVersion = i.embeddingVersion + 1 WHERE i.id = :issueId")
+    void incrementEmbeddingVersion(@Param("issueId") UUID issueId);
 
     /**
      * Atomically increments the team's issue sequence and returns the new value.

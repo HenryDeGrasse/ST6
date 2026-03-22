@@ -12,6 +12,8 @@ import com.weekly.issues.domain.IssueStatus;
 import com.weekly.issues.dto.CreateWeeklyAssignmentRequest;
 import com.weekly.issues.dto.IssueResponse;
 import com.weekly.issues.dto.WeeklyAssignmentResponse;
+import com.weekly.issues.events.AssignmentReconciledEvent;
+import com.weekly.issues.events.IssueUpdatedEvent;
 import com.weekly.issues.repository.IssueActivityRepository;
 import com.weekly.issues.repository.IssueRepository;
 import com.weekly.plan.domain.PlanState;
@@ -22,9 +24,11 @@ import com.weekly.plan.repository.WeeklyPlanRepository;
 import com.weekly.team.repository.TeamMemberRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,6 +68,7 @@ public class AssignmentService {
     private final WeeklyPlanRepository planRepository;
     private final WeeklyCommitRepository commitRepository;
     private final TeamMemberRepository memberRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AssignmentService(
             WeeklyAssignmentRepository assignmentRepository,
@@ -72,7 +77,8 @@ public class AssignmentService {
             IssueActivityRepository activityRepository,
             WeeklyPlanRepository planRepository,
             WeeklyCommitRepository commitRepository,
-            TeamMemberRepository memberRepository
+            TeamMemberRepository memberRepository,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.assignmentRepository = assignmentRepository;
         this.assignmentActualRepository = assignmentActualRepository;
@@ -81,6 +87,7 @@ public class AssignmentService {
         this.planRepository = planRepository;
         this.commitRepository = commitRepository;
         this.memberRepository = memberRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     // ── Add to week plan ─────────────────────────────────────
@@ -176,6 +183,7 @@ public class AssignmentService {
         logActivity(issue.getId(), orgId, userId, IssueActivityType.COMMITTED_TO_WEEK,
                 null, plan.getId().toString());
         issueRepository.save(issue);
+        eventPublisher.publishEvent(new IssueUpdatedEvent(this, orgId, issue.getId()));
 
         return WeeklyAssignmentResponse.from(assignment);
     }
@@ -222,6 +230,7 @@ public class AssignmentService {
             logActivity(issueId, orgId, userId, IssueActivityType.RELEASED_TO_BACKLOG,
                     assignmentId.toString(), null);
             issueRepository.save(issue);
+            eventPublisher.publishEvent(new IssueUpdatedEvent(this, orgId, issueId));
         });
     }
 
@@ -325,6 +334,7 @@ public class AssignmentService {
 
         logActivity(issueId, orgId, actorUserId, IssueActivityType.CARRIED_FORWARD,
                 fromPlanId.toString(), toPlanId.toString());
+        eventPublisher.publishEvent(new IssueUpdatedEvent(this, orgId, issueId));
 
         return WeeklyAssignmentResponse.from(newAssignment);
     }
@@ -382,6 +392,7 @@ public class AssignmentService {
         logActivity(issueId, orgId, actorUserId, IssueActivityType.RELEASED_TO_BACKLOG,
                 assignmentId.toString(), null);
         issueRepository.save(issue);
+        eventPublisher.publishEvent(new IssueUpdatedEvent(this, orgId, issueId));
 
         return IssueResponse.from(issue);
     }
@@ -421,6 +432,7 @@ public class AssignmentService {
         List<WeeklyAssignmentEntity> assignments =
                 assignmentRepository.findAllByOrgIdAndWeeklyPlanId(orgId, planId);
 
+        List<UUID> reconciledIssueIds = new ArrayList<>();
         for (WeeklyAssignmentEntity assignment : assignments) {
             Optional<WeeklyAssignmentActualEntity> actualOpt =
                     assignmentActualRepository.findByAssignmentId(assignment.getId());
@@ -430,12 +442,18 @@ public class AssignmentService {
             }
 
             WeeklyAssignmentActualEntity actual = actualOpt.get();
-            issueRepository.findByOrgIdAndId(orgId, assignment.getIssueId()).ifPresent(issue ->
-                    applyReconciliationTransition(
-                            issue, actual.getCompletionStatus(),
-                            planWeekStart, archiveThreshold, planId, actorUserId
-                    )
-            );
+            issueRepository.findByOrgIdAndId(orgId, assignment.getIssueId()).ifPresent(issue -> {
+                applyReconciliationTransition(
+                        issue, actual.getCompletionStatus(),
+                        planWeekStart, archiveThreshold, planId, actorUserId
+                );
+                reconciledIssueIds.add(issue.getId());
+            });
+        }
+
+        if (!reconciledIssueIds.isEmpty()) {
+            eventPublisher.publishEvent(
+                    new AssignmentReconciledEvent(this, orgId, planId, reconciledIssueIds));
         }
     }
 

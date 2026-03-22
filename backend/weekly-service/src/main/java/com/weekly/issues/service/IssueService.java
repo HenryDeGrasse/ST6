@@ -22,6 +22,9 @@ import com.weekly.issues.dto.ReleaseIssueRequest;
 import com.weekly.issues.dto.UpdateIssueRequest;
 import com.weekly.issues.dto.WeeklyAssignmentResponse;
 import com.weekly.issues.dto.WeeklyAssignmentsResponse;
+import com.weekly.issues.events.CommentAddedEvent;
+import com.weekly.issues.events.IssueCreatedEvent;
+import com.weekly.issues.events.IssueUpdatedEvent;
 import com.weekly.issues.repository.IssueActivityRepository;
 import com.weekly.issues.repository.IssueRepository;
 import com.weekly.plan.domain.ChessPriority;
@@ -33,6 +36,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -63,6 +67,7 @@ public class IssueService {
     private final TeamMemberRepository memberRepository;
     private final WeeklyPlanRepository planRepository;
     private final AuditService auditService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public IssueService(
             IssueRepository issueRepository,
@@ -71,7 +76,8 @@ public class IssueService {
             TeamRepository teamRepository,
             TeamMemberRepository memberRepository,
             WeeklyPlanRepository planRepository,
-            AuditService auditService
+            AuditService auditService,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.issueRepository = issueRepository;
         this.activityRepository = activityRepository;
@@ -80,6 +86,7 @@ public class IssueService {
         this.memberRepository = memberRepository;
         this.planRepository = planRepository;
         this.auditService = auditService;
+        this.eventPublisher = eventPublisher;
     }
 
     // ── Create ───────────────────────────────────────────────
@@ -117,6 +124,8 @@ public class IssueService {
 
         auditService.record(orgId, creatorUserId, "ISSUE_CREATED", "Issue",
                 issue.getId(), null, IssueStatus.OPEN.name(), null, null, null);
+
+        eventPublisher.publishEvent(new IssueCreatedEvent(this, orgId, issue.getId()));
 
         return IssueResponse.from(issue);
     }
@@ -277,6 +286,7 @@ public class IssueService {
         }
 
         issueRepository.save(issue);
+        eventPublisher.publishEvent(new IssueUpdatedEvent(this, orgId, issueId));
         return IssueResponse.from(issue);
     }
 
@@ -300,6 +310,7 @@ public class IssueService {
 
         issue.setAssigneeUserId(newVal != null ? UUID.fromString(newVal) : null);
         issueRepository.save(issue);
+        eventPublisher.publishEvent(new IssueUpdatedEvent(this, orgId, issueId));
         return IssueResponse.from(issue);
     }
 
@@ -322,6 +333,8 @@ public class IssueService {
         auditService.record(orgId, actorUserId, "ISSUE_ARCHIVED", "Issue",
                 issueId, previousStatus, IssueStatus.ARCHIVED.name(), null, null, null);
 
+        eventPublisher.publishEvent(new IssueUpdatedEvent(this, orgId, issueId));
+
         return IssueResponse.from(issue);
     }
 
@@ -340,6 +353,7 @@ public class IssueService {
                 issueId, orgId, actorUserId, IssueActivityType.COMMENT,
                 null, null, request.commentText(), null
         );
+        eventPublisher.publishEvent(new CommentAddedEvent(this, orgId, issueId));
         return IssueActivityResponse.from(activity);
     }
 
@@ -412,6 +426,7 @@ public class IssueService {
         logActivity(issueId, orgId, actorUserId, IssueActivityType.COMMITTED_TO_WEEK,
                 null, planId.toString(), null, null);
         issueRepository.save(issue);
+        eventPublisher.publishEvent(new IssueUpdatedEvent(this, orgId, issueId));
 
         return WeeklyAssignmentResponse.from(assignment);
     }
@@ -448,6 +463,7 @@ public class IssueService {
         logActivity(issueId, orgId, actorUserId, IssueActivityType.RELEASED_TO_BACKLOG,
                 request.weeklyPlanId().toString(), null, null, null);
         issueRepository.save(issue);
+        eventPublisher.publishEvent(new IssueUpdatedEvent(this, orgId, issueId));
 
         return IssueResponse.from(issue);
     }
@@ -509,6 +525,7 @@ public class IssueService {
 
         logActivity(issue.getId(), orgId, actorUserId, IssueActivityType.COMMITTED_TO_WEEK,
                 null, planId.toString(), null, null);
+        eventPublisher.publishEvent(new IssueUpdatedEvent(this, orgId, issue.getId()));
 
         return WeeklyAssignmentResponse.from(assignment);
     }
@@ -550,6 +567,7 @@ public class IssueService {
             }
             logActivity(issue.getId(), orgId, actorUserId, IssueActivityType.RELEASED_TO_BACKLOG,
                     assignmentId.toString(), null, null, null);
+            eventPublisher.publishEvent(new IssueUpdatedEvent(this, orgId, issue.getId()));
         }
     }
 
