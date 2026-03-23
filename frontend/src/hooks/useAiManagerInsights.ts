@@ -1,4 +1,12 @@
-import { useCallback, useState } from "react";
+/**
+ * Hook for beta AI manager insight summaries.
+ *
+ * Optimization (step-11):
+ *   Added request versioning (same pattern as usePlanQualityCheck) so that
+ *   stale /ai/manager-insights responses are silently discarded when weekStart
+ *   changes rapidly (e.g. quick week navigation on the team dashboard).
+ */
+import { useCallback, useRef, useState } from "react";
 import type { ManagerInsightItem, ManagerInsightsResponse } from "@weekly-commitments/contracts";
 import { useApiClient } from "../api/ApiContext.js";
 import { useFeatureFlags } from "../context/FeatureFlagContext.js";
@@ -12,9 +20,6 @@ export interface UseAiManagerInsightsResult {
   clearInsights: () => void;
 }
 
-/**
- * Hook for beta AI manager insight summaries.
- */
 export function useAiManagerInsights(): UseAiManagerInsightsResult {
   const client = useApiClient();
   const flags = useFeatureFlags();
@@ -23,7 +28,17 @@ export function useAiManagerInsights(): UseAiManagerInsightsResult {
   const [insights, setInsights] = useState<ManagerInsightItem[]>([]);
   const [status, setStatus] = useState<AiRequestStatus>("idle");
 
+  /**
+   * Monotonically-increasing counter used to detect stale responses.
+   * Incremented at the start of each fetch and checked after the await.
+   * If the ref value has moved on by the time the response arrives, the
+   * result is discarded (same pattern as usePlanQualityCheck).
+   */
+  const requestVersionRef = useRef(0);
+
   const clearInsights = useCallback(() => {
+    // Bump the version so any in-flight request's response is discarded.
+    requestVersionRef.current += 1;
     setHeadline(null);
     setInsights([]);
     setStatus("idle");
@@ -35,11 +50,19 @@ export function useAiManagerInsights(): UseAiManagerInsightsResult {
         return;
       }
 
+      const requestVersion = requestVersionRef.current + 1;
+      requestVersionRef.current = requestVersion;
+
       setStatus("loading");
       try {
         const resp = await client.POST("/ai/manager-insights", {
           body: { weekStart },
         });
+
+        // Discard the result if a newer request has already started
+        if (requestVersionRef.current !== requestVersion) {
+          return;
+        }
 
         if (resp.response.status === 429) {
           setStatus("rate_limited");
@@ -65,6 +88,10 @@ export function useAiManagerInsights(): UseAiManagerInsightsResult {
           setInsights([]);
         }
       } catch {
+        // Only surface the error state if this is still the current request
+        if (requestVersionRef.current !== requestVersion) {
+          return;
+        }
         setStatus("unavailable");
         setHeadline(null);
         setInsights([]);

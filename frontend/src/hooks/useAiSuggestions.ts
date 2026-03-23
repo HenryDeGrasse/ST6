@@ -3,8 +3,15 @@
  *
  * All AI outputs are clearly labeled as suggestions. The user can
  * accept, edit, or ignore them without blocking the manual workflow.
+ *
+ * Optimization (step-11):
+ *   - fetchSuggestions now holds an AbortController ref so that any
+ *     in-flight /ai/suggest-rcdo POST is cancelled when a new debounce
+ *     fires (rapid title edits) or when the component unmounts.
+ *   - A useEffect cleanup aborts the pending request and clears the
+ *     timeout on unmount to avoid stale-response overwrites.
  */
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type {
   RcdoSuggestion,
   SuggestRcdoResponse,
@@ -52,6 +59,22 @@ export function useAiSuggestions(): UseAiSuggestionsResult {
   const [draftStatus, setDraftStatus] = useState<AiRequestStatus>("idle");
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** AbortController for the most-recently-fired /ai/suggest-rcdo request. */
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Cleanup on unmount: cancel any pending debounce timer and in-flight request.
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
+  }, []);
 
   const clearSuggestions = useCallback(() => {
     setSuggestions([]);
@@ -59,6 +82,11 @@ export function useAiSuggestions(): UseAiSuggestionsResult {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
       debounceRef.current = null;
+    }
+    // Also abort any request that was already dispatched
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
   }, []);
 
@@ -71,20 +99,42 @@ export function useAiSuggestions(): UseAiSuggestionsResult {
       if (title.length < MIN_TITLE_LENGTH) {
         setSuggestions([]);
         setSuggestStatus("idle");
+        if (debounceRef.current) {
+          clearTimeout(debounceRef.current);
+          debounceRef.current = null;
+        }
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+          abortControllerRef.current = null;
+        }
         return;
       }
 
-      // Debounce: clear previous timer
+      // Debounce: cancel previous timer and abort previous in-flight request
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
 
       debounceRef.current = setTimeout(async () => {
+        // Create a fresh AbortController for this request
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         setSuggestStatus("loading");
         try {
           const resp = await client.POST("/ai/suggest-rcdo", {
             body: { title, description },
+            // openapi-fetch FetchOptions extends RequestInit, so signal is typed.
+            signal: controller.signal,
           });
+
+          // If this controller has already been superseded/aborted, discard result
+          if (controller.signal.aborted) {
+            return;
+          }
 
           if (resp.response.status === 429) {
             setSuggestStatus("rate_limited");
@@ -105,9 +155,17 @@ export function useAiSuggestions(): UseAiSuggestionsResult {
             setSuggestStatus("unavailable");
             setSuggestions([]);
           }
-        } catch {
+        } catch (err) {
+          // Ignore AbortError — it means a newer request superseded this one
+          if (err instanceof Error && err.name === "AbortError") {
+            return;
+          }
           setSuggestStatus("unavailable");
           setSuggestions([]);
+        } finally {
+          if (abortControllerRef.current === controller) {
+            abortControllerRef.current = null;
+          }
         }
       }, DEBOUNCE_MS);
     },
