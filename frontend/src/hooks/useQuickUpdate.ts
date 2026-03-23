@@ -12,8 +12,20 @@
  * the same way as the openapi-fetch middleware in api/client.ts: dev/stub
  * tokens are re-encoded as structured dev tokens; real JWTs are forwarded
  * as-is.
+ *
+ * Optimizations (step-12):
+ *   - AbortController ref: each postJson call creates a new AbortController
+ *     and stores it. The active signal is passed to fetch() so the OS-level
+ *     request is actually cancelled, not just discarded.
+ *   - useEffect cleanup: on unmount the active controller is aborted, which
+ *     prevents "can't perform state updates on unmounted component" warnings.
+ *   - AbortError is swallowed silently so unmount-driven cancellation does
+ *     not surface a spurious error to the user.
+ *   - Success-path response.json() is now wrapped in try/catch so a
+ *     malformed body results in a human-readable error rather than an
+ *     uncaught rejection.
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type {
   ApiErrorResponse,
   CheckInOptionsResponse,
@@ -55,6 +67,19 @@ export function useQuickUpdate(): UseQuickUpdateResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /** The AbortController for the currently in-flight request, if any. */
+  const activeControllerRef = useRef<AbortController | null>(null);
+
+  // Abort any in-flight request when the component unmounts.
+  useEffect(() => {
+    return () => {
+      if (activeControllerRef.current) {
+        activeControllerRef.current.abort();
+        activeControllerRef.current = null;
+      }
+    };
+  }, []);
+
   const getAuthToken = useCallback((): string => {
     const rawToken = getToken();
     const isDevToken = rawToken.startsWith("dev-") || rawToken.startsWith("stub-");
@@ -67,6 +92,15 @@ export function useQuickUpdate(): UseQuickUpdateResult {
 
   const postJson = useCallback(
     async <TResponse,>(path: string, body: unknown): Promise<TResponse | null> => {
+      // Abort any previously-active request before starting a new one.
+      if (activeControllerRef.current) {
+        activeControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      activeControllerRef.current = controller;
+
+      const isCurrentRequest = (): boolean => activeControllerRef.current === controller;
+
       setLoading(true);
       setError(null);
       try {
@@ -77,20 +111,50 @@ export function useQuickUpdate(): UseQuickUpdateResult {
             Authorization: `Bearer ${getAuthToken()}`,
           },
           body: JSON.stringify(body),
+          signal: controller.signal,
         });
 
-        if (!response.ok) {
-          const errData = (await response.json().catch(() => null)) as ApiErrorResponse | null;
-          setError(extractErrorMessage(errData, response));
+        if (!isCurrentRequest() || controller.signal.aborted) {
           return null;
         }
 
-        return (await response.json()) as TResponse;
+        if (!response.ok) {
+          const errData = (await response.json().catch(() => null)) as ApiErrorResponse | null;
+          if (isCurrentRequest()) {
+            setError(extractErrorMessage(errData, response));
+          }
+          return null;
+        }
+
+        // Guard against malformed JSON in a successful response body.
+        try {
+          const data = (await response.json()) as TResponse;
+          if (!isCurrentRequest() || controller.signal.aborted) {
+            return null;
+          }
+          return data;
+        } catch {
+          if (isCurrentRequest()) {
+            setError("Received an invalid response from the server.");
+          }
+          return null;
+        }
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Network error");
+        // Swallow AbortError — it means the component unmounted or a new
+        // request superseded this one; no user-visible error is warranted.
+        if (e instanceof Error && e.name === "AbortError") {
+          return null;
+        }
+        if (isCurrentRequest()) {
+          setError(e instanceof Error ? e.message : "Network error");
+        }
         return null;
       } finally {
-        setLoading(false);
+        // Only the still-active request may clear loading / release the ref.
+        if (isCurrentRequest()) {
+          setLoading(false);
+          activeControllerRef.current = null;
+        }
       }
     },
     [baseUrl, getAuthToken],
