@@ -1007,3 +1007,349 @@ CROSS JOIN (VALUES
 ) AS u(user_id,role)
 WHERE t.name='General' AND t.org_id='a0000000-0000-0000-0000-000000000001'::uuid
 ON CONFLICT (team_id,user_id) DO NOTHING;
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- W-1 FILL (week of Mar 16–22) — Alice, Bob, Carol
+--
+-- Before this patch Alice had 1 commit for W-1, Bob had 0, Carol had 0.
+-- All three plans are RECONCILED/APPROVED so the prior week looks complete.
+-- Narrative continuity:
+--   Alice  — delivered tech talk (prepped in W-2), pushed auth coverage to 90%,
+--             wrote structured logging ADR, facilitated sprint retro
+--   Bob    — completed dashboard materialized view (partial in W-2), unblocked
+--             health-score pipeline after credentials arrived, circuit breaker spike
+--   Carol  — reviewed Alice & Bob W-1 reconciliations, closed senior engineer
+--             offer, submitted Q3 headcount plan to leadership
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- ── ALICE W-1 — patch existing plan + add 3 more commits ─────────────────
+
+-- Backfill hours / confidence on the existing single commit
+UPDATE weekly_commits
+   SET estimated_hours = 10.0, confidence = 0.85
+ WHERE id = 'd0000000-0000-0000-0000-000000000014'::uuid;
+
+-- Commit 2: deliver the tech talk that was prepped during W-2
+INSERT INTO weekly_commits (
+    id, org_id, weekly_plan_id, title, chess_priority, category, outcome_id,
+    estimated_hours, confidence,
+    snapshot_rally_cry_id,   snapshot_rally_cry_name,
+    snapshot_objective_id,   snapshot_objective_name,
+    snapshot_outcome_id,     snapshot_outcome_name,
+    version)
+VALUES (
+    'da010002-0000-0000-0000-000000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'b0000000-0000-0000-0000-000000000011'::uuid,
+    'Deliver event sourcing tech talk at eng all-hands',
+    'KNIGHT', 'LEARNING',
+    '30000000-0000-0000-0000-000000000009'::uuid,
+    4.0, 0.90,
+    '10000000-0000-0000-0000-000000000002'::uuid, 'World-class engineering culture',
+    '20000000-0000-0000-0000-000000000004'::uuid, 'Invest in team growth',
+    '30000000-0000-0000-0000-000000000009'::uuid, 'Every engineer presents at a tech talk',
+    2
+) ON CONFLICT DO NOTHING;
+
+INSERT INTO weekly_commit_actuals (commit_id, org_id, actual_result, completion_status, actual_hours, created_at, updated_at)
+VALUES (
+    'da010002-0000-0000-0000-000000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'Talk delivered to 22 engineers. Received top NPS score of the quarter (4.8/5). Recording shared in #engineering-learning.',
+    'DONE', 3.5, NOW() - interval '5 days', NOW() - interval '5 days'
+) ON CONFLICT (commit_id) DO NOTHING;
+
+-- Commit 3: structured logging ADR + implementation kick-off (links to ENG-8)
+INSERT INTO weekly_commits (
+    id, org_id, weekly_plan_id, title, chess_priority, category, outcome_id,
+    estimated_hours, confidence,
+    snapshot_rally_cry_id,   snapshot_rally_cry_name,
+    snapshot_objective_id,   snapshot_objective_name,
+    snapshot_outcome_id,     snapshot_outcome_name,
+    version)
+VALUES (
+    'da010003-0000-0000-0000-000000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'b0000000-0000-0000-0000-000000000011'::uuid,
+    'Write ADR and scaffold structured logging with correlation IDs',
+    'ROOK', 'DELIVERY',
+    'e0000000-0000-0000-0000-000000000002'::uuid,
+    8.0, 0.80,
+    '10000000-0000-0000-0000-000000000002'::uuid, 'World-class engineering culture',
+    '20000000-0000-0000-0000-000000000003'::uuid, 'Ship reliable software faster',
+    'e0000000-0000-0000-0000-000000000002'::uuid, 'Achieve 99.9% API uptime',
+    2
+) ON CONFLICT DO NOTHING;
+
+INSERT INTO weekly_commit_actuals (commit_id, org_id, actual_result, completion_status, actual_hours, created_at, updated_at)
+VALUES (
+    'da010003-0000-0000-0000-000000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'ADR approved. JSON structured logging scaffolded across auth and onboarding services. Correlation IDs propagate end-to-end through 3 hops.',
+    'DONE', 9.0, NOW() - interval '4 days', NOW() - interval '4 days'
+) ON CONFLICT (commit_id) DO NOTHING;
+
+-- Commit 4: sprint retro facilitation (non-strategic)
+INSERT INTO weekly_commits (
+    id, org_id, weekly_plan_id, title, chess_priority, category,
+    non_strategic_reason,
+    estimated_hours, confidence,
+    version)
+VALUES (
+    'da010004-0000-0000-0000-000000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'b0000000-0000-0000-0000-000000000011'::uuid,
+    'Facilitate sprint retrospective and planning',
+    'PAWN', 'OPERATIONS',
+    'Routine ceremony facilitation — not tied to a strategic outcome',
+    2.0, 0.95,
+    2
+) ON CONFLICT DO NOTHING;
+
+INSERT INTO weekly_commit_actuals (commit_id, org_id, actual_result, completion_status, actual_hours, created_at, updated_at)
+VALUES (
+    'da010004-0000-0000-0000-000000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'Retro done. 5 action items captured. Velocity discussion revealed estimation gap — will use story points next sprint.',
+    'DONE', 2.0, NOW() - interval '4 days', NOW() - interval '4 days'
+) ON CONFLICT (commit_id) DO NOTHING;
+
+
+-- ── BOB W-1 — new RECONCILED plan ─────────────────────────────────────────
+
+INSERT INTO weekly_plans (
+    id, org_id, owner_user_id, week_start_date,
+    state, review_status, lock_type, locked_at, version, created_at, updated_at)
+VALUES (
+    'bb010000-0000-0000-0000-b00000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'c0000000-0000-0000-0000-000000000020'::uuid,
+    date_trunc('week', CURRENT_DATE)::date - 7,
+    'RECONCILED', 'APPROVED', 'ON_TIME',
+    NOW() - interval '10 days', 3,
+    NOW() - interval '11 days', NOW() - interval '4 days'
+) ON CONFLICT (org_id, owner_user_id, week_start_date) DO NOTHING;
+
+-- Bob W-1 commit 1: dashboard materialized view (completing the W-2 partial)
+INSERT INTO weekly_commits (
+    id, org_id, weekly_plan_id, title, chess_priority, category, outcome_id,
+    estimated_hours, confidence,
+    snapshot_rally_cry_id,   snapshot_rally_cry_name,
+    snapshot_objective_id,   snapshot_objective_name,
+    snapshot_outcome_id,     snapshot_outcome_name,
+    carried_from_commit_id,  version)
+VALUES (
+    'cb010001-0000-0000-0000-b00000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'bb010000-0000-0000-0000-b00000000001'::uuid,
+    'Ship dashboard materialized view — reduce p95 to < 200ms',
+    'KING', 'DELIVERY',
+    '30000000-0000-0000-0000-000000000007'::uuid,
+    10.0, 0.85,
+    '10000000-0000-0000-0000-000000000002'::uuid, 'World-class engineering culture',
+    '20000000-0000-0000-0000-000000000003'::uuid, 'Ship reliable software faster',
+    '30000000-0000-0000-0000-000000000007'::uuid, 'Reduce deploy-to-production time to < 15 min',
+    'cb020002-0000-0000-0000-b00000000001'::uuid,
+    2
+) ON CONFLICT DO NOTHING;
+
+INSERT INTO weekly_commit_actuals (commit_id, org_id, actual_result, completion_status, actual_hours, created_at, updated_at)
+VALUES (
+    'cb010001-0000-0000-0000-b00000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'Materialized view live in production. Dashboard p95 now 145ms — 48% improvement. Auto-refresh every 30s via pg_cron.',
+    'DONE', 11.0, NOW() - interval '5 days', NOW() - interval '5 days'
+) ON CONFLICT (commit_id) DO NOTHING;
+
+-- Bob W-1 commit 2: health-score alerting pipeline (unblocked from W-3 partial)
+INSERT INTO weekly_commits (
+    id, org_id, weekly_plan_id, title, chess_priority, category, outcome_id,
+    estimated_hours, confidence,
+    snapshot_rally_cry_id,   snapshot_rally_cry_name,
+    snapshot_objective_id,   snapshot_objective_name,
+    snapshot_outcome_id,     snapshot_outcome_name,
+    carried_from_commit_id,  version)
+VALUES (
+    'cb010002-0000-0000-0000-b00000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'bb010000-0000-0000-0000-b00000000001'::uuid,
+    'Ship health-score alerting pipeline to production',
+    'QUEEN', 'CUSTOMER',
+    '30000000-0000-0000-0000-000000000011'::uuid,
+    12.0, 0.75,
+    '10000000-0000-0000-0000-000000000003'::uuid, 'Customer obsession',
+    '20000000-0000-0000-0000-000000000005'::uuid, 'Reduce churn to < 5%',
+    '30000000-0000-0000-0000-000000000011'::uuid, 'Launch proactive health-score alerting',
+    'cb030002-0000-0000-0000-b00000000001'::uuid,
+    2
+) ON CONFLICT DO NOTHING;
+
+INSERT INTO weekly_commit_actuals (commit_id, org_id, actual_result, completion_status, actual_hours, created_at, updated_at)
+VALUES (
+    'cb010002-0000-0000-0000-b00000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'Pipeline deployed to production. Credentials finally provisioned by platform team. 3 CSMs received their first alerts within 2 hours of go-live. Zero false positives in first 48h.',
+    'DONE', 13.0, NOW() - interval '5 days', NOW() - interval '5 days'
+) ON CONFLICT (commit_id) DO NOTHING;
+
+-- Bob W-1 commit 3: add circuit breakers to external service calls (ENG-18)
+INSERT INTO weekly_commits (
+    id, org_id, weekly_plan_id, title, chess_priority, category, outcome_id,
+    estimated_hours, confidence,
+    snapshot_rally_cry_id,   snapshot_rally_cry_name,
+    snapshot_objective_id,   snapshot_objective_name,
+    snapshot_outcome_id,     snapshot_outcome_name,
+    version)
+VALUES (
+    'cb010003-0000-0000-0000-b00000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'bb010000-0000-0000-0000-b00000000001'::uuid,
+    'Add circuit breakers to Stripe, SendGrid, and PagerDuty clients',
+    'ROOK', 'DELIVERY',
+    'e0000000-0000-0000-0000-000000000002'::uuid,
+    8.0, 0.80,
+    '10000000-0000-0000-0000-000000000002'::uuid, 'World-class engineering culture',
+    '20000000-0000-0000-0000-000000000003'::uuid, 'Ship reliable software faster',
+    'e0000000-0000-0000-0000-000000000002'::uuid, 'Achieve 99.9% API uptime',
+    2
+) ON CONFLICT DO NOTHING;
+
+INSERT INTO weekly_commit_actuals (commit_id, org_id, actual_result, completion_status, actual_hours, created_at, updated_at)
+VALUES (
+    'cb010003-0000-0000-0000-b00000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'Resilience4j circuit breakers on all 3 external clients. Fallback strategies: Stripe → retry queue, SendGrid → SES fallback, PagerDuty → log only. Load test passed.',
+    'DONE', 9.0, NOW() - interval '4 days', NOW() - interval '4 days'
+) ON CONFLICT (commit_id) DO NOTHING;
+
+
+-- ── CAROL W-1 — new RECONCILED plan ───────────────────────────────────────
+
+INSERT INTO weekly_plans (
+    id, org_id, owner_user_id, week_start_date,
+    state, review_status, lock_type, locked_at, version, created_at, updated_at)
+VALUES (
+    'bc010000-0000-0000-0000-c00000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'c0000000-0000-0000-0000-000000000001'::uuid,
+    date_trunc('week', CURRENT_DATE)::date - 7,
+    'RECONCILED', 'APPROVED', 'ON_TIME',
+    NOW() - interval '10 days', 3,
+    NOW() - interval '11 days', NOW() - interval '4 days'
+) ON CONFLICT (org_id, owner_user_id, week_start_date) DO NOTHING;
+
+-- Carol W-1 commit 1: review Alice and Bob W-1 reconciliations
+INSERT INTO weekly_commits (
+    id, org_id, weekly_plan_id, title, chess_priority, category, outcome_id,
+    estimated_hours, confidence,
+    snapshot_rally_cry_id,   snapshot_rally_cry_name,
+    snapshot_objective_id,   snapshot_objective_name,
+    snapshot_outcome_id,     snapshot_outcome_name,
+    version)
+VALUES (
+    'cc010001-0000-0000-0000-c00000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'bc010000-0000-0000-0000-c00000000001'::uuid,
+    'Review and approve Alice and Bob W-1 reconciliations',
+    'KING', 'PEOPLE',
+    '30000000-0000-0000-0000-000000000009'::uuid,
+    4.0, 0.90,
+    '10000000-0000-0000-0000-000000000002'::uuid, 'World-class engineering culture',
+    '20000000-0000-0000-0000-000000000004'::uuid, 'Invest in team growth',
+    '30000000-0000-0000-0000-000000000009'::uuid, 'Every engineer presents at a tech talk',
+    2
+) ON CONFLICT DO NOTHING;
+
+INSERT INTO weekly_commit_actuals (commit_id, org_id, actual_result, completion_status, actual_hours, created_at, updated_at)
+VALUES (
+    'cc010001-0000-0000-0000-c00000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'Both approved. Alice: excellent tech talk delivery and logging work. Bob: outstanding — shipped two long-running items in one week after credential unblock. Written feedback shared.',
+    'DONE', 3.5, NOW() - interval '5 days', NOW() - interval '5 days'
+) ON CONFLICT (commit_id) DO NOTHING;
+
+-- Carol W-1 commit 2: close senior engineer hire
+INSERT INTO weekly_commits (
+    id, org_id, weekly_plan_id, title, chess_priority, category, outcome_id,
+    estimated_hours, confidence,
+    snapshot_rally_cry_id,   snapshot_rally_cry_name,
+    snapshot_objective_id,   snapshot_objective_name,
+    snapshot_outcome_id,     snapshot_outcome_name,
+    version)
+VALUES (
+    'cc010002-0000-0000-0000-c00000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'bc010000-0000-0000-0000-c00000000001'::uuid,
+    'Close senior engineer offer and kick off onboarding',
+    'QUEEN', 'PEOPLE',
+    '30000000-0000-0000-0000-000000000009'::uuid,
+    5.0, 0.85,
+    '10000000-0000-0000-0000-000000000002'::uuid, 'World-class engineering culture',
+    '20000000-0000-0000-0000-000000000004'::uuid, 'Invest in team growth',
+    '30000000-0000-0000-0000-000000000009'::uuid, 'Every engineer presents at a tech talk',
+    2
+) ON CONFLICT DO NOTHING;
+
+INSERT INTO weekly_commit_actuals (commit_id, org_id, actual_result, completion_status, actual_hours, created_at, updated_at)
+VALUES (
+    'cc010002-0000-0000-0000-c00000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'Offer accepted by top candidate (Priya S, Staff Engineer). Start date: Apr 7. Onboarding doc drafted and assigned to Alice as buddy.',
+    'DONE', 4.0, NOW() - interval '5 days', NOW() - interval '5 days'
+) ON CONFLICT (commit_id) DO NOTHING;
+
+-- Carol W-1 commit 3: Q3 headcount plan
+INSERT INTO weekly_commits (
+    id, org_id, weekly_plan_id, title, chess_priority, category, outcome_id,
+    estimated_hours, confidence,
+    snapshot_rally_cry_id,   snapshot_rally_cry_name,
+    snapshot_objective_id,   snapshot_objective_name,
+    snapshot_outcome_id,     snapshot_outcome_name,
+    version)
+VALUES (
+    'cc010003-0000-0000-0000-c00000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'bc010000-0000-0000-0000-c00000000001'::uuid,
+    'Submit final Q3 headcount plan to leadership',
+    'ROOK', 'PEOPLE',
+    'e0000000-0000-0000-0000-000000000002'::uuid,
+    3.0, 0.90,
+    '10000000-0000-0000-0000-000000000002'::uuid, 'World-class engineering culture',
+    '20000000-0000-0000-0000-000000000003'::uuid, 'Ship reliable software faster',
+    'e0000000-0000-0000-0000-000000000002'::uuid, 'Achieve 99.9% API uptime',
+    2
+) ON CONFLICT DO NOTHING;
+
+INSERT INTO weekly_commit_actuals (commit_id, org_id, actual_result, completion_status, actual_hours, created_at, updated_at)
+VALUES (
+    'cc010003-0000-0000-0000-c00000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    '3 headcount requests submitted: 1 Staff Eng (Priya, offer accepted), 1 Senior SRE (pipeline), 1 mid-level (backfill). VP approved all 3. Finance alignment confirmed.',
+    'DONE', 2.5, NOW() - interval '5 days', NOW() - interval '5 days'
+) ON CONFLICT (commit_id) DO NOTHING;
+
+-- ── Carol W-1 admin PAWN (non-strategic) ─────────────────────────────────
+INSERT INTO weekly_commits (
+    id, org_id, weekly_plan_id, title, chess_priority, category,
+    non_strategic_reason,
+    estimated_hours, confidence,
+    version)
+VALUES (
+    'cc010004-0000-0000-0000-c00000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'bc010000-0000-0000-0000-c00000000001'::uuid,
+    'Quarterly compliance training and expense reconciliation',
+    'PAWN', 'OPERATIONS',
+    'Mandatory compliance training and monthly admin tasks — not tied to strategic outcomes',
+    2.0, 0.95,
+    2
+) ON CONFLICT DO NOTHING;
+
+INSERT INTO weekly_commit_actuals (commit_id, org_id, actual_result, completion_status, actual_hours, created_at, updated_at)
+VALUES (
+    'cc010004-0000-0000-0000-c00000000001'::uuid,
+    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'Compliance training completed (100%). March expense report submitted.',
+    'DONE', 1.5, NOW() - interval '4 days', NOW() - interval '4 days'
+) ON CONFLICT (commit_id) DO NOTHING;
