@@ -75,9 +75,10 @@ export const BacklogPage: React.FC<BacklogPageProps> = ({ onManageTeam }) => {
   const fetchTeamDetail = teamsHook.fetchTeamDetail;
   const fetchIssues = issuesHook.fetchIssues;
   const fetchIssueDetail = issuesHook.fetchIssueDetail;
+  const fetchRcdoTree = rcdoHook.fetchTree;
 
   // Fetch RCDO tree once to resolve outcome names
-  useEffect(() => { void rcdoHook.fetchTree(); }, [rcdoHook.fetchTree]);
+  useEffect(() => { void fetchRcdoTree(); }, [fetchRcdoTree]);
 
   // outcomeId → outcomeName lookup
   const outcomeNameMap = useMemo(() => {
