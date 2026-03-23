@@ -33,10 +33,8 @@ import org.openapitools.db_control.client.model.IndexList;
  *       in the deployment config.</li>
  * </ul>
  *
- * <h3>Provided key</h3>
- * <pre>
- *   pcsk_3QdKCq_6RgjJPmMyMd3TeyijDvqMofzAhaFnGJD7PZmQfLswBJxrfzyBoCUxiWfgnmFTrL
- * </pre>
+ * <h3>API key</h3>
+ * <p>Set via {@code PINECONE_API_KEY} environment variable. Never hardcode.</p>
  *
  * <h3>Pinecone index used by this project</h3>
  * <p>The production index name is configured via {@code weekly.rag.pinecone.index-name}
@@ -60,7 +58,7 @@ class PineconeConnectivityTest {
     private static final String PINECONE_API_KEY =
             System.getenv().getOrDefault(
                     "PINECONE_API_KEY",
-                    "pcsk_3QdKCq_6RgjJPmMyMd3TeyijDvqMofzAhaFnGJD7PZmQfLswBJxrfzyBoCUxiWfgnmFTrL"
+                    "" // Must be set via environment variable — never hardcode API keys
             );
 
     /** Default Pinecone index name used by the RAG pipeline. */
