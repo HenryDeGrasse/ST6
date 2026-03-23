@@ -119,10 +119,9 @@ describe("BacklogPage", () => {
     mockApiClient.GET.mockImplementation(() => new Promise(() => {}));
   });
 
-  it("renders the backlog page with title", () => {
+  it("renders the backlog page", () => {
     render(<BacklogPage />);
     expect(screen.getByTestId("backlog-page")).toBeInTheDocument();
-    expect(screen.getByText("Backlog")).toBeInTheDocument();
   });
 
   it("calls fetchTeams on mount", () => {

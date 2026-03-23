@@ -40,11 +40,11 @@
 .th {
   padding:        var(--wc-space-xs) var(--wc-space-sm);
   text-align:     left;
-  font-family:    var(--wc-font-display);
+  font-family:    var(--wc-font-body);
   font-size:      0.5rem;
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.01em;
   color:          var(--wc-color-text-primary);
   border-bottom:  2px solid var(--wc-color-border);
   white-space:    nowrap;
@@ -107,11 +107,11 @@
 }
 
 .totalsLabel {
-  font-family: var(--wc-font-display);
+  font-family: var(--wc-font-body);
   font-size:   0.5625rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.02em;
   color:       var(--wc-color-text-secondary);
 }
 
@@ -127,7 +127,7 @@
   align-items:    center;
   padding:        0.125rem 0.4rem;
   border-radius:  var(--wc-radius-sm);
-  font-family:    var(--wc-font-display);
+  font-family:    var(--wc-font-body);
   font-size:      0.5625rem;
   font-weight:    600;
   letter-spacing: 0.06em;

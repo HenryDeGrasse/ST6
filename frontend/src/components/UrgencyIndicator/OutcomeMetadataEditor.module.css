@@ -46,7 +46,7 @@
 
 .fieldLabel {
   display:        block;
-  font-family:    var(--wc-font-display);
+  font-family:    var(--wc-font-body);
   font-size:      0.65rem;
   font-weight:    600;
   letter-spacing: 0.08em;
@@ -126,7 +126,7 @@
   gap:         0.375rem;
   cursor:      pointer;
   font-family: var(--wc-font-body);
-  font-size:   0.9375rem;
+  font-size:   var(--wc-text-body);
   color:       var(--wc-color-text-secondary);
   user-select: none;
 }
@@ -209,7 +209,7 @@
 .milestoneColName,
 .milestoneColWeight,
 .milestoneColStatus {
-  font-family:    var(--wc-font-display);
+  font-family:    var(--wc-font-body);
   font-size:      0.6rem;
   font-weight:    600;
   letter-spacing: 0.06em;
@@ -260,7 +260,7 @@
 /* ─── Add / Remove buttons ───────────────────────────────────────────────── */
 
 .addButton {
-  font-family:    var(--wc-font-display);
+  font-family:    var(--wc-font-body);
   font-size:      0.65rem;
   font-weight:    600;
   text-transform: uppercase;
@@ -359,7 +359,7 @@
 /* ─── Save button ────────────────────────────────────────────────────────── */
 
 .saveButton {
-  font-family:      var(--wc-font-display);
+  font-family:      var(--wc-font-body);
   font-size:        0.7rem;
   font-weight:      600;
   text-transform:   uppercase;

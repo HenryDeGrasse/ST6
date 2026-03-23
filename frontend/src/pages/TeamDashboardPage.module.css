@@ -5,7 +5,7 @@
 /* ─── Page wrapper ───────────────────────────────────────────────────────── */
 .page {
   position:   relative;
-  max-width:  960px;
+  max-width:  1120px;
   margin:     0 auto;
   padding:    var(--wc-space-lg) var(--wc-space-md);
 }
@@ -71,7 +71,7 @@
 
 .paginationLabel {
   color:          var(--wc-color-text-secondary);
-  font-size:      0.875rem;
+  font-size:      var(--wc-text-subheading);
   font-family:    var(--wc-font-body);
   font-weight:    500;
 }
@@ -223,8 +223,8 @@
 }
 
 .backlogHealthTitle {
-  font-family:    var(--wc-font-display);
-  font-size:      0.6875rem;
+  font-family:    var(--wc-font-body);
+  font-size:      var(--wc-text-label);
   font-weight:    600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -251,8 +251,8 @@
 }
 
 .backlogMetricLabel {
-  font-family:    var(--wc-font-display);
-  font-size:      0.625rem;
+  font-family:    var(--wc-font-body);
+  font-size:      var(--wc-text-caption);
   font-weight:    600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -272,8 +272,8 @@
 }
 
 .backlogEffortLabel {
-  font-family:    var(--wc-font-display);
-  font-size:      0.625rem;
+  font-family:    var(--wc-font-body);
+  font-size:      var(--wc-text-caption);
   font-weight:    600;
   text-transform: uppercase;
   letter-spacing: 0.08em;

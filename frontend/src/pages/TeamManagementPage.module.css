@@ -63,7 +63,7 @@
 
 .sectionTitle {
   font-family:    var(--wc-font-heading);
-  font-size:      0.6875rem;
+  font-size:      var(--wc-text-label);
   font-weight:    700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -80,7 +80,7 @@
 
 .fieldLabel {
   font-family:    var(--wc-font-heading);
-  font-size:      0.6875rem;
+  font-size:      var(--wc-text-label);
   font-weight:    600;
   color:          var(--wc-color-text-muted);
   text-transform: uppercase;
@@ -135,7 +135,7 @@
   padding:        0.45rem 0.65rem;
   text-align:     left;
   font-family:    var(--wc-font-heading);
-  font-size:      0.6875rem;
+  font-size:      var(--wc-text-label);
   font-weight:    600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -165,7 +165,7 @@
   padding:        0.1rem 0.4rem;
   border-radius:  var(--wc-radius-sm);
   font-family:    var(--wc-font-heading);
-  font-size:      0.6875rem;
+  font-size:      var(--wc-text-label);
   font-weight:    700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -243,7 +243,7 @@
 
 .requestUser {
   flex:      1;
-  font-size: 0.875rem;
+  font-size: var(--wc-text-subheading);
   color:     var(--wc-color-text-primary);
 }
 
@@ -258,7 +258,7 @@
   padding:        0.1rem 0.4rem;
   border-radius:  var(--wc-radius-sm);
   font-family:    var(--wc-font-heading);
-  font-size:      0.6875rem;
+  font-size:      var(--wc-text-label);
   font-weight:    700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -403,7 +403,7 @@
 
 .formLabel {
   font-family:    var(--wc-font-heading);
-  font-size:      0.6875rem;
+  font-size:      var(--wc-text-label);
   font-weight:    600;
   color:          var(--wc-color-text-muted);
   text-transform: uppercase;
@@ -443,7 +443,7 @@
 /* ── Empty / loading states ───────────────────────────────────────────────── */
 
 .emptyText {
-  font-size: 0.875rem;
+  font-size: var(--wc-text-subheading);
   color:     var(--wc-color-text-muted);
   padding:   var(--wc-space-sm) 0;
 }

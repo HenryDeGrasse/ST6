@@ -1,137 +1,188 @@
 /**
  * Weekly Commitments – Design Token CSS
  * ═══════════════════════════════════════
- * Enterprise Dashboard theme.
  *
- * Cool neutral foundation, deep blue primary, semantic state colors.
- * Serious, calm, structured, and operationally trustworthy.
+ * Two foundational systems:
+ *   1. Golden Ratio Scale (φ = 1.618) — spacing, typography, sizing
+ *   2. MD3 Dynamic Color (seed #2563eb) — HCT perceptual color with
+ *      contrast-safe tonal palettes and blended semantic colors
  *
- * All custom properties are scoped to .wc-theme to avoid polluting
- * the PA host's global stylesheet.
+ * All custom properties scoped to .wc-theme.
  */
 
 .wc-theme {
-  /* ─── Typography ──────────────────────────────────────────────────────── */
-  --wc-font-heading: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --wc-font-body:    'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --wc-font-display: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --wc-font-mono:    'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
 
-  /* ─── Spacing scale (8px base grid) ───────────────────────────────────── */
-  --wc-space-xs:  0.25rem;   /*  4px */
-  --wc-space-sm:  0.5rem;    /*  8px */
-  --wc-space-md:  1rem;      /* 16px */
-  --wc-space-lg:  1.5rem;    /* 24px */
-  --wc-space-xl:  2rem;      /* 32px */
-  --wc-space-2xl: 3rem;      /* 48px */
-  --wc-space-3xl: 4rem;      /* 64px */
+  /* ═══════════════════════════════════════════════════════════════════════ */
+  /*  GOLDEN RATIO SCALE (φ = 1.618)                                       */
+  /* ═══════════════════════════════════════════════════════════════════════ */
 
-  /* ─── Border-radius (preserved scale) ─────────────────────────────────── */
+  /* ─── Scale factor & step multipliers ────────────────────────────────── */
+  --wc-phi:          1.618;
+  --wc-halfstep:     1.272;   /* φ^0.5  */
+  --wc-quarterstep:  1.128;   /* φ^0.25 */
+  --wc-eighthstep:   1.062;   /* φ^0.125 */
+
+  /* ─── Spacing scale (φ-derived, rem-based) ───────────────────────────── */
+  --wc-space-3xs: 0.236rem;   /*  ~3.8px   φ^-3 */
+  --wc-space-2xs: 0.382rem;   /*  ~6.1px   φ^-2 */
+  --wc-space-xs:  0.618rem;   /*  ~9.9px   φ^-1 */
+  --wc-space-sm:  0.786rem;   /* ~12.6px   φ^-0.5 */
+  --wc-space-md:  1rem;       /*  16px     φ^0 (base) */
+  --wc-space-lg:  1.272rem;   /* ~20.4px   φ^0.5 */
+  --wc-space-xl:  1.618rem;   /* ~25.9px   φ^1 */
+  --wc-space-2xl: 2.618rem;   /* ~41.9px   φ^2 */
+  --wc-space-3xl: 4.236rem;   /* ~67.8px   φ^3 */
+  --wc-space-4xl: 6.854rem;   /* ~109.7px  φ^4 */
+
+  /* ─── Typography scale (φ step multipliers) ──────────────────────────── */
+  --wc-text-caption:    0.786rem;   /* 1/√φ — smallest readable */
+  --wc-text-label:      0.834rem;   /* caption / ⁸√φ */
+  --wc-text-subheading: 0.886rem;   /* 1/⁴√φ */
+  --wc-text-callout:    0.942rem;   /* 1/⁸√φ */
+  --wc-text-body:       1rem;       /* base */
+  --wc-text-heading:    1.128rem;   /* ⁴√φ */
+  --wc-text-title3:     1.272rem;   /* √φ */
+  --wc-text-title2:     1.618rem;   /* φ */
+  --wc-text-title1:     2.058rem;   /* φ × √φ */
+  --wc-text-display2:   2.618rem;   /* φ² */
+  --wc-text-display1:   4.236rem;   /* φ³ */
+
+  /* ─── Line heights (φ step-derived) ──────────────────────────────────── */
+  --wc-leading-tight:   1.128;      /* ⁴√φ — display text */
+  --wc-leading-snug:    1.272;      /* √φ — headings */
+  --wc-leading-normal:  1.618;      /* φ — body text */
+  --wc-leading-relaxed: 1.786;      /* φ + ⁴√φ-dec */
+
+  /* ─── Typography ─────────────────────────────────────────────────────── */
+  --wc-font-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --wc-font-body:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --wc-font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --wc-font-mono:    'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+  /* ─── Border-radius (φ-derived) ──────────────────────────────────────── */
+  --wc-radius-xs:   2px;
   --wc-radius-sm:   4px;
-  --wc-radius-md:   4px;
-  --wc-radius-lg:   6px;
-  --wc-radius-xl:   8px;
+  --wc-radius-md:   6px;
+  --wc-radius-lg:   10px;
+  --wc-radius-xl:   16px;
   --wc-radius-full: 9999px;
-  --wc-radius-arch: 40% 40% 0 0 / 20% 20% 0 0;
 
-  /* ─── Transitions (preserved timing scale) ────────────────────────────── */
-  --wc-transition-fast:     150ms ease-out;
-  --wc-transition-base:     300ms ease-out;
-  --wc-transition-slow:     500ms ease-out;
-  --wc-transition-dramatic: 700ms ease-out;
+  /* ─── Transitions ────────────────────────────────────────────────────── */
+  --wc-transition-fast:     120ms ease-out;
+  --wc-transition-base:     200ms ease-out;
+  --wc-transition-slow:     350ms ease-out;
 
-  /* ─── Foundation Colors (Cool Neutral Light) ──────────────────────────── */
-  --wc-color-bg:           #f8f9fb;  /* Cool off-white — page background    */
-  --wc-color-bg-secondary: #ffffff;  /* White — card / panel surfaces       */
-  --wc-color-bg-tertiary:  #f1f3f5;  /* Light gray — hover / inset fills    */
+  /* ═══════════════════════════════════════════════════════════════════════ */
+  /*  MD3 DYNAMIC COLOR — Light Theme                                      */
+  /*  Seed: #2563eb · HCT-derived tonal palettes                           */
+  /* ═══════════════════════════════════════════════════════════════════════ */
 
-  /* ─── Primary / Accent Colors ─────────────────────────────────────────── */
-  --wc-color-accent:            #2563eb;  /* Blue-600 — primary action      */
-  --wc-color-accent-hover:      #1d4ed8;  /* Blue-700 — hover state         */
-  --wc-color-accent-muted:      rgba(37, 99, 235, 0.08);
-  --wc-color-accent-secondary:  #0f766e;  /* Teal-700 — secondary accent    */
-  --wc-color-accent-foreground: #ffffff;  /* White text on blue backgrounds */
+  /* ─── Surface system (neutral tonal palette) ─────────────────────────── */
+  --wc-color-bg:             #fefbff;  /* surface / background (tone 99) */
+  --wc-color-bg-secondary:   #ffffff;  /* surface-container-lowest (tone 100) */
+  --wc-color-bg-tertiary:    #f5f3f7;  /* surface-container-low (tone 96) */
+  --wc-color-surface:        #efedf1;  /* surface-container (tone 94) */
+  --wc-color-surface-high:   #e9e7ec;  /* surface-container-high (tone 92) */
+  --wc-color-surface-dim:    #dbd9dd;  /* surface-dim (tone 87) */
 
-  /* ─── Text ────────────────────────────────────────────────────────────── */
-  --wc-color-text-primary:   #1a2332;  /* Dark slate — primary text   */
-  --wc-color-text-secondary: #64748b;  /* Slate-500 — secondary text  */
-  --wc-color-text-muted:     #94a3b8;  /* Slate-400 — muted / hints   */
+  /* ─── Text (on-surface tonal values) ─────────────────────────────────── */
+  --wc-color-text-primary:   #1b1b1f;  /* on-surface (tone 10) */
+  --wc-color-text-secondary: #45464f;  /* on-surface-variant (tone 30) */
+  --wc-color-text-muted:     #77767a;  /* neutral (tone 50) */
 
-  /* ─── Borders ─────────────────────────────────────────────────────────── */
-  --wc-color-border:       #e2e5ea;
-  --wc-color-border-muted: rgba(226, 229, 234, 0.5);
+  /* ─── Borders (outline tonal values) ─────────────────────────────────── */
+  --wc-color-border:         #c5c6d0;  /* outline-variant (tone 80) */
+  --wc-color-border-muted:   #e2e2ec;  /* surface-variant (tone 90) */
+  --wc-color-border-strong:  #757680;  /* outline (tone 50) */
 
-  /* ─── Panel / Glass (solid light panels) ─────────────────────────────── */
-  --wc-glass-bg:     rgba(255, 255, 255, 0.98);
-  --wc-glass-border: #e2e5ea;
+  /* ─── Primary (blue, seed-derived) ───────────────────────────────────── */
+  --wc-color-accent:             #0053db;  /* primary (tone 40) */
+  --wc-color-accent-hover:       #003ea8;  /* primary (tone 30) */
+  --wc-color-accent-muted:       #dbe1ff;  /* primary-container (tone 90) */
+  --wc-color-accent-foreground:  #ffffff;  /* on-primary */
+  --wc-color-on-accent-container: #00174b; /* on-primary-container (tone 10) */
+
+  /* ─── Secondary (muted blue) ─────────────────────────────────────────── */
+  --wc-color-secondary:            #545d7c;  /* secondary (tone 40) */
+  --wc-color-secondary-container:  #dbe1ff;  /* secondary-container (tone 90) */
+  --wc-color-accent-secondary:     #545d7c;  /* compat alias for chart/bar colors */
+
+  /* ─── Tertiary (purple-pink accent) ──────────────────────────────────── */
+  --wc-color-tertiary:            #7d4e7a;
+  --wc-color-tertiary-container:  #ffd6f8;
+
+  /* ─── Primary gradient (for CTA buttons) ─────────────────────────────── */
+  --wc-primary-gradient: linear-gradient(180deg, #346ef6 0%, #0053db 100%);
+
+  /* ─── Shadows (MD3-style elevation) ──────────────────────────────────── */
+  --wc-shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.10);
+  --wc-shadow-md:   0 2px 4px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(0, 0, 0, 0.08);
+  --wc-shadow-lg:   0 4px 8px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.10);
+  --wc-shadow-glow: 0 0 0 3px rgba(0, 83, 219, 0.20);
+
+  /* ─── Glass/panel compat aliases ─────────────────────────────────────── */
+  --wc-glass-bg:     var(--wc-color-bg-secondary);
+  --wc-glass-border: var(--wc-color-border);
   --wc-glass-blur:   0px;
 
-  /* ─── Box Shadows (light-mode appropriate) ────────────────────────────── */
-  --wc-shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.05);
-  --wc-shadow-md:   0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --wc-shadow-lg:   0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
-  --wc-shadow-glow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  /* ═══════════════════════════════════════════════════════════════════════ */
+  /*  SEMANTIC STATE COLORS (MD3 custom colors, blended with seed)         */
+  /* ═══════════════════════════════════════════════════════════════════════ */
 
-  /* ─── Primary Gradient (replaces brass gradient) ─────────────────────── */
-  --wc-primary-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  --wc-brass-gradient:   var(--wc-primary-gradient); /* compatibility alias */
-  --wc-text-engraved:    none;
+  /* ─── Draft — neutral gray ───────────────────────────────────────────── */
+  --wc-state-draft-bg:      #efedf1;
+  --wc-state-draft-text:    #45464f;
+  --wc-state-draft-border:  #c5c6d0;
 
-  /* ─── Chess Piece Colors (analytical, distinct) ───────────────────────── */
-  --wc-chess-king:   #2563eb;  /* Blue   — highest priority */
-  --wc-chess-queen:  #7c3aed;  /* Purple — strategic        */
-  --wc-chess-rook:   #0f766e;  /* Teal   — structural       */
-  --wc-chess-bishop: #d97706;  /* Amber  — important        */
-  --wc-chess-knight: #059669;  /* Green  — delivery         */
-  --wc-chess-pawn:   #94a3b8;  /* Gray   — baseline/low     */
+  /* ─── Locked — primary blue ──────────────────────────────────────────── */
+  --wc-state-locked-bg:     #dbe1ff;
+  --wc-state-locked-text:   #0053db;
+  --wc-state-locked-border: #b4c5ff;
 
-  /* ─── State Badges (correct semantic mapping) ─────────────────────────── */
-  /* Draft — neutral gray: "in progress, not final" */
-  --wc-state-draft-bg:      #f3f4f6;
-  --wc-state-draft-text:    #6b7280;
-  --wc-state-draft-border:  #d1d5db;
+  /* ─── Reconciling — blended amber ────────────────────────────────────── */
+  --wc-state-reconciling-bg:     #ffdbcc;
+  --wc-state-reconciling-text:   #a14002;
+  --wc-state-reconciling-border: #ffb694;
 
-  /* Locked — blue: "committed / official" */
-  --wc-state-locked-bg:     #dbeafe;
-  --wc-state-locked-text:   #2563eb;
-  --wc-state-locked-border: #93c5fd;
+  /* ─── Reconciled — blended green ─────────────────────────────────────── */
+  --wc-state-reconciled-bg:     #86f6de;
+  --wc-state-reconciled-text:   #006b5c;
+  --wc-state-reconciled-border: #69d9c3;
 
-  /* Reconciling — amber: "attention required / active evaluation" */
-  --wc-state-reconciling-bg:     #fef3c7;
-  --wc-state-reconciling-text:   #d97706;
-  --wc-state-reconciling-border: #fcd34d;
+  /* ─── Carry Forward — blended purple ─────────────────────────────────── */
+  --wc-state-carry-forward-bg:     #e2dfff;
+  --wc-state-carry-forward-text:   #4a3df3;
+  --wc-state-carry-forward-border: #c3c0ff;
 
-  /* Reconciled — green: "resolved / complete" */
-  --wc-state-reconciled-bg:     #d1fae5;
-  --wc-state-reconciled-text:   #059669;
-  --wc-state-reconciled-border: #6ee7b7;
+  /* ─── Chess piece colors (tonal, harmonized) ─────────────────────────── */
+  --wc-chess-king:   #0053db;
+  --wc-chess-queen:  #7d4e7a;
+  --wc-chess-rook:   #006b5c;
+  --wc-chess-bishop: #4a3df3;
+  --wc-chess-knight: #545d7c;
+  --wc-chess-pawn:   #77767a;
 
-  /* Carry Forward — purple: "preserved but unresolved continuation" */
-  --wc-state-carry-forward-bg:     #ede9fe;
-  --wc-state-carry-forward-text:   #5b21b6;
-  --wc-state-carry-forward-border: #c4b5fd;
+  /* ─── AI panel accents ───────────────────────────────────────────────── */
+  --wc-ai-suggestion-border: #b4c5ff;
+  --wc-ai-suggestion-bg:     #eef0ff;
+  --wc-ai-suggestion-text:   #0053db;
 
-  /* ─── AI Panel Accents ────────────────────────────────────────────────── */
-  --wc-ai-suggestion-border: rgba(37, 99, 235, 0.3);
-  --wc-ai-suggestion-bg:     rgba(37, 99, 235, 0.04);
-  --wc-ai-suggestion-text:   #2563eb;
+  --wc-ai-draft-border: #69d9c3;
+  --wc-ai-draft-bg:     #e6fcf5;
+  --wc-ai-draft-text:   #006b5c;
 
-  --wc-ai-draft-border: rgba(5, 150, 105, 0.3);
-  --wc-ai-draft-bg:     rgba(5, 150, 105, 0.04);
-  --wc-ai-draft-text:   #059669;
+  --wc-ai-insight-border: #c3c0ff;
+  --wc-ai-insight-bg:     #f0eeff;
+  --wc-ai-insight-text:   #4a3df3;
 
-  --wc-ai-insight-border: rgba(124, 58, 237, 0.3);
-  --wc-ai-insight-bg:     rgba(124, 58, 237, 0.04);
-  --wc-ai-insight-text:   #7c3aed;
-
-  /* ─── Functional / Semantic Colors ───────────────────────────────────── */
-  --wc-color-error:          #dc2626;
-  --wc-color-error-bg:       #fef2f2;
-  --wc-color-error-border:   #fca5a5;
-  --wc-color-warning:        #d97706;
-  --wc-color-warning-bg:     #fffbeb;
-  --wc-color-warning-border: #fcd34d;
-  --wc-color-success:        #059669;
-  --wc-color-success-bg:     #f0fdf4;
-  --wc-color-success-border: #6ee7b7;
+  /* ─── Functional colors (MD3 error/warning/success, blended) ─────────── */
+  --wc-color-error:         #bf0715;
+  --wc-color-error-bg:      #ffdad6;
+  --wc-color-error-border:  #ffb4ab;
+  --wc-color-warning:       #a14002;
+  --wc-color-warning-bg:    #ffdbcc;
+  --wc-color-warning-border: #ffb694;
+  --wc-color-success:       #006b5c;
+  --wc-color-success-bg:    #86f6de;
+  --wc-color-success-border: #69d9c3;
 }

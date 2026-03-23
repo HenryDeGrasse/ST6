@@ -107,10 +107,11 @@ describe("QuickUpdateFlow", () => {
     expect(screen.getByTestId("quick-update-status-BLOCKED")).toBeInTheDocument();
     expect(screen.getByTestId("quick-update-status-DONE_EARLY")).toBeInTheDocument();
 
-    expect(screen.getByText("On Track")).toBeInTheDocument();
-    expect(screen.getByText("At Risk")).toBeInTheDocument();
-    expect(screen.getByText("Blocked")).toBeInTheDocument();
-    expect(screen.getByText("Done Early")).toBeInTheDocument();
+    // Status labels appear in both the buttons and possibly the last-check-in section
+    expect(screen.getAllByText("On Track").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("At Risk").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Blocked").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Done Early").length).toBeGreaterThanOrEqual(1);
 
     expect(screen.queryByText("Dropped")).not.toBeInTheDocument();
   });
@@ -140,7 +141,7 @@ describe("QuickUpdateFlow", () => {
 
   // ── (7) Selecting status stores update ──────────────────────────────────
 
-  it("selecting a status marks that button as pressed", () => {
+  it("selecting a status stores it and auto-advances to the next card", () => {
     renderWithFlags(<QuickUpdateFlow {...defaultProps} />);
 
     const onTrackBtn = screen.getByTestId("quick-update-status-ON_TRACK");
@@ -148,20 +149,9 @@ describe("QuickUpdateFlow", () => {
 
     fireEvent.click(onTrackBtn);
 
-    expect(onTrackBtn).toHaveAttribute("aria-pressed", "true");
-    // Other buttons remain unpressed
-    expect(screen.getByTestId("quick-update-status-AT_RISK")).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
-    expect(screen.getByTestId("quick-update-status-BLOCKED")).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
-    expect(screen.getByTestId("quick-update-status-DONE_EARLY")).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
+    expect(screen.getByTestId("quick-update-card")).toHaveTextContent("Write unit tests");
+    fireEvent.click(screen.getByTestId("quick-update-prev"));
+    expect(screen.getByTestId("quick-update-status-ON_TRACK")).toHaveAttribute("aria-pressed", "true");
   });
 
   // ── (8) Typing custom note ───────────────────────────────────────────────
@@ -178,14 +168,12 @@ describe("QuickUpdateFlow", () => {
   it("marks manually edited notes as user typed when submitting", async () => {
     renderWithFlags(<QuickUpdateFlow {...defaultProps} />);
 
-    fireEvent.click(screen.getByTestId("quick-update-status-ON_TRACK"));
     fireEvent.change(screen.getByTestId("quick-update-note-input"), {
       target: { value: "Working through rollout checklist" },
     });
-
-    fireEvent.click(screen.getByTestId("quick-update-next"));
     fireEvent.click(screen.getByTestId("quick-update-status-ON_TRACK"));
-    fireEvent.click(screen.getByTestId("quick-update-next"));
+
+    fireEvent.click(screen.getByTestId("quick-update-status-ON_TRACK"));
     fireEvent.click(screen.getByTestId("quick-update-status-ON_TRACK"));
     fireEvent.click(screen.getByTestId("quick-update-submit"));
 
@@ -210,12 +198,10 @@ describe("QuickUpdateFlow", () => {
     // Card 1 — select On Track
     fireEvent.click(screen.getByTestId("quick-update-status-ON_TRACK"));
 
-    // Navigate to card 2 — select At Risk
-    fireEvent.click(screen.getByTestId("quick-update-next"));
+    // Auto-advanced to card 2 — select At Risk
     fireEvent.click(screen.getByTestId("quick-update-status-AT_RISK"));
 
-    // Navigate to card 3 (last) — select Blocked
-    fireEvent.click(screen.getByTestId("quick-update-next"));
+    // Auto-advanced to card 3 (last) — select Blocked
     fireEvent.click(screen.getByTestId("quick-update-status-BLOCKED"));
 
     // Submit All is shown on the last card
@@ -262,14 +248,11 @@ describe("QuickUpdateFlow", () => {
 
     renderWithFlags(<QuickUpdateFlow {...defaultProps} />);
 
-    fireEvent.click(screen.getByTestId("quick-update-status-BLOCKED"));
-
     const suggestionChip = await screen.findByRole("button", { name: "Blocked on API review" });
     fireEvent.click(suggestionChip);
+    fireEvent.click(screen.getByTestId("quick-update-status-BLOCKED"));
 
-    fireEvent.click(screen.getByTestId("quick-update-next"));
     fireEvent.click(screen.getByTestId("quick-update-status-ON_TRACK"));
-    fireEvent.click(screen.getByTestId("quick-update-next"));
     fireEvent.click(screen.getByTestId("quick-update-status-ON_TRACK"));
     fireEvent.click(screen.getByTestId("quick-update-submit"));
 

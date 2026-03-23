@@ -76,7 +76,7 @@
 
 .dropdownTitle {
   font-weight: 600;
-  font-size:   0.9375rem;
+  font-size:   var(--wc-text-body);
   color:       var(--wc-color-text-primary);
 }
 
@@ -104,7 +104,7 @@
   text-align:  center;
   color:       var(--wc-color-text-muted);
   font-style:  italic;
-  font-size:   0.9375rem;
+  font-size:   var(--wc-text-body);
 }
 
 .notificationItem {

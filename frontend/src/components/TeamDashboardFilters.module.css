@@ -20,7 +20,7 @@
   background-color: var(--wc-color-bg-secondary);
   color:            var(--wc-color-text-primary);
   font-family:      var(--wc-font-body);
-  font-size:        0.875rem;
+  font-size:        var(--wc-text-subheading);
   line-height:      1.4;
   width:            auto;
   min-width:        10rem;

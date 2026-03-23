@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import type { RcdoCry, RcdoSearchResult } from "@weekly-commitments/contracts";
 import styles from "./RcdoPicker.module.css";
 
@@ -21,9 +21,19 @@ export interface RcdoPickerProps {
   disabled?: boolean;
 }
 
+/** Breadcrumb browse state */
+type BrowseLevel =
+  | { type: "root" }
+  | { type: "cry"; cryId: string; cryName: string }
+  | { type: "objective"; cryId: string; cryName: string; objectiveId: string; objectiveName: string };
+
 /**
- * RCDO outcome picker with typeahead search and tree browse.
- * Supports both search-based and tree-based selection.
+ * RCDO outcome picker.
+ *
+ * Browse is the default mode — shows a flat drill-down list with breadcrumb
+ * navigation. A small search icon in the panel header expands an inline search
+ * input for power users who know the outcome name. Pressing Escape or clicking
+ * × collapses back to browse.
  */
 export const RcdoPicker: React.FC<RcdoPickerProps> = ({
   value,
@@ -34,10 +44,32 @@ export const RcdoPicker: React.FC<RcdoPickerProps> = ({
   onClearSearch,
   disabled = false,
 }) => {
-  const [mode, setMode] = useState<"search" | "browse">("search");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [expandedCries, setExpandedCries] = useState<Set<string>>(new Set());
-  const [expandedObjectives, setExpandedObjectives] = useState<Set<string>>(new Set());
+  const [browseLevel, setBrowseLevel] = useState<BrowseLevel>({ type: "root" });
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Stabilize callback refs to prevent infinite useEffect loops
+  const onSearchRef = useRef(onSearch);
+  onSearchRef.current = onSearch;
+  const onClearSearchRef = useRef(onClearSearch);
+  onClearSearchRef.current = onClearSearch;
+
+  // Focus input when search expands
+  useEffect(() => {
+    if (searchOpen) {
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+    }
+  }, [searchOpen]);
+
+  // Debounced search
+  useEffect(() => {
+    if (query.length >= 2) {
+      const timer = setTimeout(() => onSearchRef.current(query), 300);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [query]);
 
   // Find current selection label from tree
   const findOutcomeLabel = useCallback((): string => {
@@ -46,7 +78,7 @@ export const RcdoPicker: React.FC<RcdoPickerProps> = ({
       for (const obj of cry.objectives) {
         for (const outcome of obj.outcomes) {
           if (outcome.id === value) {
-            return `${cry.name} → ${obj.name} → ${outcome.name}`;
+            return `${cry.name} › ${obj.name} › ${outcome.name}`;
           }
         }
       }
@@ -54,14 +86,20 @@ export const RcdoPicker: React.FC<RcdoPickerProps> = ({
     return value;
   }, [value, tree]);
 
-  useEffect(() => {
-    if (query.length >= 2) {
-      const timer = setTimeout(() => onSearch(query), 300);
-      return () => clearTimeout(timer);
-    }
-    onClearSearch();
-    return undefined;
-  }, [query, onSearch, onClearSearch]);
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setQuery("");
+    onClearSearchRef.current();
+  }, []);
+
+  const handleQueryChange = (newQuery: string) => {
+    setQuery(newQuery);
+    if (newQuery.length === 0) onClearSearchRef.current();
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") closeSearch();
+  };
 
   const handleSearchSelect = (result: RcdoSearchResult) => {
     onChange({
@@ -72,172 +110,235 @@ export const RcdoPicker: React.FC<RcdoPickerProps> = ({
       rallyCryId: result.rallyCryId,
       rallyCryName: result.rallyCryName,
     });
-    setQuery("");
-    onClearSearch();
+    closeSearch();
   };
 
-  const toggleCry = (id: string) => {
-    setExpandedCries((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  // ─── Breadcrumb browse helpers ─────────────────────────────────────
 
-  const toggleObjective = (id: string) => {
-    setExpandedObjectives((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  const drillIntoCry = (cry: RcdoCry) =>
+    setBrowseLevel({ type: "cry", cryId: cry.id, cryName: cry.name });
+
+  const drillIntoObjective = (
+    cry: { id: string; name: string },
+    obj: { id: string; name: string },
+  ) =>
+    setBrowseLevel({
+      type: "objective",
+      cryId: cry.id,
+      cryName: cry.name,
+      objectiveId: obj.id,
+      objectiveName: obj.name,
     });
-  };
+
+  const goToRoot = () => setBrowseLevel({ type: "root" });
+  const goToCry = (cryId: string, cryName: string) =>
+    setBrowseLevel({ type: "cry", cryId, cryName });
+
+  const currentCry =
+    browseLevel.type !== "root"
+      ? tree.find((c) => c.id === browseLevel.cryId)
+      : null;
+
+  const currentObjective =
+    browseLevel.type === "objective" && currentCry
+      ? currentCry.objectives.find((o) => o.id === browseLevel.objectiveId)
+      : null;
 
   return (
     <div data-testid="rcdo-picker" className={styles.container}>
       {/* ── Current selection chip ── */}
       {value && (
         <div data-testid="rcdo-current" className={styles.currentChip}>
-          <span className={styles.currentLabel}>Linked: {findOutcomeLabel()}</span>
+          <span className={styles.currentLabel}>{findOutcomeLabel()}</span>
           {!disabled && (
             <button
               type="button"
               onClick={() => onChange(null)}
               className={styles.clearButton}
               data-testid="rcdo-clear"
-              aria-label="Clear RCDO selection"
+              aria-label="Clear outcome link"
             >
-              Close
+              ×
             </button>
           )}
         </div>
       )}
 
-      {/* ── Mode toggle + picker UI (hidden when disabled) ── */}
+      {/* ── Picker (hidden when disabled) ── */}
       {!disabled && (
-        <>
-          {/* ── Mode toggle bar ── */}
-          <div className={styles.modeBar}>
-            <button
-              type="button"
-              data-testid="rcdo-mode-search"
-              onClick={() => setMode("search")}
-              aria-pressed={mode === "search"}
-              className={[styles.modeButton, mode === "search" ? styles.modeButtonActive : ""].join(" ").trim()}
-            >
-              Search
-            </button>
-            <button
-              type="button"
-              data-testid="rcdo-mode-browse"
-              onClick={() => setMode("browse")}
-              aria-pressed={mode === "browse"}
-              className={[styles.modeButton, mode === "browse" ? styles.modeButtonActive : ""].join(" ").trim()}
-            >
-              Browse
-            </button>
+        <div data-testid="rcdo-tree-browser" className={styles.browsePanel}>
+
+          {/* ── Panel header: breadcrumb left, search icon right ── */}
+          <div className={styles.panelHeader}>
+            <nav className={styles.breadcrumb} data-testid="rcdo-breadcrumb">
+              {browseLevel.type === "root" ? (
+                <span className={styles.breadcrumbCurrent}>All rally cries</span>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    data-testid="rcdo-breadcrumb-root"
+                    onClick={goToRoot}
+                    className={styles.breadcrumbLink}
+                  >
+                    All
+                  </button>
+                  <span className={styles.breadcrumbSep}>›</span>
+                  {browseLevel.type === "cry" ? (
+                    <span className={styles.breadcrumbCurrent}>{browseLevel.cryName}</span>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        data-testid="rcdo-breadcrumb-cry"
+                        onClick={() => goToCry(browseLevel.cryId, browseLevel.cryName)}
+                        className={styles.breadcrumbLink}
+                      >
+                        {browseLevel.cryName}
+                      </button>
+                      <span className={styles.breadcrumbSep}>›</span>
+                      <button
+                        type="button"
+                        data-testid="rcdo-breadcrumb-objective"
+                        onClick={() => goToCry(browseLevel.cryId, browseLevel.cryName)}
+                        className={styles.breadcrumbLink}
+                      >
+                        {browseLevel.objectiveName}
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+            </nav>
+
+            {/* Search toggle icon */}
+            {!searchOpen && (
+              <button
+                type="button"
+                className={styles.searchToggleBtn}
+                onClick={() => setSearchOpen(true)}
+                aria-label="Search outcomes"
+                data-testid="rcdo-search-toggle"
+                title="Search outcomes by name"
+              >
+                <span className={styles.searchToggleGlyph} aria-hidden="true">⌕</span>
+              </button>
+            )}
           </div>
 
-          {/* ── Search panel ── */}
-          {mode === "search" && (
-            <div className={styles.searchPanel}>
+          {/* ── Inline search (expanded on demand) ── */}
+          {searchOpen && (
+            <div className={styles.searchRow} data-testid="rcdo-search-panel">
               <input
+                ref={searchInputRef}
                 data-testid="rcdo-search-input"
                 type="text"
                 placeholder="Search outcomes…"
                 aria-label="Search outcomes"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => handleQueryChange(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
                 className={styles.searchInput}
               />
-              {searchResults.length > 0 && (
-                <ul data-testid="rcdo-search-results" className={styles.resultsList}>
-                  {searchResults.map((r) => (
-                    <li key={r.id} className={styles.resultsItem}>
-                      <button
-                        type="button"
-                        onClick={() => handleSearchSelect(r)}
-                        className={styles.resultButton}
-                        data-testid={`rcdo-result-${r.id}`}
-                      >
-                        <strong className={styles.resultName}>{r.name}</strong>
-                        <span className={styles.resultMeta}>
-                          {r.rallyCryName} → {r.objectiveName}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <button
+                type="button"
+                className={styles.searchCloseBtn}
+                onClick={closeSearch}
+                aria-label="Close search"
+                data-testid="rcdo-search-close"
+              >
+                ×
+              </button>
             </div>
           )}
 
-          {/* ── Browse panel ── */}
-          {mode === "browse" && (
-            <div data-testid="rcdo-tree-browser" className={styles.browsePanel}>
-              {tree.map((cry) => (
-                <div key={cry.id} className={styles.cryNode}>
+          {/* ── Search results (when search is open and has results) ── */}
+          {searchOpen && searchResults.length > 0 && (
+            <ul data-testid="rcdo-search-results" className={styles.resultsList}>
+              {searchResults.map((r) => (
+                <li key={r.id} className={styles.resultsItem}>
                   <button
                     type="button"
-                    onClick={() => toggleCry(cry.id)}
-                    aria-expanded={expandedCries.has(cry.id)}
-                    className={styles.cryToggle}
+                    onClick={() => handleSearchSelect(r)}
+                    className={styles.resultButton}
+                    data-testid={`rcdo-result-${r.id}`}
                   >
-                    <span className={styles.chevron}>{expandedCries.has(cry.id) ? "▾" : "▸"}</span>
+                    <strong className={styles.resultName}>{r.name}</strong>
+                    <span className={styles.resultMeta}>
+                      {r.rallyCryName} › {r.objectiveName}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/* ── Browse list (always visible unless search has results) ── */}
+          {(!searchOpen || searchResults.length === 0) && (
+            <div className={styles.browseList}>
+              {/* Root level: rally cries */}
+              {browseLevel.type === "root" &&
+                tree.map((cry) => (
+                  <button
+                    type="button"
+                    key={cry.id}
+                    onClick={() => drillIntoCry(cry)}
+                    className={styles.browseItem}
+                  >
+                    <span className={styles.browseItemChevron}>›</span>
                     {cry.name}
                   </button>
-                  {expandedCries.has(cry.id) && (
-                    <div className={styles.objectiveList}>
-                      {cry.objectives.map((obj) => (
-                        <div key={obj.id} className={styles.objectiveNode}>
-                          <button
-                            type="button"
-                            onClick={() => toggleObjective(obj.id)}
-                            aria-expanded={expandedObjectives.has(obj.id)}
-                            className={styles.objectiveToggle}
-                          >
-                            <span className={styles.chevron}>{expandedObjectives.has(obj.id) ? "▾" : "▸"}</span>
-                            {obj.name}
-                          </button>
-                          {expandedObjectives.has(obj.id) && (
-                            <div className={styles.outcomeList}>
-                              {obj.outcomes.map((outcome) => (
-                                <button
-                                  type="button"
-                                  key={outcome.id}
-                                  onClick={() =>
-                                    onChange({
-                                      outcomeId: outcome.id,
-                                      outcomeName: outcome.name,
-                                      objectiveId: obj.id,
-                                      objectiveName: obj.name,
-                                      rallyCryId: cry.id,
-                                      rallyCryName: cry.name,
-                                    })
-                                  }
-                                  className={[
-                                    styles.outcomeButton,
-                                    value === outcome.id ? styles.outcomeButtonSelected : "",
-                                  ]
-                                    .join(" ")
-                                    .trim()}
-                                  data-testid={`rcdo-outcome-${outcome.id}`}
-                                >
-                                  {outcome.name}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+                ))}
+
+              {/* Cry level: objectives */}
+              {browseLevel.type === "cry" &&
+                currentCry?.objectives.map((obj) => (
+                  <button
+                    type="button"
+                    key={obj.id}
+                    onClick={() =>
+                      drillIntoObjective(
+                        { id: browseLevel.cryId, name: browseLevel.cryName },
+                        { id: obj.id, name: obj.name },
+                      )
+                    }
+                    className={styles.browseItem}
+                  >
+                    <span className={styles.browseItemChevron}>›</span>
+                    {obj.name}
+                  </button>
+                ))}
+
+              {/* Objective level: outcomes (leaf nodes) */}
+              {browseLevel.type === "objective" &&
+                currentObjective?.outcomes.map((outcome) => (
+                  <button
+                    type="button"
+                    key={outcome.id}
+                    onClick={() =>
+                      onChange({
+                        outcomeId: outcome.id,
+                        outcomeName: outcome.name,
+                        objectiveId: browseLevel.objectiveId,
+                        objectiveName: browseLevel.objectiveName,
+                        rallyCryId: browseLevel.cryId,
+                        rallyCryName: browseLevel.cryName,
+                      })
+                    }
+                    className={[
+                      styles.outcomeButton,
+                      value === outcome.id ? styles.outcomeButtonSelected : "",
+                    ]
+                      .join(" ")
+                      .trim()}
+                    data-testid={`rcdo-outcome-${outcome.id}`}
+                  >
+                    {outcome.name}
+                  </button>
+                ))}
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

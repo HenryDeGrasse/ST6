@@ -232,6 +232,8 @@ describe("IssueCreateForm", () => {
       target: { value: "3" },
     });
 
+    // Open search panel first (browse is now the default mode)
+    fireEvent.click(screen.getByTestId("rcdo-search-toggle"));
     fireEvent.click(screen.getByTestId("rcdo-result-outcome-1"));
 
     await waitFor(() => {

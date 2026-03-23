@@ -136,7 +136,6 @@ export const MyInsightsPage: React.FC = () => {
 
   return (
     <div className={styles.page} data-testid="my-insights-page">
-      <h2 className={styles.heading}>My Insights</h2>
 
       {loading && (
         <div className={styles.loadingState}>Loading your insights...</div>

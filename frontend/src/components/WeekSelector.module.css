@@ -4,12 +4,10 @@
 
 /* ─── Navigation bar ─────────────────────────────────────────────────────── */
 .nav {
-  display:       flex;
-  align-items:   center;
-  gap:           var(--wc-space-sm);
-  padding:       var(--wc-space-sm) 0;
-  margin-bottom: var(--wc-space-md);
-  flex-wrap:     wrap;
+  display:    flex;
+  align-items: center;
+  gap:        var(--wc-space-sm);
+  flex-wrap:  wrap;
 }
 
 /* ─── Arrow buttons ──────────────────────────────────────────────────────── */

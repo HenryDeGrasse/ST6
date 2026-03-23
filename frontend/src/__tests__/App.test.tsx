@@ -24,12 +24,13 @@ vi.mock("../pages/ExecutiveDashboardPage.js", () => ({
 describe("App", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.history.replaceState({}, "", "/");
   });
 
-  it("renders the Weekly Commitments heading inside the theme root", async () => {
+  it("renders the app shell inside the theme root", async () => {
     render(<App />);
     expect(screen.getByTestId("wc-theme-root")).toHaveClass("wc-theme");
-    expect(screen.getByText("Weekly Commitments")).toBeInTheDocument();
+    expect(screen.getByTestId("weekly-commitments-app")).toBeInTheDocument();
     await screen.findByTestId("create-plan-btn");
   });
 
@@ -60,6 +61,13 @@ describe("App", () => {
     await screen.findByTestId("create-plan-btn");
   });
 
+  it("does not create a root stacking context that traps overlays under host chrome", async () => {
+    const { container } = render(<App />);
+    await screen.findByTestId("create-plan-btn");
+
+    expect(container.querySelector('div[style*="z-index: 1"]')).toBeNull();
+  });
+
   it("shows executive navigation for admins when the feature flag is enabled", async () => {
     const executiveUser = {
       userId: "exec-user-id",
@@ -75,5 +83,22 @@ describe("App", () => {
 
     expect(screen.getByTestId("executive-dashboard-page")).toBeInTheDocument();
     expect(screen.getByText("Executive Dashboard")).toBeInTheDocument();
+  });
+
+  it("supports standalone dev route alias /teamdashboard", async () => {
+    window.history.replaceState({}, "", "/teamdashboard");
+
+    render(<App />);
+
+    expect(screen.getByTestId("team-dashboard-page")).toBeInTheDocument();
+    expect(screen.getByTestId("nav-team-dashboard")).toBeInTheDocument();
+  });
+
+  it("updates the standalone URL when navigating to Team Dashboard", async () => {
+    render(<App />);
+    fireEvent.click(screen.getByTestId("nav-team-dashboard"));
+
+    expect(window.location.pathname).toBe("/teamdashboard");
+    expect(screen.getByTestId("team-dashboard-page")).toBeInTheDocument();
   });
 });

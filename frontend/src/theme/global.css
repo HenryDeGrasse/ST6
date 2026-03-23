@@ -1,15 +1,14 @@
 /**
- * Weekly Commitments – Enterprise Dashboard Global Styles
- * ════════════════════════════════════════════════════════
+ * Weekly Commitments – Global Styles
+ * ═══════════════════════════════════
+ * Golden ratio typography · MD3 surfaces · Enterprise dashboard
  *
- * Scoped to .wc-theme so they are isolated from the PA host.
- * Imported once at the App root via ThemeContext.tsx alongside tokens.css.
- *
- * Typography: Inter (system-level sans-serif, loaded via Google Fonts).
+ * Scoped to .wc-theme for micro-frontend isolation.
+ * Font: Inter (system fallback stack).
  */
 
-/* ─── Google Fonts ───────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+/* ─── Inter font (variable weight) ───────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 /* ─── Box-sizing reset ───────────────────────────────────────────────────── */
 .wc-theme *,
@@ -20,16 +19,16 @@
 
 /* ─── Base container ─────────────────────────────────────────────────────── */
 .wc-theme {
-  font-family:      var(--wc-font-body);
-  font-size:        1rem;
-  line-height:      1.5;
-  color:            var(--wc-color-text-primary);
+  font-family:     var(--wc-font-body);
+  font-size:       var(--wc-text-body);
+  line-height:     var(--wc-leading-normal);
+  color:           var(--wc-color-text-primary);
   background-color: var(--wc-color-bg);
   -webkit-font-smoothing:  antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ─── Typography — Headings ──────────────────────────────────────────────── */
+/* ─── Typography — Headings (golden ratio scale) ─────────────────────────── */
 .wc-theme h1,
 .wc-theme h2,
 .wc-theme h3,
@@ -38,71 +37,66 @@
 .wc-theme h6 {
   margin:      0;
   font-family: var(--wc-font-heading);
-  line-height: 1.25;
+  font-weight: 600;
+  line-height: var(--wc-leading-snug);
   color:       var(--wc-color-text-primary);
 }
 
-.wc-theme h1 { font-size: 2rem;    font-weight: 700; }
-.wc-theme h2 { font-size: 1.5rem;  font-weight: 600; }
-.wc-theme h3 { font-size: 1.25rem; font-weight: 600; }
-.wc-theme h4 { font-size: 1.125rem; font-weight: 600; }
-.wc-theme h5 { font-size: 1rem;    font-weight: 500; }
-.wc-theme h6 { font-size: 0.875rem; font-weight: 500; }
+.wc-theme h1 { font-size: var(--wc-text-title1);  letter-spacing: -0.02em; }
+.wc-theme h2 { font-size: var(--wc-text-title2);  letter-spacing: -0.015em; }
+.wc-theme h3 { font-size: var(--wc-text-title3); }
+.wc-theme h4 { font-size: var(--wc-text-heading); }
+.wc-theme h5 { font-size: var(--wc-text-body);    font-weight: 500; }
+.wc-theme h6 { font-size: var(--wc-text-subheading); font-weight: 500; }
 
-.wc-theme p {
-  margin: 0;
-}
+.wc-theme p { margin: 0; }
 
-/* ─── Section Labels ─────────────────────────────────────────────────────── */
-/* Replaces .wc-volume-label — clean enterprise section label */
-.wc-theme .wc-volume-label {
-  font-family:    var(--wc-font-display);
-  font-size:      0.6875rem;
+/* ─── Section labels (sentence case, restrained) ────────────────────────── */
+.wc-volume-label {
+  font-family:    var(--wc-font-body);
+  font-size:      var(--wc-text-label);
   font-weight:    600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color:          var(--wc-color-text-secondary);
-  margin-bottom:  var(--wc-space-xs);
+  margin-bottom:  var(--wc-space-3xs);
   display:        block;
 }
 
-/* ─── Divider ────────────────────────────────────────────────────────────── */
-/* Replaces .wc-ornate-divider — simple 1px solid border */
+/* ─── Subtle divider ─────────────────────────────────────────────────────── */
 .wc-theme .wc-ornate-divider {
-  height:     0;
+  height:     1px;
   border:     none;
-  border-top: 1px solid var(--wc-color-border);
   margin:     var(--wc-space-lg) 0;
+  background: var(--wc-color-border);
 }
 
-/* Variant on secondary backgrounds — same simple rule */
-.wc-theme .wc-ornate-divider--panel {
-  border-top-color: var(--wc-color-border);
-}
+/* No decorative pseudo-elements */
+.wc-theme .wc-ornate-divider::before { content: none; }
+.wc-theme .wc-ornate-divider--panel::before { content: none; }
 
-/* ─── Corner Flourish (no-op — kept for HTML compat) ─────────────────────── */
-/* Decorative brass L-brackets removed; class retained so markup doesn't break */
-.wc-theme .wc-corner-flourish {
-  /* intentionally empty */
-}
+/* ─── Corner flourishes — disabled ───────────────────────────────────────── */
+.wc-theme .wc-corner-flourish::before,
+.wc-theme .wc-corner-flourish::after { content: none; }
+.wc-theme .wc-corner-flourish--lg::before,
+.wc-theme .wc-corner-flourish--lg::after { content: none; }
 
-/* ─── Interactive Elements — Buttons ─────────────────────────────────────── */
+/* ─── Buttons ────────────────────────────────────────────────────────────── */
 .wc-theme button {
-  display:          inline-flex;
-  align-items:      center;
-  justify-content:  center;
-  gap:              var(--wc-space-xs);
-  padding:          var(--wc-space-sm) var(--wc-space-md);
-  font-family:      var(--wc-font-body);
-  font-size:        0.875rem;
-  font-weight:      500;
-  line-height:      1.25;
-  cursor:           pointer;
-  border:           1px solid var(--wc-color-border);
-  border-radius:    var(--wc-radius-sm);
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             var(--wc-space-2xs);
+  padding:         var(--wc-space-2xs) var(--wc-space-sm);
+  font-family:     var(--wc-font-body);
+  font-size:       var(--wc-text-subheading);
+  font-weight:     500;
+  line-height:     var(--wc-leading-snug);
+  cursor:          pointer;
+  border:          1px solid var(--wc-color-border);
+  border-radius:   var(--wc-radius-md);
   background-color: var(--wc-color-bg-secondary);
-  color:            var(--wc-color-text-primary);
-  box-shadow:       var(--wc-shadow-sm);
+  color:           var(--wc-color-text-primary);
   transition:
     background-color var(--wc-transition-fast),
     border-color     var(--wc-transition-fast),
@@ -111,9 +105,8 @@
 }
 
 .wc-theme button:hover:not(:disabled) {
-  border-color:     var(--wc-color-accent);
-  color:            var(--wc-color-accent);
-  background-color: var(--wc-color-accent-muted);
+  border-color: var(--wc-color-accent);
+  color:        var(--wc-color-accent);
 }
 
 .wc-theme button:focus-visible {
@@ -126,98 +119,73 @@
   cursor:  not-allowed;
 }
 
-/* ─── Primary (Blue) Button Utility ─────────────────────────────────────── */
-/* Replaces .wc-btn-brass — flat blue, no gradient, no engraving */
+/* ─── Primary CTA button ─────────────────────────────────────────────────── */
 .wc-theme .wc-btn-brass {
-  font-family:      var(--wc-font-body);
-  font-size:        0.875rem;
-  font-weight:      600;
-  padding:          0.625rem 1.25rem;
-  border:           none;
-  border-radius:    var(--wc-radius-sm);
-  background-color: var(--wc-color-accent);
-  color:            var(--wc-color-accent-foreground);
-  box-shadow:       var(--wc-shadow-sm);
-  cursor:           pointer;
+  font-family:     var(--wc-font-body);
+  font-size:       var(--wc-text-subheading);
+  font-weight:     600;
+  padding:         var(--wc-space-2xs) var(--wc-space-sm);
+  border:          none;
+  border-radius:   var(--wc-radius-md);
+  background:      var(--wc-color-accent);
+  color:           var(--wc-color-accent-foreground);
+  box-shadow:      var(--wc-shadow-sm);
+  cursor:          pointer;
   transition:
     background-color var(--wc-transition-fast),
     box-shadow       var(--wc-transition-fast);
 }
 
 .wc-theme .wc-btn-brass:hover:not(:disabled) {
-  background-color: var(--wc-color-accent-hover);
-  box-shadow:       var(--wc-shadow-md);
-  color:            var(--wc-color-accent-foreground);
-  border-color:     transparent;
+  background:  var(--wc-color-accent-hover);
+  box-shadow:  var(--wc-shadow-glow);
+  color:       var(--wc-color-accent-foreground);
+  border-color: transparent;
 }
 
 .wc-theme .wc-btn-brass:active:not(:disabled) {
-  background-color: var(--wc-color-accent-hover);
-  box-shadow:       var(--wc-shadow-sm);
+  background: var(--wc-color-accent-hover);
 }
 
-.wc-theme .wc-btn-brass:focus-visible {
-  outline:        2px solid var(--wc-color-accent);
-  outline-offset: 2px;
-}
-
-.wc-theme .wc-btn-brass:disabled {
-  opacity: 0.5;
-  cursor:  not-allowed;
-}
-
-/* ─── Secondary (Outline) Button Utility ─────────────────────────────────── */
+/* ─── Secondary button ───────────────────────────────────────────────────── */
 .wc-theme .wc-btn-secondary {
-  font-family:      var(--wc-font-body);
-  font-size:        0.875rem;
-  font-weight:      500;
-  padding:          0.5rem 1rem;
-  background:       transparent;
-  border:           1px solid var(--wc-color-accent);
-  color:            var(--wc-color-accent);
-  border-radius:    var(--wc-radius-sm);
-  cursor:           pointer;
+  font-family:    var(--wc-font-body);
+  font-size:      var(--wc-text-subheading);
+  font-weight:    500;
+  padding:        var(--wc-space-2xs) var(--wc-space-sm);
+  background:     transparent;
+  border:         1px solid var(--wc-color-accent);
+  color:          var(--wc-color-accent);
+  border-radius:  var(--wc-radius-md);
+  cursor:         pointer;
   transition:
     background-color var(--wc-transition-fast),
-    border-color     var(--wc-transition-fast),
     color            var(--wc-transition-fast);
 }
 
 .wc-theme .wc-btn-secondary:hover:not(:disabled) {
   background-color: var(--wc-color-accent-muted);
-  border-color:     var(--wc-color-accent);
   color:            var(--wc-color-accent);
 }
 
-.wc-theme .wc-btn-secondary:focus-visible {
-  outline:        2px solid var(--wc-color-accent);
-  outline-offset: 2px;
-}
-
-.wc-theme .wc-btn-secondary:disabled {
-  opacity: 0.5;
-  cursor:  not-allowed;
-}
-
-/* ─── Form Controls ──────────────────────────────────────────────────────── */
+/* ─── Form controls ──────────────────────────────────────────────────────── */
 .wc-theme input,
 .wc-theme select,
 .wc-theme textarea {
   font-family:      var(--wc-font-body);
-  font-size:        0.9rem;
-  line-height:      1.5;
+  font-size:        var(--wc-text-body);
+  line-height:      var(--wc-leading-snug);
   color:            var(--wc-color-text-primary);
   background-color: var(--wc-color-bg-secondary);
   border:           1px solid var(--wc-color-border);
-  border-radius:    var(--wc-radius-sm);
-  padding:          var(--wc-space-sm) var(--wc-space-md);
+  border-radius:    var(--wc-radius-md);
+  padding:          var(--wc-space-2xs) var(--wc-space-xs);
   width:            100%;
   transition:
     border-color var(--wc-transition-fast),
     box-shadow   var(--wc-transition-fast);
 }
 
-/* Checkboxes and radios should NOT inherit full-width / padding rules */
 .wc-theme input[type="checkbox"],
 .wc-theme input[type="radio"] {
   width:            auto;
@@ -227,17 +195,14 @@
   background-color: revert;
 }
 
-/* Selects should NOT be full-width by default — let containers control sizing */
-.wc-theme select {
-  width: auto;
-}
+.wc-theme select { width: auto; }
 
 .wc-theme input:focus,
 .wc-theme select:focus,
 .wc-theme textarea:focus {
   outline:      none;
   border-color: var(--wc-color-accent);
-  box-shadow:   0 0 0 3px rgba(37, 99, 235, 0.12);
+  box-shadow:   var(--wc-shadow-glow);
 }
 
 .wc-theme input::placeholder,
@@ -251,69 +216,58 @@
   background-image:
     linear-gradient(45deg, transparent 50%, var(--wc-color-text-muted) 50%),
     linear-gradient(135deg, var(--wc-color-text-muted) 50%, transparent 50%);
-  background-repeat:   no-repeat;
+  background-repeat: no-repeat;
   background-position:
     calc(100% - 14px) calc(50% - 2px),
-    calc(100% - 8px)  calc(50% - 2px);
-  background-size:  6px 6px;
-  padding-right:    calc(var(--wc-space-lg) + var(--wc-space-sm));
-  cursor:           pointer;
+    calc(100% - 8px) calc(50% - 2px);
+  background-size: 6px 6px;
+  padding-right: calc(var(--wc-space-xl) + var(--wc-space-2xs));
+  cursor: pointer;
 }
 
 .wc-theme textarea {
   resize:     vertical;
-  min-height: 4rem;
+  min-height: 3.5rem;
 }
 
-/* ─── Scrollbar (thin, light) ─────────────────────────────────────────────── */
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
 .wc-theme,
 .wc-theme * {
   scrollbar-width: thin;
-  scrollbar-color: #d1d5db #f1f3f5;
+  scrollbar-color: var(--wc-color-border) transparent;
 }
 
 .wc-theme::-webkit-scrollbar,
-.wc-theme *::-webkit-scrollbar {
-  width:  6px;
-  height: 6px;
-}
+.wc-theme *::-webkit-scrollbar { width: 6px; height: 6px; }
 
 .wc-theme::-webkit-scrollbar-track,
-.wc-theme *::-webkit-scrollbar-track {
-  background: #f1f3f5;
-}
+.wc-theme *::-webkit-scrollbar-track { background: transparent; }
 
 .wc-theme::-webkit-scrollbar-thumb,
 .wc-theme *::-webkit-scrollbar-thumb {
-  background-color: #d1d5db;
+  background-color: var(--wc-color-border);
   border-radius:    var(--wc-radius-full);
 }
 
 .wc-theme::-webkit-scrollbar-thumb:hover,
 .wc-theme *::-webkit-scrollbar-thumb:hover {
-  background-color: #9ca3af;
+  background-color: var(--wc-color-text-muted);
 }
 
-/* ─── Utility: visually hidden (accessible) ──────────────────────────────── */
+/* ─── Screen-reader only ─────────────────────────────────────────────────── */
 .wc-theme .wc-sr-only {
-  position:    absolute;
-  width:       1px;
-  height:      1px;
-  padding:     0;
-  margin:      -1px;
-  overflow:    hidden;
-  clip:        rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border:      0;
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
 }
 
-/* ─── Reduced Motion ─────────────────────────────────────────────────────── */
+/* ─── Reduced motion ─────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .wc-theme *,
   .wc-theme *::before,
   .wc-theme *::after {
-    animation-duration:        0.01ms !important;
+    animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration:       0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

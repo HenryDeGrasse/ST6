@@ -2,7 +2,7 @@
  * TeamSummaryGrid – CSS Module (Enterprise Dashboard)
  */
 
-.empty { padding: var(--wc-space-md); text-align: center; color: var(--wc-color-text-muted); font-size: 0.9375rem; font-style: italic; }
+.empty { padding: var(--wc-space-md); text-align: center; color: var(--wc-color-text-muted); font-size: var(--wc-text-body); font-style: italic; }
 
 /* Scrollable wrapper to prevent panel overflow */
 .tableWrap { overflow-x: auto; margin: 0 calc(-1 * var(--wc-space-sm)); padding: 0 var(--wc-space-sm); }
@@ -13,8 +13,8 @@
 
 .th {
   padding: var(--wc-space-xs) var(--wc-space-sm); text-align: left;
-  font-family: var(--wc-font-display); font-size: 0.5rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.12em;
+  font-family: var(--wc-font-body); font-size: 0.5rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.01em;
   color: var(--wc-color-text-primary); border-bottom: 2px solid var(--wc-color-border); white-space: nowrap;
 }
 
@@ -34,7 +34,7 @@
 .incompleteCount { color: var(--wc-color-warning); font-weight: 600; }
 .nonStrategicCount { color: var(--wc-color-text-muted); }
 
-.piecePair { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.875rem; color: var(--wc-color-text-secondary); }
+.piecePair { display: inline-flex; align-items: center; gap: 0.2rem; font-size: var(--wc-text-subheading); color: var(--wc-color-text-secondary); }
 
 .badgesCell { display: flex; align-items: center; gap: var(--wc-space-xs); flex-wrap: wrap; }
 
@@ -42,16 +42,16 @@
   display: inline-block; padding: 0.125rem 0.375rem; border-radius: var(--wc-radius-sm);
   background-color: var(--wc-state-reconciling-bg); color: var(--wc-state-reconciling-text);
   border: 1px solid var(--wc-state-reconciling-border);
-  font-family: var(--wc-font-display); font-size: 0.5rem; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase;
+  font-family: var(--wc-font-body); font-size: 0.5rem; font-weight: 700;
+  letter-spacing: 0.02em; text-transform: uppercase;
 }
 
 .lateLockedBadge {
   display: inline-block; padding: 0.125rem 0.375rem; border-radius: var(--wc-radius-sm);
   background-color: var(--wc-color-error-bg); color: var(--wc-color-error);
   border: 1px solid var(--wc-color-error-border);
-  font-family: var(--wc-font-display); font-size: 0.5rem; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase;
+  font-family: var(--wc-font-body); font-size: 0.5rem; font-weight: 700;
+  letter-spacing: 0.02em; text-transform: uppercase;
 }
 
 .drillButton {
@@ -67,8 +67,8 @@
 /* Shared badge pill */
 .badge {
   display: inline-flex; align-items: center; padding: 0.125rem 0.4rem;
-  border-radius: var(--wc-radius-sm); font-family: var(--wc-font-display);
-  font-size: 0.5625rem; font-weight: 600; border: 1px solid transparent;
+  border-radius: var(--wc-radius-sm); font-family: var(--wc-font-body);
+  font-size: var(--wc-text-caption); font-weight: 600; border: 1px solid transparent;
   line-height: 1.4; text-transform: uppercase; letter-spacing: 0.08em;
 }
 

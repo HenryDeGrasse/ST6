@@ -27,90 +27,78 @@ describe("PA Host Stub - HostShell", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders the host shell with header and persona switcher", async () => {
+  it("renders the host shell and mounts the weekly commitments app", async () => {
     render(<HostShell />);
     expect(screen.getByTestId("pa-host-shell")).toBeInTheDocument();
-    expect(screen.getByText("PA Host Application")).toBeInTheDocument();
-    expect(screen.getByTestId("persona-select")).toBeInTheDocument();
-    await screen.findByTestId("create-plan-btn");
-  });
-
-  it("defaults to Carol Park persona", async () => {
-    render(<HostShell />);
-    const select = screen.getByTestId("persona-select") as HTMLSelectElement;
-    expect(select.value).toBe("carol");
-    await screen.findByTestId("create-plan-btn");
-  });
-
-  it("shows WC slot and mounts the weekly commitments app by default", async () => {
-    render(<HostShell />);
     expect(screen.getByTestId("wc-slot")).toBeInTheDocument();
     expect(screen.getByTestId("wc-remote-mount")).toBeInTheDocument();
     await screen.findByTestId("create-plan-btn");
     expect(screen.getByTestId("weekly-plan-page")).toBeInTheDocument();
   });
 
-  it("switches to dashboard tab and mounts manager team view", async () => {
+  it("dev tools are collapsed by default", () => {
     render(<HostShell />);
-    await screen.findByTestId("create-plan-btn");
-    fireEvent.click(screen.getByText("Dashboard"));
-    expect(screen.getByTestId("wc-dashboard-slot")).toBeInTheDocument();
-    expect(screen.getByTestId("wc-dashboard-remote-mount")).toBeInTheDocument();
-    expect(screen.queryByTestId("wc-slot")).not.toBeInTheDocument();
-    await waitFor(() => {
-      expect(screen.getByTestId("team-dashboard-page")).toBeInTheDocument();
-    });
+    expect(screen.queryByTestId("persona-select")).not.toBeInTheDocument();
   });
 
-  it("switches back to weekly tab", async () => {
+  it("gear button is above normal app chrome but below modal overlays", () => {
     render(<HostShell />);
-    await screen.findByTestId("create-plan-btn");
-    fireEvent.click(screen.getByText("Dashboard"));
-    await waitFor(() => {
-      expect(screen.getByTestId("team-dashboard-page")).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByText("Weekly Commitments"));
-    expect(screen.getByTestId("wc-slot")).toBeInTheDocument();
+    const gear = screen.getByLabelText("Toggle dev tools").parentElement;
+    expect(gear).toHaveStyle({ zIndex: "120" });
+  });
+
+  it("opens dev tools panel on gear click", async () => {
+    render(<HostShell />);
+    fireEvent.click(screen.getByLabelText("Toggle dev tools"));
+    expect(screen.getByTestId("persona-select")).toBeInTheDocument();
+    expect(screen.getByText("Reset Data")).toBeInTheDocument();
+  });
+
+  it("defaults to Carol Park persona", async () => {
+    render(<HostShell />);
+    fireEvent.click(screen.getByLabelText("Toggle dev tools"));
+    const select = screen.getByTestId("persona-select") as HTMLSelectElement;
+    expect(select.value).toBe("carol");
     await screen.findByTestId("create-plan-btn");
   });
 
-  it("persona switcher changes the mounted user", async () => {
+  it("persona switcher changes the mounted user and remounts the app", async () => {
     render(<HostShell />);
     await screen.findByTestId("create-plan-btn");
 
-    // Switch to Alice (IC only — no Dashboard tab)
+    // Open dev tools and switch to Alice (IC only)
+    fireEvent.click(screen.getByLabelText("Toggle dev tools"));
     fireEvent.change(screen.getByTestId("persona-select"), { target: { value: "alice" } });
 
-    // Dashboard tab should not be visible for IC-only users
-    expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
-    expect(screen.queryByText("Executive")).not.toBeInTheDocument();
-
-    // WC app should remount with Alice's context
+    // App nav should not show Team Dashboard for IC-only users
     await screen.findByTestId("weekly-plan-page");
+    expect(screen.queryByTestId("nav-team-dashboard")).not.toBeInTheDocument();
   });
 
-  it("shows the Executive tab for Dana and mounts the executive dashboard", async () => {
+  it("shows Team Dashboard nav tab for manager personas", async () => {
+    render(<HostShell />);
+    // Carol is a MANAGER — Team Dashboard tab should appear in the app nav
+    await screen.findByTestId("nav-team-dashboard");
+  });
+
+  it("shows Executive nav tab for admin personas", async () => {
     render(<HostShell />);
     await screen.findByTestId("create-plan-btn");
 
+    fireEvent.click(screen.getByLabelText("Toggle dev tools"));
     fireEvent.change(screen.getByTestId("persona-select"), { target: { value: "dana" } });
 
-    expect(await screen.findByTestId("host-nav-executive")).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("host-nav-executive"));
-
-    expect(screen.getByTestId("wc-executive-slot")).toBeInTheDocument();
-    expect(screen.getByTestId("wc-executive-remote-mount")).toBeInTheDocument();
-    await waitFor(() => {
-      expect(screen.getByTestId("executive-dashboard-page")).toBeInTheDocument();
-    });
+    // Dana is ADMIN — Executive tab appears in the app's own nav
+    await screen.findByTestId("nav-executive");
   });
 
   it("builds reset-seed auth headers from the active persona", async () => {
     render(<HostShell />);
     await screen.findByTestId("create-plan-btn");
 
+    fireEvent.click(screen.getByLabelText("Toggle dev tools"));
     fireEvent.change(screen.getByTestId("persona-select"), { target: { value: "dana" } });
-    await screen.findByTestId("host-nav-executive");
+    await screen.findByTestId("nav-executive");
 
     fireEvent.click(screen.getByText("Reset Data"));
 

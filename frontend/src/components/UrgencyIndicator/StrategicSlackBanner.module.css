@@ -82,7 +82,7 @@
 }
 
 .headline strong {
-  font-family:    var(--wc-font-display);
+  font-family:    var(--wc-font-body);
   font-weight:    600;
   letter-spacing: 0.02em;
   text-transform: uppercase;

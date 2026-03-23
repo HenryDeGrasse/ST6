@@ -37,7 +37,7 @@
 }
 
 .insightSeverity {
-  font-family:    var(--wc-font-display);
+  font-family:    var(--wc-font-body);
   font-size:      0.5rem;
   font-weight:    700;
   text-transform: uppercase;
@@ -71,7 +71,7 @@
 
 .insightTitle {
   font-family: var(--wc-font-heading);
-  font-size:   0.9375rem;
+  font-size:   var(--wc-text-body);
   font-weight: 600;
   color:       var(--wc-color-text-primary);
 }

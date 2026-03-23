@@ -26,7 +26,7 @@ describe("usePlanningCopilot", () => {
     await act(async () => {
       await result.current.fetchSuggestion("2026-03-16");
     });
-    expect(mockClient.POST).toHaveBeenCalledWith("/ai/team-plan-suggestion", { body: { weekStart: "2026-03-16" } });
+    expect(mockClient.POST).toHaveBeenCalledWith("/ai/team-plan-suggestion", { body: { weekStart: "2026-03-16", regenerate: false } });
     expect(result.current.suggestionStatus).toBe("ok");
   });
 

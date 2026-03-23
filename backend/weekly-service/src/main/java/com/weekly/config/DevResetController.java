@@ -37,24 +37,35 @@ public class DevResetController {
     public ResponseEntity<Map<String, String>> resetAndSeed() {
         LOG.warn("DEV RESET: clearing all plan data and re-seeding");
 
-        // Clear in dependency order
-        jdbc.execute("DELETE FROM weekly_commit_actuals");
-        jdbc.execute("DELETE FROM manager_reviews");
-        jdbc.execute("DELETE FROM notifications");
-        jdbc.execute("DELETE FROM weekly_commits");
-        jdbc.execute("DELETE FROM weekly_plans");
-        jdbc.execute("DELETE FROM idempotency_keys");
+        // Clear ALL tables in strict dependency order.
+        // Use TRUNCATE CASCADE for clean slate — handles all FK chains.
+        jdbc.execute("TRUNCATE TABLE weekly_assignment_actuals, weekly_assignments, "
+                + "issue_activities, "
+                + "progress_entries, external_ticket_links, "
+                + "weekly_commit_actuals, manager_reviews, "
+                + "weekly_commits, weekly_plans, "
+                + "issues, team_members, teams, "
+                + "notifications, idempotency_keys, "
+                + "user_model_snapshots, "
+                + "planning_copilot_snapshots "
+                + "CASCADE");
 
-        // Re-apply seed SQL
+        // Re-apply seed SQL using ScriptUtils for proper statement parsing
         try {
             var resource = new ClassPathResource("seed-data.sql");
-            String seedSql = resource.getContentAsString(StandardCharsets.UTF_8);
-            jdbc.execute(seedSql);
+            var dataSource = jdbc.getDataSource();
+            if (dataSource == null) {
+                return ResponseEntity.internalServerError()
+                        .body(Map.of("status", "error", "message", "No DataSource available"));
+            }
+            try (var conn = dataSource.getConnection()) {
+                org.springframework.jdbc.datasource.init.ScriptUtils.executeSqlScript(conn, resource);
+            }
             LOG.info("DEV RESET: seed data applied successfully");
-        } catch (IOException e) {
-            LOG.error("DEV RESET: failed to read seed-data.sql", e);
+        } catch (Exception e) {
+            LOG.error("DEV RESET: failed to apply seed-data.sql", e);
             return ResponseEntity.internalServerError()
-                    .body(Map.of("status", "error", "message", "Failed to read seed file: " + e.getMessage()));
+                    .body(Map.of("status", "error", "message", "Seed failed: " + e.getMessage()));
         }
 
         return ResponseEntity.ok(Map.of("status", "ok", "message", "Database reset and re-seeded"));

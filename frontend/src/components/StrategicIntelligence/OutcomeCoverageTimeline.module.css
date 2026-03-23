@@ -27,8 +27,8 @@
 }
 
 .title {
-  font-family:    var(--wc-font-display);
-  font-size:      0.6875rem;
+  font-family:    var(--wc-font-body);
+  font-size:      var(--wc-text-label);
   font-weight:    600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -43,9 +43,15 @@
 /* ─── Trend indicator ────────────────────────────────────────────────────── */
 
 .trendIndicator {
-  font-size:   1.125rem;
-  line-height: 1;
-  flex-shrink: 0;
+  display:       inline-flex;
+  align-items:   center;
+  padding:       0.15rem 0.45rem;
+  border-radius: var(--wc-radius-sm);
+  font-size:     0.75rem;
+  line-height:   1;
+  flex-shrink:   0;
+  font-weight:   600;
+  border:        1px solid currentColor;
 }
 
 .trendRising {
@@ -124,7 +130,7 @@
 }
 
 .separator {
-  font-size: 0.625rem;
+  font-size: var(--wc-text-caption);
   color:     var(--wc-color-text-muted);
 }
 
@@ -137,7 +143,7 @@
 /* ─── Week date label (MM-DD) ────────────────────────────────────────────── */
 
 .weekLabel {
-  font-family:    var(--wc-font-display);
+  font-family:    var(--wc-font-body);
   font-size:      0.5rem;
   font-weight:    600;
   text-transform: uppercase;

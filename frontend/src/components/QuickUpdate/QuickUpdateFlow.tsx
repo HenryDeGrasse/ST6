@@ -16,6 +16,8 @@ import type { QuickUpdateItem, QuickUpdateNoteSource } from "@weekly-commitments
 import { useFeatureFlags } from "../../context/FeatureFlagContext.js";
 import { useQuickUpdate } from "../../hooks/useQuickUpdate.js";
 import type { CheckInOptionsResult } from "../../hooks/useQuickUpdate.js";
+import { StatusIcon } from "../icons/StatusIcon.js";
+import type { StatusIconName } from "../icons/StatusIcon.js";
 import styles from "./QuickUpdateFlow.module.css";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -47,11 +49,11 @@ export interface QuickUpdateFlowProps {
 // Mirrors QuickCheckIn.tsx's STATUS_LABELS / STATUS_EMOJI for consistency.
 // The four values match the ProgressStatus enum: ON_TRACK | AT_RISK | BLOCKED | DONE_EARLY.
 
-export const STATUS_MAP: Record<string, { label: string; emoji: string }> = {
-  ON_TRACK: { label: "On Track", emoji: "check" },
-  AT_RISK: { label: "At Risk", emoji: "warning" },
-  BLOCKED: { label: "Blocked", emoji: "blocked" },
-  DONE_EARLY: { label: "Done Early", emoji: "celebrate" },
+export const STATUS_MAP: Record<string, { label: string; icon: StatusIconName }> = {
+  ON_TRACK: { label: "On Track", icon: "check" },
+  AT_RISK: { label: "At Risk", icon: "warning" },
+  BLOCKED: { label: "Blocked", icon: "blocked" },
+  DONE_EARLY: { label: "Done Early", icon: "celebrate" },
 };
 
 const ALL_STATUS_KEYS = ["ON_TRACK", "AT_RISK", "BLOCKED", "DONE_EARLY"] as const satisfies readonly QuickUpdateItem["status"][];
@@ -210,6 +212,16 @@ export const QuickUpdateFlow: React.FC<QuickUpdateFlowProps> = ({
     [],
   );
 
+  const handleStatusSelect = useCallback(
+    (commitId: string, status: QuickUpdateItem["status"]) => {
+      setStatus(commitId, status);
+      if (currentIndex < total - 1) {
+        setCurrentIndex((i) => Math.min(total - 1, i + 1));
+      }
+    },
+    [currentIndex, setStatus, total],
+  );
+
   const setTypedNote = useCallback(
     (commitId: string, note: string) => {
       setUpdates((prev) => {
@@ -295,7 +307,7 @@ export const QuickUpdateFlow: React.FC<QuickUpdateFlowProps> = ({
           <div className={styles.emptyState}>No commitments to update.</div>
           <div className={styles.navBar}>
             <button type="button" className={styles.closeButton} onClick={onClose}>
-              Close
+              ×
             </button>
           </div>
         </div>
@@ -318,7 +330,7 @@ export const QuickUpdateFlow: React.FC<QuickUpdateFlowProps> = ({
         onClick={onClose}
         aria-label="Close quick update"
       >
-        Close
+        ×
       </button>
 
       <div data-testid="quick-update-card" className={styles.card}>
@@ -362,7 +374,6 @@ export const QuickUpdateFlow: React.FC<QuickUpdateFlowProps> = ({
           <div className={styles.lastCheckIn}>
             <span className={styles.lastCheckInLabel}>Last check-in</span>
             <span className={styles.lastCheckInStatus}>
-              {STATUS_MAP[commitment.lastCheckInStatus]?.emoji ?? ""}{" "}
               {STATUS_MAP[commitment.lastCheckInStatus]?.label ?? commitment.lastCheckInStatus}
             </span>
             {commitment.lastCheckInDaysAgo > 0 && (
@@ -378,7 +389,7 @@ export const QuickUpdateFlow: React.FC<QuickUpdateFlowProps> = ({
           <span className={styles.sectionLabel}>How is this going?</span>
           <div className={styles.statusRow} role="group" aria-label="Select status">
             {ALL_STATUS_KEYS.map((statusKey) => {
-              const { label, emoji } = STATUS_MAP[statusKey];
+              const { label, icon } = STATUS_MAP[statusKey];
               const isSelected = update?.status === statusKey;
               return (
                 <button
@@ -391,13 +402,11 @@ export const QuickUpdateFlow: React.FC<QuickUpdateFlowProps> = ({
                   ]
                     .filter(Boolean)
                     .join(" ")}
-                  onClick={() => setStatus(commitment.id, statusKey)}
+                  onClick={() => handleStatusSelect(commitment.id, statusKey)}
                   aria-pressed={isSelected}
                   disabled={submitting}
                 >
-                  <span className={styles.statusEmoji} aria-hidden="true">
-                    {emoji}
-                  </span>
+                  <StatusIcon icon={icon} size={16} />
                   <span className={styles.statusLabel}>{label}</span>
                 </button>
               );

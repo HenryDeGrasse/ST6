@@ -2,14 +2,6 @@ import React, { useState, useCallback, useMemo } from "react";
 import { App as WeeklyCommitmentsApp } from "@weekly-commitments/frontend";
 
 // ─── Test feature-flag injection ─────────────────────────────────────────────
-//
-// The pa-host-stub is a development/test harness. Playwright E2E tests can
-// enable beta feature flags by appending `?flags=<comma-separated-names>` to
-// the URL, e.g.: `/?flags=draftReconciliation,managerInsights`
-//
-// This is NOT present in production — the real PA host passes flags via its
-// own configuration mechanism.
-
 function readUrlFeatureFlags(): {
   suggestRcdo?: boolean;
   draftReconciliation?: boolean;
@@ -26,7 +18,6 @@ function readUrlFeatureFlags(): {
 }
 
 // ─── Persona definitions ──────────────────────────────────────────────────────
-
 interface Persona {
   key: string;
   label: string;
@@ -99,26 +90,18 @@ const PERSONAS: Persona[] = [
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
-
 export const HostShell: React.FC = () => {
   const [personaKey, setPersonaKey] = useState("carol");
-  const [activeTab, setActiveTab] = useState<"weekly" | "dashboard" | "executive">("weekly");
   const [resetting, setResetting] = useState(false);
-  // Bump this key to force-remount the micro-frontend on persona switch
+  const [devBarOpen, setDevBarOpen] = useState(false);
+  // Bump to force-remount the micro-frontend on persona switch or reset
   const [mountKey, setMountKey] = useState(0);
 
-  // Read feature flags from URL once on mount (for E2E tests).
   const testFeatureFlags = useMemo(() => readUrlFeatureFlags(), []);
-
   const persona = PERSONAS.find((p) => p.key === personaKey) ?? PERSONAS[0];
-  const isManager = persona.user.roles.includes("MANAGER");
-  const isAdmin = persona.user.roles.includes("ADMIN");
 
   const handlePersonaChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newKey = e.target.value;
-    setPersonaKey(newKey);
-    setActiveTab("weekly");
-    // Force remount so AuthContext picks up the new user
+    setPersonaKey(e.target.value);
     setMountKey((k) => k + 1);
   }, []);
 
@@ -134,13 +117,11 @@ export const HostShell: React.FC = () => {
         },
       });
       if (resp.ok) {
-        // Force remount to reload fresh data
         setMountKey((k) => k + 1);
       } else {
         console.error("Reset failed:", resp.status);
       }
     } catch (err) {
-      // If the endpoint doesn't exist, fall back to reloading the page
       console.warn("Reset endpoint not available, reloading page...", err);
       window.location.reload();
     } finally {
@@ -152,296 +133,97 @@ export const HostShell: React.FC = () => {
     <div
       data-testid="pa-host-shell"
       style={{
-        fontFamily: "'Crimson Pro', Georgia, 'Times New Roman', serif",
-        background: "#1C1714",
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        background: "#f8f9fb",
         minHeight: "100vh",
-        color: "#E8DFD4",
+        color: "#1a2332",
       }}
     >
-      {/* ── Host header ── */}
-      <header
-        style={{
-          padding: "0.75rem 1.5rem",
-          background: "#251E19",
-          borderBottom: "1px solid #4A3F35",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "0.75rem",
-        }}
-      >
-        <h1
-          style={{
-            margin: 0,
-            fontFamily: "'Cormorant Garamond', serif",
-            fontSize: "1.375rem",
-            fontWeight: 500,
-            color: "#E8DFD4",
-            letterSpacing: "-0.01em",
-          }}
-        >
-          PA Host Application
-        </h1>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-          {/* Reset Data button */}
-          <button
-            onClick={() => { void handleResetData(); }}
-            disabled={resetting}
-            style={{
-              fontFamily: "'Cinzel', serif",
-              fontSize: "0.5625rem",
-              fontWeight: 600,
-              textTransform: "uppercase" as const,
-              letterSpacing: "0.15em",
-              padding: "0.3rem 0.75rem",
-              borderRadius: "4px",
-              border: "1px solid rgba(196, 122, 122, 0.4)",
-              background: resetting ? "#3D332B" : "rgba(139, 38, 53, 0.15)",
-              color: resetting ? "#7A6E62" : "#C47A84",
-              cursor: resetting ? "not-allowed" : "pointer",
-              transition: "background 200ms, border-color 200ms",
-            }}
-          >
-            {resetting ? "Resetting…" : "Reset Data"}
-          </button>
-
-          {/* Persona switcher */}
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <label
-              htmlFor="persona-select"
-              style={{
-                fontFamily: "'Cinzel', serif",
-                fontSize: "0.5625rem",
-                fontWeight: 600,
-                textTransform: "uppercase" as const,
-                letterSpacing: "0.15em",
-                color: "#9C8B7A",
-              }}
-            >
-              Persona
-            </label>
-            <select
-              id="persona-select"
-              data-testid="persona-select"
-              value={personaKey}
-              onChange={handlePersonaChange}
-              style={{
-                fontFamily: "'Crimson Pro', serif",
-                fontSize: "0.875rem",
-                padding: "0.3rem 0.625rem",
-                borderRadius: "4px",
-                border: "1px solid #4A3F35",
-                background: "#1C1714",
-                color: "#E8DFD4",
-                cursor: "pointer",
-                minWidth: "10rem",
-              }}
-            >
-              {PERSONAS.map((p) => (
-                <option key={p.key} value={p.key}>
-                  {p.label} ({p.user.roles.join(", ")})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Role badge */}
-          <span
-            style={{
-              fontFamily: "'Cinzel', serif",
-              fontSize: "0.5625rem",
-              fontWeight: 600,
-              textTransform: "uppercase" as const,
-              letterSpacing: "0.15em",
-              background: "rgba(201, 169, 98, 0.15)",
-              color: "#C9A962",
-              padding: "0.2rem 0.625rem",
-              borderRadius: "4px",
-              border: "1px solid rgba(201, 169, 98, 0.30)",
-            }}
-          >
-            {persona.user.roles.join(", ")}
-          </span>
-        </div>
-      </header>
-
-      {/* ── Host navigation ── */}
-      <nav
-        style={{
-          padding: "0.625rem 1.5rem",
-          background: "#1C1714",
-          display: "flex",
-          gap: "1.5rem",
-          borderBottom: "1px solid #4A3F35",
-          alignItems: "center",
-        }}
-      >
+      {/* ── Floating dev tools (⚙ gear, top-right) ── */}
+      <div style={{ position: "fixed", top: 8, right: 8, zIndex: 120, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
         <button
-          data-testid="host-nav-weekly"
-          onClick={() => setActiveTab("weekly")}
+          onClick={() => setDevBarOpen((o) => !o)}
+          aria-label="Toggle dev tools"
           style={{
-            fontFamily: "'Cinzel', serif",
-            fontSize: "0.65rem",
-            fontWeight: activeTab === "weekly" ? 700 : 500,
-            textTransform: "uppercase" as const,
-            letterSpacing: "0.2em",
-            color: activeTab === "weekly" ? "#C9A962" : "#9C8B7A",
-            background: "none",
-            border: "none",
-            borderBottom: activeTab === "weekly" ? "2px solid #C9A962" : "2px solid transparent",
-            paddingBottom: "0.5rem",
-            cursor: "pointer",
-            transition: "color 300ms ease-out, border-color 300ms ease-out",
+            width: 28, height: 28, borderRadius: 6,
+            border: "1px solid #e2e5ea",
+            background: devBarOpen ? "#1a2332" : "rgba(255,255,255,0.92)",
+            color: devBarOpen ? "#fff" : "#94a3b8",
+            fontSize: 13, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+            transition: "background 150ms, color 150ms",
           }}
+          title="Dev Tools"
         >
-          Weekly Commitments
+          ⚙
         </button>
-        {isManager && (
-          <button
-            data-testid="host-nav-dashboard"
-            onClick={() => setActiveTab("dashboard")}
-            style={{
-              fontFamily: "'Cinzel', serif",
-              fontSize: "0.65rem",
-              fontWeight: activeTab === "dashboard" ? 700 : 500,
-              textTransform: "uppercase" as const,
-              letterSpacing: "0.2em",
-              color: activeTab === "dashboard" ? "#C9A962" : "#9C8B7A",
-              background: "none",
-              border: "none",
-              borderBottom: activeTab === "dashboard" ? "2px solid #C9A962" : "2px solid transparent",
-              paddingBottom: "0.5rem",
-              cursor: "pointer",
-              transition: "color 300ms ease-out, border-color 300ms ease-out",
-            }}
-          >
-            Dashboard
-          </button>
-        )}
-        {isAdmin && (
-          <button
-            data-testid="host-nav-executive"
-            onClick={() => setActiveTab("executive")}
-            style={{
-              fontFamily: "'Cinzel', serif",
-              fontSize: "0.65rem",
-              fontWeight: activeTab === "executive" ? 700 : 500,
-              textTransform: "uppercase" as const,
-              letterSpacing: "0.2em",
-              color: activeTab === "executive" ? "#C9A962" : "#9C8B7A",
-              background: "none",
-              border: "none",
-              borderBottom: activeTab === "executive" ? "2px solid #C9A962" : "2px solid transparent",
-              paddingBottom: "0.5rem",
-              cursor: "pointer",
-              transition: "color 300ms ease-out, border-color 300ms ease-out",
-            }}
-          >
-            Executive
-          </button>
-        )}
 
-        {/* Persona description hint */}
-        <span
-          style={{
-            marginLeft: "auto",
-            fontFamily: "'Crimson Pro', serif",
-            fontSize: "0.8rem",
-            color: "#C0B09F",
-            fontStyle: "italic",
-          }}
-        >
-          {persona.description}
-        </span>
-      </nav>
+        {devBarOpen && (
+          <div style={{
+            background: "#fff", border: "1px solid #e2e5ea", borderRadius: 10,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.10)", padding: "12px 14px",
+            display: "flex", flexDirection: "column", gap: 10, minWidth: 240,
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "#94a3b8" }}>
+              Dev Tools
+            </div>
 
-      {/* ── Content area ── */}
-      <main style={{ padding: "0.5rem 1rem" }}>
-        {activeTab === "weekly" && (
-          <div data-testid="wc-slot">
-            <section
-              data-testid="wc-remote-mount"
-              style={{
-                marginTop: "0.5rem",
-                borderRadius: "6px",
-                border: "1px solid #4A3F35",
-                overflow: "hidden",
-              }}
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <label htmlFor="persona-select" style={{ fontSize: 11, fontWeight: 500, color: "#64748b" }}>
+                Persona
+              </label>
+              <select
+                id="persona-select"
+                data-testid="persona-select"
+                value={personaKey}
+                onChange={handlePersonaChange}
+                style={{ fontSize: 13, padding: "5px 8px", borderRadius: 6, border: "1px solid #e2e5ea", background: "#f8f9fb", color: "#1a2332", cursor: "pointer" }}
+              >
+                {PERSONAS.map((p) => (
+                  <option key={p.key} value={p.key}>
+                    {p.label} ({p.user.roles.join(", ")})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ fontSize: 11, color: "#94a3b8", fontStyle: "italic", lineHeight: 1.4 }}>
+              {persona.description}
+            </div>
+
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+              {persona.user.roles.map((role) => (
+                <span key={role} style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.04em", padding: "2px 8px", borderRadius: 4, background: "#dbeafe", color: "#2563eb" }}>
+                  {role}
+                </span>
+              ))}
+            </div>
+
+            <button
+              onClick={() => { void handleResetData(); }}
+              disabled={resetting}
+              style={{ fontSize: 11, fontWeight: 500, padding: "5px 12px", borderRadius: 6, border: "1px solid #fecaca", background: resetting ? "#f3f4f6" : "#fef2f2", color: resetting ? "#94a3b8" : "#dc2626", cursor: resetting ? "not-allowed" : "pointer" }}
             >
-              <WeeklyCommitmentsApp
-                key={mountKey}
-                user={persona.user}
-                token={persona.token}
-                apiBaseUrl="/api/v1"
-                initialRoute="weekly"
-                featureFlags={testFeatureFlags}
-              />
-            </section>
+              {resetting ? "Resetting…" : "Reset Data"}
+            </button>
           </div>
         )}
-        {activeTab === "dashboard" && isManager && (
-          <div data-testid="wc-dashboard-slot">
-            <section
-              data-testid="wc-dashboard-remote-mount"
-              style={{
-                marginTop: "0.5rem",
-                borderRadius: "6px",
-                border: "1px solid #4A3F35",
-                overflow: "hidden",
-              }}
-            >
-              <WeeklyCommitmentsApp
-                key={mountKey + 1000}
-                user={persona.user}
-                token={persona.token}
-                apiBaseUrl="/api/v1"
-                initialRoute="weekly/team"
-                featureFlags={testFeatureFlags}
-              />
-            </section>
-          </div>
-        )}
-        {activeTab === "executive" && isAdmin && (
-          <div data-testid="wc-executive-slot">
-            <section
-              data-testid="wc-executive-remote-mount"
-              style={{
-                marginTop: "0.5rem",
-                borderRadius: "6px",
-                border: "1px solid #4A3F35",
-                overflow: "hidden",
-              }}
-            >
-              <WeeklyCommitmentsApp
-                key={mountKey + 2000}
-                user={persona.user}
-                token={persona.token}
-                apiBaseUrl="/api/v1"
-                initialRoute="executive"
-                featureFlags={testFeatureFlags}
-              />
-            </section>
-          </div>
-        )}
-      </main>
+      </div>
 
-      {/* ── Host footer ── */}
-      <footer
-        style={{
-          padding: "0.625rem 1.5rem",
-          borderTop: "1px solid #4A3F35",
-          fontSize: "0.75rem",
-          color: "#C0B09F",
-          textAlign: "center" as const,
-          fontFamily: "'Cinzel', serif",
-          letterSpacing: "0.15em",
-          textTransform: "uppercase" as const,
-        }}
-      >
-        PA Host Stub — PM Remote Pattern Demo
-      </footer>
+      {/* ── App — full viewport, no host chrome ── */}
+      <div data-testid="wc-slot">
+        <section data-testid="wc-remote-mount">
+          <WeeklyCommitmentsApp
+            key={mountKey}
+            user={persona.user}
+            token={persona.token}
+            apiBaseUrl="/api/v1"
+            initialRoute="weekly"
+            featureFlags={testFeatureFlags}
+          />
+        </section>
+      </div>
     </div>
   );
 };

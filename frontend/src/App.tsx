@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { AuthProvider } from "./context/AuthContext.js";
 import { ApiProvider } from "./api/ApiContext.js";
 import { FeatureFlagProvider, useFeatureFlags, type FeatureFlags } from "./context/FeatureFlagContext.js";
@@ -27,6 +27,38 @@ const DEV_USER = {
 const DEV_TOKEN = "dev-jwt-token";
 
 type AppRoute = "weekly" | "weekly/backlog" | "weekly/insights" | "weekly/team" | "weekly/team-management" | "admin" | "executive";
+
+const ROUTE_TO_PATH: Record<AppRoute, string> = {
+  weekly: "/",
+  "weekly/backlog": "/backlog",
+  "weekly/insights": "/insights",
+  "weekly/team": "/teamdashboard",
+  "weekly/team-management": "/team-management",
+  admin: "/admin",
+  executive: "/executive",
+};
+
+function isStandaloneLocalRoutingEnabled(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+}
+
+function routeFromPath(pathname: string): AppRoute | null {
+  const normalized = pathname !== "/" && pathname.endsWith("/")
+    ? pathname.slice(0, -1)
+    : pathname;
+
+  switch (normalized) {
+    case "/": return "weekly";
+    case "/backlog": return "weekly/backlog";
+    case "/insights": return "weekly/insights";
+    case "/teamdashboard": return "weekly/team";
+    case "/team-management": return "weekly/team-management";
+    case "/admin": return "admin";
+    case "/executive": return "executive";
+    default: return null;
+  }
+}
 
 interface NavigateEventDetail {
   route: AppRoute;
@@ -61,8 +93,15 @@ const AppShell: React.FC<{
   initialRoute: AppRoute;
 }> = ({ user, initialRoute }) => {
   const flags = useFeatureFlags();
-  const [route, setRoute] = useState<AppRoute>(initialRoute);
+  const localRoutingEnabled = isStandaloneLocalRoutingEnabled();
+  const [route, setRoute] = useState<AppRoute>(() => {
+    if (localRoutingEnabled) {
+      return routeFromPath(window.location.pathname) ?? initialRoute;
+    }
+    return initialRoute;
+  });
   const [teamManagementTeamId, setTeamManagementTeamId] = useState<string | undefined>(undefined);
+  const hasSyncedPathRef = useRef(false);
   const isManager = user.roles.includes("MANAGER");
   const isAdmin = user.roles.includes("ADMIN");
   const canAccessExecutive = isAdmin && flags.executiveDashboard;
@@ -72,6 +111,23 @@ const AppShell: React.FC<{
       setRoute(isManager ? "weekly/team" : isAdmin ? "admin" : "weekly");
     }
   }, [canAccessExecutive, isAdmin, isManager, route]);
+
+  useEffect(() => {
+    if (!localRoutingEnabled) return;
+
+    const targetPath = ROUTE_TO_PATH[route];
+    if (window.location.pathname === targetPath) {
+      hasSyncedPathRef.current = true;
+      return;
+    }
+
+    if (hasSyncedPathRef.current) {
+      window.history.pushState({}, "", targetPath);
+    } else {
+      window.history.replaceState({}, "", targetPath);
+      hasSyncedPathRef.current = true;
+    }
+  }, [localRoutingEnabled, route]);
 
   useEffect(() => {
     const handleNavigate = (event: Event) => {
@@ -86,6 +142,18 @@ const AppShell: React.FC<{
       window.removeEventListener("wc:navigate", handleNavigate);
     };
   }, []);
+
+  useEffect(() => {
+    if (!localRoutingEnabled) return;
+
+    const handlePopState = () => {
+      const nextRoute = routeFromPath(window.location.pathname);
+      if (nextRoute) setRoute(nextRoute);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [localRoutingEnabled]);
 
   const renderNavButton = (targetRoute: AppRoute, label: string, testId: string) => (
     <button
@@ -161,7 +229,7 @@ export const App: React.FC<AppProps> = ({
 }) => {
   return (
     <ThemeProvider>
-      <div style={{ position: "relative", zIndex: 1 }}>
+      <div style={{ position: "relative" }}>
         <AuthProvider user={user} token={token}>
           <ApiProvider baseUrl={apiBaseUrl}>
             <FeatureFlagProvider flags={featureFlags}>

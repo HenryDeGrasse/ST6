@@ -35,8 +35,8 @@
 }
 
 .title {
-  font-family:    var(--wc-font-display);
-  font-size:      0.6875rem;
+  font-family:    var(--wc-font-body);
+  font-size:      var(--wc-text-label);
   font-weight:    600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -54,7 +54,7 @@
   background-color: var(--wc-color-bg-secondary);
   color:            var(--wc-color-text-secondary);
   font-family:      var(--wc-font-body);
-  font-size:        0.875rem;
+  font-size:        var(--wc-text-subheading);
   font-weight:      500;
   cursor:           pointer;
   transition:       background-color var(--wc-transition-fast),
@@ -126,7 +126,7 @@
 }
 
 .metricLabel {
-  font-family:    var(--wc-font-display);
+  font-family:    var(--wc-font-body);
   font-size:      0.5625rem;
   font-weight:    600;
   text-transform: uppercase;
@@ -152,7 +152,7 @@
 /* ─── Section labels ─────────────────────────────────────────────────────── */
 
 .sectionLabel {
-  font-family:    var(--wc-font-display);
+  font-family:    var(--wc-font-body);
   font-size:      0.5625rem;
   font-weight:    600;
   text-transform: uppercase;
@@ -233,7 +233,7 @@
   border:           1px solid var(--wc-color-border);
   background-color: var(--wc-color-bg-tertiary);
   color:            var(--wc-color-text-secondary);
-  font-family:      var(--wc-font-display);
+  font-family:      var(--wc-font-body);
   font-size:        0.6875rem;
   font-weight:      600;
   text-transform:   uppercase;
@@ -258,7 +258,7 @@
   align-items:    center;
   padding:        0.1875rem 0.5rem;
   border-radius:  var(--wc-radius-sm);
-  font-family:    var(--wc-font-display);
+  font-family:    var(--wc-font-body);
   font-size:      0.5625rem;
   font-weight:    600;
   letter-spacing: 0.06em;

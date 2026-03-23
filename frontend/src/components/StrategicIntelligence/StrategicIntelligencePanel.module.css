@@ -28,8 +28,8 @@
 }
 
 .panelTitle {
-  font-family:    var(--wc-font-display);
-  font-size:      0.6875rem;
+  font-family:    var(--wc-font-body);
+  font-size:      var(--wc-text-label);
   font-weight:    600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -55,8 +55,8 @@
 }
 
 .sectionTitle {
-  font-family:    var(--wc-font-display);
-  font-size:      0.625rem;
+  font-family:    var(--wc-font-body);
+  font-size:      var(--wc-text-caption);
   font-weight:    600;
   text-transform: uppercase;
   letter-spacing: 0.06em;

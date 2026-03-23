@@ -7,7 +7,8 @@
   position:   fixed;
   inset:      0;
   background: rgba(15, 23, 42, 0.4);
-  z-index:    200;
+  z-index:    5000;
+  overflow:   hidden;
 }
 
 .panel {
@@ -20,7 +21,7 @@
   border-left:    1px solid var(--wc-color-border);
   display:        flex;
   flex-direction: column;
-  z-index:        201;
+  z-index:        5001;
   overflow:       hidden;
   box-shadow:     var(--wc-shadow-lg);
 }
@@ -79,13 +80,15 @@
 }
 
 .body {
-  flex:           1;
-  overflow-y:     auto;
-  padding:        var(--wc-space-md);
-  display:        flex;
-  flex-direction: column;
-  gap:            var(--wc-space-md);
-  background:     var(--wc-color-bg);
+  flex:                1;
+  overflow-y:          auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding:             var(--wc-space-md);
+  display:             flex;
+  flex-direction:      column;
+  gap:                 var(--wc-space-md);
+  background:          var(--wc-color-bg);
 }
 
 .metaGrid {
@@ -105,16 +108,103 @@
 }
 
 .metaLabel {
-  font-size:      0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size:      var(--wc-text-caption);
+  
+  letter-spacing: 0.01em;
   color:          var(--wc-color-text-muted);
   font-weight:    600;
 }
 
 .metaValue {
-  font-size: 0.875rem;
+  font-size: var(--wc-text-subheading);
   color:     var(--wc-color-text-primary);
+}
+
+/* Inline assignee dropdown — matches meta value style, minimal chrome */
+.assigneeSelect {
+  font-family:      var(--wc-font-body);
+  font-size:        var(--wc-text-subheading);
+  color:            var(--wc-color-text-primary);
+  background:       transparent;
+  border:           1px solid var(--wc-color-border);
+  border-radius:    var(--wc-radius-sm);
+  padding:          2px var(--wc-space-xs);
+  cursor:           pointer;
+  width:            100%;
+  max-width:        180px;
+  transition:       border-color var(--wc-transition-fast);
+}
+
+.assigneeSelect:focus {
+  outline:      none;
+  border-color: var(--wc-color-accent);
+  box-shadow:   var(--wc-shadow-glow);
+}
+
+.assigneeSelect:disabled {
+  opacity: 0.6;
+  cursor:  not-allowed;
+}
+
+/* Outcome section — compact by default, expands only when editing */
+.outcomeSection {
+  margin-top: var(--wc-space-sm);
+}
+
+.outcomeSummaryRow {
+  display:          flex;
+  align-items:      flex-start;
+  justify-content:  space-between;
+  gap:              var(--wc-space-sm);
+  padding:          var(--wc-space-sm);
+  border:           1px solid var(--wc-color-border);
+  border-radius:    var(--wc-radius-md);
+  background:       var(--wc-color-bg-secondary);
+}
+
+.outcomeSummaryValue {
+  flex:        1;
+  min-width:   0;
+  font-size:   var(--wc-text-subheading);
+  color:       var(--wc-color-text-primary);
+  line-height: 1.5;
+}
+
+.outcomeActionBtn {
+  flex-shrink:      0;
+  border:           1px solid var(--wc-color-border);
+  background:       var(--wc-color-bg);
+  color:            var(--wc-color-text-secondary);
+  border-radius:    var(--wc-radius-sm);
+  padding:          0.3rem 0.6rem;
+  font-size:        var(--wc-text-caption);
+  font-weight:      600;
+  cursor:           pointer;
+  transition:
+    border-color var(--wc-transition-fast),
+    color var(--wc-transition-fast),
+    background-color var(--wc-transition-fast);
+}
+
+.outcomeActionBtn:hover:not(:disabled) {
+  border-color: var(--wc-color-accent);
+  color:        var(--wc-color-accent);
+}
+
+.outcomeActionBtn:disabled {
+  opacity: 0.6;
+  cursor:  not-allowed;
+}
+
+.outcomeEditor {
+  margin-top: var(--wc-space-sm);
+}
+
+.nonStrategicNote {
+  margin-top:  var(--wc-space-xs);
+  font-size:   var(--wc-text-subheading);
+  color:       var(--wc-color-text-muted);
+  font-style:  italic;
 }
 
 .description {
@@ -129,10 +219,10 @@
 }
 
 .sectionTitle {
-  font-size:      0.7rem;
+  font-size:      var(--wc-text-label);
   font-weight:    700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  
+  letter-spacing: 0.01em;
   color:          var(--wc-color-text-muted);
   border-bottom:  1px solid var(--wc-color-border);
   padding-bottom: 0.3rem;
@@ -192,7 +282,7 @@
   align-items:    center;
   padding:        0.15rem 0.5rem;
   border-radius:  var(--wc-radius-sm);
-  font-size:      0.6875rem;
+  font-size:      var(--wc-text-label);
   font-weight:    700;
   text-transform: uppercase;
   letter-spacing: 0.05em;

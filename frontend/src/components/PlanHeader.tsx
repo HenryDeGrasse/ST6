@@ -11,6 +11,7 @@ export interface PlanHeaderProps {
   onStartReconciliation: () => void;
   onSubmitReconciliation: () => void;
   onCarryForward: () => void;
+  onQuickUpdate?: () => void;
   loading?: boolean;
   canSubmitReconciliation?: boolean;
 }
@@ -77,6 +78,7 @@ export const PlanHeader: React.FC<PlanHeaderProps> = ({
   onStartReconciliation,
   onSubmitReconciliation,
   onCarryForward,
+  onQuickUpdate,
   loading = false,
   canSubmitReconciliation = false,
 }) => {
@@ -108,6 +110,16 @@ export const PlanHeader: React.FC<PlanHeaderProps> = ({
 
       {/* ── Right: action buttons ── */}
       <div className={styles.actions}>
+        {onQuickUpdate && (plan.state === PlanState.LOCKED || plan.state === PlanState.RECONCILING) && (
+          <button
+            data-testid="quick-update-btn"
+            className={styles.quickUpdateButton}
+            onClick={onQuickUpdate}
+          >
+            <StatusIcon icon="refresh" size={14} />
+            Quick Update
+          </button>
+        )}
         {plan.state === PlanState.DRAFT && (
           <button data-testid="lock-btn" className={styles.ctaButton} onClick={onLock} disabled={loading}>
             {loading ? (

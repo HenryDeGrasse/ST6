@@ -32,9 +32,9 @@
   gap:            var(--wc-space-xs);
   padding:        0.25rem 0.75rem;
   border-radius:  var(--wc-radius-sm);
-  font-family:    var(--wc-font-display);
+  font-family:    var(--wc-font-body);
   font-weight:    600;
-  font-size:      0.6875rem;
+  font-size:      var(--wc-text-label);
   line-height:    1.4;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -114,6 +114,30 @@
   flex-shrink: 0;
 }
 
+/* ─── Quick Update button (secondary action) ─────────────────────────────── */
+.quickUpdateButton {
+  display:          inline-flex;
+  align-items:      center;
+  gap:              var(--wc-space-xs);
+  padding:          0.375rem 0.875rem;
+  border-radius:    var(--wc-radius-sm);
+  border:           1px solid var(--wc-color-accent);
+  background:       transparent;
+  color:            var(--wc-color-accent);
+  font-family:      var(--wc-font-body);
+  font-size:        var(--wc-text-subheading);
+  font-weight:      500;
+  cursor:           pointer;
+  white-space:      nowrap;
+  transition:
+    background-color var(--wc-transition-fast),
+    color            var(--wc-transition-fast);
+}
+
+.quickUpdateButton:hover {
+  background-color: var(--wc-color-accent-muted);
+}
+
 /* ─── CTA button (flat blue primary) ─────────────────────────────────────── */
 .ctaButton {
   display:          inline-flex;
@@ -124,7 +148,7 @@
   border:           none;
   background-color: var(--wc-color-accent);
   color:            var(--wc-color-accent-foreground);
-  font-family:      var(--wc-font-display);
+  font-family:      var(--wc-font-body);
   font-size:        0.6875rem;
   font-weight:      600;
   text-transform:   uppercase;

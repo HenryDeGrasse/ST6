@@ -32,7 +32,7 @@
 
 .heading {
   margin:      0 0 var(--wc-space-xs);
-  font-size:   0.9375rem;
+  font-size:   var(--wc-text-body);
   font-weight: 600;
   color:       var(--wc-color-text-primary);
 }
@@ -50,7 +50,7 @@
   display:     flex;
   align-items: center;
   gap:         var(--wc-space-xs);
-  font-size:   0.9375rem;
+  font-size:   var(--wc-text-body);
   line-height: 1.5;
 }
 

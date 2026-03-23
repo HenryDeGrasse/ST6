@@ -15,7 +15,8 @@ export interface UsePlanningCopilotResult {
   suggestionStatus: AiRequestStatus;
   applyStatus: AiRequestStatus;
   error: string | null;
-  fetchSuggestion: (weekStart: string) => Promise<void>;
+  generatedAt: string | null;
+  fetchSuggestion: (weekStart: string, regenerate?: boolean) => Promise<void>;
   applySuggestion: (request: ApplyTeamPlanSuggestionRequest) => Promise<ApplyTeamPlanSuggestionResponse | null>;
   clearError: () => void;
   clearApplyResult: () => void;
@@ -30,9 +31,10 @@ export function usePlanningCopilot(): UsePlanningCopilotResult {
   const [suggestionStatus, setSuggestionStatus] = useState<AiRequestStatus>("idle");
   const [applyStatus, setApplyStatus] = useState<AiRequestStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
 
   const fetchSuggestion = useCallback(
-    async (weekStart: string) => {
+    async (weekStart: string, regenerate?: boolean) => {
       if (!flags.planningCopilot) {
         return;
       }
@@ -40,9 +42,10 @@ export function usePlanningCopilot(): UsePlanningCopilotResult {
       setSuggestionStatus("loading");
       setError(null);
       setApplyResult(null);
+      setGeneratedAt(null);
       try {
         const resp = await client.POST("/ai/team-plan-suggestion", {
-          body: { weekStart },
+          body: { weekStart, regenerate: regenerate ?? false },
         });
 
         if (resp.response.status === 429) {
@@ -60,7 +63,9 @@ export function usePlanningCopilot(): UsePlanningCopilotResult {
           }
 
           setSuggestionStatus("ok");
-          setSuggestion(data as TeamPlanSuggestionResponse);
+          const typed = data as TeamPlanSuggestionResponse & { generatedAt?: string };
+          setSuggestion(typed);
+          setGeneratedAt(typed.generatedAt ?? null);
           return;
         }
 
@@ -131,6 +136,7 @@ export function usePlanningCopilot(): UsePlanningCopilotResult {
     suggestionStatus,
     applyStatus,
     error,
+    generatedAt,
     fetchSuggestion,
     applySuggestion,
     clearError,

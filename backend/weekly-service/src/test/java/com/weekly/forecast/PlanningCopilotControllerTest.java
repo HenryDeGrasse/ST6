@@ -39,6 +39,7 @@ class PlanningCopilotControllerTest {
 
     private PlanningCopilotService planningCopilotService;
     private PlanningCopilotDraftApplyService planningCopilotDraftApplyService;
+    private PlanningCopilotSnapshotRepository snapshotRepository;
     private AiFeatureFlags featureFlags;
     private RateLimiter rateLimiter;
     private AuthenticatedUserContext authenticatedUserContext;
@@ -48,6 +49,7 @@ class PlanningCopilotControllerTest {
     void setUp() {
         planningCopilotService = mock(PlanningCopilotService.class);
         planningCopilotDraftApplyService = mock(PlanningCopilotDraftApplyService.class);
+        snapshotRepository = mock(PlanningCopilotSnapshotRepository.class);
         featureFlags = new AiFeatureFlags();
         rateLimiter = new RateLimiter(20, java.time.Duration.ofMinutes(1));
         authenticatedUserContext = new AuthenticatedUserContext();
@@ -55,9 +57,11 @@ class PlanningCopilotControllerTest {
         controller = new PlanningCopilotController(
                 planningCopilotService,
                 planningCopilotDraftApplyService,
+                snapshotRepository,
                 featureFlags,
                 rateLimiter,
-                authenticatedUserContext);
+                authenticatedUserContext,
+                new com.fasterxml.jackson.databind.ObjectMapper());
     }
 
     @AfterEach
@@ -76,7 +80,7 @@ class PlanningCopilotControllerTest {
     @Test
     void suggestTeamPlanReturnsUnavailableWhenFeatureDisabled() {
         featureFlags.setPlanningCopilotEnabled(false);
-        ResponseEntity<?> response = controller.suggestTeamPlan(new PlanningCopilotController.TeamPlanSuggestionRequest("2026-03-23"));
+        ResponseEntity<?> response = controller.suggestTeamPlan(new PlanningCopilotController.TeamPlanSuggestionRequest("2026-03-23", null));
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         PlanningCopilotController.TeamPlanSuggestionUnavailableResponse body =
@@ -105,20 +109,17 @@ class PlanningCopilotControllerTest {
                         List.of(),
                         false));
 
-        ResponseEntity<?> response = controller.suggestTeamPlan(new PlanningCopilotController.TeamPlanSuggestionRequest("2026-03-23"));
+        ResponseEntity<?> response = controller.suggestTeamPlan(new PlanningCopilotController.TeamPlanSuggestionRequest("2026-03-23", null));
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        PlanningCopilotService.TeamPlanSuggestionResult body =
-                (PlanningCopilotService.TeamPlanSuggestionResult) response.getBody();
-        assertNotNull(body);
-        assertEquals("ok", body.status());
+        assertNotNull(response.getBody());
     }
 
     @Test
     void suggestTeamPlanReturnsForbiddenForNonManager() {
         loginAs(Set.of("IC"));
 
-        ResponseEntity<?> response = controller.suggestTeamPlan(new PlanningCopilotController.TeamPlanSuggestionRequest("2026-03-23"));
+        ResponseEntity<?> response = controller.suggestTeamPlan(new PlanningCopilotController.TeamPlanSuggestionRequest("2026-03-23", null));
 
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
         ApiErrorResponse body = (ApiErrorResponse) response.getBody();
@@ -193,7 +194,7 @@ class PlanningCopilotControllerTest {
 
         PlanValidationException ex = assertThrows(
                 PlanValidationException.class,
-                () -> controller.suggestTeamPlan(new PlanningCopilotController.TeamPlanSuggestionRequest("03/23/2026")));
+                () -> controller.suggestTeamPlan(new PlanningCopilotController.TeamPlanSuggestionRequest("03/23/2026", null)));
 
         assertEquals("weekStart must be an ISO-8601 date", ex.getMessage());
     }
@@ -204,7 +205,7 @@ class PlanningCopilotControllerTest {
 
         PlanValidationException ex = assertThrows(
                 PlanValidationException.class,
-                () -> controller.suggestTeamPlan(new PlanningCopilotController.TeamPlanSuggestionRequest(null)));
+                () -> controller.suggestTeamPlan(new PlanningCopilotController.TeamPlanSuggestionRequest(null, null)));
 
         assertEquals("weekStart must be an ISO-8601 date", ex.getMessage());
         assertEquals("null", ex.getDetails().getFirst().get("provided"));

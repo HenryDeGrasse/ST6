@@ -79,8 +79,8 @@
 }
 
 .progressText {
-  font-family:    var(--wc-font-display);
-  font-size:      0.625rem;
+  font-family:    var(--wc-font-body);
+  font-size:      var(--wc-text-caption);
   font-weight:    600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -134,7 +134,7 @@
   background-color: var(--wc-color-bg-tertiary);
   border:           1px solid var(--wc-color-border);
   color:            var(--wc-color-text-secondary);
-  font-family:      var(--wc-font-display);
+  font-family:      var(--wc-font-body);
   font-size:        0.625rem;
   font-weight:      600;
   text-transform:   uppercase;
@@ -188,7 +188,7 @@
 
 .sectionLabel {
   display:        block;
-  font-family:    var(--wc-font-display);
+  font-family:    var(--wc-font-body);
   font-size:      0.5625rem;
   font-weight:    600;
   text-transform: uppercase;
@@ -220,7 +220,7 @@
   background-color: var(--wc-color-bg-tertiary);
   color:            var(--wc-color-text-secondary);
   font-family:      var(--wc-font-body);
-  font-size:        0.875rem;
+  font-size:        var(--wc-text-subheading);
   font-weight:      500;
   cursor:           pointer;
   white-space:      nowrap;
@@ -259,7 +259,7 @@
 }
 
 .statusLabel {
-  font-size: 0.875rem;
+  font-size: var(--wc-text-subheading);
 }
 
 /* ─── AI options section ──────────────────────────────────────────────── */
@@ -376,7 +376,7 @@
   background-color: var(--wc-color-bg-secondary);
   color:            var(--wc-color-text-secondary);
   font-family:      var(--wc-font-body);
-  font-size:        0.875rem;
+  font-size:        var(--wc-text-subheading);
   font-weight:      500;
   cursor:           pointer;
   transition:
@@ -409,7 +409,7 @@
   border:           none;
   background-color: var(--wc-color-accent);
   color:            var(--wc-color-accent-foreground);
-  font-family:      var(--wc-font-display);
+  font-family:      var(--wc-font-body);
   font-size:        0.6875rem;
   font-weight:      600;
   text-transform:   uppercase;

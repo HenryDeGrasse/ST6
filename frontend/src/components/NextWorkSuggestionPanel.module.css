@@ -108,7 +108,7 @@
 
 .rateLimited {
   padding:   var(--wc-space-xs) 0;
-  font-size: 0.875rem;
+  font-size: var(--wc-text-subheading);
   color:     var(--wc-color-error);
 }
 
@@ -131,7 +131,7 @@
   border:           1px solid var(--wc-ai-suggestion-border);
   background-color: transparent;
   color:            var(--wc-ai-suggestion-text);
-  font-size:        0.875rem;
+  font-size:        var(--wc-text-subheading);
   font-weight:      500;
   cursor:           pointer;
   transition:
@@ -186,7 +186,7 @@
 
 .suggestionTitle {
   font-weight: 600;
-  font-size:   0.9375rem;
+  font-size:   var(--wc-text-body);
   color:       var(--wc-color-text-primary);
   line-height: 1.4;
   flex:        1;
@@ -200,7 +200,7 @@
   border-radius:  var(--wc-radius-sm);
   background:     var(--wc-color-accent-muted);
   border:         1px solid rgba(37, 99, 235, 0.2);
-  font-size:      0.625rem;
+  font-size:      var(--wc-text-caption);
   font-weight:    600;
   color:          var(--wc-color-accent);
   letter-spacing: 0.06em;
@@ -225,7 +225,7 @@
 }
 
 .rcdoLabel {
-  font-size:      0.625rem;
+  font-size:      var(--wc-text-caption);
   font-weight:    600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -281,7 +281,7 @@
 }
 
 .confidencePct {
-  font-size:      0.625rem;
+  font-size:      var(--wc-text-caption);
   font-weight:    600;
   color:          var(--wc-ai-suggestion-text);
   white-space:    nowrap;
@@ -435,7 +435,7 @@
   border-radius:    var(--wc-radius-sm);
   background-color: var(--wc-color-bg);
   color:            var(--wc-color-text-primary);
-  font-size:        0.875rem;
+  font-size:        var(--wc-text-subheading);
   box-sizing:       border-box;
 }
 
@@ -471,7 +471,7 @@
   border:         none;
   background:     var(--wc-primary-gradient);
   color:          var(--wc-color-accent-foreground);
-  font-size:      0.875rem;
+  font-size:      var(--wc-text-subheading);
   font-weight:    500;
   cursor:         pointer;
   box-shadow:     var(--wc-shadow-sm);
@@ -504,7 +504,7 @@
   border:           1px solid var(--wc-color-border);
   background-color: transparent;
   color:            var(--wc-color-text-secondary);
-  font-size:        0.875rem;
+  font-size:        var(--wc-text-subheading);
   font-weight:      500;
   cursor:           pointer;
   transition:
@@ -536,7 +536,7 @@
   border:           1px solid transparent;
   background-color: transparent;
   color:            var(--wc-color-text-muted);
-  font-size:        0.875rem;
+  font-size:        var(--wc-text-subheading);
   font-weight:      400;
   cursor:           pointer;
   transition:
@@ -568,7 +568,7 @@
   border:           1px solid var(--wc-color-error-border);
   background-color: transparent;
   color:            var(--wc-color-error);
-  font-size:        0.875rem;
+  font-size:        var(--wc-text-subheading);
   font-weight:      500;
   cursor:           pointer;
   transition:       background-color var(--wc-transition-fast);
@@ -597,7 +597,7 @@
   border:           1px solid var(--wc-color-border);
   background-color: transparent;
   color:            var(--wc-color-text-muted);
-  font-size:        0.875rem;
+  font-size:        var(--wc-text-subheading);
   font-weight:      400;
   cursor:           pointer;
 }

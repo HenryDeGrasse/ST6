@@ -103,13 +103,13 @@ describe("OutcomeCoverageTimeline", () => {
     expect(screen.getByTestId("coverage-week-2026-01-12")).toHaveTextContent("3p");
   });
 
-  it("shows the trend indicator when data is provided", () => {
+  it("shows the trend indicator label when meaningful data is provided", () => {
     const data = makeData({ trendDirection: "RISING" });
     renderWithFlags(<OutcomeCoverageTimeline {...defaultProps} data={data} />);
 
     const indicator = screen.getByTestId("coverage-trend-indicator");
     expect(indicator).toBeInTheDocument();
-    expect(indicator).toHaveTextContent("↑");
+    expect(indicator).toHaveTextContent("Rising");
     expect(indicator).toHaveAttribute("aria-label", "Coverage trend: Rising");
   });
 
@@ -118,7 +118,7 @@ describe("OutcomeCoverageTimeline", () => {
     renderWithFlags(<OutcomeCoverageTimeline {...defaultProps} data={data} />);
 
     const indicator = screen.getByTestId("coverage-trend-indicator");
-    expect(indicator).toHaveTextContent("↓");
+    expect(indicator).toHaveTextContent("Falling");
     expect(indicator).toHaveAttribute("aria-label", "Coverage trend: Falling");
   });
 
@@ -127,8 +127,24 @@ describe("OutcomeCoverageTimeline", () => {
     renderWithFlags(<OutcomeCoverageTimeline {...defaultProps} data={data} />);
 
     const indicator = screen.getByTestId("coverage-trend-indicator");
-    expect(indicator).toHaveTextContent("→");
+    expect(indicator).toHaveTextContent("Stable");
     expect(indicator).toHaveAttribute("aria-label", "Coverage trend: Stable");
+  });
+
+  it("shows a no-signal state instead of a fake chart when all weeks are zero", () => {
+    const data = makeData({
+      weeks: [
+        { weekStart: "2026-01-05", commitCount: 0, contributorCount: 0, highPriorityCount: 0 },
+        { weekStart: "2026-01-12", commitCount: 0, contributorCount: 0, highPriorityCount: 0 },
+      ],
+      trendDirection: "STABLE",
+    });
+    renderWithFlags(<OutcomeCoverageTimeline {...defaultProps} data={data} />);
+
+    expect(screen.getByTestId("outcome-coverage-no-signal")).toBeInTheDocument();
+    expect(screen.getByText("No strategic intelligence signals yet.")).toBeInTheDocument();
+    expect(screen.queryByTestId("coverage-trend-indicator")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("coverage-week-2026-01-05")).not.toBeInTheDocument();
   });
 
   it("does not render trend indicator when data is null", () => {

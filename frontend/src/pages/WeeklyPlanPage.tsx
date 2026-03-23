@@ -29,7 +29,6 @@ import type { QuickUpdateCommitment } from "../components/QuickUpdate/QuickUpdat
 import { OvercommitBanner } from "../components/CapacityView/OvercommitBanner.js";
 import type { OvercommitLevel } from "../components/CapacityView/OvercommitBanner.js";
 import { BacklogPickerDialog } from "../components/BacklogPickerDialog.js";
-import { StatusIcon } from "../components/icons/StatusIcon.js";
 import { usePlan } from "../hooks/usePlan.js";
 import { useCommits } from "../hooks/useCommits.js";
 import { useWeeklyAssignments } from "../hooks/useWeeklyAssignments.js";
@@ -597,9 +596,23 @@ export const WeeklyPlanPage: React.FC = () => {
 
   return (
     <div data-testid="weekly-plan-page" className={styles.page}>
-      <h2 className={styles.heading}>Weekly Commitments</h2>
 
-      <WeekSelector selectedWeek={selectedWeek} onWeekChange={handleWeekChange} />
+      {/* ── Page top bar: week selector (left) + plan state + actions (right) ── */}
+      <div className={styles.pageTopBar}>
+        <WeekSelector selectedWeek={selectedWeek} onWeekChange={handleWeekChange} />
+        {plan && (
+          <PlanHeader
+            plan={plan}
+            onLock={handleRequestLock}
+            onStartReconciliation={handleStartReconciliation}
+            onSubmitReconciliation={handleRequestSubmitReconciliation}
+            onCarryForward={() => setShowCarryForward(true)}
+            onQuickUpdate={flags.quickUpdate ? () => setShowQuickUpdate(true) : undefined}
+            loading={lifecycleLoading}
+            canSubmitReconciliation={commits.length > 0}
+          />
+        )}
+      </div>
 
       <ErrorBanner message={error} onDismiss={clearError} />
 
@@ -615,7 +628,7 @@ export const WeeklyPlanPage: React.FC = () => {
             <div className={styles.noPlanCard}>
               <p className={styles.noPlanHeading}>No plan for this week yet.</p>
               <p className={styles.noPlanDescription}>
-                Create a fresh plan or start from your previous week's commitments.
+                Create a fresh plan or start from your previous week’s commitments.
               </p>
               <div className={styles.noPlanActions}>
                 <button
@@ -654,27 +667,6 @@ export const WeeklyPlanPage: React.FC = () => {
 
       {plan && (
         <GlassPanel className={styles.contentPanel}>
-          <PlanHeader
-            plan={plan}
-            onLock={handleRequestLock}
-            onStartReconciliation={handleStartReconciliation}
-            onSubmitReconciliation={handleRequestSubmitReconciliation}
-            onCarryForward={() => setShowCarryForward(true)}
-            loading={lifecycleLoading}
-            canSubmitReconciliation={commits.length > 0}
-          />
-
-          {flags.quickUpdate && (plan.state === PlanState.LOCKED || plan.state === PlanState.RECONCILING) && (
-            <button
-              data-testid="quick-update-btn"
-              className={styles.quickUpdateButton}
-              onClick={() => setShowQuickUpdate(true)}
-            >
-              <StatusIcon icon="refresh" size={14} />
-              Quick Update
-            </button>
-          )}
-
           <PlanSummaryStrip commits={commits} />
 
           {plan.state === PlanState.DRAFT && <ValidationPanel commits={commits} />}

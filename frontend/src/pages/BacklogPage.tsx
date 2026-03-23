@@ -5,10 +5,12 @@ import type {
   TeamMember,
   IssueDetailResponse,
   CreateIssueRequest,
+  UpdateIssueRequest,
 } from "@weekly-commitments/contracts";
 import { EffortType, IssueStatus } from "@weekly-commitments/contracts";
 import { useTeams } from "../hooks/useTeams.js";
 import { useIssues, type IssueSortField } from "../hooks/useIssues.js";
+import { useRcdo } from "../hooks/useRcdo.js";
 import { IssueCreateForm } from "../components/IssueCreateForm.js";
 import { IssueDetailPanel } from "../components/IssueDetailPanel.js";
 import { ErrorBanner } from "../components/ErrorBanner.js";
@@ -44,8 +46,21 @@ function effortClass(et: EffortType | null): string {
   }
 }
 
+/**
+ * Fixed-width seed persona names — avoids a round-trip to an org-roster API
+ * that doesn't exist in the frontend contract yet. These match the dev seed UUIDs.
+ * In production the PA host would provide display names via a user-directory service.
+ */
+const KNOWN_DISPLAY_NAMES: Record<string, string> = {
+  "c0000000-0000-0000-0000-000000000001": "Carol Park",
+  "c0000000-0000-0000-0000-000000000010": "Alice Chen",
+  "c0000000-0000-0000-0000-000000000020": "Bob Martinez",
+  "c0000000-0000-0000-0000-000000000030": "Dana Torres",
+};
+
 function memberLabel(member: TeamMember): string {
-  return `${member.userId}${member.role === "OWNER" ? " (Owner)" : ""}`;
+  const name = KNOWN_DISPLAY_NAMES[member.userId];
+  return name ?? member.userId;
 }
 
 export interface BacklogPageProps {
@@ -56,9 +71,26 @@ export interface BacklogPageProps {
 export const BacklogPage: React.FC<BacklogPageProps> = ({ onManageTeam }) => {
   const teamsHook = useTeams();
   const issuesHook = useIssues();
+  const rcdoHook = useRcdo();
   const fetchTeamDetail = teamsHook.fetchTeamDetail;
   const fetchIssues = issuesHook.fetchIssues;
   const fetchIssueDetail = issuesHook.fetchIssueDetail;
+
+  // Fetch RCDO tree once to resolve outcome names
+  useEffect(() => { void rcdoHook.fetchTree(); }, [rcdoHook.fetchTree]);
+
+  // outcomeId → outcomeName lookup
+  const outcomeNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const rc of rcdoHook.tree ?? []) {
+      for (const obj of rc.objectives ?? []) {
+        for (const out of obj.outcomes ?? []) {
+          map.set(out.id, out.name);
+        }
+      }
+    }
+    return map;
+  }, [rcdoHook.tree]);
 
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -135,6 +167,16 @@ export const BacklogPage: React.FC<BacklogPageProps> = ({ onManageTeam }) => {
     await issuesHook.logTime(issueId, { hoursLogged: hours });
   };
 
+  const handleAssign = async (issueId: string, assigneeUserId: string | null) => {
+    await issuesHook.assignIssue(issueId, { assigneeUserId: assigneeUserId });
+    loadIssues();
+  };
+
+  const handleUpdate = async (issueId: string, req: UpdateIssueRequest) => {
+    await issuesHook.updateIssue(issueId, req);
+    loadIssues();
+  };
+
   const fetchDetail = useCallback(
     (issueId: string): Promise<IssueDetailResponse | null> => fetchIssueDetail(issueId),
     [fetchIssueDetail],
@@ -148,7 +190,6 @@ export const BacklogPage: React.FC<BacklogPageProps> = ({ onManageTeam }) => {
 
   return (
     <div className={styles.page} data-testid="backlog-page">
-      <h1 className={styles.pageTitle}>Backlog</h1>
 
       {teamsHook.error && <ErrorBanner message={teamsHook.error} onDismiss={teamsHook.clearError} />}
       {issuesHook.error && <ErrorBanner message={issuesHook.error} onDismiss={issuesHook.clearError} />}
@@ -225,7 +266,7 @@ export const BacklogPage: React.FC<BacklogPageProps> = ({ onManageTeam }) => {
               <option value="">All assignees</option>
               {teamMembers.map((member) => (
                 <option key={member.userId} value={member.userId}>
-                  {memberLabel(member)}
+                  {KNOWN_DISPLAY_NAMES[member.userId] ?? member.userId}
                 </option>
               ))}
             </select>
@@ -283,6 +324,7 @@ export const BacklogPage: React.FC<BacklogPageProps> = ({ onManageTeam }) => {
                 <tr>
                   <th>Key</th>
                   <th>Title</th>
+                  <th>Outcome</th>
                   <th>Effort</th>
                   <th>Est. Hours</th>
                   <th>Priority</th>
@@ -294,11 +336,11 @@ export const BacklogPage: React.FC<BacklogPageProps> = ({ onManageTeam }) => {
               <tbody>
                 {issuesHook.loading ? (
                   <tr className={styles.loadingRow}>
-                    <td colSpan={aiRankSort ? 8 : 7}>Loading issues…</td>
+                    <td colSpan={aiRankSort ? 9 : 8}>Loading issues…</td>
                   </tr>
                 ) : issuesHook.issues.length === 0 ? (
                   <tr className={styles.loadingRow}>
-                    <td colSpan={aiRankSort ? 8 : 7}>
+                    <td colSpan={aiRankSort ? 9 : 8}>
                       No issues found.{" "}
                       <button
                         type="button"
@@ -325,6 +367,13 @@ export const BacklogPage: React.FC<BacklogPageProps> = ({ onManageTeam }) => {
                         </span>
                       </td>
                       <td>
+                        {issue.outcomeId
+                          ? <span className={styles.outcomeChip} title={outcomeNameMap.get(issue.outcomeId) ?? issue.outcomeId}>
+                              {outcomeNameMap.get(issue.outcomeId) ?? "Linked"}
+                            </span>
+                          : "\u2014"}
+                      </td>
+                      <td>
                         {issue.effortType ? (
                           <span className={`${styles.effortBadge} ${effortClass(issue.effortType)}`}>
                             {issue.effortType.charAt(0) + issue.effortType.slice(1).toLowerCase()}
@@ -337,7 +386,7 @@ export const BacklogPage: React.FC<BacklogPageProps> = ({ onManageTeam }) => {
                       <td>{issue.chessPriority ?? "—"}</td>
                       <td>
                         {issue.assigneeUserId
-                          ? (teamMemberMap.get(issue.assigneeUserId) ?? issue.assigneeUserId)
+                          ? (KNOWN_DISPLAY_NAMES[issue.assigneeUserId] ?? teamMemberMap.get(issue.assigneeUserId) ?? issue.assigneeUserId)
                           : "Unassigned"}
                       </td>
                       <td>
@@ -433,6 +482,12 @@ export const BacklogPage: React.FC<BacklogPageProps> = ({ onManageTeam }) => {
         onFetchDetail={fetchDetail}
         onAddComment={handleAddComment}
         onLogTime={handleLogTime}
+        onAssign={handleAssign}
+        onUpdate={handleUpdate}
+        teamMembers={teamMembers.map((m) => ({
+          userId: m.userId,
+          displayName: memberLabel(m),
+        }))}
       />
     </div>
   );

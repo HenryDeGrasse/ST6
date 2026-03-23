@@ -145,6 +145,19 @@ table.issueTable {
 .effortLearn       { background-color: var(--wc-color-success-bg);          color: var(--wc-color-success);             border: 1px solid var(--wc-color-success-border); }
 
 /* AI rank chip */
+.outcomeChip {
+  display:       inline-block;
+  max-width:     140px;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  white-space:   nowrap;
+  font-size:     0.72rem;
+  color:         var(--wc-color-accent);
+  background:    color-mix(in srgb, var(--wc-color-accent) 8%, transparent);
+  padding:       2px 6px;
+  border-radius: var(--wc-radius-sm);
+}
+
 .aiRankChip {
   font-size:   0.72rem;
   color:       var(--wc-color-accent);
@@ -197,7 +210,7 @@ table.issueTable {
   border-radius: var(--wc-radius-lg);
   box-shadow:    var(--wc-shadow-lg);
   padding:       var(--wc-space-md) var(--wc-space-lg);
-  width:         min(540px, 95vw);
+  width:         min(720px, 92vw);
   max-height:    85vh;
   overflow-y:    auto;
 }

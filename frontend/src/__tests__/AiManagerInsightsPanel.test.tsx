@@ -78,4 +78,24 @@ describe("AiManagerInsightsPanel", () => {
     expect(screen.getByTestId("ai-manager-insight-0")).toBeInTheDocument();
     expect(screen.getByText(/Review hotspot/)).toBeInTheDocument();
   });
+
+  it("replaces known user UUIDs in AI insight detail with display names", () => {
+    renderWithFlags(
+      <AiManagerInsightsPanel
+        {...defaultProps}
+        status="ok"
+        headline="Team focus is healthy overall."
+        insights={[
+          makeInsight({
+            title: "Capacity signal",
+            detail:
+              "User c0000000-0000-0000-0000-000000000020 has 2 incomplete commitments out of 4 total.",
+          }),
+        ]}
+      />,
+    );
+
+    expect(screen.getByText(/Bob Martinez has 2 incomplete commitments out of 4 total/)).toBeInTheDocument();
+    expect(screen.queryByText(/c0000000-0000-0000-0000-000000000020/)).not.toBeInTheDocument();
+  });
 });

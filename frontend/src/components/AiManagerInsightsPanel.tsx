@@ -5,6 +5,24 @@ import { useFeatureFlags } from "../context/FeatureFlagContext.js";
 import { StatusIcon } from "./icons/index.js";
 import styles from "./AiManagerInsightsPanel.module.css";
 
+const KNOWN_DISPLAY_NAMES: Record<string, string> = {
+  "c0000000-0000-0000-0000-000000000001": "Carol Park",
+  "c0000000-0000-0000-0000-000000000010": "Alice Chen",
+  "c0000000-0000-0000-0000-000000000020": "Bob Martinez",
+  "c0000000-0000-0000-0000-000000000030": "Dana Torres",
+};
+
+function humanizeInsightText(text: string | null): string | null {
+  if (!text) return text;
+
+  let next = text;
+  for (const [userId, displayName] of Object.entries(KNOWN_DISPLAY_NAMES)) {
+    next = next.replaceAll(userId, displayName);
+    next = next.replaceAll(`User ${userId}`, displayName);
+  }
+  return next;
+}
+
 export interface AiManagerInsightsPanelProps {
   status: AiRequestStatus;
   headline: string | null;
@@ -77,7 +95,7 @@ export const AiManagerInsightsPanel: React.FC<AiManagerInsightsPanelProps> = ({
 
       {status === "ok" && headline && (
         <div data-testid="ai-manager-insights-content" className={styles.content}>
-          <p className={styles.headline}>{headline}</p>
+          <p className={styles.headline}>{humanizeInsightText(headline)}</p>
           {insights.length > 0 && (
             <ul className={styles.insightList}>
               {insights.map((insight, index) => (
@@ -87,7 +105,7 @@ export const AiManagerInsightsPanel: React.FC<AiManagerInsightsPanelProps> = ({
                   className={styles.insightItem}
                 >
                   <span className={SEVERITY_CLASS[insight.severity]}>{insight.title}</span>
-                  <span className={styles.insightDetail}> — {insight.detail}</span>
+                  <span className={styles.insightDetail}> — {humanizeInsightText(insight.detail)}</span>
                 </li>
               ))}
             </ul>

@@ -49,7 +49,7 @@
 }
 
 .hbarValue {
-  font-family: var(--wc-font-display);
+  font-family: var(--wc-font-body);
   font-size: 0.6rem;
   font-weight: 600;
   color: var(--wc-color-text-primary);
@@ -134,7 +134,7 @@
 }
 
 .stackedBarSegmentLabel {
-  font-family: var(--wc-font-display);
+  font-family: var(--wc-font-body);
   font-size: 0.5rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -182,11 +182,11 @@
 }
 
 .progressRingLabel {
-  font-family: var(--wc-font-display);
+  font-family: var(--wc-font-body);
   font-size: 0.5rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.01em;
   color: var(--wc-color-text-muted);
   text-align: center;
 }

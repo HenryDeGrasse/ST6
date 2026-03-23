@@ -35,11 +35,10 @@
 }
 
 .title {
-  font-size:      0.75rem;
-  font-weight:    600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color:          var(--wc-color-text-primary);
+  font-size:      var(--wc-text-label);
+  font-weight:    500;
+  letter-spacing: 0.01em;
+  color:          var(--wc-color-text-secondary);
   white-space:    nowrap;
 }
 
@@ -52,7 +51,7 @@
   border:           1px solid var(--wc-color-border);
   background-color: var(--wc-color-bg-secondary);
   color:            var(--wc-color-text-secondary);
-  font-size:        0.875rem;
+  font-size:        var(--wc-text-subheading);
   font-weight:      500;
   cursor:           pointer;
   transition:       background-color var(--wc-transition-fast),
@@ -109,12 +108,11 @@
 }
 
 .metricLabel {
-  font-size:      0.6875rem;
-  font-weight:    600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size:      var(--wc-text-label);
+  font-weight:    500;
+  letter-spacing: 0.01em;
   color:          var(--wc-color-text-muted);
-  margin-bottom:  0.15rem;
+  margin-bottom:  var(--wc-space-3xs);
 }
 
 .metricValue {

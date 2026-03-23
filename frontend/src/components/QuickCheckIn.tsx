@@ -15,6 +15,8 @@
  */
 import React, { useState } from "react";
 import type { CheckInEntry, CheckInRequest } from "@weekly-commitments/contracts";
+import { StatusIcon } from "./icons/StatusIcon.js";
+import type { StatusIconName } from "./icons/StatusIcon.js";
 import styles from "./QuickCheckIn.module.css";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -29,7 +31,7 @@ const STATUS_LABELS: Record<CheckInStatus, string> = {
   DONE_EARLY: "Done Early",
 };
 
-const STATUS_EMOJI: Record<CheckInStatus, string> = {
+const STATUS_ICONS: Record<CheckInStatus, StatusIconName> = {
   ON_TRACK: "check",
   AT_RISK: "warning",
   BLOCKED: "blocked",
@@ -165,7 +167,7 @@ export const QuickCheckIn: React.FC<QuickCheckInProps> = ({
             disabled={loading}
           >
             <span className={styles.statusEmoji} aria-hidden="true">
-              {STATUS_EMOJI[status]}
+              <StatusIcon icon={STATUS_ICONS[status]} size={14} />
             </span>
             <span className={styles.statusLabel}>{STATUS_LABELS[status]}</span>
           </button>
@@ -236,7 +238,7 @@ export const QuickCheckIn: React.FC<QuickCheckInProps> = ({
                     data-testid={`check-in-entry-status-${entry.id}`}
                     className={styles.entryStatus}
                   >
-                    {STATUS_EMOJI[entry.status as CheckInStatus]}{" "}
+                    <StatusIcon icon={STATUS_ICONS[entry.status as CheckInStatus]} size={12} />{" "}
                     {STATUS_LABELS[entry.status as CheckInStatus] ?? entry.status}
                   </span>
                   <span className={styles.entryTime}>{formatEntryTime(entry.createdAt)}</span>

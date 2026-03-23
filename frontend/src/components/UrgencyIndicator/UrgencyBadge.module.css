@@ -11,7 +11,7 @@
   display:        inline-flex;
   align-items:    center;
   border-radius:  var(--wc-radius-sm);
-  font-family:    var(--wc-font-display);
+  font-family:    var(--wc-font-body);
   font-weight:    600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -24,12 +24,12 @@
 
 .sm {
   padding:   0.1rem 0.4rem;
-  font-size: 0.5625rem;   /* 9px */
+  font-size: var(--wc-text-caption);   /* 9px */
 }
 
 .md {
   padding:   0.2rem 0.55rem;
-  font-size: 0.6875rem;   /* 11px */
+  font-size: var(--wc-text-label);   /* 11px */
 }
 
 /* ─── Band colour variants ───────────────────────────────────────────────── */

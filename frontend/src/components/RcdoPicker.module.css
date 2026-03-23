@@ -1,116 +1,303 @@
 /**
  * RcdoPicker – CSS Module (Enterprise Dashboard)
+ *
+ * Browse is the default view. Search is a secondary action triggered via a
+ * small icon button in the panel header — no equal-weight mode toggle.
  */
 
-.container { display: flex; flex-direction: column; gap: var(--wc-space-xs); }
+.container {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--wc-space-xs);
+}
+
+/* ── Current selection chip ─────────────────────────────────────────────── */
 
 .currentChip {
-  display: inline-flex; align-items: center; gap: var(--wc-space-xs);
-  padding: 0.25rem 0.625rem; border-radius: var(--wc-radius-sm);
-  background-color: var(--wc-color-accent-muted); border: 1px solid var(--wc-color-accent);
-  font-size: 0.8125rem; color: var(--wc-color-accent); font-weight: 500;
-  flex-wrap: wrap; row-gap: 0.125rem;
+  display:          inline-flex;
+  align-items:      center;
+  gap:              var(--wc-space-xs);
+  padding:          0.25rem 0.625rem;
+  border-radius:    var(--wc-radius-sm);
+  background-color: var(--wc-color-accent-muted);
+  border:           1px solid var(--wc-color-accent);
+  font-size:        0.8125rem;
+  color:            var(--wc-color-accent);
+  font-weight:      500;
+  flex-wrap:        wrap;
+  row-gap:          0.125rem;
 }
 
-.currentLabel { flex: 1; min-width: 0; word-break: break-word; }
+.currentLabel {
+  flex:       1;
+  min-width:  0;
+  word-break: break-word;
+}
 
 .clearButton {
-  flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
-  width: 1.25rem; height: 1.25rem; padding: 0; border-radius: var(--wc-radius-sm);
-  border: none; background-color: transparent; color: var(--wc-color-accent);
-  font-size: 0.75rem; cursor: pointer; transition: background-color var(--wc-transition-fast);
+  flex-shrink:      0;
+  display:          inline-flex;
+  align-items:      center;
+  justify-content:  center;
+  width:            1.25rem;
+  height:           1.25rem;
+  padding:          0;
+  border-radius:    var(--wc-radius-sm);
+  border:           none;
+  background-color: transparent;
+  color:            var(--wc-color-accent);
+  font-size:        0.75rem;
+  cursor:           pointer;
+  transition:       background-color var(--wc-transition-fast);
 }
 
-.clearButton:hover { background-color: var(--wc-color-accent); color: var(--wc-color-accent-foreground); }
-
-.modeBar { display: flex; gap: var(--wc-space-xs); flex-wrap: wrap; }
-
-.modeButton {
-  padding: 0.25rem 0.75rem; border-radius: var(--wc-radius-sm);
-  border: 1px solid var(--wc-color-border); background-color: transparent;
-  color: var(--wc-color-text-secondary); font-family: var(--wc-font-body);
-  font-size: 0.75rem; font-weight: 500;
-  cursor: pointer;
-  transition: background-color var(--wc-transition-fast), border-color var(--wc-transition-fast), color var(--wc-transition-fast);
+.clearButton:hover {
+  background-color: var(--wc-color-accent);
+  color:            var(--wc-color-accent-foreground);
 }
 
-.modeButton:hover { border-color: var(--wc-color-accent); color: var(--wc-color-accent); }
+/* ── Browse panel ────────────────────────────────────────────────────────── */
 
-.modeButtonActive {
-  background-color: var(--wc-color-accent-muted); border-color: var(--wc-color-accent);
-  color: var(--wc-color-accent); font-weight: 600;
+.browsePanel {
+  display:          flex;
+  flex-direction:   column;
+  gap:              0.125rem;
+  border:           1px solid var(--wc-color-border);
+  border-radius:    var(--wc-radius-md);
+  background-color: var(--wc-color-bg-secondary);
+  overflow:         hidden;
 }
 
-.searchPanel { display: flex; flex-direction: column; gap: var(--wc-space-xs); }
-.searchInput { width: 100%; }
+/* ── Panel header: breadcrumb + search icon ─────────────────────────────── */
+
+.panelHeader {
+  display:          flex;
+  align-items:      center;
+  justify-content:  space-between;
+  padding:          var(--wc-space-xs) var(--wc-space-sm);
+  border-bottom:    1px solid var(--wc-color-border-muted);
+  background-color: var(--wc-color-bg-tertiary);
+  min-height:       2rem;
+  gap:              var(--wc-space-xs);
+}
+
+.breadcrumb {
+  display:     flex;
+  align-items: center;
+  gap:         var(--wc-space-2xs);
+  flex:        1;
+  min-width:   0;
+  font-size:   var(--wc-text-caption);
+  color:       var(--wc-color-text-muted);
+  flex-wrap:   wrap;
+}
+
+.breadcrumbLink {
+  display:     inline;
+  padding:     0;
+  margin:      0;
+  border:      none;
+  background:  none;
+  color:       var(--wc-color-accent);
+  font-family: var(--wc-font-body);
+  font-size:   var(--wc-text-caption);
+  font-weight: 500;
+  cursor:      pointer;
+  transition:  color var(--wc-transition-fast);
+}
+
+.breadcrumbLink:hover {
+  color:           var(--wc-color-accent-hover);
+  text-decoration: underline;
+}
+
+.breadcrumbSep {
+  color:     var(--wc-color-text-muted);
+  font-size: 0.7rem;
+}
+
+.breadcrumbCurrent {
+  color:       var(--wc-color-text-secondary);
+  font-weight: 500;
+  font-size:   var(--wc-text-caption);
+}
+
+/* Search icon button — sits in the panel header corner */
+.searchToggleBtn {
+  flex-shrink:      0;
+  display:          inline-flex;
+  align-items:      center;
+  justify-content:  center;
+  width:            1.5rem;
+  height:           1.5rem;
+  padding:          0;
+  border-radius:    var(--wc-radius-sm);
+  border:           1px solid transparent;
+  background-color: transparent;
+  color:            var(--wc-color-text-muted);
+  cursor:           pointer;
+  transition:
+    background-color var(--wc-transition-fast),
+    color            var(--wc-transition-fast),
+    border-color     var(--wc-transition-fast);
+}
+
+.searchToggleBtn:hover {
+  background-color: var(--wc-color-bg-secondary);
+  border-color:     var(--wc-color-border);
+  color:            var(--wc-color-accent);
+}
+
+.searchToggleGlyph {
+  display:     inline-block;
+  font-size:   1rem;
+  line-height: 1;
+  font-weight: 600;
+  color:       currentColor;
+}
+
+/* ── Inline search row (expanded on demand) ─────────────────────────────── */
+
+.searchRow {
+  display:       flex;
+  align-items:   center;
+  gap:           var(--wc-space-xs);
+  padding:       var(--wc-space-xs) var(--wc-space-sm);
+  border-bottom: 1px solid var(--wc-color-border-muted);
+}
+
+.searchInput {
+  flex:       1;
+  min-width:  0;
+  font-size:  var(--wc-text-subheading);
+  padding:    0.25rem var(--wc-space-xs);
+}
+
+.searchCloseBtn {
+  flex-shrink:      0;
+  display:          inline-flex;
+  align-items:      center;
+  justify-content:  center;
+  width:            1.5rem;
+  height:           1.5rem;
+  padding:          0;
+  border-radius:    var(--wc-radius-sm);
+  border:           none;
+  background-color: transparent;
+  color:            var(--wc-color-text-muted);
+  font-size:        1rem;
+  cursor:           pointer;
+  transition:       color var(--wc-transition-fast);
+}
+
+.searchCloseBtn:hover { color: var(--wc-color-text-primary); }
+
+/* ── Search results ──────────────────────────────────────────────────────── */
 
 .resultsList {
-  list-style: none; padding: 0; margin: 0;
-  border: 1px solid var(--wc-color-border); border-radius: var(--wc-radius-md);
-  overflow: hidden; background-color: var(--wc-color-bg-secondary);
+  list-style:       none;
+  padding:          0;
+  margin:           0;
+  overflow:         hidden;
 }
 
-.resultsItem { display: block; border-top: 1px solid var(--wc-color-border-muted); }
+.resultsItem {
+  display:    block;
+  border-top: 1px solid var(--wc-color-border-muted);
+}
+
 .resultsItem:first-child { border-top: none; }
 
 .resultButton {
-  display: block; width: 100%; padding: 0.375rem 0.75rem; text-align: left;
-  background-color: transparent; border: none; border-radius: 0;
-  color: var(--wc-color-text-primary); font-family: var(--wc-font-body); font-size: 0.875rem;
-  cursor: pointer; transition: background-color var(--wc-transition-fast);
+  display:          block;
+  width:            100%;
+  padding:          0.375rem 0.75rem;
+  text-align:       left;
+  background-color: transparent;
+  border:           none;
+  color:            var(--wc-color-text-primary);
+  font-family:      var(--wc-font-body);
+  font-size:        var(--wc-text-subheading);
+  cursor:           pointer;
+  transition:       background-color var(--wc-transition-fast);
 }
 
-.resultButton:hover { background-color: var(--wc-color-bg-tertiary); color: var(--wc-color-text-primary); }
+.resultButton:hover { background-color: var(--wc-color-bg-tertiary); }
 
-.resultName { font-weight: 600; display: block; color: var(--wc-color-text-primary); }
-.resultMeta { font-size: 0.75rem; color: var(--wc-color-text-muted); margin-top: 0.0625rem; display: block; }
-
-.browsePanel { font-size: 0.875rem; display: flex; flex-direction: column; gap: 0.125rem; }
-.cryNode { display: flex; flex-direction: column; gap: 0.125rem; }
-
-.cryToggle {
-  display: flex; align-items: center; gap: var(--wc-space-xs); width: 100%;
-  padding: 0.25rem 0.375rem; border-radius: var(--wc-radius-sm);
-  border: none; background-color: transparent;
-  color: var(--wc-color-text-primary); font-family: var(--wc-font-body);
-  font-size: 0.9375rem; font-weight: 600; cursor: pointer; text-align: left;
-  transition: background-color var(--wc-transition-fast);
+.resultName {
+  font-weight: 600;
+  display:     block;
+  color:       var(--wc-color-text-primary);
 }
 
-.cryToggle:hover { background-color: var(--wc-color-bg-tertiary); }
-
-.objectiveList { margin-left: 1rem; display: flex; flex-direction: column; gap: 0.125rem; }
-.objectiveNode { display: flex; flex-direction: column; gap: 0.125rem; }
-
-.objectiveToggle {
-  display: flex; align-items: center; gap: var(--wc-space-xs); width: 100%;
-  padding: 0.2rem 0.375rem; border-radius: var(--wc-radius-sm);
-  border: none; background-color: transparent;
-  color: var(--wc-color-text-secondary); font-family: var(--wc-font-body);
-  font-size: 0.875rem; font-weight: 500; cursor: pointer; text-align: left;
-  transition: background-color var(--wc-transition-fast);
+.resultMeta {
+  font-size:  0.72rem;
+  color:      var(--wc-color-text-muted);
+  margin-top: 0.0625rem;
+  display:    block;
 }
 
-.objectiveToggle:hover { background-color: var(--wc-color-bg-tertiary); color: var(--wc-color-text-primary); }
+/* ── Browse list ─────────────────────────────────────────────────────────── */
 
-.outcomeList { margin-left: 1rem; display: flex; flex-direction: column; gap: 0.125rem; }
+.browseList {
+  display:        flex;
+  flex-direction: column;
+  gap:            0;
+  padding:        var(--wc-space-2xs);
+}
+
+.browseItem {
+  display:          flex;
+  align-items:      center;
+  gap:              var(--wc-space-2xs);
+  width:            100%;
+  padding:          var(--wc-space-2xs) var(--wc-space-xs);
+  border-radius:    var(--wc-radius-sm);
+  border:           none;
+  background-color: transparent;
+  color:            var(--wc-color-text-primary);
+  font-family:      var(--wc-font-body);
+  font-size:        var(--wc-text-subheading);
+  font-weight:      500;
+  cursor:           pointer;
+  text-align:       left;
+  transition:       background-color var(--wc-transition-fast);
+}
+
+.browseItem:hover { background-color: var(--wc-color-bg-tertiary); }
+
+.browseItemChevron {
+  color:      var(--wc-color-text-muted);
+  font-size:  0.8rem;
+  flex-shrink: 0;
+}
 
 .outcomeButton {
-  display: block; width: 100%; padding: 0.2rem 0.5rem; border-radius: var(--wc-radius-sm);
-  border: 1px solid transparent; background-color: transparent;
-  color: var(--wc-color-text-secondary); font-family: var(--wc-font-body);
-  font-size: 0.8125rem; cursor: pointer; text-align: left;
-  transition: background-color var(--wc-transition-fast), border-color var(--wc-transition-fast), color var(--wc-transition-fast);
+  display:          block;
+  width:            100%;
+  padding:          var(--wc-space-2xs) var(--wc-space-sm);
+  border-radius:    var(--wc-radius-sm);
+  border:           1px solid transparent;
+  background-color: transparent;
+  color:            var(--wc-color-text-secondary);
+  font-family:      var(--wc-font-body);
+  font-size:        var(--wc-text-subheading);
+  cursor:           pointer;
+  text-align:       left;
+  transition:
+    background-color var(--wc-transition-fast),
+    border-color     var(--wc-transition-fast),
+    color            var(--wc-transition-fast);
 }
 
-.outcomeButton:hover { background-color: var(--wc-color-bg-tertiary); color: var(--wc-color-text-primary); }
+.outcomeButton:hover {
+  background-color: var(--wc-color-bg-tertiary);
+  color:            var(--wc-color-text-primary);
+}
 
 .outcomeButtonSelected {
-  background-color: var(--wc-color-accent-muted); border-color: var(--wc-color-accent);
-  color: var(--wc-color-accent); font-weight: 600;
-}
-
-.chevron {
-  display: inline-block; font-style: normal; flex-shrink: 0;
-  color: var(--wc-color-text-muted); font-size: 0.6875rem;
+  background-color: var(--wc-color-accent-muted);
+  border-color:     var(--wc-color-accent);
+  color:            var(--wc-color-accent);
+  font-weight:      600;
 }

@@ -170,13 +170,13 @@
   width:           100%;
   border-collapse: collapse;
   font-family:     var(--wc-font-body);
-  font-size:       0.875rem;
+  font-size:       var(--wc-text-subheading);
 }
 
 .table th {
   text-align:     left;
   font-family:    var(--wc-font-heading);
-  font-size:      0.6875rem;
+  font-size:      var(--wc-text-label);
   font-weight:    600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -215,7 +215,7 @@
 
 .fieldLabel {
   font-family:    var(--wc-font-heading);
-  font-size:      0.6875rem;
+  font-size:      var(--wc-text-label);
   font-weight:    600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -444,7 +444,7 @@
 
 .windowLabel {
   font-family:    var(--wc-font-heading);
-  font-size:      0.6875rem;
+  font-size:      var(--wc-text-label);
   font-weight:    600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -479,7 +479,7 @@
 .readonlyBadge {
   display:        inline-flex;
   align-items:    center;
-  font-size:      0.6875rem;
+  font-size:      var(--wc-text-label);
   font-weight:    600;
   letter-spacing: 0.06em;
   text-transform: uppercase;

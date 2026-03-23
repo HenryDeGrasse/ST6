@@ -76,7 +76,7 @@
 }
 
 .loading {
-  font-size:   0.9375rem;
+  font-size:   var(--wc-text-body);
   color:       var(--wc-color-text-muted);
   font-style:  italic;
   line-height: 1.5;
@@ -86,21 +86,21 @@
   display:     flex;
   align-items: center;
   gap:         var(--wc-space-sm);
-  font-size:   0.9375rem;
+  font-size:   var(--wc-text-body);
   color:       var(--wc-color-success);
   font-weight: 500;
   line-height: 1.5;
 }
 
 .unavailable {
-  font-size:  0.9375rem;
+  font-size:  var(--wc-text-body);
   color:      var(--wc-color-text-muted);
   font-style: italic;
   line-height: 1.5;
 }
 
 .rateLimited {
-  font-size:  0.9375rem;
+  font-size:  var(--wc-text-body);
   color:      var(--wc-color-error);
   line-height: 1.5;
 }
@@ -130,7 +130,7 @@
   align-items:    center;
   padding:        0.1rem 0.45rem;
   border-radius:  var(--wc-radius-sm);
-  font-size:      0.625rem;
+  font-size:      var(--wc-text-caption);
   font-weight:    600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -187,7 +187,7 @@
   border:           1px solid var(--wc-color-border);
   background-color: transparent;
   color:            var(--wc-color-text-secondary);
-  font-size:        0.875rem;
+  font-size:        var(--wc-text-subheading);
   font-weight:      500;
   cursor:           pointer;
   transition:
@@ -213,7 +213,7 @@
   border:          none;
   background:      var(--wc-primary-gradient);
   color:           var(--wc-color-accent-foreground);
-  font-size:       0.875rem;
+  font-size:       var(--wc-text-subheading);
   font-weight:     500;
   cursor:          pointer;
   box-shadow:      var(--wc-shadow-sm);

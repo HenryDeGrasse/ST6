@@ -24,7 +24,7 @@
 .eyebrow,
 .metricLabel {
   display:        block;
-  font-family:    var(--wc-font-display);
+  font-family:    var(--wc-font-body);
   font-size:      0.65rem;
   font-weight:    600;
   letter-spacing: 0.08em;
@@ -57,6 +57,11 @@
   border:           1px solid var(--wc-color-border);
   border-radius:    var(--wc-radius-sm);
   background-color: var(--wc-color-bg-tertiary);
+}
+
+.memberCard {
+  max-height: 24rem;
+  overflow:   auto;
 }
 
 .metricValueSmall,
@@ -99,6 +104,29 @@
   margin-top: var(--wc-space-md);
 }
 
+.selectionHint {
+  margin-bottom: var(--wc-space-sm);
+  color:         var(--wc-color-text-muted);
+  font-size:     var(--wc-text-subheading);
+  font-family:   var(--wc-font-body);
+}
+
+.memberToggle {
+  margin-top:       var(--wc-space-sm);
+  border:           1px solid var(--wc-color-border);
+  background:       var(--wc-color-bg-secondary);
+  color:            var(--wc-color-text-secondary);
+  border-radius:    var(--wc-radius-sm);
+  padding:          0.4rem 0.65rem;
+  font-size:        var(--wc-text-subheading);
+  cursor:           pointer;
+}
+
+.memberToggle:hover {
+  border-color: var(--wc-color-accent);
+  color:        var(--wc-color-accent);
+}
+
 .list {
   margin:       0;
   padding-left: 1rem;
@@ -130,12 +158,12 @@
 .loading,
 .empty {
   color:     var(--wc-color-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--wc-text-subheading);
 }
 
 .error {
   color:     var(--wc-color-error);
-  font-size: 0.875rem;
+  font-size: var(--wc-text-subheading);
 }
 
 .success {

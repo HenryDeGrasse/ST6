@@ -1,7 +1,14 @@
-import React, { useEffect, useState } from "react";
-import type { Issue, IssueActivity, IssueDetailResponse } from "@weekly-commitments/contracts";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import type { Issue, IssueActivity, IssueDetailResponse, UpdateIssueRequest } from "@weekly-commitments/contracts";
 import { IssueActivityType } from "@weekly-commitments/contracts";
+import { RcdoPicker } from "./RcdoPicker.js";
+import { useRcdo } from "../hooks/useRcdo.js";
 import styles from "./IssueDetailPanel.module.css";
+
+export interface PanelMember {
+  userId: string;
+  displayName: string;
+}
 
 export interface IssueDetailPanelProps {
   issueId: string | null;
@@ -9,6 +16,12 @@ export interface IssueDetailPanelProps {
   onFetchDetail: (issueId: string) => Promise<IssueDetailResponse | null>;
   onAddComment: (issueId: string, text: string) => Promise<void>;
   onLogTime: (issueId: string, hours: number) => Promise<void>;
+  /** General-purpose update (assignee, outcome, effort type, etc.) */
+  onUpdate?: (issueId: string, req: UpdateIssueRequest) => Promise<void>;
+  /** @deprecated Use onUpdate instead. Kept for backwards compat. */
+  onAssign?: (issueId: string, assigneeUserId: string | null) => Promise<void>;
+  /** Team members available for assignment */
+  teamMembers?: PanelMember[];
 }
 
 function formatTime(dateStr: string): string {
@@ -62,8 +75,9 @@ function statusClass(status: string): string {
 }
 
 /**
- * Slide-out panel showing full issue detail, activity log, comment input,
- * and time entry input.
+ * Slide-out panel showing full issue detail with all the same attributes
+ * that weekly commitments have: status, effort type, chess priority,
+ * estimated hours, assignee, outcome link, and activity log.
  */
 export const IssueDetailPanel: React.FC<IssueDetailPanelProps> = ({
   issueId,
@@ -71,12 +85,25 @@ export const IssueDetailPanel: React.FC<IssueDetailPanelProps> = ({
   onFetchDetail,
   onAddComment,
   onLogTime,
+  onUpdate,
+  onAssign,
+  teamMembers = [],
 }) => {
   const [detail, setDetail] = useState<{ issue: Issue; activities: IssueActivity[] } | null>(null);
   const [loading, setLoading] = useState(false);
   const [comment, setComment] = useState("");
   const [timeEntry, setTimeEntry] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editingOutcome, setEditingOutcome] = useState(false);
+
+  // RCDO tree for outcome picker
+  const { tree, searchResults, fetchTree, search, clearSearch } = useRcdo();
+
+  // Fetch RCDO tree on mount
+  useEffect(() => {
+    void fetchTree();
+  }, [fetchTree]);
 
   useEffect(() => {
     if (!issueId) {
@@ -89,11 +116,73 @@ export const IssueDetailPanel: React.FC<IssueDetailPanelProps> = ({
       if (!cancelled && d) setDetail(d);
       if (!cancelled) setLoading(false);
     });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [issueId, onFetchDetail]);
 
+  useEffect(() => {
+    setEditingOutcome(false);
+  }, [issueId]);
+
+  useEffect(() => {
+    if (!issueId) return undefined;
+
+    const scrollY = window.scrollY;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousBodyPosition = document.body.style.position;
+    const previousBodyTop = document.body.style.top;
+    const previousBodyWidth = document.body.style.width;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.body.style.position = previousBodyPosition;
+      document.body.style.top = previousBodyTop;
+      document.body.style.width = previousBodyWidth;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, [issueId]);
+
+  const refreshDetail = useCallback(async () => {
+    if (!issueId) return;
+    const refreshed = await onFetchDetail(issueId);
+    if (refreshed) setDetail(refreshed);
+  }, [issueId, onFetchDetail]);
+
+  // Build display name lookup from teamMembers prop
+  const memberMap = useMemo(
+    () => new Map(teamMembers.map((m) => [m.userId, m.displayName])),
+    [teamMembers],
+  );
+
+  const issue = detail?.issue;
+
+  // Resolve outcome name from RCDO tree
+  const outcomeName = useMemo(() => {
+    if (!issue?.outcomeId || !tree) return null;
+    for (const rc of tree) {
+      for (const obj of rc.objectives ?? []) {
+        for (const out of obj.outcomes ?? []) {
+          if (out.id === issue.outcomeId) return out.name;
+        }
+      }
+    }
+    return null;
+  }, [issue?.outcomeId, tree]);
+
+  const canEdit = Boolean(onUpdate);
+
+  const assigneeName = issue?.assigneeUserId
+    ? (memberMap.get(issue.assigneeUserId) ?? issue.assigneeUserId)
+    : "Unassigned";
+
+  // ── Early return AFTER all hooks ──────────────────────────────────────
   if (!issueId) return null;
 
   const handleOverlayClick = (e: React.MouseEvent) => {
@@ -105,9 +194,7 @@ export const IssueDetailPanel: React.FC<IssueDetailPanelProps> = ({
     setSubmitting(true);
     await onAddComment(issueId, comment.trim());
     setComment("");
-    // Refresh
-    const refreshed = await onFetchDetail(issueId);
-    if (refreshed) setDetail(refreshed);
+    await refreshDetail();
     setSubmitting(false);
   };
 
@@ -117,12 +204,33 @@ export const IssueDetailPanel: React.FC<IssueDetailPanelProps> = ({
     setSubmitting(true);
     await onLogTime(issueId, hours);
     setTimeEntry("");
-    const refreshed = await onFetchDetail(issueId);
-    if (refreshed) setDetail(refreshed);
+    await refreshDetail();
     setSubmitting(false);
   };
 
-  const issue = detail?.issue;
+  const handleFieldUpdate = async (req: UpdateIssueRequest) => {
+    if (!issueId) return;
+    setSaving(true);
+    if (onUpdate) {
+      await onUpdate(issueId, req);
+    } else if (onAssign && req.assigneeUserId !== undefined) {
+      await onAssign(issueId, req.assigneeUserId ?? null);
+    }
+    await refreshDetail();
+    setSaving(false);
+  };
+
+  const handleAssigneeChange = async (newUserId: string) => {
+    await handleFieldUpdate({ assigneeUserId: newUserId || null });
+  };
+
+  const handleOutcomeChange = async (outcomeId: string | null) => {
+    await handleFieldUpdate({
+      outcomeId: outcomeId,
+      nonStrategicReason: outcomeId ? null : undefined,
+    });
+    setEditingOutcome(false);
+  };
 
   return (
     <div
@@ -131,12 +239,11 @@ export const IssueDetailPanel: React.FC<IssueDetailPanelProps> = ({
       data-testid="issue-detail-overlay"
     >
       <div className={styles.panel} data-testid="issue-detail-panel" role="dialog" aria-modal="true">
+
         {/* Header */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
-            {issue && (
-              <span className={styles.issueKey}>{issue.issueKey}</span>
-            )}
+            {issue && <span className={styles.issueKey}>{issue.issueKey}</span>}
             <span className={styles.issueTitle}>
               {loading ? "Loading…" : issue?.title ?? "Issue Detail"}
             </span>
@@ -148,7 +255,7 @@ export const IssueDetailPanel: React.FC<IssueDetailPanelProps> = ({
             aria-label="Close issue detail"
             data-testid="issue-detail-close"
           >
-            ✕
+            ×
           </button>
         </div>
 
@@ -167,26 +274,51 @@ export const IssueDetailPanel: React.FC<IssueDetailPanelProps> = ({
                   </span>
                 </div>
                 <div className={styles.metaItem}>
-                  <span className={styles.metaLabel}>Effort Type</span>
+                  <span className={styles.metaLabel}>Effort type</span>
                   <span className={styles.metaValue}>
                     {issue.effortType
                       ? issue.effortType.charAt(0) + issue.effortType.slice(1).toLowerCase()
-                      : "—"}
+                      : "\u2014"}
                   </span>
                 </div>
                 <div className={styles.metaItem}>
-                  <span className={styles.metaLabel}>Chess Priority</span>
-                  <span className={styles.metaValue}>{issue.chessPriority ?? "—"}</span>
+                  <span className={styles.metaLabel}>Chess priority</span>
+                  <span className={styles.metaValue}>{issue.chessPriority ?? "\u2014"}</span>
                 </div>
                 <div className={styles.metaItem}>
-                  <span className={styles.metaLabel}>Estimated Hours</span>
+                  <span className={styles.metaLabel}>Estimated hours</span>
                   <span className={styles.metaValue}>
-                    {issue.estimatedHours != null ? `${issue.estimatedHours}h` : "—"}
+                    {issue.estimatedHours != null ? `${issue.estimatedHours}h` : "\u2014"}
                   </span>
                 </div>
+
+                {/* Assignee */}
+                <div className={styles.metaItem}>
+                  <span className={styles.metaLabel}>Assignee</span>
+                  {(onUpdate || onAssign) && teamMembers.length > 0 ? (
+                    <select
+                      className={styles.assigneeSelect}
+                      value={issue.assigneeUserId ?? ""}
+                      onChange={(e) => { void handleAssigneeChange(e.target.value); }}
+                      disabled={saving}
+                      data-testid="issue-assignee-select"
+                      aria-label="Assign to"
+                    >
+                      <option value="">Unassigned</option>
+                      {teamMembers.map((m) => (
+                        <option key={m.userId} value={m.userId}>
+                          {m.displayName}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className={styles.metaValue}>{assigneeName}</span>
+                  )}
+                </div>
+
                 {issue.aiRecommendedRank != null && (
                   <div className={styles.metaItem}>
-                    <span className={styles.metaLabel}>AI Rank</span>
+                    <span className={styles.metaLabel}>AI rank</span>
                     <span className={styles.metaValue}>#{issue.aiRecommendedRank}</span>
                   </div>
                 )}
@@ -194,6 +326,52 @@ export const IssueDetailPanel: React.FC<IssueDetailPanelProps> = ({
                   <span className={styles.metaLabel}>Created</span>
                   <span className={styles.metaValue}>{formatTime(issue.createdAt)}</span>
                 </div>
+              </div>
+
+              {/* Outcome link — editable via RcdoPicker or read-only display */}
+              <div className={styles.outcomeSection} data-testid="issue-outcome-section">
+                <p className={styles.sectionTitle}>Outcome link</p>
+                {canEdit ? (
+                  <>
+                    <div className={styles.outcomeSummaryRow}>
+                      <span className={styles.outcomeSummaryValue}>
+                        {outcomeName ?? (issue.outcomeId ? issue.outcomeId : "No linked outcome")}
+                      </span>
+                      <button
+                        type="button"
+                        className={styles.outcomeActionBtn}
+                        onClick={() => setEditingOutcome((v) => !v)}
+                        disabled={saving}
+                        data-testid="issue-outcome-edit-toggle"
+                      >
+                        {editingOutcome ? "Cancel" : issue.outcomeId ? "Change" : "Link outcome"}
+                      </button>
+                    </div>
+
+                    {editingOutcome && (
+                      <div className={styles.outcomeEditor}>
+                        <RcdoPicker
+                          value={issue.outcomeId}
+                          onChange={(sel) => { void handleOutcomeChange(sel?.outcomeId ?? null); }}
+                          tree={tree}
+                          searchResults={searchResults}
+                          onSearch={search}
+                          onClearSearch={clearSearch}
+                          disabled={saving}
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <span className={styles.metaValue}>
+                    {outcomeName ?? (issue.outcomeId ? issue.outcomeId : "None")}
+                  </span>
+                )}
+                {issue.nonStrategicReason && !issue.outcomeId && (
+                  <p className={styles.nonStrategicNote}>
+                    Non-strategic: {issue.nonStrategicReason}
+                  </p>
+                )}
               </div>
 
               {/* Description */}
@@ -249,7 +427,7 @@ export const IssueDetailPanel: React.FC<IssueDetailPanelProps> = ({
               <button
                 type="button"
                 className="wc-button"
-                onClick={handleComment}
+                onClick={() => { void handleComment(); }}
                 disabled={submitting || !comment.trim()}
                 data-testid="issue-comment-submit"
               >
@@ -272,7 +450,7 @@ export const IssueDetailPanel: React.FC<IssueDetailPanelProps> = ({
               <button
                 type="button"
                 className="wc-button-secondary"
-                onClick={handleLogTime}
+                onClick={() => { void handleLogTime(); }}
                 disabled={submitting || !timeEntry}
                 data-testid="issue-time-submit"
               >

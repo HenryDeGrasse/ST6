@@ -27,8 +27,8 @@
 }
 
 .title {
-  font-family:    var(--wc-font-display);
-  font-size:      0.6875rem;
+  font-family:    var(--wc-font-body);
+  font-size:      var(--wc-text-label);
   font-weight:    600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -88,8 +88,8 @@
 /* ─── Type label ─────────────────────────────────────────────────────────── */
 
 .typeLabel {
-  font-family:    var(--wc-font-display);
-  font-size:      0.6875rem;
+  font-family:    var(--wc-font-body);
+  font-size:      var(--wc-text-label);
   font-weight:    600;
   color:          var(--wc-color-text-primary);
   text-transform: capitalize;

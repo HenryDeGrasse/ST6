@@ -10,12 +10,6 @@ export interface OutcomeCoverageTimelineProps {
   loading: boolean;
 }
 
-const TREND_ARROW: Record<OutcomeCoverageTimelineData["trendDirection"], string> = {
-  RISING: "↑",
-  FALLING: "↓",
-  STABLE: "→",
-};
-
 const TREND_LABEL: Record<OutcomeCoverageTimelineData["trendDirection"], string> = {
   RISING: "Rising",
   FALLING: "Falling",
@@ -53,6 +47,7 @@ export const OutcomeCoverageTimeline: React.FC<OutcomeCoverageTimelineProps> = (
   }
 
   const weeks = data?.weeks ?? [];
+  const hasMeaningfulSignal = weeks.some((w) => w.commitCount > 0 || w.contributorCount > 0);
   const maxCommitCount = Math.max(...weeks.map((w) => w.commitCount), 1);
 
   return (
@@ -65,14 +60,14 @@ export const OutcomeCoverageTimeline: React.FC<OutcomeCoverageTimelineProps> = (
       <div className={styles.header}>
         <span className={styles.title}>{outcomeName}</span>
 
-        {data && (
+        {data && hasMeaningfulSignal && (
           <span
             data-testid="coverage-trend-indicator"
             className={`${styles.trendIndicator} ${TREND_STYLE_CLASS[data.trendDirection]}`}
             aria-label={`Coverage trend: ${TREND_LABEL[data.trendDirection]}`}
             title={TREND_LABEL[data.trendDirection]}
           >
-            {TREND_ARROW[data.trendDirection]}
+            {TREND_LABEL[data.trendDirection]}
           </span>
         )}
       </div>
@@ -97,8 +92,14 @@ export const OutcomeCoverageTimeline: React.FC<OutcomeCoverageTimelineProps> = (
         </div>
       )}
 
+      {!loading && data && weeks.length > 0 && !hasMeaningfulSignal && (
+        <div data-testid="outcome-coverage-no-signal" className={styles.statusMsg}>
+          No strategic intelligence signals yet.
+        </div>
+      )}
+
       {/* ─── Bar chart ───────────────────────────────────────────────────── */}
-      {!loading && data && weeks.length > 0 && (
+      {!loading && data && weeks.length > 0 && hasMeaningfulSignal && (
         <div className={styles.chart} role="list" aria-label="Weekly commit coverage">
           {weeks.map((week) => {
             const barHeightPx = Math.max(

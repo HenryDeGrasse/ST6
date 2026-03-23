@@ -31,7 +31,7 @@
 .readonlyDescription {
   margin:      0.25rem 0 0;
   color:       var(--wc-color-text-secondary);
-  font-size:   0.9375rem;
+  font-size:   var(--wc-text-body);
   line-height: 1.625;
 }
 
@@ -64,7 +64,7 @@
   gap:              0.25rem;
   padding:          0.1rem 0.5rem;
   border-radius:    var(--wc-radius-sm);
-  font-family:      var(--wc-font-display);
+  font-family:      var(--wc-font-body);
   font-size:        0.625rem;
   font-weight:      600;
   text-transform:   uppercase;
@@ -109,13 +109,12 @@
 
 .fieldLabel {
   display:        block;
-  font-family:    var(--wc-font-display);
-  font-size:      0.6875rem;
-  font-weight:    600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-family:    var(--wc-font-body);
+  font-size:      var(--wc-text-label);
+  font-weight:    500;
+  letter-spacing: 0.01em;
   color:          var(--wc-color-text-secondary);
-  margin-bottom:  0.25rem;
+  margin-bottom:  var(--wc-space-3xs);
 }
 
 /* ─── Inputs ─────────────────────────────────────────────────────────────── */
@@ -220,7 +219,7 @@
   border:           none;
   background-color: var(--wc-color-accent);
   color:            var(--wc-color-accent-foreground);
-  font-family:      var(--wc-font-display);
+  font-family:      var(--wc-font-body);
   font-size:        0.6875rem;
   font-weight:      600;
   text-transform:   uppercase;
@@ -259,7 +258,7 @@
   background-color: transparent;
   color:            var(--wc-color-text-secondary);
   font-family:      var(--wc-font-body);
-  font-size:        0.875rem;
+  font-size:        var(--wc-text-subheading);
   font-weight:      500;
   cursor:           pointer;
   white-space:      nowrap;
@@ -288,7 +287,7 @@
   border:           1px solid var(--wc-color-error-border);
   background-color: var(--wc-color-error-bg);
   color:            var(--wc-color-error);
-  font-size:        0.875rem;
+  font-size:        var(--wc-text-subheading);
   font-weight:      500;
   cursor:           pointer;
   margin-left:      auto;

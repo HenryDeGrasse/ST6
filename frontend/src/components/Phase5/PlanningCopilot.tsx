@@ -10,9 +10,10 @@ export interface PlanningCopilotProps {
 
 export const PlanningCopilot: React.FC<PlanningCopilotProps> = ({ weekStart }) => {
   const flags = useFeatureFlags();
-  const { suggestion, applyResult, suggestionStatus, applyStatus, error, fetchSuggestion, applySuggestion } =
+  const { suggestion, applyResult, suggestionStatus, applyStatus, error, generatedAt, fetchSuggestion, applySuggestion } =
     usePlanningCopilot();
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [expandedMembers, setExpandedMembers] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (flags.planningCopilot) {
@@ -23,16 +24,20 @@ export const PlanningCopilot: React.FC<PlanningCopilotProps> = ({ weekStart }) =
   useEffect(() => {
     if (!suggestion) {
       setSelected({});
+      setExpandedMembers({});
       return;
     }
 
     const nextSelected: Record<string, boolean> = {};
+    const nextExpanded: Record<string, boolean> = {};
     suggestion.members.forEach((member) => {
+      nextExpanded[member.userId] = false;
       member.suggestedCommits.forEach((commit, index) => {
         nextSelected[`${member.userId}:${index}:${commit.title}`] = true;
       });
     });
     setSelected(nextSelected);
+    setExpandedMembers(nextExpanded);
   }, [suggestion]);
 
   const applyPayload = useMemo<ApplyTeamPlanSuggestionRequest | null>(() => {
@@ -68,16 +73,22 @@ export const PlanningCopilot: React.FC<PlanningCopilotProps> = ({ weekStart }) =
         <div>
           <div className={styles.eyebrow}>Manager Copilot</div>
           <h3 className={styles.title}>Planning Copilot</h3>
+          {generatedAt && (
+            <div className={styles.subtle} data-testid="planning-copilot-generated-at">
+              Generated {generatedAt === new Date().toISOString().slice(0, 10) ? "today" : generatedAt}
+              {" · saved once per day"}
+            </div>
+          )}
         </div>
         <button
           type="button"
           data-testid="planning-copilot-refresh"
           className={styles.secondaryButton}
           onClick={() => {
-            void fetchSuggestion(weekStart);
+            void fetchSuggestion(weekStart, true);
           }}
         >
-          Refresh
+          Regenerate
         </button>
       </div>
 
@@ -124,6 +135,9 @@ export const PlanningCopilot: React.FC<PlanningCopilotProps> = ({ weekStart }) =
           </div>
 
           <div className={styles.section}>
+            <div className={styles.selectionHint}>
+              Uncheck any suggestion to exclude it from Apply Selected Suggestions.
+            </div>
             {suggestion.members.map((member) => (
               <div key={member.userId} data-testid={`planning-copilot-member-${member.userId}`} className={styles.memberCard}>
                 <div className={styles.memberHeader}>
@@ -135,6 +149,20 @@ export const PlanningCopilot: React.FC<PlanningCopilotProps> = ({ weekStart }) =
                     {member.totalEstimated ?? "—"}h suggested / {member.realisticCapacity ?? "—"}h realistic
                   </div>
                 </div>
+                <button
+                  type="button"
+                  data-testid={`planning-copilot-toggle-${member.userId}`}
+                  className={styles.memberToggle}
+                  onClick={() => {
+                    setExpandedMembers((current) => ({
+                      ...current,
+                      [member.userId]: !current[member.userId],
+                    }));
+                  }}
+                >
+                  {expandedMembers[member.userId] ? "Hide suggestions" : `Show ${member.suggestedCommits.length} suggestions`}
+                </button>
+                {expandedMembers[member.userId] && (
                 <ul className={styles.list}>
                   {member.suggestedCommits.map((commit, index) => {
                     const key = `${member.userId}:${index}:${commit.title}`;
@@ -162,6 +190,7 @@ export const PlanningCopilot: React.FC<PlanningCopilotProps> = ({ weekStart }) =
                     );
                   })}
                 </ul>
+                )}
               </div>
             ))}
           </div>

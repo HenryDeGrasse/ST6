@@ -22,7 +22,7 @@
 
 .detail {
   margin:      0 0 var(--wc-space-lg);
-  font-size:   0.9375rem;
+  font-size:   var(--wc-text-body);
   line-height: 1.5;
   color:       var(--wc-color-text-secondary);
 }
@@ -36,7 +36,7 @@
   border:           1px solid var(--wc-color-accent);
   background-color: transparent;
   color:            var(--wc-color-accent);
-  font-size:        0.875rem;
+  font-size:        var(--wc-text-subheading);
   font-weight:      500;
   cursor:           pointer;
   transition:
