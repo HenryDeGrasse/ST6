@@ -41,7 +41,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testMatch: /(golden-path|ic-lifecycle-browser|manager-dashboard-browser|ai-features-browser|error-handling-browser|accessibility-e2e|my-insights|my-insights-browser|backlog-browser|team-management-browser|admin-dashboard-browser|persona-switching|executive-dashboard)\.spec\.ts$/,
+      testMatch: /(golden-path|ic-lifecycle-browser|manager-dashboard-browser|ai-features-browser|ai-workflow-browser|error-handling-browser|accessibility-e2e|my-insights|my-insights-browser|backlog-browser|team-management-browser|admin-dashboard-browser|persona-switching|executive-dashboard)\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
     {
