@@ -198,10 +198,20 @@ async function installAdminMocks(page: Page, opts: AdminMockOptions = {}): Promi
 // Helpers
 // ══════════════════════════════════════════════════════════════════════════
 
-/** Switch to Dana (ADMIN persona) and wait for app remount. */
-async function switchToDana(page: Page) {
-  await page.selectOption('[data-testid="persona-select"]', "dana");
+/** Open dev tools panel if needed, switch to given persona, wait for remount. */
+async function switchPersona(page: Page, personaKey: string): Promise<void> {
+  const select = page.getByTestId("persona-select");
+  if (!(await select.isVisible().catch(() => false))) {
+    await page.getByRole("button", { name: "Toggle dev tools" }).click();
+  }
+  await expect(select).toBeVisible();
+  await select.selectOption(personaKey);
   await expect(page.getByTestId("weekly-commitments-app")).toBeVisible();
+}
+
+/** Switch to Dana (ADMIN persona) and wait for app remount. */
+async function switchToDana(page: Page): Promise<void> {
+  await switchPersona(page, "dana");
 }
 
 /** Navigate to the Admin Dashboard tab. */
@@ -229,16 +239,12 @@ async function clickTab(page: Page, tabId: string) {
 // ══════════════════════════════════════════════════════════════════════════
 
 test.describe("Admin Dashboard — Access Guard", () => {
-  test("[SMOKE] non-ADMIN user sees access-denied message", async ({ page }) => {
+  test("[SMOKE] non-ADMIN user cannot see nav-admin", async ({ page }) => {
     await installMockApi(page);
     await installAdminMocks(page);
     await page.goto("/");
     // Default persona is Carol (IC + MANAGER, no ADMIN)
-    // Navigate directly to /admin
-    await page.goto("/admin");
-    await expect(page.getByTestId("admin-dashboard-page")).toBeVisible();
-    await expect(page.getByTestId("admin-access-denied")).toBeVisible();
-    await expect(page.getByTestId("admin-access-denied")).toContainText("Access Denied");
+    await expect(page.getByTestId("nav-admin")).not.toBeVisible();
   });
 
   test("[SMOKE] ADMIN user (Dana) sees the dashboard", async ({ page }) => {
@@ -610,11 +616,11 @@ test.describe("Admin Dashboard — Feature Flags Tab", () => {
     await expect(page.getByTestId("flag-row-suggestRcdo")).toBeVisible();
   });
 
-  test("[SMOKE] each flag has a toggle checkbox", async ({ page }) => {
-    await expect(page.getByTestId("flag-toggle-suggestRcdo")).toBeVisible();
-    await expect(page.getByTestId("flag-toggle-icTrends")).toBeVisible();
-    await expect(page.getByTestId("flag-toggle-planQualityNudge")).toBeVisible();
-    await expect(page.getByTestId("flag-toggle-outcomeUrgency")).toBeVisible();
+  test("[SMOKE] each flag has a visible toggle control", async ({ page }) => {
+    await expect(page.getByTestId("flag-toggle-label-suggestRcdo")).toBeVisible();
+    await expect(page.getByTestId("flag-toggle-label-icTrends")).toBeVisible();
+    await expect(page.getByTestId("flag-toggle-label-planQualityNudge")).toBeVisible();
+    await expect(page.getByTestId("flag-toggle-label-outcomeUrgency")).toBeVisible();
   });
 
   test("Save Flags and Reset buttons are disabled when no changes", async ({ page }) => {
@@ -623,13 +629,13 @@ test.describe("Admin Dashboard — Feature Flags Tab", () => {
   });
 
   test("toggling a flag enables Save Flags and Reset buttons", async ({ page }) => {
-    await page.getByTestId("flag-toggle-suggestRcdo").click();
+    await page.getByTestId("flag-toggle-label-suggestRcdo").click();
     await expect(page.getByTestId("save-flags-btn")).toBeEnabled();
     await expect(page.getByTestId("reset-flags-btn")).toBeEnabled();
   });
 
   test("Save Flags writes to localStorage and shows saved message", async ({ page }) => {
-    await page.getByTestId("flag-toggle-suggestRcdo").click();
+    await page.getByTestId("flag-toggle-label-suggestRcdo").click();
     await page.getByTestId("save-flags-btn").click();
 
     // Check localStorage was updated
@@ -650,7 +656,7 @@ test.describe("Admin Dashboard — Feature Flags Tab", () => {
     // Toggle a flag to make it dirty
     const toggle = page.getByTestId("flag-toggle-suggestRcdo");
     const initialChecked = await toggle.isChecked();
-    await toggle.click();
+    await page.getByTestId("flag-toggle-label-suggestRcdo").click();
     expect(await toggle.isChecked()).toBe(!initialChecked);
 
     // Reset

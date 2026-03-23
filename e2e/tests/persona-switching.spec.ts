@@ -15,8 +15,24 @@
  *   [SMOKE] = runs on every PR (Gate 7)
  *   [FULL]  = deeper acceptance coverage, suitable for nightly runs
  */
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { installMockApi } from "./helpers";
+
+// ── helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Open the dev-tools panel (if not already open) and switch the persona.
+ * The persona-select element is only visible when devBarOpen === true.
+ */
+async function switchPersona(page: Page, personaKey: string): Promise<void> {
+  const select = page.getByTestId("persona-select");
+  if (!(await select.isVisible().catch(() => false))) {
+    await page.getByRole("button", { name: "Toggle dev tools" }).click();
+  }
+  await expect(select).toBeVisible();
+  await select.selectOption(personaKey);
+  await expect(page.getByTestId("weekly-commitments-app")).toBeVisible();
+}
 
 test.describe("Persona Switching", () => {
   test("[SMOKE] Persona switcher remounts the micro-frontend with the new user", async ({
@@ -30,7 +46,7 @@ test.describe("Persona Switching", () => {
     await expect(page.getByTestId("nav-team-dashboard")).toBeVisible();
 
     // Switch to Alice (IC only) — team-dashboard should disappear after remount
-    await page.selectOption('[data-testid="persona-select"]', "alice");
+    await switchPersona(page, "alice");
 
     // Wait for the remounted app shell before asserting
     await expect(page.getByTestId("weekly-commitments-app")).toBeVisible();
@@ -42,7 +58,7 @@ test.describe("Persona Switching", () => {
     await page.goto("/");
 
     // Select Alice Chen (IC only — no MANAGER or ADMIN roles)
-    await page.selectOption('[data-testid="persona-select"]', "alice");
+    await switchPersona(page, "alice");
 
     await expect(page.getByTestId("weekly-commitments-app")).toBeVisible();
 
@@ -58,7 +74,7 @@ test.describe("Persona Switching", () => {
     await page.goto("/");
 
     // Select Dana Torres (IC + MANAGER + ADMIN)
-    await page.selectOption('[data-testid="persona-select"]', "dana");
+    await switchPersona(page, "dana");
 
     await expect(page.getByTestId("weekly-commitments-app")).toBeVisible();
 
@@ -74,7 +90,7 @@ test.describe("Persona Switching", () => {
 
     for (const persona of personas) {
       await page.goto("/");
-      await page.selectOption('[data-testid="persona-select"]', persona);
+      await switchPersona(page, persona);
 
       // nav-my-insights is rendered for every role (no role gate in AppShell)
       await expect(page.getByTestId("weekly-commitments-app")).toBeVisible();
